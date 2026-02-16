@@ -14,6 +14,8 @@ Built with responsiveness in mind, CORAL works seamlessly across desktop and mob
 
 This instance is specifically configured for USSC with dedicated Firebase credentials and database configuration.
 
+For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Version 1.1.0
 
 The latest release introduces significant UI/UX improvements, enhanced responsiveness, and better user experience across all devices. Key improvements include:
