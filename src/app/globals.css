@@ -1,0 +1,301 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-nunito-sans);
+  --font-mono: var(--font-nunito);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+
+  /* Ocean theme - Light mode */
+  --background: oklch(0.98 0.01 240);
+  --foreground: oklch(0.15 0.05 240);
+
+  --card: oklch(1 0 240);
+  --card-foreground: oklch(0.15 0.05 240);
+
+  --popover: oklch(1 0 240);
+  --popover-foreground: oklch(0.15 0.05 240);
+
+  --primary: oklch(0.54 0.18 240);
+  --primary-foreground: oklch(0.98 0.01 240);
+
+  --secondary: oklch(0.92 0.05 220);
+  --secondary-foreground: oklch(0.2 0.1 240);
+
+  --muted: oklch(0.95 0.03 220);
+  --muted-foreground: oklch(0.5 0.05 240);
+
+  --accent: oklch(0.9 0.05 200);
+  --accent-foreground: oklch(0.2 0.1 240);
+
+  --destructive: oklch(0.65 0.25 20);
+  --border: oklch(0.85 0.04 220);
+  --input: oklch(0.85 0.04 220);
+  --ring: oklch(0.6 0.15 240);
+
+  /* Chart colors - Ocean theme */
+  --chart-1: oklch(0.65 0.22 220);
+  --chart-2: oklch(0.6 0.18 200);
+  --chart-3: oklch(0.55 0.15 240);
+  --chart-4: oklch(0.7 0.2 260);
+  --chart-5: oklch(0.45 0.15 210);
+
+  /* Sidebar - Ocean theme */
+  --sidebar: oklch(0.98 0.02 240);
+  --sidebar-foreground: oklch(0.15 0.05 240);
+  --sidebar-primary: oklch(0.54 0.18 240);
+  --sidebar-primary-foreground: oklch(0.98 0.01 240);
+  --sidebar-accent: oklch(0.9 0.05 200);
+  --sidebar-accent-foreground: oklch(0.2 0.1 240);
+  --sidebar-border: oklch(0.85 0.04 220);
+  --sidebar-ring: oklch(0.6 0.15 240);
+}
+
+.dark {
+  /* Ocean theme - Dark mode */
+  --background: oklch(0.15 0.05 240);
+  --foreground: oklch(0.92 0.03 220);
+
+  --card: oklch(0.2 0.07 230);
+  --card-foreground: oklch(0.92 0.03 220);
+
+  --popover: oklch(0.2 0.07 230);
+  --popover-foreground: oklch(0.92 0.03 220);
+
+  --primary: oklch(0.65 0.2 210);
+  --primary-foreground: oklch(0.15 0.05 240);
+
+  --secondary: oklch(0.3 0.1 220);
+  --secondary-foreground: oklch(0.92 0.03 220);
+
+  --muted: oklch(0.25 0.05 230);
+  --muted-foreground: oklch(0.7 0.05 220);
+
+  --accent: oklch(0.3 0.1 200);
+  --accent-foreground: oklch(0.92 0.03 220);
+
+  --destructive: oklch(0.7 0.19 20);
+  --border: oklch(0.35 0.05 230);
+  --input: oklch(0.3 0.05 230);
+  --ring: oklch(0.55 0.15 210);
+
+  /* Chart colors - Ocean dark theme */
+  --chart-1: oklch(0.7 0.25 200);
+  --chart-2: oklch(0.6 0.2 220);
+  --chart-3: oklch(0.5 0.15 240);
+  --chart-4: oklch(0.65 0.2 180);
+  --chart-5: oklch(0.75 0.25 260);
+
+  /* Sidebar - Ocean dark theme */
+  --sidebar: oklch(0.2 0.07 230);
+  --sidebar-foreground: oklch(0.92 0.03 220);
+  --sidebar-primary: oklch(0.65 0.2 210);
+  --sidebar-primary-foreground: oklch(0.15 0.05 240);
+  --sidebar-accent: oklch(0.3 0.1 200);
+  --sidebar-accent-foreground: oklch(0.92 0.03 220);
+  --sidebar-border: oklch(0.35 0.05 230);
+  --sidebar-ring: oklch(0.55 0.15 210);
+}
+
+/* Define base styles */
+* {
+  border-color: var(--border);
+  outline-color: color-mix(in oklch, var(--ring), transparent 50%);
+}
+
+/* Force Nunito font family */
+html, body, * {
+  font-family: var(--font-nunito-sans), system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-nunito-sans), system-ui, sans-serif;
+}
+
+/* Custom Fade Animations */
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fade-in-right {
+  0% {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out forwards;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+
+.animate-fade-in-left {
+  animation: fade-in-left 0.6s ease-out forwards;
+}
+
+.animate-fade-in-right {
+  animation: fade-in-right 0.6s ease-out forwards;
+}
+
+.animate-fade-in-slow {
+  animation: fade-in 0.8s ease-out forwards;
+}
+
+/* Reduced animation delays for smoother experience */
+.animation-delay-100 {
+  animation-delay: 0.1s;
+}
+
+.animation-delay-200 {
+  animation-delay: 0.15s;
+}
+
+.animation-delay-300 {
+  animation-delay: 0.2s;
+}
+
+.animation-delay-400 {
+  animation-delay: 0.25s;
+}
+
+.animation-delay-500 {
+  animation-delay: 0.3s;
+}
+
+.animation-delay-600 {
+  animation-delay: 0.35s;
+}
+
+.animation-delay-700 {
+  animation-delay: 0.4s;
+}
+
+.animation-delay-800 {
+  animation-delay: 0.45s;
+}
+
+.animation-delay-900 {
+  animation-delay: 0.5s;
+}
+
+.animation-delay-1000 {
+  animation-delay: 0.55s;
+}
+
+.animation-delay-1200 {
+  animation-delay: 0.6s;
+}
+
+.animation-delay-1400 {
+  animation-delay: 0.65s;
+}
+
+.animation-delay-1600 {
+  animation-delay: 0.7s;
+}
+
+.animation-delay-1700 {
+  animation-delay: 0.75s;
+}
+
+.animation-delay-2000 {
+  animation-delay: 0.8s;
+}
+
+.animation-delay-2300 {
+  animation-delay: 0.85s;
+}
+
+/* Custom Nunito Font Classes */
+.font-nunito {
+  font-family: var(--font-nunito), system-ui, sans-serif;
+}
+
+.font-nunito-sans {
+  font-family: var(--font-nunito-sans), system-ui, sans-serif;
+}
+
+/* Replace old font classes with Nunito variants */
+.font-instrument {
+  font-family: var(--font-nunito), system-ui, sans-serif;
+}
+
+.font-poppins {
+  font-family: var(--font-nunito-sans), system-ui, sans-serif;
+}
