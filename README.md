@@ -16,7 +16,7 @@ This instance is specifically configured for USSC with dedicated Firebase creden
 
 For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
-## Version 1.1.0
+## Version 1.2.1
 
 The latest release introduces significant UI/UX improvements, enhanced responsiveness, and better user experience across all devices. Key improvements include:
 
@@ -216,7 +216,7 @@ To obtain the required Firebase credentials for the USSC instance:
 
 ## Technology Stack
 
-- **Frontend Framework**: Next.js 14 (App Router)
+- **Frontend Framework**: Next.js 16 (App Router)
 - **UI Component Library**: ShadcnUI with Tailwind CSS
 - **State Management**: React Context API
 - **Authentication**: Firebase Authentication
