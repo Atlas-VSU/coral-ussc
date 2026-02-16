@@ -12,9 +12,7 @@ Built with responsiveness in mind, CORAL works seamlessly across desktop and mob
 
 ## Deployment
 
-This instance is specifically configured for USSC with dedicated Firebase credentials and database configuration.
-
-For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
+A live demo of the system is available at [https://coral-ussc.vercel.app/]
 
 ## Version 1.2.1
 
