@@ -201,7 +201,7 @@ const validateMemberData = async (data: RawMemberData): Promise<string[]> => {
     errors.push("Faculty Name is required");
   } else {
     const facultyName = data.facultyId.trim(); // facultyId contains the full name
-    if (!referenceData.faculties.has(facultyName)  ) {
+    if (!referenceData.faculties.has(facultyName)) {
       const availableFaculties = Array.from(
         referenceData.faculties.keys()
       ).join(", ");
