@@ -82,9 +82,6 @@ export function useStudentSearch(
           return { status: "not-found" as const, student: null };
         }
 
-        console.log(currentUserData)
-        console.log(student)
-
         // Logic A: Check Organization Mismatch
         if (currentUserData && currentUserData.accessLevel == 1 && currentUserData.programId != student.programId) {
           if (showToasts) toast.success("Student found however belongs to different organization");

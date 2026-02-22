@@ -70,6 +70,10 @@ export default function MembersPage() {
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedMember, setSelectedMember] = useState<MemberData | null>(null);
+  const [importProgress, setImportProgress] = useState(0);
+  const [currentBatch, setCurrentBatch] = useState(0);
+  const [totalBatches, setTotalBatches] = useState(0);
+  const [totalStudents, setTotalStudents] = useState(0);
 
   const handleAddMember = () => {
     setSelectedMember(null);
@@ -134,7 +138,12 @@ export default function MembersPage() {
   const handleBulkImport = async (file: File) => {
     setIsImporting(true);
     try {
-      const result = (await processFileForBulkImport(file)) as BulkImportResult;
+      const result = (await processFileForBulkImport(file, (progress) => {
+        setImportProgress((progress.processedCount / progress.totalCount) * 100);
+        setCurrentBatch(progress.currentBatch);
+        setTotalBatches(progress.totalBatches);
+        setTotalStudents(progress.totalCount);
+      })) as BulkImportResult;
       setBulkImportResult(result);
       setIsBulkImportOpen(false);
       setIsBulkImportOpenResult(true);
@@ -288,6 +297,11 @@ export default function MembersPage() {
           onOpenChange={setIsBulkImportOpen}
           onImport={handleBulkImport}
           isImporting={isImporting}
+          totalStudents={totalStudents}
+          batchSize={400}
+          importProgress={importProgress}
+          currentBatch={currentBatch}
+          totalBatches={totalBatches}
         />
 
         <BulkImportResultModal

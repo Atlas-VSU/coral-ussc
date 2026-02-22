@@ -171,7 +171,7 @@ const validateMemberData = async (data: RawMemberData): Promise<string[]> => {
     errors.push("Student ID is required");
   } else {
     // Validate Student ID format: XX-1-XXXXX (where X can be any number from 0-9)
-    const studentIdRegex = /^[0-9]{2}-1-[0-9]{5}$/;
+    const studentIdRegex = /^[0-9]{2}-[0-9]{1}-[0-9]{5}$/;
     if (!studentIdRegex.test(data.studentId.trim())) {
       errors.push("Student ID must be in format XX-1-XXXXX (where X is a number from 0-9)");
     }
@@ -240,7 +240,7 @@ const validateMemberData = async (data: RawMemberData): Promise<string[]> => {
       typeof data.yearLevel === "string"
         ? parseInt(data.yearLevel.trim())
         : Number(data.yearLevel);
-    if (isNaN(yearLevel) || yearLevel < 1) {
+    if (yearLevel < 1) {
       errors.push("Year level must be a positive integer");
     }
   }
@@ -590,15 +590,23 @@ export const bulkImportUsers = async (
   }
 };
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 /**
  * Main function to handle file upload and bulk import
  * This is the primary entry point for the bulk import feature
- * Validates file type, reads content, parses CSV, and processes the import
+ * Validates file type, reads content, parses CSV, and processes the import in chunks
  * @param file - The uploaded File object from the user
  * @returns Complete import result with success status and detailed feedback
  */
 export const processFileForBulkImport = async (
-  file: File
+  file: File,
+  onProgress?: (progress: {
+    processedCount: number;
+    totalCount: number;
+    currentBatch: number;
+    totalBatches: number;
+  }) => void
 ): Promise<BulkImportResult> => {
   try {
     // Validate file type to ensure it's a CSV file
@@ -620,8 +628,59 @@ export const processFileForBulkImport = async (
     // Parse CSV content into structured data
     const memberData = parseCSVContent(fileContent);
 
-    // Process the bulk import with parsed data
-    return await bulkImportUsers(memberData);
+    // --- BATCHING LOGIC IMPLEMENTATION ---
+    // Safe chunk size below Firestore's 500 operation limit
+    const BATCH_SIZE = 400; 
+    
+    // Initialize an object to accumulate results across all batches
+    const aggregatedResult: BulkImportResult = {
+      success: true,
+      totalProcessed: 0,
+      successfulImports: 0,
+      errors: [],
+      duplicates: [],
+    };
+
+    // Process data in chunks sequentially to prevent network/QUIC errors
+    for (let i = 0; i < memberData.length; i += BATCH_SIZE) {
+      const chunk = memberData.slice(i, i + BATCH_SIZE);
+      
+      // Await each batch so we don't overwhelm the Firestore WebChannel connection
+      const chunkResult = await bulkImportUsers(chunk);
+
+      // Aggregate the results from the current chunk
+      aggregatedResult.totalProcessed += chunkResult.totalProcessed;
+      aggregatedResult.successfulImports += chunkResult.successfulImports;
+      
+      if (chunkResult.errors) {
+        aggregatedResult.errors.push(...chunkResult.errors);
+      }
+      if (chunkResult.duplicates) {
+        aggregatedResult.duplicates.push(...chunkResult.duplicates);
+      }
+
+      // Report progress to the UI
+      if (onProgress) {
+        onProgress({
+          processedCount: aggregatedResult.totalProcessed,
+          totalCount: memberData.length,
+          currentBatch: Math.floor(i / BATCH_SIZE) + 1,
+          totalBatches: Math.ceil(memberData.length / BATCH_SIZE),
+        });
+      }
+
+      // Add a small delay between batches to prevent overwhelming the connection
+      if (i + BATCH_SIZE < memberData.length) {
+        console.log(`Batch finished. Pausing for network cooldown... (${i + chunk.length}/${memberData.length})`);
+        await sleep(1500);
+      }
+    }
+
+    // If there were any errors across any batch, mark the overall process as failed
+    aggregatedResult.success = aggregatedResult.errors.length === 0;
+
+    return aggregatedResult;
+
   } catch (error) {
     // Return error result if any step fails
     return {
