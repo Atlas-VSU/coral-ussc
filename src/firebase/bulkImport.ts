@@ -508,7 +508,6 @@ export const processFileForBulkImport = async (
       }
 
       if (i + BATCH_SIZE < memberData.length) {
-        console.log(`Batch finished. Pausing for network cooldown... (${i + chunk.length}/${memberData.length})`);
         await sleep(1500);
       }
     }
