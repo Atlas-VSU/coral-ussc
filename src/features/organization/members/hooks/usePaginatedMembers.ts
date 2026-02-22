@@ -87,6 +87,7 @@ export function usePaginatedMembers() {
             id: item.id || "",
             name: item.name || `Faculty ${item.id || "Unknown"}`,
             code: item.code || "",
+            acronym: item.acronym || "",
           }))
         : [];
 
@@ -95,6 +96,8 @@ export function usePaginatedMembers() {
             id: item.id || "",
             name: item.name || `Program ${item.id || "Unknown"}`,
             code: item.code || "",
+            acronym: item.acronym || "",
+            shortName: item.shortName || "",
           }))
         : [];
 
