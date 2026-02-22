@@ -54,10 +54,7 @@ export function BulkImportDialog({
       const uploadedFile = e.dataTransfer.files[0];
       if (
         uploadedFile.type === "text/csv" ||
-        uploadedFile.name.endsWith(".csv") ||
-        uploadedFile.type ===
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-        uploadedFile.name.endsWith(".xlsx")
+        uploadedFile.name.endsWith(".csv")
       ) {
         setFile(uploadedFile);
       }
@@ -69,10 +66,7 @@ export function BulkImportDialog({
       const uploadedFile = e.target.files[0];
       if (
         uploadedFile.type === "text/csv" ||
-        uploadedFile.name.endsWith(".csv") ||
-        uploadedFile.type ===
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-        uploadedFile.name.endsWith(".xlsx")
+        uploadedFile.name.endsWith(".csv")
       ) {
         setFile(uploadedFile);
       }
@@ -275,7 +269,7 @@ export function BulkImportDialog({
               type="file"
               id="file-upload"
               className="hidden"
-              accept=".csv,.xlsx"
+              accept=".csv"
               onChange={handleFileChange}
               disabled={isImporting}
             />
@@ -308,7 +302,7 @@ export function BulkImportDialog({
                 <Upload className="h-8 w-8 text-muted-foreground mb-2" />
                 <p className="font-medium">Drag & drop your file here</p>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Supported formats: CSV, Excel (.xlsx)
+                  Supported formats: CSV
                 </p>
                 <Label htmlFor="file-upload" asChild>
                   <Button

@@ -167,6 +167,43 @@ export const getTemplateColumnInfo = (): CSVTemplateColumn[] => {
 };
 
 /**
+ * Parses a single CSV row, handling quoted values and commas within quotes.
+ * Follows RFC 4180 principles.
+ * @param row The raw CSV line string.
+ * @returns An array of parsed field strings.
+ */
+export const parseCSVRow = (row: string): string[] => {
+  const result: string[] = [];
+  let currentField = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < row.length; i++) {
+    const char = row[i];
+    const nextChar = row[i + 1];
+
+    if (char === '"' && inQuotes && nextChar === '"') {
+      // Handled escaped double quotes ("")
+      currentField += '"';
+      i++; // Skip the next quote
+    } else if (char === '"') {
+      // Toggle quote state
+      inQuotes = !inQuotes;
+    } else if (char === "," && !inQuotes) {
+      // Field boundary
+      result.push(currentField.trim());
+      currentField = "";
+    } else {
+      currentField += char;
+    }
+  }
+
+  // Add the last field
+  result.push(currentField.trim());
+
+  return result;
+};
+
+/**
  * Validates an array of headers from an uploaded CSV file.
  * @param uploadedHeaders - An array of header strings from the user's file.
  * @returns An object detailing the validity and any missing or extra headers.

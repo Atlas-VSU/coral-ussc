@@ -44,6 +44,7 @@ import {
 } from "@/features/organization/members/types";
 import { getFaculties } from "./faculties";
 import { getPrograms } from "./programs";
+import { parseCSVRow } from "@/features/organization/members/csv.utils";
 
 // Define the collection reference for reuse across all functions
 // This prevents creating the collection reference multiple times
@@ -364,11 +365,8 @@ export const parseCSVContent = (csvContent: string): RawMemberData[] => {
     );
   }
 
-  // Get headers and normalize them (remove quotes, trim whitespace)
-  // This handles CSV files that may have quoted headers
-  const headers = lines[0]
-    .split(",")
-    .map((header) => header.trim().replace(/^["']|["']$/g, ""));
+  // Get headers and normalize them
+  const headers = parseCSVRow(lines[0]);
 
   // Validate that all required headers are present
   const requiredHeaders = [
@@ -393,10 +391,8 @@ export const parseCSVContent = (csvContent: string): RawMemberData[] => {
     // Skip completely empty lines
     if (lines[i].trim() === "") continue;
 
-    // Split row into values and clean them (remove quotes, trim)
-    const values = lines[i]
-      .split(",")
-      .map((value) => value.trim().replace(/^["']|["']$/g, ""));
+    // Split row into values
+    const values = parseCSVRow(lines[i]);
 
     // Validate that row has correct number of columns
     if (values.length !== headers.length) {
@@ -605,7 +601,7 @@ export const processFileForBulkImport = async (
 ): Promise<BulkImportResult> => {
   try {
     // Validate file type to ensure it's a CSV file
-    const validTypes = ["text/csv", "application/vnd.ms-excel"];
+    const validTypes = ["text/csv"];
     const validExtensions = [".csv"];
 
     // Check both MIME type and file extension for better compatibility
