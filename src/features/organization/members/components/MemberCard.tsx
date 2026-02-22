@@ -28,7 +28,7 @@ export function MemberCard({
 }: MemberCardProps) {
   const getProgramName = (programId: string) => {
     const program = programs.find((p) => p.id === programId);
-    return program ? program.name : "N/A";
+    return program ? program.shortName : "N/A";
   };
 
   const getFacultyName = (facultyId: string) => {

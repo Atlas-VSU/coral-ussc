@@ -143,17 +143,17 @@ export function BulkImportDialog({
                     { name: "email", desc: "Email address", required: true },
                     {
                       name: "programId",
-                      desc: "Program ID (see list of programs)",
+                      desc: "Program Name (see list of programs)",
                       required: true,
                     },
                     {
                       name: "facultyId",
-                      desc: "Faculty ID (see list of faculties)",
+                      desc: "Faculty Name (see list of faculties)",
                       required: true,
                     },
                     {
                       name: "yearLevel",
-                      desc: "Year level (1-5, optional)",
+                      desc: "Year level (1-6, optional)",
                       required: false,
                     },
                   ].map((field) => (
@@ -216,21 +216,21 @@ export function BulkImportDialog({
                     </TableRow>
                     <TableRow>
                       <TableCell>programId</TableCell>
-                      <TableCell>Program ID (see list of programs)</TableCell>
+                      <TableCell>Program Name (see list of programs)</TableCell>
                       <TableCell className="text-center">
                         <CheckCircle2 className="h-3 w-3 text-green-600 inline" />
                       </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>facultyId</TableCell>
-                      <TableCell>Faculty ID (see list of faculties)</TableCell>
+                      <TableCell>Faculty Name (see list of faculties)</TableCell>
                       <TableCell className="text-center">
                         <CheckCircle2 className="h-3 w-3 text-green-600 inline" />
                       </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>yearLevel</TableCell>
-                      <TableCell>Year level (1-5, optional)</TableCell>
+                      <TableCell>Year level (1-6, optional)</TableCell>
                       <TableCell></TableCell>
                     </TableRow>
                   </TableBody>

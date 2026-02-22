@@ -90,6 +90,7 @@ const loadReferenceData = async (): Promise<ReferenceDataCache> => {
       (facultiesData as Faculty[]).forEach((faculty) => {
         // Map by the name field (e.g., "Faculty of Computing", "Faculty of Engineering")
         facultiesMap.set(faculty.name, faculty);
+        facultiesMap.set(faculty.acronym, faculty);
       });
     }
 
@@ -197,10 +198,10 @@ const validateMemberData = async (data: RawMemberData): Promise<string[]> => {
 
   // Faculty name validation: check if required and exists in reference data
   if (!data.facultyId || data.facultyId.trim() === "") {
-    errors.push("Faculty ID is required");
+    errors.push("Faculty Name is required");
   } else {
     const facultyName = data.facultyId.trim(); // facultyId contains the full name
-    if (!referenceData.faculties.has(facultyName)) {
+    if (!referenceData.faculties.has(facultyName)  ) {
       const availableFaculties = Array.from(
         referenceData.faculties.keys()
       ).join(", ");
