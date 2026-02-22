@@ -56,10 +56,7 @@ export const useAttendeesList = (
 
       // Handle direct page jumps (e.g., from page 1 to 5)
       if (directPageJump !== null && directPageJump > cursors.length) {
-        console.log(
-          `🔄 Direct jump to page ${directPageJump} - need to fetch intermediate cursors`
-        );
-
+       
         try {
           // Calculate how many records we need to skip to get to the right page
           const recordsToSkip = (directPageJump - 1) * PAGE_SIZE;
@@ -144,7 +141,6 @@ export const useAttendeesList = (
 
       try {
         let result;
-
         if (forceRefresh) {
           // Skip cache on force refresh
           result = await getAttendanceRecord(

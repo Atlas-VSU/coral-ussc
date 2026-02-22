@@ -114,10 +114,21 @@ export const usePagination = (
     [getCursors, getCursorStorage]
   );
 
+  // Set total pages and sync with storage
+  const handleSetTotalPages = useCallback(
+    (value: number) => {
+      setTotalPages(value);
+      const storage = getCursorStorage();
+      storage.totalPages = value;
+      storage.lastUpdated = Date.now();
+    },
+    [getCursorStorage]
+  );
+
   return {
     currentPage,
     totalPages,
-    setTotalPages,
+    setTotalPages: handleSetTotalPages,
     directPageJump,
     setDirectPageJump,
     getFilterKey,

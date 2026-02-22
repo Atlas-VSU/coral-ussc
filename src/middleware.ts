@@ -13,9 +13,7 @@ export function middleware(request: NextRequest) {
   const isAuthenticated = !!token;
 
   if(isAuthenticated && publicRoutes.includes(pathname)) {
-    console.log(userRole)
     if (userRole === "super-admin") {
-      console.log("here")
       return NextResponse.redirect(new URL("/admin-dashboard", request.url));
     } else {
       return NextResponse.redirect(new URL("/org-dashboard", request.url));

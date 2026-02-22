@@ -24,8 +24,8 @@ export const useEventFilters = () => {
     setSortOption({ field, direction });
   }, []);
 
-  const handleProgramFilter = useCallback((program: string | undefined) => {
-    setProgramFilter(program || null);
+  const handleProgramFilter = useCallback((program: string | "") => {
+    setProgramFilter(program || "");
   }, []);
 
   return {

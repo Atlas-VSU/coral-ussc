@@ -65,7 +65,7 @@ export const useEventAttendees = (eventId: string) => {
   );
 
   // Modified handler to reset pagination when changing filters
-  const handleFilterProgramChange = (program: string | undefined) => {
+  const handleFilterProgramChange = (program: string | "") => {
     handleProgramFilter(program);
     resetPagination(); // Reset pagination when filters change
   };

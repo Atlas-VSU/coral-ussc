@@ -25,10 +25,7 @@ import {
 } from "@/firebase";
 import { toast } from "sonner";
 import { BulkImportResultModal } from "@/features/organization/members/components/BulkImportResultModal";
-import { MembersSearchResults } from "@/features/organization/members/components/MembersSearchResults";
 import { usePaginatedMembers } from "@/features/organization/members/hooks/usePaginatedMembers";
-// import { CheckCircleIcon } from "lucide-react";
-// import { debugCache } from "@/features/organization/members/services/membersCache";
 
 export default function MembersPage() {
   const {
@@ -44,10 +41,6 @@ export default function MembersPage() {
     isLoading,
     isRefreshing,
     isSearchActive,
-    isSearching,
-    searchResults,
-    // dataSource,
-    // cacheStatus,
     performSearch,
     handleSearch,
     handleProgramFilter,
@@ -55,8 +48,6 @@ export default function MembersPage() {
     handlePageChange,
     handleViewModeChange,
     refreshData,
-    clearSearch,
-    // clearCache,
   } = usePaginatedMembers();
 
   // Local UI state
@@ -70,6 +61,10 @@ export default function MembersPage() {
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedMember, setSelectedMember] = useState<MemberData | null>(null);
+  const [importProgress, setImportProgress] = useState(0);
+  const [currentBatch, setCurrentBatch] = useState(0);
+  const [totalBatches, setTotalBatches] = useState(0);
+  const [totalStudents, setTotalStudents] = useState(0);
 
   const handleAddMember = () => {
     setSelectedMember(null);
@@ -92,7 +87,7 @@ export default function MembersPage() {
       try {
         await deleteUser(selectedMember.id);
         toast.success("Member deleted successfully");
-        refreshData(); // Refresh data after deletion
+        refreshData(); 
       } catch (error) {
         toast.error("Failed to delete member");
         console.error(error);
@@ -118,7 +113,7 @@ export default function MembersPage() {
         await addUser(data);
         toast.success("Member added successfully");
       }
-      refreshData(); // Refresh data after update
+      refreshData();
     } catch (error) {
       toast.error(
         selectedMember ? "Failed to update member" : "Failed to add member"
@@ -134,23 +129,31 @@ export default function MembersPage() {
   const handleBulkImport = async (file: File) => {
     setIsImporting(true);
     try {
-      const result = (await processFileForBulkImport(file)) as BulkImportResult;
+      const result = (await processFileForBulkImport(file, (progress) => {
+        setImportProgress((progress.processedCount / progress.totalCount) * 100);
+        setCurrentBatch(progress.currentBatch);
+        setTotalBatches(progress.totalBatches);
+        setTotalStudents(progress.totalCount);
+      })) as BulkImportResult;
       setBulkImportResult(result);
       setIsBulkImportOpen(false);
       setIsBulkImportOpenResult(true);
-      refreshData(); // Refresh data after bulk import
+      refreshData();
     } catch (error) {
       console.error("Bulk import failed:", error);
       toast.error("Failed to process the file. Please try again.");
     } finally {
       setIsImporting(false);
+      setImportProgress(0);
+      setCurrentBatch(0);
+      setTotalBatches(0);
+      setTotalStudents(0);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
         <div className="mb-8 animate-fade-in-up animation-delay-200">
           <MembersHeader
             onSearch={handleSearch}
@@ -162,26 +165,6 @@ export default function MembersPage() {
           />
         </div>
 
-        {/* Cache indicator */}
-        {/* {!isLoading &&
-          !isRefreshing &&
-          dataSource === "cache" &&
-          cacheStatus.isFromCache && (
-            <div className="mb-4 flex items-center justify-between">
-              <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
-                <CheckCircleIcon className="h-3 w-3 mr-1" />
-                Using cached data ({cacheStatus.ageText})
-              </span>
-              <button
-                onClick={refreshData}
-                className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Refresh
-              </button>
-            </div>
-          )} */}
-
-        {/* Filters Section */}
         <div className="mb-6 animate-fade-in-up animation-delay-400">
           <MembersFilters
             programs={programs}
@@ -196,7 +179,6 @@ export default function MembersPage() {
           />
         </div>
 
-        {/* Main Content */}
         <div className="space-y-6 animate-fade-in-up animation-delay-600">
           {isLoading ? (
             <MembersSkeleton viewMode={viewMode} />
@@ -219,7 +201,6 @@ export default function MembersPage() {
           )}
         </div>
 
-        {/* Pagination */}
         {!isLoading && !isRefreshing && !isSearchActive && members.length > 0 && totalPages > 1 && (
           <div className="mt-8 animate-fade-in-up animation-delay-800">
             <MembersPagination
@@ -230,42 +211,6 @@ export default function MembersPage() {
           </div>
         )}
 
-        {/* Debug tools (only in development)
-        {process.env.NODE_ENV === "development" && (
-          <div className="mt-8 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-            <h3 className="text-sm font-medium mb-2">Debug Tools</h3>
-            <div className="flex flex-wrap gap-2 mb-2">
-              <button
-                onClick={clearCache}
-                className="text-xs px-2 py-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded"
-              >
-                Clear Cache
-              </button>
-              <button
-                onClick={() => {
-                  const stats = debugCache.getCacheSize();
-                  toast.info(`Cache size: ${stats} KB`);
-                  console.log({
-                    cacheSize: stats,
-                    entries: debugCache.getEntryCount(),
-                    keys: debugCache.getAllKeys(),
-                  });
-                }}
-                className="text-xs px-2 py-1 bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded"
-              >
-                Show Cache Stats
-              </button>
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              {dataSource === "cache"
-                ? "Using cached data"
-                : "Using server data"}
-              {cacheStatus.isFromCache && ` (${cacheStatus.ageText})`}
-            </div>
-          </div>
-        )} */}
-
-        {/* Modals and Dialogs */}
         <MemberForm
           open={isFormOpen}
           onOpenChange={setIsFormOpen}
@@ -288,6 +233,11 @@ export default function MembersPage() {
           onOpenChange={setIsBulkImportOpen}
           onImport={handleBulkImport}
           isImporting={isImporting}
+          totalStudents={totalStudents}
+          batchSize={400}
+          importProgress={importProgress}
+          currentBatch={currentBatch}
+          totalBatches={totalBatches}
         />
 
         <BulkImportResultModal

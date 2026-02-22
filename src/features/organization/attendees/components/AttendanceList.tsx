@@ -77,8 +77,6 @@ const prefetchPrograms = async (programIds: string[]) => {
   if (uniqueIds.length === 0) return;
 
   try {
-    // Use our new batch function
-    console.log(`🔄 Prefetching ${uniqueIds.length} programs`);
     const programsMap = await batchGetPrograms(uniqueIds);
 
     // Update the local cache

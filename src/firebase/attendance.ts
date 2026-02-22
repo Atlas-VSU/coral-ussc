@@ -332,6 +332,10 @@ export const buildAttendanceQueryConstraints = (
     constraints.push(where("student.studentId", "in", limitedIds));
   }
 
+  if (programFilter) {
+    constraints.push(where("student.programId", "==", programFilter));
+  }
+
   return constraints;
 };
 export const getAttendanceRecord = async (

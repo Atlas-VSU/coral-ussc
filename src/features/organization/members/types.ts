@@ -16,6 +16,8 @@ export type Member = {
 export type Program = {
   id: string;
   name: string;
+  acronym: string;
+  shortName: string;
   facultyId?: string;
   code?: string; // Program code like "BSCS", "BSES", "BSCE"
 };
@@ -23,6 +25,7 @@ export type Program = {
 export type Faculty = {
   id: string;
   name: string;
+  acronym: string;
   code?: string; // Faculty code like "FC", "FFES", "FE"
 };
 
