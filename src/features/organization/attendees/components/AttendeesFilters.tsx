@@ -15,8 +15,8 @@ import { SearchParams } from "../types";
 
 interface AttendeesFiltersProps {
   onSearch: (params: SearchParams) => void;
-  onSortChange: (field: string, direction: "asc" | "desc") => void;
-  onProgramFilter: (programId: string | undefined) => void;
+  onSortChange: (value: string) => void;
+  onProgramFilter: (programId: string | "") => void;
 }
 
 export function AttendeesFilters({
@@ -27,6 +27,8 @@ export function AttendeesFilters({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState<"name" | "id">("name");
   const [programs, setPrograms] = useState<Program[]>([]);
+  const [sortValue, setSortValue] = useState("firstName-asc");
+  const [programValue, setProgramValue] = useState("all");
 
   useEffect(() => {
     const fetchPrograms = async () => {
@@ -37,8 +39,8 @@ export function AttendeesFilters({
   }, []);
 
   const handleSortChange = (value: string) => {
-    const [field, direction] = value.split("-");
-    onSortChange(field, direction as "asc" | "desc");
+    setSortValue(value);
+    onSortChange(value);
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -49,9 +51,11 @@ export function AttendeesFilters({
   const handleResetFilters = () => {
     setSearchQuery("");
     setSearchType("name");
+    setSortValue("firstName-asc");
+    setProgramValue("all");
     onSearch({ query: "", type: "name" });
-    onSortChange("firstName", "asc");
-    onProgramFilter(undefined);
+    onSortChange("firstName-asc");
+    onProgramFilter("");
   };
 
   const clearSearch = () => {
@@ -62,7 +66,7 @@ export function AttendeesFilters({
   return (
     <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
       <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-        <Select defaultValue="firstName-asc" onValueChange={handleSortChange}>
+        <Select value={sortValue} onValueChange={handleSortChange}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
@@ -77,9 +81,11 @@ export function AttendeesFilters({
         </Select>
 
         <Select
-          onValueChange={(value) =>
-            onProgramFilter(value === "all" ? undefined : value)
-          }
+          value={programValue}
+          onValueChange={(value) => {
+            setProgramValue(value);
+            onProgramFilter(value === "all" ? "" : value);
+          }}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filter by program" />
@@ -105,7 +111,7 @@ export function AttendeesFilters({
       >
         {/* Search Type Dropdown */}
         <Select
-          defaultValue="name"
+          value={searchType}
           onValueChange={(value) => setSearchType(value as "name" | "id")}
           disabled
         >

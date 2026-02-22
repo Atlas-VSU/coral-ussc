@@ -144,7 +144,6 @@ export const useAttendeesList = (
 
       try {
         let result;
-
         if (forceRefresh) {
           // Skip cache on force refresh
           result = await getAttendanceRecord(
