@@ -8,7 +8,7 @@ import { statusConfig } from "@/features/organization/fees/utils/statusConfig";
 import type { PaymentLog } from "@/features/organization/fees/types";
 import type { Member } from "@/features/organization/members/types";
 
-type Row = { student: Member; log?: PaymentLog; status: string };
+export type Row = { student: Partial<Member>; log?: PaymentLog; status: string };
 
 export function AllStudentsTable({
   rows,
@@ -17,7 +17,7 @@ export function AllStudentsTable({
 }: {
   rows: Row[];
   onViewDetails: (log: PaymentLog) => void;
-  onManualLog: (student: Member) => void;
+  onManualLog: (student: Partial<Member>) => void;
 }) {
   return (
     <div className="rounded-md border border-border">
@@ -34,13 +34,14 @@ export function AllStudentsTable({
         </TableHeader>
         <TableBody>
           {rows.map(({ student, log, status }) => {
+            console.log(student, log, status);
             const config = statusConfig[status] || statusConfig.unpaid;
             const Icon = config.icon;
             return (
-              <TableRow key={student.studentId}>
-                <TableCell className="text-xs font-mono text-muted-foreground">{student.studentId}</TableCell>
+              <TableRow key={student.studentId || student.id}>
+                <TableCell className="text-xs font-mono text-muted-foreground">{student.studentId || "—"}</TableCell>
                 <TableCell className="text-sm font-medium text-foreground">
-                  {student.firstName} {student.lastName}
+                  {student.firstName || ""} {student.lastName || ""}
                 </TableCell>
                 <TableCell>
                   <Badge variant={config.variant} className="flex items-center gap-1 w-fit text-xs">
@@ -85,7 +86,7 @@ export function AllStudentsCards({
 }: {
   rows: Row[];
   onViewDetails: (log: PaymentLog) => void;
-  onManualLog: (student: Member) => void;
+  onManualLog: (student: Partial<Member>) => void;
 }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -93,14 +94,14 @@ export function AllStudentsCards({
         const config = statusConfig[status] || statusConfig.unpaid;
         const Icon = config.icon;
         return (
-          <Card key={student.studentId} className="border-border">
+          <Card key={student.studentId || student.id} className="border-border">
             <CardContent className="pt-4 pb-3">
               <div className="flex items-start justify-between gap-2 mb-3">
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    {student.firstName} {student.lastName}
+                    {student.firstName || ""} {student.lastName || ""}
                   </p>
-                  <p className="text-xs font-mono text-muted-foreground">{student.studentId}</p>
+                  <p className="text-xs font-mono text-muted-foreground">{student.studentId || "—"}</p>
                 </div>
                 <Badge variant={config.variant} className="flex items-center gap-1 text-xs shrink-0">
                   <Icon className="size-3" /> {config.label}

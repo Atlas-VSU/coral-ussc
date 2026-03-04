@@ -21,6 +21,11 @@ export const statusConfig: Record<string, { label: string; variant: "default" | 
     variant: "outline",
     icon: AlertCircle,
   },
+  "paid": {
+    label: "Paid",
+    variant: "default",
+    icon: CheckCircle2,
+  },
 };
 
 export const paymentMethodLabels: Record<string, string> = {

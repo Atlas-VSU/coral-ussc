@@ -17,68 +17,64 @@ import { ManualPaymentDialog } from "@/features/organization/fees/components/Man
 import { PaymentDetailDialog } from "@/features/organization/fees/components/PaymentDetailDialog";
 import { RejectDialog } from "@/features/organization/fees/components/RejectDialog";
 import type { Fee, PaymentLog } from "@/features/organization/fees/types";
-import type { Member } from "@/features/organization/members/types";
+import { StudentFeeRow } from "../hooks/useFeesRoster";
 
 const ITEMS_PER_PAGE = 10;
 
 export function FeesRosterContent({
   fee,
-  logs: initialLogs,
-  students,
+  studentRows,
+  onApprovePayment,
+  onRejectPayment,
+  onManualPaymentAdded
 }: {
   fee: Fee;
-  logs: PaymentLog[];
-  students: Member[];
+  studentRows: StudentFeeRow[];
+  onApprovePayment: (logId: string) => Promise<void>;
+  onRejectPayment: (logId: string, reason: string) => Promise<void>;
+  onManualPaymentAdded: (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", ref?: string) => Promise<void>;
 }) {
   const router = useRouter();
-  const [logs, setLogs] = useState(initialLogs);
+  console.log(studentRows, "studentRows");
+  const allLogs = useMemo(() => studentRows.flatMap(row => row.logs), [studentRows]);
+  console.log(allLogs, "logsz");
+
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
   const [dataView, setDataView] = useState<"submissions" | "all-students">("submissions");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Dialog states
   const [selectedLog, setSelectedLog] = useState<PaymentLog | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
-  const [manualLogTarget, setManualLogTarget] = useState<Member | null>(null);
   const [manualLogOpen, setManualLogOpen] = useState(false);
+  
+  // Using this single state to track the active row for manual payments
+  const [studentRowFee, setStudentRowFee] = useState<StudentFeeRow | null>(null);
 
-  // Derive all student rows (unified view)
   const allStudentRows = useMemo(() => {
-    return students
-      .map((s) => {
-        // Link log to student via userId (which is found in the parent Fee doc)
-        const log = logs.find((l) => (l as any).userId === s.id);
-        return {
-          student: s,
-          log,
-          status: log ? log.status : "unpaid",
-        };
-      });
-  }, [students, logs]);
+    return studentRows.map((s) => {
+      const latestLog = s.logs.length > 0 ? s.logs[s.logs.length - 1] : null;
+      return {
+        student: s.memberInfo,
+        log: latestLog,
+        status: s.status || "unpaid", 
+      };
+    });
+  }, [studentRows]);
 
   // Filtered data
   const filteredLogs = useMemo(() => {
-    return logs.filter((l) => {
-      // Find the student associated with this log to get their name
-      const student = students.find(s => s.studentId === l.id); // This might be wrong if l.id is log id. 
-      // Actually, logs in this context are fetched per student in the hook.
-      // In FeesRosterContent, we have students (Member[]) and logs (PaymentLog[]).
-      // We need a way to link them.
-      
-      const matchesStatus = filterStatus === "all" || l.status === filterStatus;
-      return matchesStatus; // Search is mostly handled in AllStudentsView
-    });
-  }, [logs, filterStatus]);
+    return allLogs.filter((l) => filterStatus === "all" || l.status === filterStatus);
+  }, [allLogs, filterStatus]);
 
   const filteredRows = useMemo(() => {
     return allStudentRows.filter((r) => {
       const matchesSearch =
-        r.student.firstName.toLowerCase().includes(search.toLowerCase()) ||
-        r.student.lastName.toLowerCase().includes(search.toLowerCase()) ||
+        r.student.firstName!.toLowerCase().includes(search.toLowerCase()) ||
+        r.student.lastName!.toLowerCase().includes(search.toLowerCase()) ||
         (r.student.studentId || "").toLowerCase().includes(search.toLowerCase());
       const matchesStatus = filterStatus === "all" || r.status === filterStatus;
       return matchesSearch && matchesStatus;
@@ -100,43 +96,30 @@ export function FeesRosterContent({
 
   // Stats
   const stats = {
-    pending: logs.filter((l) => l.status === "pending_verification").length,
-    verified: logs.filter((l) => l.status === "verified").length,
-    rejected: logs.filter((l) => l.status === "rejected").length,
+    pending: allLogs.filter((l) => l.status === "pending_verification").length,
+    verified: allLogs.filter((l) => l.status === "verified").length,
+    rejected: allLogs.filter((l) => l.status === "rejected").length,
     unpaid: allStudentRows.filter((r) => r.status === "unpaid").length,
   };
 
-  // Handlers
-  const handleApprove = (id: string) => {
-    setLogs((prev) =>
-      prev.map((l) =>
-        l.id === id
-          ? {
-              ...l,
-              status: "verified",
-              verified_by: "Admin",
-              verified_at: new Date() as any, // Should ideally be Firestore Timestamp.now()
-            }
-          : l
-      )
-    );
+  const handleApprove = async (id: string) => {
+    await onApprovePayment(id);
     setDetailOpen(false);
     setSelectedLog(null);
   };
 
-  const handleReject = (id: string) => {
+  const handleReject = async (id: string) => {
     if (!rejectionReason.trim()) return;
-    setLogs((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, status: "rejected", rejection_reason: rejectionReason } : l))
-    );
+    await onRejectPayment(id, rejectionReason);
     setRejectOpen(false);
     setDetailOpen(false);
     setSelectedLog(null);
     setRejectionReason("");
   };
 
-  const addManualLog = (newLog: PaymentLog) => {
-    setLogs((prev) => [...prev, newLog]);
+  const addManualLog = async (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", ref?: string) => {
+    await onManualPaymentAdded(feeId, amount, method, ref);
+    setManualLogOpen(false); // Close dialog after successful save
   };
 
   return (
@@ -215,14 +198,16 @@ export function FeesRosterContent({
             />
           ) : (
             <AllStudentsView
-              rows={paginatedRows}
+              rows={paginatedRows as any} 
               viewMode={viewMode}
               onViewDetails={(log) => {
                 setSelectedLog(log);
                 setDetailOpen(true);
               }}
               onManualLog={(student) => {
-                setManualLogTarget(student);
+                // MATCH THE CLICKED STUDENT TO THEIR FULL DATABASE ROW
+                const matchedRow = studentRows.find(row => row.memberInfo.id === student.id);
+                setStudentRowFee(matchedRow || null);
                 setManualLogOpen(true);
               }}
             />
@@ -236,15 +221,15 @@ export function FeesRosterContent({
           />
         </CardContent>
       </Card>
-
+        console.log(studentRows)
       {/* Dialogs */}
       <ManualPaymentDialog
         fee={fee}
-        student={manualLogTarget}
+        student={studentRows.find(row => row.memberInfo.id === studentRowFee?.memberInfo.id) || null} // Typo fixed here
         open={manualLogOpen}
         onOpenChange={(open) => {
           setManualLogOpen(open);
-          if (!open) setManualLogTarget(null);
+          if (!open) setStudentRowFee(null); // Clear the row data when dialog closes
         }}
         onSuccess={addManualLog}
       />
@@ -253,7 +238,7 @@ export function FeesRosterContent({
         log={selectedLog}
         open={detailOpen}
         onOpenChange={setDetailOpen}
-        onApprove={handleApprove}
+        onApprove={() => handleApprove(selectedLog!.id)}
         onReject={() => {
           setDetailOpen(false);
           setRejectOpen(true);
@@ -265,7 +250,7 @@ export function FeesRosterContent({
         onOpenChange={setRejectOpen}
         rejectionReason={rejectionReason}
         onReasonChange={setRejectionReason}
-        onConfirm={handleReject}
+        onConfirm={() => handleReject(selectedLog!.id)}
       />
     </div>
   );

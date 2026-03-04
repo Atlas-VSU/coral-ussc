@@ -5,10 +5,17 @@ import { Member } from "../../members/types";
 
 export type BaseFeeData = Partial<Fee>;
 
+export interface StudentFeeRow extends Fee {
+    id: string; 
+    memberInfo: Partial<Member>;
+    logs: PaymentLog[];
+}
+
 export function useFeesRoster(title: string, academicYear: string) {
     const [fee, setFee] = useState<BaseFeeData | null>(null);
+    const [studentRows, setStudentRows] = useState<StudentFeeRow[]>([]);
     const [students, setStudents] = useState<Member[]>([]);
-    const [logs, setLogs] = useState<PaymentLog[]>([])
+    const [logs, setLogs] = useState<PaymentLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
@@ -20,11 +27,12 @@ export function useFeesRoster(title: string, academicYear: string) {
             setError(null);
 
             try {
-                const fetchedFees = await fetchFeeRoster(title, academicYear) as unknown as (Fee & { id: string })[];
+                const fetchedFees = await fetchFeeRoster(title, academicYear) as (Fee & { id: string })[];
                 
                 if (fetchedFees.length > 0) {
                     const referenceDoc = fetchedFees[0];
                     setFee({
+                        id: referenceDoc.id,
                         title: referenceDoc.title,
                         academicYear: referenceDoc.academicYear,
                         semester: referenceDoc.semester,
@@ -36,37 +44,42 @@ export function useFeesRoster(title: string, academicYear: string) {
                         orgId: referenceDoc.orgId
                     });
                     
-                    // Transform Fee documents to Member-like objects for the roster view
-                    // and fetch logs from subcollections
-                    const memberList: Member[] = fetchedFees.map(f => ({
-                        id: f.userId,
-                        studentId: f.studentId,
-                        firstName: f.userName.split(' ')[0] || "",
-                        lastName: f.userName.split(' ').slice(1).join(' ') || "",
-                        status: f.status === "unpaid" ? "pending" : "approved", // Map fee status to member status loosely
-                        role: "student",
-                        email: "", // Not available in fee doc
-                        programId: "", // Not available in fee doc
-                    } as unknown as Member));
-
-                    setStudents(memberList);
-
-                    // Fetch all logs in parallel and attach student info from parent fee
-                    const allLogsPromises = fetchedFees.map(async (f) => {
-                        const feeLogs = await fetchPaymentLogs(f.id);
-                        return feeLogs.map(log => ({
+                    const connectedRowsPromises = fetchedFees.map(async (f) => {
+                        const feeLogs = await fetchPaymentLogs(f.id) as PaymentLog[];
+                        
+                        const enrichedLogs = feeLogs.map(log => ({
                             ...log,
+                            feeId: f.id,
                             userId: f.userId,
+                            status: f.status,
                             studentId: f.studentId,
                             studentName: f.userName,
                         }));
+
+                        const memberInfo: Partial<Member> = {
+                            id: f.userId,
+                            studentId: f.studentId,
+                            firstName: f.userName.split(' ')[0],
+                            lastName: f.userName.split(' ').slice(1).join(' '),
+                            role: "user",
+                        };
+
+                        return {
+                            ...f,
+                            memberInfo,
+                            logs: enrichedLogs
+                        } as StudentFeeRow;
                     });
-                    const logsArrays = await Promise.all(allLogsPromises);
-                    const flatLogs = logsArrays.flat() as unknown as any[];
-                    
-                    setLogs(flatLogs);
+
+                    const resolvedRows = await Promise.all(connectedRowsPromises);
+                    setStudentRows(resolvedRows);
+
+                    setStudents(resolvedRows.map(row => row.memberInfo as Member));
+                    setLogs(resolvedRows.flatMap(row => row.logs)); 
+
                 } else {
                     setFee(null);
+                    setStudentRows([]);
                     setStudents([]);
                     setLogs([]);
                 }
@@ -81,5 +94,12 @@ export function useFeesRoster(title: string, academicYear: string) {
         fetchFeesData();
     }, [title, academicYear]);
     
-    return { fee, logs, students, isLoading, error };
+    return { 
+        fee, 
+        studentRows, 
+        students, 
+        logs, 
+        isLoading, 
+        error 
+    };
 }

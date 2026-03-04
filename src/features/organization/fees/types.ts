@@ -1,6 +1,7 @@
 import { Timestamp } from "firebase/firestore"
 
 export type Fee = {
+    id: string,
     orgId: string,
     userId: string,
     userName: string, 
@@ -26,6 +27,7 @@ export type Fee = {
     updatedAt: Timestamp,
     isArchived: boolean
 }
+
 
 export type PaymentMethod = "gcash" | "cash" | "bank_transfer" | "waiver";
 export type PaymentStatus = "pending_verification" | "verified" | "rejected";

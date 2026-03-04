@@ -10,13 +10,15 @@ import type { Fee, PaymentLog, PaymentMethod } from "@/features/organization/fee
 import type { Member } from "@/features/organization/members/types";
 import { Timestamp } from "firebase/firestore";
 import { CreditCard, Landmark, Wallet } from "lucide-react";
+import { useFeeAction } from "../hooks/useFeeAction";
+import { StudentFeeRow } from "../hooks/useFeesRoster";
 
 interface ManualPaymentDialogProps {
   fee: Fee;
-  student: Member | null;
+  student: StudentFeeRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: (log: PaymentLog) => void;
+  onSuccess: (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", ref?: string) => Promise<void>;
 }
 
 export function ManualPaymentDialog({
@@ -35,29 +37,12 @@ export function ManualPaymentDialog({
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
-      const newLog: PaymentLog = {
-        id: Math.random().toString(36).substr(2, 9),
-        payment_number: Date.now(),
-        amount: parseFloat(amount),
-        payment_method: method,
-        gcash_reference: method === "gcash" ? ref : null,
-        status: "verified",
-        paid_at: Timestamp.now(),
-        verified_by: "Admin",
-        verified_at: Timestamp.now(),
-        created_at: Timestamp.now(),
-      };
-      
-      // Inject UI props
-      (newLog as any).studentId = student.studentId;
-      (newLog as any).studentName = `${student.firstName} ${student.lastName}`;
-
-      onSuccess(newLog);
-      setIsSubmitting(false);
-      onOpenChange(false);
-    }, 500);
+    console.log("Sd");
+    console.log(fee);
+    console.log(student)
+    await onSuccess(student.id, amount, method, ref);
+    setIsSubmitting(false);
+    onOpenChange(false);
   };
 
   return (
@@ -66,7 +51,7 @@ export function ManualPaymentDialog({
         <DialogHeader>
           <DialogTitle>Log Manual Payment</DialogTitle>
           <DialogDescription>
-            Record a cash or Gcash payment for {student.firstName} {student.lastName}
+            Record a cash or Gcash payment for {student.memberInfo.firstName || ""} {student.memberInfo.lastName || ""}
           </DialogDescription>
         </DialogHeader>
 
