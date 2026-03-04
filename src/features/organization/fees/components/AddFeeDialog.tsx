@@ -148,10 +148,10 @@ export function FeeGenerationDialog({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="membership">Membership</SelectItem>
-                          <SelectItem value="tuition">Tuition</SelectItem>
-                          <SelectItem value="laboratory">Laboratory</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
+                          <SelectItem value="semester-membership">Membership</SelectItem>
+                          <SelectItem value="event-fee">Event</SelectItem>
+                          <SelectItem value="charity-fee">Charity</SelectItem>
+                          <SelectItem value="organization-dues">Organization Dues</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

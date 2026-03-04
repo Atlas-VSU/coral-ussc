@@ -51,10 +51,8 @@ export function useFeeGeneration({ students, onSuccess, onOpenChange }: UseFeeGe
     try {
       const currentUser = await getCurrentUserData();
       if (!currentUser) throw new Error("User not authenticated.");
-
       await generateFeesForAllStudents(
         pendingFormData,
-        students,
         currentUser.uid
       );
 

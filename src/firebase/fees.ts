@@ -1,11 +1,14 @@
-import { Member } from "@/features/organization/members/types";
-import { collection, doc, Timestamp, writeBatch } from "firebase/firestore";
+import { Member, MemberData } from "@/features/organization/members/types";
+import { collection, doc, getDocs, orderBy, query, Timestamp, where, writeBatch } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { FeeGenerationSchema } from "@/features/organization/fees/utils/FeeGenerationSchema";
 import z from "zod";
+import { Fees } from "@/features/organization/fees/types";
+import { getAllStudents } from "./members";
 
 
-export const generateFeesForAllStudents = async (feeData: z.infer<typeof FeeGenerationSchema>, students: Member[], userId: string, eventId?: string) : Promise<void> => {
+export const generateFeesForAllStudents = async (feeData: z.infer<typeof FeeGenerationSchema>, userId: string, eventId?: string) : Promise<void> => {
+    const students = await getAllStudents() as unknown as MemberData[];
     if (students.length === 0) {
         throw new Error("No students provided");
     }
@@ -22,27 +25,49 @@ export const generateFeesForAllStudents = async (feeData: z.infer<typeof FeeGene
             const docRef = doc(feesCollection);
             batch.set(docRef, {
                 orgId: userId,
-                user_id: student.id || "",
-                user_name: `${student.firstName} ${student.lastName}`,
-                student_id: student.studentId,
-                fee_type: feeData.feeType,
+                userId: student.id || "",
+                userName: `${student.member.firstName} ${student.member.lastName}`,
+                studentId: student.member.studentId,
+                feeType: feeData.feeType,
                 title: feeData.title,
                 amount: feeData.amount,
-                paid_amount: 0,
+                paidAmount: 0,
                 balance: feeData.amount,
                 status: "unpaid",
-                academic_year: feeData.academicYear,
+                academicYear: feeData.academicYear,
                 semester: feeData.semester,
                 description: feeData.description,
-                event_id: eventId || null,
-                due_date: feeData.dueDate,
-                is_required_for_clearance: feeData.isRequiredForClearance,
-                created_by: userId,
-                created_at: now,
-                updated_at: now,
-                is_archived: false,
+                eventId: eventId || null,
+                dueDate: feeData.dueDate,
+                isRequiredForClearance: feeData.isRequiredForClearance,
+                createdBy: userId,
+                createdAt: now,
+                updatedAt: now,
+                isArchived: false,
             })
         })
         await batch.commit();
+    }
+}
+
+export const fetchFeesForOrg = async(orgId: string): Promise<Fees[]> => {
+    try {
+        const feesRef = collection(db, "fees");
+
+        const q = query(
+            feesRef,
+            where("orgId", "==", orgId),
+            where("isArchived", "==", false),
+            orderBy("createdAt", "desc")
+        )
+
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        })) as unknown as Fees[];
+    } catch (error) {
+        console.error("Error fetching fees for org:", error);
+        return [];
     }
 }
