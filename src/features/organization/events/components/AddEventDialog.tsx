@@ -34,15 +34,19 @@ import { useForm } from "react-hook-form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LoadingOverlay } from "../../../../components/ui/loading-overlay";
 import { toast } from "sonner";
+import { FineType } from "../../fines/types";
+import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/components/ui/select";
 
 interface AddEventDialogProps {
   open: boolean;
+  fineTypes: FineType[];
   onOpenChange: (open: boolean) => void;
   onEventAdded: () => void;
 }
 
 export function AddEventDialog({
   open,
+  fineTypes,
   onOpenChange,
   onEventAdded,
 }: AddEventDialogProps) {
@@ -51,6 +55,7 @@ export function AddEventDialog({
     defaultValues: {
       name: "",
       date: undefined,
+      fineTypeId: "",
       location: "",
       timeInStart: "",
       timeInEnd: "",
@@ -62,6 +67,11 @@ export function AddEventDialog({
   });
 
   const [loading, setLoading] = useState(false);
+  const selectedFineType = form.watch("fineTypeId"); 
+  //Get the fine type object based on the selected fineTypeId to check if timeIn and timeOut are required
+  const selectedFineTypeObj = fineTypes.find((type) => type.id === selectedFineType);
+  const timeInRequired = selectedFineTypeObj?.requiresTimeIn || false;
+  const timeOutRequired = selectedFineTypeObj?.requiresTimeOut || false;
 
   const onSubmit = async (data: EventFormData) => {
     try {
@@ -165,7 +175,33 @@ export function AddEventDialog({
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="fineTypeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Type of Fines</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a type of fines" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {fineTypes.map((type: FineType) => (
+                          <SelectItem key={type.id} value={type.id}>
+                            {type.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {timeInRequired && (
+                <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="timeInStart"
@@ -203,8 +239,10 @@ export function AddEventDialog({
                   )}
                 />
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
+            )}
+              
+              {timeOutRequired && (
+                <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="timeOutStart"
@@ -242,6 +280,7 @@ export function AddEventDialog({
                   )}
                 />
               </div>
+              )}
 
               <FormField
                 control={form.control}

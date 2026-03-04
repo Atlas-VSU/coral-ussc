@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PlusIcon, SearchIcon } from "lucide-react";
 import { AddEventDialog } from "./AddEventDialog";
+import { useEventFineTypes } from "../hooks/useEventFineTypes";
 
 interface EventsHeaderProps {
   onSearch: (query: string) => void;
@@ -12,6 +13,12 @@ interface EventsHeaderProps {
 export function EventsHeader({ onSearch, onEventAdded }: EventsHeaderProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const {fineTypes, fetchFineTypes} = useEventFineTypes();
+
+  const handleAddEventClick = async () => {
+    setIsAddDialogOpen(true);
+    if (fineTypes.length === 0) { await fetchFineTypes(); }
+  }
 
   const handleEventAdded = () => {
     setIsAddDialogOpen(false);
@@ -58,7 +65,7 @@ export function EventsHeader({ onSearch, onEventAdded }: EventsHeaderProps) {
 
           {/* Add Event Button */}
           <Button
-            onClick={() => setIsAddDialogOpen(true)}
+            onClick={handleAddEventClick}
             className="h-10 px-6 bg-primary hover:bg-primary/90 text-white font-medium shadow-sm transition-colors"
           >
             <PlusIcon className="mr-2 h-4 w-4" />
@@ -69,6 +76,7 @@ export function EventsHeader({ onSearch, onEventAdded }: EventsHeaderProps) {
 
       <AddEventDialog
         open={isAddDialogOpen}
+        fineTypes={fineTypes}
         onOpenChange={setIsAddDialogOpen}
         onEventAdded={handleEventAdded}
       />

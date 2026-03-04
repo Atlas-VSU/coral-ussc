@@ -249,19 +249,23 @@ export const addEvent = async (eventData: EventFormData) => {
       }
     }
 
-    // 2. Time Out Start should be before Time Out End
     if (eventData.timeOutStart && eventData.timeOutEnd) {
-      if (eventData.timeOutStart >= eventData.timeOutEnd) {
-        throw new Error("Time Out Start must be earlier than Time Out End");
+      // 2. Time Out Start should be before Time Out End
+      if (eventData.timeOutStart && eventData.timeOutEnd) {
+        if (eventData.timeOutStart >= eventData.timeOutEnd) {
+          throw new Error("Time Out Start must be earlier than Time Out End");
+        }
       }
     }
 
-    // 3. Time In End should be before Time Out Start (Time In period should complete before Time Out begins)
-    if (eventData.timeInEnd && eventData.timeOutStart) {
-      if (eventData.timeInEnd > eventData.timeOutStart) {
-        throw new Error(
-          "Time In period must complete before Time Out period begins"
-        );
+    if(eventData.timeInEnd && eventData.timeOutStart){
+      // 3. Time In End should be before Time Out Start (Time In period should complete before Time Out begins)
+      if (eventData.timeInEnd && eventData.timeOutStart) {
+        if (eventData.timeInEnd > eventData.timeOutStart) {
+          throw new Error(
+            "Time In period must complete before Time Out period begins"
+          );
+        }
       }
     }
 
@@ -313,19 +317,22 @@ export const updateEvent = async (
       }
     }
 
-    // 2. Time Out Start should be before Time Out End
     if (eventData.timeOutStart && eventData.timeOutEnd) {
-      if (eventData.timeOutStart >= eventData.timeOutEnd) {
-        throw new Error("Time Out Start must be earlier than Time Out End");
+      // 2. Time Out Start should be before Time Out End
+      if (eventData.timeOutStart && eventData.timeOutEnd) {
+        if (eventData.timeOutStart >= eventData.timeOutEnd) {
+          throw new Error("Time Out Start must be earlier than Time Out End");
+        }
       }
     }
-
+    if(eventData.timeInEnd && eventData.timeOutStart){
     // 3. Time In End should be before Time Out Start (Time In period should complete before Time Out begins)
-    if (eventData.timeInEnd && eventData.timeOutStart) {
-      if (eventData.timeInEnd > eventData.timeOutStart) {
-        throw new Error(
-          "Time In period must complete before Time Out period begins"
-        );
+      if (eventData.timeInEnd && eventData.timeOutStart) {
+        if (eventData.timeInEnd > eventData.timeOutStart) {
+          throw new Error(
+            "Time In period must complete before Time Out period begins"
+          );
+        }
       }
     }
 

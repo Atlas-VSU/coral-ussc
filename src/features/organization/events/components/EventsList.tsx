@@ -5,6 +5,7 @@ import { EditEventDialog } from "./EditEventDialog";
 import { Event } from "../types";
 import { archiveEvent, deleteEvent } from "@/firebase";
 import { ViewMode } from "./ViewToggle";
+import { useEventFineTypes } from "../hooks/useEventFineTypes";
 
 interface EventsListProps {
   events: Event[];
@@ -15,10 +16,12 @@ interface EventsListProps {
 export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const {fineTypes, fetchFineTypes} = useEventFineTypes();
 
-  const handleEditClick = (event: Event) => {
+  const handleEditClick = async (event: Event) => {
     setSelectedEvent(event);
     setIsEditDialogOpen(true);
+    fetchFineTypes(); //temporary
   };
 
   const handleArchiveClick = async (event: Event) => {
@@ -110,6 +113,7 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
       {selectedEvent && (
         <EditEventDialog
           open={isEditDialogOpen}
+          fineTypes ={fineTypes}
           onOpenChange={setIsEditDialogOpen}
           selectedEvent={selectedEvent}
           onEventEdited={handleEventEdited}

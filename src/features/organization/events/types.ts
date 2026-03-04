@@ -4,6 +4,7 @@ export type EventStatus = "ongoing" | "upcoming" | "archived" | "completed";
 // Event type
 export type Event = {
   id: number;
+  fineTypeId: string;
   name: string;
   date: string;
   majorEvent?: boolean;
