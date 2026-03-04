@@ -1,4 +1,5 @@
 import { db } from "@/firebase/firebase.config";
+import { getCurrentUser, getCurrentUserData } from "@/firebase/users";
 import { FineTypeFormData } from "@/lib/validators";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 
@@ -11,7 +12,10 @@ const handleFirestoreError = (error: any, context: string) => {
   };
 
 export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : string) => {
-    try{
+  try {
+    //for now orgId = userId
+      const currentUser = await getCurrentUserData();
+
         const fineTypeDoc = await addDoc(collection(db, "fineTypes"), {
             name: fineTypeData.name,
             description: fineTypeData.description,
@@ -20,7 +24,7 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
             requiresTimeOut: fineTypeData.requiresTimeOut || false,
             majorEventsOnly: fineTypeData.majorEventsOnly,
             isActive : true,
-            orgId : orgId? orgId : null,
+            orgId : orgId? orgId : currentUser?.uid || null,
             metadata: {
                 createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now(),
