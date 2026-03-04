@@ -33,3 +33,15 @@ export const memberSchema = z.object({
 });
 
 export type MemberFormData = z.infer<typeof memberSchema>;
+
+
+export const fineTypeSchema = z.object({
+  name: z.string().min(1, "Fine type name is required"),
+  description: z.string().min(1, "Fine type description is required"),
+  defaultAmount: z.number().min(0, "Default amount must be a positive number"),
+  requiresTimeIn: z.boolean(), 
+  requiresTimeOut: z.boolean().optional(),
+  majorEventsOnly: z.boolean(),
+});
+
+export type FineTypeFormData = z.infer<typeof fineTypeSchema>;
