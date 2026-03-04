@@ -605,3 +605,10 @@ export const getOngoingEvents = async (): Promise<Event[]> => {
 export const getUpcomingEvents = async (): Promise<Event[]> => {
   return (await getEvents("upcoming")) as Event[];
 };
+
+interface ProgramData {
+  name: string;
+  shortName: string;
+  acronym: string;
+  facultyId: string;
+}

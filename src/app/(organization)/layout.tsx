@@ -9,6 +9,7 @@ import {
   BarChart,
   Settings,
   LogOut,
+  Banknote,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,6 +24,7 @@ const iconMap = {
   users: Users,
   "bar-chart": BarChart,
   settings: Settings,
+  fee: Banknote
 };
 
 // Define mobile icon map
@@ -50,6 +52,11 @@ const organizationData = {
       title: "Members",
       url: "/org-members",
       icon: "users",
+    },
+    {
+      title: "Fees",
+      url: "/org-fees",
+      icon: "fee"
     }
     // {
     //   title: "Reports",

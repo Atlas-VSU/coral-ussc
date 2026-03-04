@@ -1,6 +1,7 @@
 import { Timestamp } from "firebase/firestore";
 
 export type Member = {
+  id?: string;
   firstName: string;
   lastName: string;
   programId: string;
