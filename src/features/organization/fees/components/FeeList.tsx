@@ -19,7 +19,7 @@ import { StatCard } from "@/components/organization/StatCard"
 import { DataPagination } from "@/components/organization/DataPagination"
 
 import { useFeeList } from "../hooks/useFeeList"
-import type { Fees } from "../types"
+import type { Fee } from "../types"
 import { usePaginatedMembers } from "../../members/hooks/usePaginatedMembers"
 import { FeeGenerationDialog } from "./AddFeeDialog"
 import { Member } from "../../members/types"
@@ -66,28 +66,38 @@ export default function FeeListPage() {
   const [generateOpen, setGenerateOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
 
-  // Build aggregated fees from groupedFees
-  const aggregatedFees = useMemo<AggregatedFee[]>(() => {
-    return Object.entries(groupedFees).map(([title, feeList]) => {
-      // Use the first fee in the group as the template (all should share same details)
-      const first = feeList[0]
-      // Compute paid count (assuming fee has a 'status' field; adjust if needed)
-      const paidCount = feeList.filter(f => f.status === "paid").length
-      return {
-        id: `${title}-${first.feeType}-${first.amount}`, // simple composite key
-        title,
-        type: first.feeType,
-        amount: first.amount,
-        academicYear: first.academicYear || "",
-        semester: first.semester || "N/A",
-        dueDate: first.dueDate,
-        isRequiredForClearance: first.isRequiredForClearance,
-        totalStudents: feeList.length,
-        paidCount,
-        // description not available from backend; could be omitted
-      }
-    })
-  }, [groupedFees])
+   const aggregatedFees = useMemo<AggregatedFee[]>(() => {
+        if (!rawFees || !Array.isArray(rawFees)) return [];
+  
+        // Group fees by title
+        const groups = (rawFees as Fee[]).reduce((acc, fee) => {
+          const title = fee.title;
+          if (!acc[title]) acc[title] = [];
+          acc[title].push(fee);
+          return acc;
+        }, {} as Record<string, Fee[]>);
+  
+        return Object.entries(groups).map(([title, feeList]) => {
+          const first = feeList[0];
+          const paidCount = feeList.filter(f => f.status === "verified" || f.status === "paid").length;
+          
+          return {
+            id: `${title}-${first.feeType}-${first.amount}`, 
+            title,
+            type: first.feeType,
+            amount: first.amount,
+            academicYear: first.academicYear || "",
+            semester: first.semester || "N/A",
+            dueDate: first.dueDate,
+            isRequiredForClearance: first.isRequiredForClearance,
+            totalStudents: feeList.length,
+            paidCount,
+            description: first.description
+          };
+        });
+      }, [rawFees]);
+
+  console.log(aggregatedFees)
 
   // Filter by search
   const filtered = useMemo(() => {
@@ -153,7 +163,7 @@ export default function FeeListPage() {
                     <Card
                       key={fee.id}
                       className="border-border cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => router.push(`/admin/fees/${encodeURIComponent(fee.id)}/payment_logs`)}
+                      onClick={() => router.push(`/org-fees/roster?title=${encodeURIComponent(fee.title)}&academic_year=${fee.academicYear}`)}
                     >
                       <CardHeader className="pb-2">
                         <div className="flex items-start justify-between gap-2">
@@ -218,7 +228,7 @@ export default function FeeListPage() {
                         <TableRow
                           key={fee.id}
                           className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => router.push(`/admin/fees/${encodeURIComponent(fee.id)}/payment_logs`)}
+                          onClick={() => router.push(`/org-fees/roster?title=${encodeURIComponent(fee.title)}&academic_year=${fee.academicYear}`)}
                         >
                           <TableCell>
                             <p className="text-sm font-medium text-foreground">{fee.title}</p>

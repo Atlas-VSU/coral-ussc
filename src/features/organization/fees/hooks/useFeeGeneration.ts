@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { FeeGenerationSchema } from "../utils/FeeGenerationSchema";
+import { FeeGenerationSchema } from "../utils/feeGenerationSchema";
 import { generateFeesForAllStudents } from "@/firebase/fees";
 import { getCurrentUserData } from "@/firebase";
 import { Member } from "@/features/organization/members/types";
@@ -29,7 +29,7 @@ export function useFeeGeneration({ students, onSuccess, onOpenChange }: UseFeeGe
     defaultValues: {
       title: "",
       amount: 0,
-      feeType: "membership",
+      feeType: "semester-membership",
       academicYear: "",
       semester: "",
       description: "",

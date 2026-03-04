@@ -12,6 +12,7 @@ import FeeListPage from "./FeeList";
 import { PageHeader } from "@/components/organization/PageHeader";
 import { StatCard } from "@/components/organization/StatCard";
 import { useFeeList } from "../hooks/useFeeList";
+import { Fee } from "../types";
 
 interface AggregatedFee {
   id: string                // use title + type + amount as a composite key
@@ -55,15 +56,24 @@ export function FeesPage() {
 
     const { rawFees, groupedFees, isLoading: feesLoading, refetchFees } = useFeeList()
   
-    // Build aggregated fees from groupedFees
+    // Build aggregated fees from rawFees
     const aggregatedFees = useMemo<AggregatedFee[]>(() => {
-      return Object.entries(groupedFees).map(([title, feeList]) => {
-        // Use the first fee in the group as the template (all should share same details)
-        const first = feeList[0]
-        // Compute paid count (assuming fee has a 'status' field; adjust if needed)
-        const paidCount = feeList.filter(f => f.status === "paid").length
+      if (!rawFees || !Array.isArray(rawFees)) return [];
+
+      // Group fees by title
+      const groups = (rawFees as Fee[]).reduce((acc, fee) => {
+        const title = fee.title;
+        if (!acc[title]) acc[title] = [];
+        acc[title].push(fee);
+        return acc;
+      }, {} as Record<string, Fee[]>);
+
+      return Object.entries(groups).map(([title, feeList]) => {
+        const first = feeList[0];
+        const paidCount = feeList.filter(f => f.status === "verified" || f.status === "paid").length;
+        
         return {
-          id: `${title}-${first.feeType}-${first.amount}`, // simple composite key
+          id: `${title}-${first.feeType}-${first.amount}`, 
           title,
           type: first.feeType,
           amount: first.amount,
@@ -73,10 +83,10 @@ export function FeesPage() {
           isRequiredForClearance: first.isRequiredForClearance,
           totalStudents: feeList.length,
           paidCount,
-          // description not available from backend; could be omitted
-        }
-      })
-    }, [groupedFees])
+          description: first.description
+        };
+      });
+    }, [rawFees]);
 
     const totalCollected = aggregatedFees.reduce((sum, f) => sum + f.paidCount * f.amount, 0)
     const avgCompletion = aggregatedFees.length > 0

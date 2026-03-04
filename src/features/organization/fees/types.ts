@@ -1,6 +1,6 @@
 import { Timestamp } from "firebase/firestore"
 
-export type Fees = {
+export type Fee = {
     orgId: string,
     userId: string,
     userName: string, 
@@ -8,7 +8,7 @@ export type Fees = {
     feeType: string,
     title: string,
     description?: string,
-    academicYear?: string,
+    academicYear: string,
     semester?: string,
     eventId?: string,
     amount: number,
@@ -25,4 +25,30 @@ export type Fees = {
     createdAt: Timestamp, 
     updatedAt: Timestamp,
     isArchived: boolean
+}
+
+export type PaymentMethod = "gcash" | "cash" | "bank_transfer" | "waiver";
+export type PaymentStatus = "pending_verification" | "verified" | "rejected";
+
+export interface PaymentLog {
+  id: string;
+  payment_number: number;
+  amount: number;
+  payment_method: PaymentMethod;
+  payment_proof_id?: string | null;
+  gcash_reference?: string | null;
+  status: PaymentStatus;
+  
+  // Timestamps from Firestore
+  paid_at: Timestamp;
+  
+  verified_by?: string | null;
+  verified_at?: Timestamp | null;
+  rejection_reason?: string | null;
+  notes?: string | null;
+  
+  // Using Record<string, any> for maps/flexible objects
+  metadata?: Record<string, any> | null;
+  
+  created_at: Timestamp;
 }

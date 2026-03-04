@@ -1,9 +1,9 @@
-import { Member, MemberData } from "@/features/organization/members/types";
+import { MemberData } from "@/features/organization/members/types";
 import { collection, doc, getDocs, orderBy, query, Timestamp, where, writeBatch } from "firebase/firestore";
 import { db } from "./firebase.config";
-import { FeeGenerationSchema } from "@/features/organization/fees/utils/FeeGenerationSchema";
+import { FeeGenerationSchema } from "@/features/organization/fees/utils/feeGenerationSchema";
 import z from "zod";
-import { Fees } from "@/features/organization/fees/types";
+import { Fee } from "@/features/organization/fees/types";
 import { getAllStudents } from "./members";
 
 
@@ -50,7 +50,7 @@ export const generateFeesForAllStudents = async (feeData: z.infer<typeof FeeGene
     }
 }
 
-export const fetchFeesForOrg = async(orgId: string): Promise<Fees[]> => {
+export const fetchFeesForOrg = async(orgId: string): Promise<Fee[]> => {
     try {
         const feesRef = collection(db, "fees");
 
@@ -65,9 +65,50 @@ export const fetchFeesForOrg = async(orgId: string): Promise<Fees[]> => {
         return snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
-        })) as unknown as Fees[];
+        })) as unknown as Fee[];
     } catch (error) {
         console.error("Error fetching fees for org:", error);
+        return [];
+    }
+}
+
+
+export async function fetchFeeRoster(title: string, academicYear: string) {
+  try {
+    const feesRef = collection(db, "fees");
+    
+    // Querying by both title and academicYear ensures accuracy
+    const rosterQuery = query(
+      feesRef,
+      where("title", "==", title),
+      where("academicYear", "==", academicYear)
+    );
+
+    const snapshot = await getDocs(rosterQuery);
+    
+    const roster = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    return roster;
+  } catch (error) {
+    console.error("Error fetching roster:", error);
+    return [];
+  }
+}
+
+export async function fetchPaymentLogs(feeId: string) {
+    try {
+        const logsRef = collection(db, "fees", feeId, "payment_log");
+        const q = query(logsRef, orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    } catch (error) {
+        console.error("Error fetching payment logs:", error);
         return [];
     }
 }
