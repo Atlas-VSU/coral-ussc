@@ -17,7 +17,8 @@ import { ManualPaymentDialog } from "@/features/organization/fees/components/Man
 import { PaymentDetailDialog } from "@/features/organization/fees/components/PaymentDetailDialog";
 import { RejectDialog } from "@/features/organization/fees/components/RejectDialog";
 import type { Fee, PaymentLog } from "@/features/organization/fees/types";
-import { StudentFeeRow, useFeesRoster } from "../hooks/useFeesRoster";
+import { StudentFeeRow } from "../hooks/useFeesRoster";
+import { useFeesRosterUI } from "../hooks/useFeesRosterUI";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -35,95 +36,58 @@ export function FeesRosterContent({
   onManualPaymentAdded: (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", ref?: string) => Promise<void>;
 }) {
   const router = useRouter();
-  const allLogs = useMemo(() => studentRows.flatMap(row => row.logs), [studentRows]);
+  const { state, computed, actions } = useFeesRosterUI({
+    fee,
+    studentRows,
+    onApprovePayment,
+    onRejectPayment,
+    onManualPaymentAdded,
+    itemsPerPage: ITEMS_PER_PAGE,
+  });
 
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"card" | "table">("table");
-  const [dataView, setDataView] = useState<"submissions" | "all-students">("submissions");
-  const [currentPage, setCurrentPage] = useState(1);
+  const {
+    search,
+    filterStatus,
+    viewMode,
+    dataView,
+    currentPage,
+    selectedLog,
+    detailOpen,
+    rejectOpen,
+    rejectionReason,
+    manualLogOpen,
+    studentRowFee,
+  } = state;
 
-  const [selectedLog, setSelectedLog] = useState<any | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [rejectOpen, setRejectOpen] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState("");
-  const [manualLogOpen, setManualLogOpen] = useState(false);
-  
-  // Using this single state to track the active row for manual payments
-  const [studentRowFee, setStudentRowFee] = useState<StudentFeeRow | null>(null);
+  const {
+    paginatedLogs,
+    paginatedRows,
+    totalPages,
+    stats,
+    filteredLogsCount,
+    filteredRowsCount,
+  } = computed;
 
-
-  const allStudentRows = useMemo(() => {
-    return studentRows.map((s) => {
-      const latestLog = s.logs.length > 0 ? s.logs[s.logs.length - 1] : null;
-      return {
-        student: s.memberInfo,
-        log: latestLog,
-        status: s.status || "unpaid", 
-      };
-    });
-  }, [studentRows]);
-
-  // Filtered data
-  const filteredLogs = useMemo(() => {
-    return allLogs.filter((l) => filterStatus === "all" || l.status === filterStatus);
-  }, [allLogs, filterStatus]);
-
-  const filteredRows = useMemo(() => {
-    return allStudentRows.filter((r) => {
-      const matchesSearch =
-        r.student.firstName!.toLowerCase().includes(search.toLowerCase()) ||
-        r.student.lastName!.toLowerCase().includes(search.toLowerCase()) ||
-        (r.student.studentId || "").toLowerCase().includes(search.toLowerCase());
-      const matchesStatus = filterStatus === "all" || r.status === filterStatus;
-      return matchesSearch && matchesStatus;
-    });
-  }, [allStudentRows, search, filterStatus]);
-
-  // Pagination
-  const totalPages = Math.ceil(
-    (dataView === "submissions" ? filteredLogs.length : filteredRows.length) / ITEMS_PER_PAGE
-  );
-  const paginatedLogs = useMemo(
-    () => filteredLogs.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE),
-    [filteredLogs, currentPage]
-  );
-  const paginatedRows = useMemo(
-    () => filteredRows.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE),
-    [filteredRows, currentPage]
-  );
-
-  // Stats
-  const stats = {
-    pending: allLogs.filter((l) => l.status === "pending_verification").length,
-    verified: allLogs.filter((l) => l.status === "verified").length,
-    rejected: allLogs.filter((l) => l.status === "rejected").length,
-    unpaid: allStudentRows.filter((r) => r.status === "unpaid").length,
-  };
-
-  const handleApprove = async (feeId: string, logId: string) => {
-    await onApprovePayment(feeId, logId);
-    setDetailOpen(false);
-    setSelectedLog(null);
-  };
-
-  const handleReject = async (feeId: string, logId: string) => {
-    if (!rejectionReason.trim()) return;
-    await onRejectPayment(feeId, logId, rejectionReason);
-    setRejectOpen(false);
-    setDetailOpen(false);
-    setSelectedLog(null);
-    setRejectionReason("");
-  };
-
-  const addManualLog = async (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", ref?: string) => {
-    await onManualPaymentAdded(feeId, amount, method, ref);
-    setManualLogOpen(false); // Close dialog after successful save
-  };
+  const {
+    setSearch,
+    setFilterStatus,
+    setViewMode,
+    setDataView,
+    setCurrentPage,
+    setDetailOpen,
+    setRejectOpen,
+    setRejectionReason,
+    setManualLogOpen,
+    handleApprove,
+    handleReject,
+    handleAddManualLog,
+    handleViewDetails,
+    handleManualLogRequest,
+    setStudentRowFee,
+  } = actions;
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      {/* Header */}
       <div className="flex flex-col gap-1">
         <Button
           variant="ghost"
@@ -135,14 +99,12 @@ export function FeesRosterContent({
         </Button>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">{fee.title}</h1>
         <p className="text-sm text-muted-foreground">
-          Fees Roster · {fee.semester} {fee.academicYear} · ₱{(fee.amount || 0).toLocaleString()}
+          Fees Roster · {fee.semester ? fee.semester + " Semester" : ""} {fee.academicYear ? " - " + fee.academicYear + " A.Y." : ""} · ₱{(fee.amount || 0).toLocaleString()}
         </p>
       </div>
 
-      {/* Stats Cards */}
       <StatCards stats={stats} />
 
-      {/* Main Card */}
       <Card className="border-border">
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -155,11 +117,7 @@ export function FeesRosterContent({
               </div>
               <Tabs
                 value={dataView}
-                onValueChange={(v) => {
-                  setDataView(v as typeof dataView);
-                  setFilterStatus("all");
-                  setCurrentPage(1);
-                }}
+                onValueChange={setDataView}
               >
                 <TabsList>
                   <TabsTrigger value="submissions">Submissions</TabsTrigger>
@@ -170,18 +128,12 @@ export function FeesRosterContent({
             <div className="flex flex-wrap items-center gap-2">
               <SearchFilterBar
                 search={search}
-                onSearchChange={(val) => {
-                  setSearch(val);
-                  setCurrentPage(1);
-                }}
+                onSearchChange={setSearch}
                 filterStatus={filterStatus}
-                onFilterChange={(val) => {
-                  setFilterStatus(val);
-                  setCurrentPage(1);
-                }}
+                onFilterChange={setFilterStatus}
                 showUnpaidFilter={dataView === "all-students"}
               />
-              <ViewToggle viewMode={viewMode} onViewChange={() => setViewMode(v => v === "card" ? "table" : "card")} />
+              <ViewToggle viewMode={viewMode} onViewChange={() => setViewMode(viewMode === "card" ? "table" : "card")} />
             </div>
           </div>
         </CardHeader>
@@ -190,54 +142,42 @@ export function FeesRosterContent({
             <SubmissionsView
               logs={paginatedLogs}
               viewMode={viewMode}
-              onViewDetails={(log) => {
-                setSelectedLog(log);
-                setDetailOpen(true);
-              }}
+              onViewDetails={handleViewDetails}
             />
           ) : (
             <AllStudentsView
               rows={paginatedRows as any} 
               viewMode={viewMode}
-              onViewDetails={(log) => {
-                setSelectedLog(log);
-                setDetailOpen(true);
-              }}
-              onManualLog={(student) => {
-                // MATCH THE CLICKED STUDENT TO THEIR FULL DATABASE ROW
-                const matchedRow = studentRows.find(row => row.memberInfo.id === student.id);
-                setStudentRowFee(matchedRow || null);
-                setManualLogOpen(true);
-              }}
+              onViewDetails={handleViewDetails}
+              onManualLog={(student) => handleManualLogRequest(student.id || "")}
             />
           )}
           <DataPagination
             currentPage={currentPage}
             totalPages={totalPages}
-            totalItems={dataView === "submissions" ? filteredLogs.length : filteredRows.length}
+            totalItems={dataView === "submissions" ? filteredLogsCount : filteredRowsCount}
             itemsPerPage={ITEMS_PER_PAGE}
             onPageChange={setCurrentPage}
           />
         </CardContent>
       </Card>
-        console.log(studentRows)
-      {/* Dialogs */}
+
       <ManualPaymentDialog
         fee={fee}
-        student={studentRowFee || null} // Typo fixed here
+        student={studentRowFee || null}
         open={manualLogOpen}
         onOpenChange={(open) => {
           setManualLogOpen(open);
-          if (!open) setStudentRowFee(null); // Clear the row data when dialog closes
+          if (!open) setStudentRowFee(null);
         }}
-        onSuccess={addManualLog}
+        onSuccess={handleAddManualLog}
       />
       <PaymentDetailDialog
-        feeId={selectedLog?.feeId || ""}
+        feeId={fee.id!}
         log={selectedLog}
         open={detailOpen}
         onOpenChange={setDetailOpen}
-        onApprove={() => handleApprove(selectedLog.feeId, selectedLog!.id)}
+        onApprove={() => handleApprove(fee.id!, selectedLog!.id)}
         onReject={() => {
           setDetailOpen(false);
           setRejectOpen(true);
@@ -249,7 +189,7 @@ export function FeesRosterContent({
         onOpenChange={setRejectOpen}
         rejectionReason={rejectionReason}
         onReasonChange={setRejectionReason}
-        onConfirm={() => handleReject(selectedLog.feeId, selectedLog!.id)}
+        onConfirm={() => handleReject(fee.id!, selectedLog!.id)}
       />
     </div>
   );

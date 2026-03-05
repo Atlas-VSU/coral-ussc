@@ -97,7 +97,6 @@ export const getPaginatedEvents = async (
         if (levelAccess === 1) {
           baseQuery = query(baseQuery, where("accessLevelEvent", "==", 1), where("programId", "==", currentUser.programId));
         } else if (levelAccess === 2) {
-          console.log(levelAccess)
           baseQuery = query(baseQuery, where("accessLevelEvent", "==", 2), where("facultyId", "==", currentUser.facultyId));
         } else if (levelAccess === 3) {
           baseQuery = query(baseQuery, where("accessLevelEvent", "==", 3));

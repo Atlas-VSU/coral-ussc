@@ -49,7 +49,6 @@ export const getPaginatedUsers = async (options: {
     } = options;
 
     const currentUserData = (await getCurrentUserData()) as unknown as Member;
-    console.log(currentUserData)
     const baseConstraints: QueryConstraint[] = [
       where("isDeleted", "==", false),
       where("role", "==", "user"),
@@ -60,7 +59,6 @@ export const getPaginatedUsers = async (options: {
     if (accessLevel === 1) {
       baseConstraints.push(where("programId", "==", currentUserData.programId ?? ""));
     } else if (accessLevel === 2) {
-      console.log(currentUserData.facultyId)
       baseConstraints.push(where("facultyId", "==", currentUserData.facultyId ?? ""));
     }
 

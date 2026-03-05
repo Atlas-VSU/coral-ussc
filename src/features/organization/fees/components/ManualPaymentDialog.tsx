@@ -37,9 +37,6 @@ export function ManualPaymentDialog({
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    console.log("Sd");
-    console.log(fee);
-    console.log(student)
     await onSuccess(student.id, amount, method, ref);
     setIsSubmitting(false);
     onOpenChange(false);

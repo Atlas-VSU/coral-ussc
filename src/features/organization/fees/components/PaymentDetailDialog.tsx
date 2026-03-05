@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { statusConfig, paymentMethodLabels } from "@/features/organization/fees/utils/statusConfig";
 import type { Fee, PaymentLog } from "@/features/organization/fees/types";
 import { Calendar, CreditCard, User, History, CheckCircle2, XCircle } from "lucide-react";
+import { Separator } from "@radix-ui/react-separator";
 
 interface PaymentDetailDialogProps {
   feeId: string;
@@ -115,6 +116,23 @@ export function PaymentDetailDialog({
             </Button>
           </DialogFooter>
         )}
+
+        {log.status === "verified" && (
+        <>
+          <Separator />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-xs text-muted-foreground">Verified By</p>
+              <p className="text-sm text-foreground">{log.verifiedByName}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Verified At</p>
+              <p className="text-sm text-foreground">{log.verifiedAt!.toDate().toLocaleDateString()}</p>
+            </div>
+          </div>
+        </>
+      )}
+
       </DialogContent>
     </Dialog>
   );

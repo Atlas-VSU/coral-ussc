@@ -37,12 +37,6 @@ export function ShortcutLinks({
 
   const allEvents = Array.from(uniqueEventsMap.values()).slice(0, 3);
 
-  // console.log("ShortcutLinks props:", {
-  //   upcomingEvents,
-  //   ongoingEvents,
-  //   isLoading,
-  // });
-
   const formatTime = (time: string | null) => {
     if (!time) return null;
 

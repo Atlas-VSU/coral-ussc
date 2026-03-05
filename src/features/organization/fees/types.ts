@@ -46,6 +46,7 @@ export interface PaymentLog {
   
   verifiedBy?: string | null;
   verifiedAt?: Timestamp | null;
+  verifiedByName?: string | null;
   rejectionReason?: string | null;
   notes?: string | null;
   
@@ -53,4 +54,19 @@ export interface PaymentLog {
   metadata?: Record<string, any> | null;
   
   createdAt: Timestamp;
+}
+
+export interface AggregatedFee {
+  id: string                // use title + type + amount as a composite key
+  title: string
+  type: string
+  amount: number
+  academicYear: string
+  semester: string
+  dueDate?: string
+  isRequiredForClearance: boolean
+  totalStudents: number
+  paidCount: number
+  // we might not have description in backend, so omit or use optional
+  description?: string
 }

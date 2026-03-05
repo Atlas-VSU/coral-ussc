@@ -1,4 +1,4 @@
-import { MemberData } from "@/features/organization/members/types";
+import { Member, MemberData } from "@/features/organization/members/types";
 import { collection, doc, getDoc, getDocs, orderBy, query, runTransaction, setDoc, Timestamp, updateDoc, where, writeBatch } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { FeeGenerationSchema } from "@/features/organization/fees/utils/feeGenerationSchema";
@@ -7,7 +7,11 @@ import { Fee, PaymentLog } from "@/features/organization/fees/types";
 import { getAllStudents } from "./members";
 import { setDate } from "date-fns";
 import { toast } from "sonner";
+import { getCurrentUserData } from "./users";
 
+
+
+const currentUserName = await getCurrentUserData() as unknown as Member;
 
 export const generateFeesForAllStudents = async (feeData: z.infer<typeof FeeGenerationSchema>, userId: string, eventId?: string) : Promise<void> => {
     const students = await getAllStudents() as unknown as MemberData[];
@@ -179,6 +183,7 @@ export const recordManualPayment = async (feeId: string, amount: string, method:
                 status: "verified",
                 paidAt: Timestamp.now(),
                 verifiedBy: userId, 
+                verifiedByName: currentUserName.firstName + " " + currentUserName.lastName, 
                 verifiedAt: Timestamp.now(),
                 rejectionReason: null,
                 notes: "Manual payment recorded by admin",
@@ -194,8 +199,6 @@ export const recordManualPayment = async (feeId: string, amount: string, method:
                 status: newStatus,
             });
         })
-        console.log("Manual payment recorded successfully");
-        console.log(newLogRef.id);
         return newLogRef.id;
     } catch (error) {
         console.error("Error approving manual payment:", error);
@@ -236,6 +239,7 @@ export const approvePaymentTransaction = async (feeId: string, paymentLogId: str
             transaction.update(paymentLogRef, {
                 status: "verified",
                 verifiedBy: userId,
+                verifiedByName: currentUserName.firstName + " " + currentUserName.lastName, 
                 verifiedAt: Timestamp.now(),
             });
 
@@ -284,6 +288,7 @@ export const rejectPaymentTransaction = async (feeId: string, paymentLogId: stri
             transaction.update(paymentLogRef, {
                 status: "rejected",
                 verifiedBy: userId,
+                verifiedByName: currentUserName.firstName + " " + currentUserName.lastName, 
                 verifiedAt: Timestamp.now(),
                 rejectionReason: rejectionReason,
             });

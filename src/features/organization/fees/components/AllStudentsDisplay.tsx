@@ -34,8 +34,6 @@ export function AllStudentsTable({
         </TableHeader>
         <TableBody>
           {rows.map(({ student, log }) => {
-            console.log(student, log, "hwer");
-            
             const config = log?.status ? statusConfig[log.status] : statusConfig["unpaid"];
             const Icon = config.icon;
             return (

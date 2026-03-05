@@ -1,9 +1,7 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Zap, ChevronRight, CircleDollarSign, DollarSign, Users, Loader2 } from "lucide-react"
-import { toast } from "sonner"
+import { Zap, ChevronRight, CircleDollarSign, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,112 +10,37 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { PageHeader } from "@/components/organization/PageHeader"
 import { SearchInput } from "@/components/organization/SearchInput"
 import { ViewToggle } from "@/components/organization/ViewToggle"
-import { StatCard } from "@/components/organization/StatCard"
 import { DataPagination } from "@/components/organization/DataPagination"
 
 import { useFeeList } from "../hooks/useFeeList"
-import type { Fee } from "../types"
 import { usePaginatedMembers } from "../../members/hooks/usePaginatedMembers"
 import { FeeGenerationDialog } from "./AddFeeDialog"
 import { Member } from "../../members/types"
+import { useFeeListUI } from "../hooks/useFeeListUI"
+import { feeTypeLabels, feeTypeVariant } from "../constants"
+import { SearchFilterBar } from "./SearchFilterBar"
+import { SearchFilterFee } from "./SearchFilterFee"
 
 const ITEMS_PER_PAGE = 10
 
-// Map fee type to display label and badge variant (keep your existing mapping)
-const feeTypeLabels: Record<string, string> = {
-  "semester-membership": "Semester Membership",
-  "event-fee": "Event Fee",
-  "charity-fee": "Charity Fee",
-  "organization-dues": "Organization Dues",
-}
-
-const feeTypeVariant: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
-  "semester-membership": "default",
-  "event-fee": "secondary",
-  "charity-fee": "outline",
-  "organization-dues": "destructive",
-}
-
-// Aggregated fee type for display
-interface AggregatedFee {
-  id: string                // use title + type + amount as a composite key
-  title: string
-  type: string
-  amount: number
-  academicYear: string
-  semester: string
-  dueDate?: string
-  isRequiredForClearance: boolean
-  totalStudents: number
-  paidCount: number
-  description?: string
-}
-
 export default function FeeListPage() {
   const router = useRouter()
-  const { rawFees, groupedFees, isLoading: feesLoading, refetchFees } = useFeeList()
-  const { members, totalMembers, isLoading: membersLoading } = usePaginatedMembers() // fetch all students
+  const { aggregatedFees, isLoading: feesLoading, refetchFees } = useFeeList()
+  const { members, isLoading: membersLoading } = usePaginatedMembers() 
 
-  const [search, setSearch] = useState("")
-  const [viewMode, setViewMode] = useState<"card" | "table">("card")
-  const [generateOpen, setGenerateOpen] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-
-   const aggregatedFees = useMemo<AggregatedFee[]>(() => {
-        if (!rawFees || !Array.isArray(rawFees)) return [];
-  
-        // Group fees by title
-        const groups = (rawFees as Fee[]).reduce((acc, fee) => {
-          const title = fee.title;
-          if (!acc[title]) acc[title] = [];
-          acc[title].push(fee);
-          return acc;
-        }, {} as Record<string, Fee[]>);
-  
-        return Object.entries(groups).map(([title, feeList]) => {
-          const first = feeList[0];
-          const paidCount = feeList.filter(f => f.status === "verified" || f.status === "paid").length;
-          
-          return {
-            id: `${title}-${first.feeType}-${first.amount}`, 
-            title,
-            type: first.feeType,
-            amount: first.amount,
-            academicYear: first.academicYear || "",
-            semester: first.semester || "N/A",
-            dueDate: first.dueDate,
-            isRequiredForClearance: first.isRequiredForClearance,
-            totalStudents: feeList.length,
-            paidCount,
-            description: first.description
-          };
-        });
-      }, [rawFees]);
-
-  console.log(aggregatedFees)
-
-  // Filter by search
-  const filtered = useMemo(() => {
-    return aggregatedFees.filter(f =>
-      f.title.toLowerCase().includes(search.toLowerCase()) ||
-      feeTypeLabels[f.type]?.toLowerCase().includes(search.toLowerCase())
-    )
-  }, [aggregatedFees, search])
-
-  // Pagination
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
-  const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
-
-  // Handle successful generation
-  const handleGenerationSuccess = () => {
-    refetchFees() // reload the fee list
-    setGenerateOpen(false)
-  }
-
-  const isLoading = feesLoading || membersLoading
+  const {
+    state: { search, filterStatus, viewMode, generateOpen, currentPage, isLoading },
+    actions: { setSearch, setFilterStatus, setViewMode, setGenerateOpen, setCurrentPage, handleGenerationSuccess },
+    computed: { filtered, paginated, totalPages }
+  } = useFeeListUI({
+    aggregatedFees,
+    feesLoading,
+    membersLoading,
+    refetchFees,
+    itemsPerPage: ITEMS_PER_PAGE
+  })
 
   if (isLoading) {
     return (
@@ -138,13 +61,13 @@ export default function FeeListPage() {
               <CardDescription className="text-muted-foreground">Click a fee to view its payment logs</CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <SearchInput
-                placeholder="Search fees..."
-                value={search}
-                onChange={v => { setSearch(v); setCurrentPage(1) }}
-                className="w-48"
+              <SearchFilterFee
+                search={search}
+                onSearchChange={setSearch}
+                filterStatus={filterStatus}
+                onFilterChange={setFilterStatus as any}
               />
-              <ViewToggle viewMode={viewMode} onViewChange={setViewMode} />
+              <ViewToggle viewMode={viewMode} onViewChange={() => setViewMode(viewMode === "card" ? "table" : "card")} />
               <Button variant="outline" onClick={() => setGenerateOpen(true)}>
                 <Zap className="size-4 mr-1" /> Generate Fee
               </Button>
@@ -185,7 +108,7 @@ export default function FeeListPage() {
                         <Progress value={progress} className="h-1.5" />
                       </CardContent>
                       <CardFooter className="pt-2">
-                        <p className="text-xs text-muted-foreground">{fee.semester ? fee.semester + " Semester" : "" + (fee.academicYear ? " · " + fee.academicYear + " A.Y." : "")}</p>
+                        <p className="text-xs text-muted-foreground">{fee.semester ? fee.semester + " Semester" : ""} {fee.academicYear ? " - " + fee.academicYear + " A.Y." : ""}</p>
                       </CardFooter>
                     </Card>
                   )
