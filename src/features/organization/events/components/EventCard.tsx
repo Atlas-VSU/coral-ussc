@@ -27,6 +27,7 @@ interface EventCardProps {
   event: Event;
   onEdit: (event: Event) => void;
   onArchive: (event: Event) => void;
+  onIssueFine: (event: Event) => void;
   onUnarchive: (event: Event) => void;
   onDelete: (event: Event) => void;
 }
@@ -35,6 +36,7 @@ export function EventCard({
   event,
   onEdit,
   onArchive,
+  onIssueFine,
   onUnarchive,
   onDelete,
 }: EventCardProps) {
@@ -135,6 +137,10 @@ export function EventCard({
       setIsOperationLoading(false);
     }
   };
+
+    const handleIssueFine = () => { 
+    onIssueFine(event);
+  }
 
   const handleUnarchiveEvent = async () => {
     setIsOperationLoading(true);
@@ -263,6 +269,9 @@ export function EventCard({
                   </>
                 ) : (
                   <>
+                    {(!event.finesGenerated && event.status === "completed") && (<DropdownMenuItem onClick={handleIssueFine} className="font-medium" disabled={isOperationLoading}>
+                      Issue Fines
+                    </DropdownMenuItem>)}
                     <DropdownMenuItem onClick={handleEditEvent} className="font-medium" disabled={isOperationLoading}>
                       Edit Event
                     </DropdownMenuItem>

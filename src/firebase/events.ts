@@ -290,6 +290,7 @@ export const addEvent = async (eventData: EventFormData) => {
       attendees: 0,
       status,
       isDeleted: false,
+      finesGenerated: false,  
       accessLevelEvent: levelAccess,
       ...dynamicFields,
 
@@ -371,6 +372,27 @@ export const updateEvent = async (
     handleFirestoreError(error, `update event with ID ${eventId}`);
   }
 };
+
+
+export const disableFineGeneration = async (eventId: string) => {
+  try {
+    const eventDoc = doc(db, "events", eventId);
+    await updateDoc(eventDoc, {
+      finesGenerated: true,
+    });
+
+    console.log(`-------Fine generation disabled for event with ID ${eventId}-----------`);
+
+    // Invalidate specific event cache and any paginated events
+    cacheService.invalidate(`event:${eventId}`);
+    cacheService.invalidateByPrefix("events:");
+  } catch (error) {
+    handleFirestoreError(
+      error,
+      `disable fine generation for event with ID ${eventId}`
+    );
+  }
+ }
 
 export const incrementEventAttendees = async (eventId: string) => {
   try {
