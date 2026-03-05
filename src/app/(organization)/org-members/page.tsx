@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { BulkImportResultModal } from "@/features/organization/members/components/BulkImportResultModal";
 import { usePaginatedMembers } from "@/features/organization/members/hooks/usePaginatedMembers";
+import { createFinePerStudent } from "@/firebase/fines/create/fines";
 
 export default function MembersPage() {
   const {
@@ -110,7 +111,10 @@ export default function MembersPage() {
           toast.error("Student ID already exists. Please use a different one.");
           return;
         }
-        await addUser(data);
+        const userId = await addUser(data);
+        if (data.role === "user" && userId) {
+          await createFinePerStudent(userId,data); 
+        }
         toast.success("Member added successfully");
       }
       refreshData();
