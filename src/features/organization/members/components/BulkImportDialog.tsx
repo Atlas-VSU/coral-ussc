@@ -139,7 +139,10 @@ export function BulkImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-5xl w-[90vw] overflow-y-auto max-h-[90vh] py-8">
+      <DialogContent
+        className="max-w-5xl w-[90vw] overflow-y-auto max-h-[90vh] py-8"
+        showCloseButton={!isImporting}
+      >
         <DialogHeader>
           <DialogTitle>Bulk Import Members</DialogTitle>
           <DialogDescription>
