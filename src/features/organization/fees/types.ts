@@ -70,3 +70,7 @@ export interface AggregatedFee {
   // we might not have description in backend, so omit or use optional
   description?: string
 }
+
+export interface FeeWithPaymentHistory extends Fee {
+    paymentHistory: PaymentLog[];
+}

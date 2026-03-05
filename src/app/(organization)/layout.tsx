@@ -10,6 +10,7 @@ import {
   Settings,
   LogOut,
   Banknote,
+  ShieldCheck,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,7 +25,8 @@ const iconMap = {
   users: Users,
   "bar-chart": BarChart,
   settings: Settings,
-  fee: Banknote
+  fee: Banknote,
+  clearance: ShieldCheck
 };
 
 // Define mobile icon map
@@ -33,6 +35,8 @@ const mobileIconMap = {
   calendar: Calendar,
   users: Users,
   logout: LogOut,
+  fee: Banknote,
+  clearance: ShieldCheck
 };
 
 // Organization navigation data
@@ -57,6 +61,11 @@ const organizationData = {
       title: "Fees",
       url: "/org-fees",
       icon: "fee"
+    },
+    {
+      title: "Clearance",
+      url: "/org-clearance",
+      icon: "clearance"
     }
     // {
     //   title: "Reports",
@@ -85,6 +94,16 @@ const organizationData = {
       icon: "users",
       href: "/org-members",
     },
+    {
+      label: "Fees",
+      icon: "fee",
+      href: "/org-fees",
+    },
+    {
+      label: "Clearance",
+      icon: "clearance",
+      href: "/org-clearance",
+    }
   ],
 };
 

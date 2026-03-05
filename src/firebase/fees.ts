@@ -3,7 +3,7 @@ import { collection, doc, getDoc, getDocs, orderBy, query, runTransaction, setDo
 import { db } from "./firebase.config";
 import { FeeGenerationSchema } from "@/features/organization/fees/utils/feeGenerationSchema";
 import z from "zod";
-import { Fee, PaymentLog } from "@/features/organization/fees/types";
+import { Fee, FeeWithPaymentHistory, PaymentLog } from "@/features/organization/fees/types";
 import { getAllStudents } from "./members";
 import { setDate } from "date-fns";
 import { toast } from "sonner";
@@ -12,6 +12,39 @@ import { getCurrentUserData } from "./users";
 
 
 const currentUserName = await getCurrentUserData() as unknown as Member;
+
+export const checkFeeStatusForClearance = async (userId: string, orgId: string) => {
+    const feeRef = collection(db, "fees");
+    const q = query(
+        feeRef, 
+        where("userId", "==", userId), 
+        where("orgId", "==", orgId), 
+        where("isArchived", "==", false)
+    );
+    
+    const feeSnapshot = await getDocs(q);
+
+    const feesWithHistory = await Promise.all(feeSnapshot.docs.map(async (feeDoc) => {
+        const feeData = feeDoc.data();
+        
+        const paymentHistoryRef = collection(db, "fees", feeDoc.id, "paymentHistory");
+        
+        const paymentHistorySnapshot = await getDocs(paymentHistoryRef);
+        
+        const paymentHistory = paymentHistorySnapshot.docs.map(paymentDoc => ({
+            id: paymentDoc.id,
+            ...paymentDoc.data()
+        }));
+
+        return {
+            id: feeDoc.id,
+            ...feeData,
+            paymentHistory: paymentHistory
+        } as FeeWithPaymentHistory;
+    }));
+
+    return feesWithHistory;
+}
 
 export const generateFeesForAllStudents = async (feeData: z.infer<typeof FeeGenerationSchema>, userId: string, eventId?: string) : Promise<void> => {
     const students = await getAllStudents() as unknown as MemberData[];
