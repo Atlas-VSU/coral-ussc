@@ -30,7 +30,7 @@ const adminData = {
       icon: "layout-dashboard",
     },
     {
-      title: "Orfganization",
+      title: "Organization",
       url: "/admin-organization",
       icon: "building",
     },

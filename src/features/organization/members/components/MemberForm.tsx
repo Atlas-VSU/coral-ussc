@@ -88,7 +88,6 @@ export function MemberForm({
     data.facultyId = (await getCurrentUserFacultyId(
       getAuth().currentUser?.uid || ""
     )) as string;
-    console.log("Form Data Submitted:", data);
     const memberToSubmit: Member = {
       ...data,
       role: "user", // Always set role to "user"

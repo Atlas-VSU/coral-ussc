@@ -70,14 +70,12 @@ class CacheService {
       // Cache hit
       this.metrics.hits++;
       keyMetrics.hits++;
-      console.log(`Cache hit for ${key}`);
       return cached.data as T;
     }
 
     // Cache miss
     this.metrics.misses++;
     keyMetrics.misses++;
-    console.log(`Cache miss for ${key}, fetching data...`);
     const data = await fetchFn();
 
     // Store in cache
@@ -163,7 +161,6 @@ class CacheService {
         byKey: new Map(),
       };
 
-      console.log("Cache service cleared all data during logout");
     } catch (error) {
       console.error("Error during cache clearing:", error);
       // Still attempt to clear the in-memory cache if localStorage fails

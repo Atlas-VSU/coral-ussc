@@ -532,7 +532,6 @@ export const totalAttendeesForAllEvent = async (): Promise<number> => {
       async () => {
         const currentUser = (await getCurrentUserData()) as Member | null;
         if (!currentUser) {
-          console.log("No current user found.");
           return 0;
         }
 
@@ -556,7 +555,6 @@ export const totalAttendeesForAllEvent = async (): Promise<number> => {
             where("accessLevelEvent", "==", 3)
           );
         } else {
-          console.log("User has no defined level access.");
           return 0; // No context to query by.
         }
 

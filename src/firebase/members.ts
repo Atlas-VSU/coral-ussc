@@ -15,7 +15,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { getCurrentUserData, getCurrentUserFacultyId } from "./users";
-import { Member } from "@/features/organization/members/types";
+import { Member, MemberData } from "@/features/organization/members/types";
 
 const usersCollection: CollectionReference<DocumentData> = collection(
   db,
@@ -49,7 +49,6 @@ export const getPaginatedUsers = async (options: {
     } = options;
 
     const currentUserData = (await getCurrentUserData()) as unknown as Member;
-    console.log(currentUserData)
     const baseConstraints: QueryConstraint[] = [
       where("isDeleted", "==", false),
       where("role", "==", "user"),
@@ -60,7 +59,6 @@ export const getPaginatedUsers = async (options: {
     if (accessLevel === 1) {
       baseConstraints.push(where("programId", "==", currentUserData.programId ?? ""));
     } else if (accessLevel === 2) {
-      console.log(currentUserData.facultyId)
       baseConstraints.push(where("facultyId", "==", currentUserData.facultyId ?? ""));
     }
 
@@ -233,5 +231,25 @@ export const getPaginatedUsers = async (options: {
   } catch (error) {
     handleFirestoreError(error, "fetch paginated users");
     return { members: [], total: 0 };
+  }
+};
+
+export const getAllStudents = async () => {
+  try {
+    const q = query(
+      usersCollection,
+      where("isDeleted", "==", false),
+      where("role", "==", "user"),
+      orderBy("studentId", "asc")
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      member: { ...doc.data() },
+    })) as unknown as MemberData[];
+  } catch (error) {
+    handleFirestoreError(error, "fetch all students");
+    return [];
   }
 };

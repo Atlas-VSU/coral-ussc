@@ -22,8 +22,6 @@ export const batchGetPrograms = async (
   return await cacheService.getOrFetch<Record<string, Program>>(
     cacheKey,
     async () => {
-      console.log(`🔍 Fetching ${uniqueIds.length} programs from Firestore`);
-
       // Results object
       const results: Record<string, Program> = {};
 
