@@ -14,7 +14,10 @@ const handleFirestoreError = (error: any, context: string) => {
 export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : string) => {
   try {
     //for now orgId = userId
-      const currentUser = await getCurrentUserData();
+    const currentUser = await getCurrentUserData();
+    if (!currentUser) {
+      throw new Error("User not authenticated");
+    }
 
         const fineTypeDoc = await addDoc(collection(db, "fineTypes"), {
             name: fineTypeData.name,
@@ -24,7 +27,7 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
             requiresTimeOut: fineTypeData.requiresTimeOut || false,
             majorEventsOnly: fineTypeData.majorEventsOnly,
             isActive : true,
-            orgId : orgId? orgId : currentUser?.uid || null,
+            orgId : orgId? orgId : currentUser.uid,
             metadata: {
                 createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now(),
