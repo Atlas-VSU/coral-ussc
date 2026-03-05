@@ -149,7 +149,7 @@ const validateMemberData = async (data: RawMemberData): Promise<string[]> => {
   }
 
   if (!data.programId || data.programId.trim() === "") {
-    errors.push("Program ID is required");
+    errors.push("Program name is required");
   } else {
     const programName = data.programId.trim(); 
     if (!referenceData.programs.has(programName)) {
