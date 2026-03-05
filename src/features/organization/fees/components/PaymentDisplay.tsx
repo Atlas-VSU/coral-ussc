@@ -36,7 +36,7 @@ export function PaymentTable({ logs, onViewDetails }: { logs: PaymentLog[]; onVi
                 </TableCell>
                 <TableCell className="text-sm font-medium">₱{log.amount.toLocaleString()}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">
-                    {log.paid_at ? (log.paid_at.toDate ? log.paid_at.toDate().toLocaleDateString() : log.paid_at.toString()) : "—"}
+                    {log.paidAt ? (log.paidAt.toDate ? log.paidAt.toDate().toLocaleDateString() : log.paidAt.toString()) : "—"}
                 </TableCell>
                 <TableCell>
                   <Button size="sm" variant="outline" onClick={() => onViewDetails(log)}>

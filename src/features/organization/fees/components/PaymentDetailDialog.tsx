@@ -8,16 +8,16 @@ import type { Fee, PaymentLog } from "@/features/organization/fees/types";
 import { Calendar, CreditCard, User, History, CheckCircle2, XCircle } from "lucide-react";
 
 interface PaymentDetailDialogProps {
-  fee: Fee;
+  feeId: string;
   log: PaymentLog | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onApprove: (id: string) => void;
-  onReject: () => void;
+  onApprove: (feeId: string, logId: string) => void;
+  onReject: (feeId: string, logId: string) => void;
 }
 
 export function PaymentDetailDialog({
-  fee,
+  feeId,
   log,
   open,
   onOpenChange,
@@ -60,14 +60,14 @@ export function PaymentDetailDialog({
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <CreditCard className="size-3" /> Method
               </div>
-              <p className="text-sm font-medium">{paymentMethodLabels[log.payment_method] || log.payment_method}</p>
+              <p className="text-sm font-medium">{paymentMethodLabels[log.paymentMethod] || log.paymentMethod}</p>
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Calendar className="size-3" /> Date Paid
               </div>
               <p className="text-sm font-medium">
-                {log.paid_at ? (log.paid_at.toDate ? log.paid_at.toDate().toLocaleDateString() : log.paid_at.toString()) : "—"}
+                {log.paidAt ? (log.paidAt.toDate ? log.paidAt.toDate().toLocaleDateString() : log.paidAt.toString()) : "—"}
               </p>
             </div>
           </div>
@@ -77,40 +77,40 @@ export function PaymentDetailDialog({
             <p className="text-2xl font-bold text-primary">₱{log.amount.toLocaleString()}</p>
           </div>
 
-          {log.gcash_reference && (
+          {log.gcashReference && (
             <div className="space-y-1.5 p-3 rounded-lg border border-border bg-muted/20">
               <p className="text-xs text-muted-foreground font-medium">GCash Reference</p>
               <p className="text-sm font-mono font-semibold tracking-wider italic text-foreground uppercase">
-                {log.gcash_reference}
+                {log.gcashReference}
               </p>
             </div>
           )}
 
-          {log.payment_proof_id && (
+          {log.paymentProofId && (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground font-medium">Payment Proof</p>
               <div className="aspect-video relative rounded-md border border-border overflow-hidden bg-muted group">
                 <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground font-medium italic">
-                  Image placeholder: {log.payment_proof_id}
+                  Image placeholder: {log.paymentProofId}
                 </div>
               </div>
             </div>
           )}
 
-          {log.status === "rejected" && log.rejection_reason && (
+          {log.status === "rejected" && log.rejectionReason && (
             <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/10">
               <p className="text-xs text-destructive font-semibold mb-1">Rejection Reason</p>
-              <p className="text-sm text-foreground">{log.rejection_reason}</p>
+              <p className="text-sm text-foreground">{log.rejectionReason}</p>
             </div>
           )}
         </div>
 
         {log.status === "pending_verification" && (
           <DialogFooter className="gap-2 sm:gap-0 font-medium">
-            <Button variant="outline" className="flex-1 text-destructive hover:bg-destructive/10" onClick={onReject}>
+            <Button variant="outline" className="flex-1 text-destructive hover:bg-destructive/10" onClick={() => onReject(feeId, log.id)}>
               <XCircle className="size-4 mr-1" /> Reject
             </Button>
-            <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={() => onApprove(log.id)}>
+            <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={() => onApprove(feeId, log.id)}>
               <CheckCircle2 className="size-4 mr-1" /> Approve
             </Button>
           </DialogFooter>

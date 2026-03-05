@@ -16,8 +16,8 @@ export default function FeesRosterPage({
   title,
   academicYear,
 }: FeesRosterPageProps) {
-  const { fee, studentRows, isLoading, error } = useFeesRoster(title, academicYear);
-  const { approvePayment, rejectPayment, addManualPayment } = useFeeAction();
+  const { fee, studentRows, isLoading, error, refetchStudentRow } = useFeesRoster(title, academicYear);
+  const { approvePayment, rejectPayment, addManualPayment } = useFeeAction(refetchStudentRow);
 
   if (isLoading) {
     return (

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { fetchFeeRoster, fetchPaymentLogs } from "@/firebase/fees";
+import { useCallback, useEffect, useState } from "react";
+import { fetchFee, fetchFeeRoster, fetchPaymentLogs } from "@/firebase/fees";
 import { Fee, PaymentLog } from "../types";
 import { Member } from "../../members/types";
 
@@ -18,6 +18,47 @@ export function useFeesRoster(title: string, academicYear: string) {
     const [logs, setLogs] = useState<PaymentLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const refetchStudentRow = useCallback(async (feeId: string) => {
+        try {
+            const [freshLogs, updatedFee] = await Promise.all([
+                fetchPaymentLogs(feeId),
+                fetchFee(feeId)
+            ]);
+
+            if (!updatedFee) return;
+
+            setStudentRows(prevRows => {
+                const rowIndex = prevRows.findIndex(row => row.id === feeId);
+                if (rowIndex === -1) return prevRows;
+
+                const rowToUpdate = prevRows[rowIndex];
+                
+                const enrichedLogs = (freshLogs as PaymentLog[]).map(log => ({
+                    ...log,
+                    feeId: rowToUpdate.id,
+                    userId: rowToUpdate.userId,
+                    status: log.status,
+                    studentId: rowToUpdate.studentId,
+                    studentName: rowToUpdate.userName,
+                }));
+
+                const updatedRow = {
+                    ...rowToUpdate,
+                    ...updatedFee,
+                    logs: enrichedLogs
+                };
+
+                const newRows = [...prevRows];
+                newRows[rowIndex] = updatedRow;
+
+                setLogs(newRows.flatMap(row => row.logs));
+                return newRows;
+            });
+        } catch (err) {
+            console.error(`Error refetching row for feeId ${feeId}:`, err);
+        }
+    }, []);
+
 
     useEffect(() => {
         const fetchFeesData = async () => {
@@ -51,7 +92,7 @@ export function useFeesRoster(title: string, academicYear: string) {
                             ...log,
                             feeId: f.id,
                             userId: f.userId,
-                            status: f.status,
+                            status: log.status,
                             studentId: f.studentId,
                             studentName: f.userName,
                         }));
@@ -93,13 +134,15 @@ export function useFeesRoster(title: string, academicYear: string) {
 
         fetchFeesData();
     }, [title, academicYear]);
-    
+
+
     return { 
         fee, 
         studentRows, 
         students, 
         logs, 
         isLoading, 
-        error 
+        error,
+        refetchStudentRow
     };
 }

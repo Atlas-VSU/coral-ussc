@@ -34,23 +34,23 @@ export type PaymentStatus = "pending_verification" | "verified" | "rejected";
 
 export interface PaymentLog {
   id: string;
-  payment_number: number;
+  paymentNumber: number;
   amount: number;
-  payment_method: PaymentMethod;
-  payment_proof_id?: string | null;
-  gcash_reference?: string | null;
+  paymentMethod: PaymentMethod;
+  paymentProofId?: string | null;
+  gcashReference?: string | null;
   status: PaymentStatus;
   
   // Timestamps from Firestore
-  paid_at: Timestamp;
+  paidAt: Timestamp;
   
-  verified_by?: string | null;
-  verified_at?: Timestamp | null;
-  rejection_reason?: string | null;
+  verifiedBy?: string | null;
+  verifiedAt?: Timestamp | null;
+  rejectionReason?: string | null;
   notes?: string | null;
   
   // Using Record<string, any> for maps/flexible objects
   metadata?: Record<string, any> | null;
   
-  created_at: Timestamp;
+  createdAt: Timestamp;
 }

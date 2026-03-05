@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { PaymentLog } from "../types";
-import { recordManualPayment } from "@/firebase/fees";
+import { approvePaymentTransaction, recordManualPayment, rejectPaymentTransaction } from "@/firebase/fees";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-export const useFeeAction = () => {
+export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
@@ -21,6 +21,7 @@ export const useFeeAction = () => {
             await recordManualPayment(feeId, amount, method, userId || "", ref)
             setSuccess(true);
             toast.success("Payment recorded successfully!");
+            onSuccess?.(feeId);
         } catch (err) {
             setError("Failed to perform action");
             toast.error("Failed to record payment");
@@ -29,15 +30,16 @@ export const useFeeAction = () => {
         }
     };
 
-    const approvePayment = async (logId: string) => {
+    const approvePayment = async (feeId: string, logId: string) => {
         setIsSubmitting(true);
         setError(null);
         setSuccess(false);
 
         try {
-            await approvePayment(logId);
+            await approvePaymentTransaction(feeId, logId, userId || "")
             setSuccess(true);
             toast.success("Payment approved successfully!");
+            onSuccess?.(feeId);
         } catch (err) {
             setError("Failed to perform action");
             toast.error("Failed to approve payment");
@@ -46,15 +48,16 @@ export const useFeeAction = () => {
         }
     };
 
-    const rejectPayment = async (logId: string, reason: string) => {
+    const rejectPayment = async (feeId: string, logId: string, reason: string) => {
         setIsSubmitting(true);
         setError(null);
         setSuccess(false);
 
         try {
-            await rejectPayment(logId, reason);
+            await rejectPaymentTransaction(feeId, logId, userId || "", reason)
             setSuccess(true);
             toast.success("Payment rejected successfully!");
+            onSuccess?.(feeId);
         } catch (err) {
             setError("Failed to perform action");
             toast.error("Failed to reject payment");
@@ -62,8 +65,6 @@ export const useFeeAction = () => {
             setIsSubmitting(false);
         }
     };
-
-
 
     return {
         isSubmitting,
@@ -73,4 +74,4 @@ export const useFeeAction = () => {
         approvePayment,
         rejectPayment,
     };
-}   
+}

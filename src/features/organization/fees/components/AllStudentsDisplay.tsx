@@ -33,9 +33,10 @@ export function AllStudentsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map(({ student, log, status }) => {
-            console.log(student, log, status);
-            const config = statusConfig[status] || statusConfig.unpaid;
+          {rows.map(({ student, log }) => {
+            console.log(student, log, "hwer");
+            
+            const config = log?.status ? statusConfig[log.status] : statusConfig["unpaid"];
             const Icon = config.icon;
             return (
               <TableRow key={student.studentId || student.id}>
@@ -52,7 +53,7 @@ export function AllStudentsTable({
                   {log ? `₱${(log.amount || 0).toLocaleString()}` : "—"}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
-                    {log?.paid_at ? (log.paid_at.toDate ? log.paid_at.toDate().toLocaleDateString() : log.paid_at.toString()) : "—"}
+                    {log?.paidAt ? (log.paidAt.toDate ? log.paidAt.toDate().toLocaleDateString() : log.paidAt.toString()) : "—"}
                 </TableCell>
                 <TableCell>
                   {log ? (
@@ -90,8 +91,8 @@ export function AllStudentsCards({
 }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {rows.map(({ student, log, status }) => {
-        const config = statusConfig[status] || statusConfig.unpaid;
+      {rows.map(({ student, log }) => {
+        const config = log?.status ? statusConfig[log.status] : statusConfig["unpaid"];
         const Icon = config.icon;
         return (
           <Card key={student.studentId || student.id} className="border-border">

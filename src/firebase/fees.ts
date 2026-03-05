@@ -1,5 +1,5 @@
 import { MemberData } from "@/features/organization/members/types";
-import { collection, doc, getDocs, orderBy, query, runTransaction, setDoc, Timestamp, updateDoc, where, writeBatch } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, orderBy, query, runTransaction, setDoc, Timestamp, updateDoc, where, writeBatch } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { FeeGenerationSchema } from "@/features/organization/fees/utils/feeGenerationSchema";
 import z from "zod";
@@ -100,10 +100,28 @@ export async function fetchFeeRoster(title: string, academicYear: string) {
   }
 }
 
+export async function fetchFee(feeId: string): Promise<Fee | null> {
+    try {
+        const feeRef = doc(db, "fees", feeId);
+        const snapshot = await getDoc(feeRef);
+        
+        if (snapshot.exists()) {
+            return {
+                id: snapshot.id,
+                ...snapshot.data()
+            } as Fee;
+        }
+        return null;
+    } catch (error) {
+        console.error("Error fetching fee:", error);
+        return null;
+    }
+}
+
 export async function fetchPaymentLogs(feeId: string) {
     try {
-        const logsRef = collection(db, "fees", feeId, "payment_history");
-        const q = query(logsRef, orderBy("paid_at", "desc"));
+        const logsRef = collection(db, "fees", feeId, "paymentHistory");
+        const q = query(logsRef, orderBy("paidAt", "desc"));
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({
             id: doc.id,
@@ -128,7 +146,7 @@ export const recordManualPayment = async (feeId: string, amount: string, method:
         }
 
         const feeRef = doc(db, "fees", feeId);
-        const subCollectionRef = collection(feeRef, "payment_history");
+        const subCollectionRef = collection(feeRef, "paymentHistory");
         const newLogRef = doc(subCollectionRef);
         await runTransaction(db, async (transaction) => {
             const feeDoc = await transaction.get(feeRef);
@@ -153,19 +171,19 @@ export const recordManualPayment = async (feeId: string, amount: string, method:
 
             const newLog: PaymentLog = {
                 id: newLogRef.id,
-                payment_number: Date.now(), 
+                paymentNumber: Date.now(), 
                 amount: paymentAmount,
-                payment_method: method,
-                payment_proof_id: null,
-                gcash_reference: method === "gcash" && ref ? ref : null,
+                paymentMethod: method,
+                paymentProofId: null,
+                gcashReference: method === "gcash" && ref ? ref : null,
                 status: "verified",
-                paid_at: Timestamp.now(),
-                verified_by: userId, 
-                verified_at: Timestamp.now(),
-                rejection_reason: null,
+                paidAt: Timestamp.now(),
+                verifiedBy: userId, 
+                verifiedAt: Timestamp.now(),
+                rejectionReason: null,
                 notes: "Manual payment recorded by admin",
                 metadata: null,
-                created_at: Timestamp.now(),
+                createdAt: Timestamp.now(),
             };
 
             transaction.set(newLogRef, newLog);
@@ -181,6 +199,103 @@ export const recordManualPayment = async (feeId: string, amount: string, method:
         return newLogRef.id;
     } catch (error) {
         console.error("Error approving manual payment:", error);
+        throw error;
+    }
+}
+
+export const approvePaymentTransaction = async (feeId: string, paymentLogId: string, userId: string) => {
+    try {
+        const feeRef = doc(db, "fees", feeId);
+        const paymentLogRef = doc(feeRef, "paymentHistory", paymentLogId);
+        await runTransaction(db, async (transaction) => {
+            const feeDoc = await transaction.get(feeRef);
+            const paymentLogDoc = await transaction.get(paymentLogRef);
+
+            if (!feeDoc.exists()) {
+                throw new Error(`Fee document with ID ${feeId} does not exist.`);
+            }
+
+            if (!paymentLogDoc.exists()) {
+                throw new Error(`Payment log with ID ${paymentLogId} does not exist.`);
+            }
+
+            const feeData = feeDoc.data() as Fee;
+            const paymentLogData = paymentLogDoc.data() as PaymentLog;
+
+            const currentPaidAmount = feeData.paidAmount || 0;
+            const paymentAmount = paymentLogData.amount;
+            const newPaidAmount = currentPaidAmount + paymentAmount;
+            const newBalance = Math.max(0, feeData.amount - newPaidAmount);
+            let newStatus = "pending";
+            if (newBalance <= 0) {
+                newStatus = "paid";
+            } else if (newPaidAmount > 0) {
+                newStatus = "partial";
+            }
+
+            transaction.update(paymentLogRef, {
+                status: "verified",
+                verifiedBy: userId,
+                verifiedAt: Timestamp.now(),
+            });
+
+            transaction.update(feeRef, {
+                paidAmount: newPaidAmount,
+                balance: newBalance,
+                status: newStatus,
+            });
+        })
+    } catch (error) {
+        console.error("Error approving payment:", error);
+        throw error;
+    }
+}
+
+export const rejectPaymentTransaction = async (feeId: string, paymentLogId: string, userId: string, rejectionReason: string) => {
+    try {
+        const feeRef = doc(db, "fees", feeId);
+        const paymentLogRef = doc(feeRef, "paymentHistory", paymentLogId);
+        await runTransaction(db, async (transaction) => {
+            const feeDoc = await transaction.get(feeRef);
+            const paymentLogDoc = await transaction.get(paymentLogRef);
+
+            if (!feeDoc.exists()) {
+                throw new Error(`Fee document with ID ${feeId} does not exist.`);
+            }
+
+            if (!paymentLogDoc.exists()) {
+                throw new Error(`Payment log with ID ${paymentLogId} does not exist.`);
+            }
+
+            const feeData = feeDoc.data() as Fee;
+            const paymentLogData = paymentLogDoc.data() as PaymentLog;
+
+            const currentPaidAmount = feeData.paidAmount || 0;
+            const paymentAmount = paymentLogData.amount;
+            const newPaidAmount = currentPaidAmount - paymentAmount;
+            const newBalance = Math.max(0, feeData.amount - newPaidAmount);
+            let newStatus = "pending";
+            if (newBalance <= 0) {
+                newStatus = "paid";
+            } else if (newPaidAmount > 0) {
+                newStatus = "partial";
+            }
+
+            transaction.update(paymentLogRef, {
+                status: "rejected",
+                verifiedBy: userId,
+                verifiedAt: Timestamp.now(),
+                rejectionReason: rejectionReason,
+            });
+
+            transaction.update(feeRef, {
+                paidAmount: newPaidAmount,
+                balance: newBalance,
+                status: newStatus,
+            });
+        })
+    } catch (error) {
+        console.error("Error rejecting payment:", error);
         throw error;
     }
 }

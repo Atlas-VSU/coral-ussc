@@ -17,7 +17,7 @@ import { ManualPaymentDialog } from "@/features/organization/fees/components/Man
 import { PaymentDetailDialog } from "@/features/organization/fees/components/PaymentDetailDialog";
 import { RejectDialog } from "@/features/organization/fees/components/RejectDialog";
 import type { Fee, PaymentLog } from "@/features/organization/fees/types";
-import { StudentFeeRow } from "../hooks/useFeesRoster";
+import { StudentFeeRow, useFeesRoster } from "../hooks/useFeesRoster";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -30,14 +30,12 @@ export function FeesRosterContent({
 }: {
   fee: Fee;
   studentRows: StudentFeeRow[];
-  onApprovePayment: (logId: string) => Promise<void>;
-  onRejectPayment: (logId: string, reason: string) => Promise<void>;
+  onApprovePayment: (feeId: string, logId: string) => Promise<void>;
+  onRejectPayment: (feeId: string, logId: string, reason: string) => Promise<void>;
   onManualPaymentAdded: (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", ref?: string) => Promise<void>;
 }) {
   const router = useRouter();
-  console.log(studentRows, "studentRows");
   const allLogs = useMemo(() => studentRows.flatMap(row => row.logs), [studentRows]);
-  console.log(allLogs, "logsz");
 
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -45,7 +43,7 @@ export function FeesRosterContent({
   const [dataView, setDataView] = useState<"submissions" | "all-students">("submissions");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [selectedLog, setSelectedLog] = useState<PaymentLog | null>(null);
+  const [selectedLog, setSelectedLog] = useState<any | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -53,6 +51,7 @@ export function FeesRosterContent({
   
   // Using this single state to track the active row for manual payments
   const [studentRowFee, setStudentRowFee] = useState<StudentFeeRow | null>(null);
+
 
   const allStudentRows = useMemo(() => {
     return studentRows.map((s) => {
@@ -102,15 +101,15 @@ export function FeesRosterContent({
     unpaid: allStudentRows.filter((r) => r.status === "unpaid").length,
   };
 
-  const handleApprove = async (id: string) => {
-    await onApprovePayment(id);
+  const handleApprove = async (feeId: string, logId: string) => {
+    await onApprovePayment(feeId, logId);
     setDetailOpen(false);
     setSelectedLog(null);
   };
 
-  const handleReject = async (id: string) => {
+  const handleReject = async (feeId: string, logId: string) => {
     if (!rejectionReason.trim()) return;
-    await onRejectPayment(id, rejectionReason);
+    await onRejectPayment(feeId, logId, rejectionReason);
     setRejectOpen(false);
     setDetailOpen(false);
     setSelectedLog(null);
@@ -225,7 +224,7 @@ export function FeesRosterContent({
       {/* Dialogs */}
       <ManualPaymentDialog
         fee={fee}
-        student={studentRows.find(row => row.memberInfo.id === studentRowFee?.memberInfo.id) || null} // Typo fixed here
+        student={studentRowFee || null} // Typo fixed here
         open={manualLogOpen}
         onOpenChange={(open) => {
           setManualLogOpen(open);
@@ -234,11 +233,11 @@ export function FeesRosterContent({
         onSuccess={addManualLog}
       />
       <PaymentDetailDialog
-        fee={fee}
+        feeId={selectedLog?.feeId || ""}
         log={selectedLog}
         open={detailOpen}
         onOpenChange={setDetailOpen}
-        onApprove={() => handleApprove(selectedLog!.id)}
+        onApprove={() => handleApprove(selectedLog.feeId, selectedLog!.id)}
         onReject={() => {
           setDetailOpen(false);
           setRejectOpen(true);
@@ -250,7 +249,7 @@ export function FeesRosterContent({
         onOpenChange={setRejectOpen}
         rejectionReason={rejectionReason}
         onReasonChange={setRejectionReason}
-        onConfirm={() => handleReject(selectedLog!.id)}
+        onConfirm={() => handleReject(selectedLog.feeId, selectedLog!.id)}
       />
     </div>
   );
