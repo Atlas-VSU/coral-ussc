@@ -20,13 +20,13 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { getAuth } from "firebase/auth";
-import { getCurrentUserData, searchUserByStudentId } from "./users"; // Assuming this is optimized
+import { getAllUsers, getCurrentUserData, searchUserByStudentId } from "./users"; // Assuming this is optimized
 import {
   AttendanceRecord,
   EventAttendance,
 } from "@/features/organization/log-attendance/types";
 // import { Member } from "@/features/organization/members/types";
-import { incrementEventAttendees } from "./events";
+import { getEventById, incrementEventAttendees } from "./events";
 import { SearchParams } from "@/features/organization/attendees/types";
 import { Event } from "@/features/organization/dashboard/types";
 import { cacheService } from "@/services/cacheService";
@@ -584,3 +584,65 @@ export const totalAttendeesForAllEvent = async (): Promise<number> => {
   }
 };
 
+
+export const getNonAttendeesForEvent = async (eventId: string): Promise<MemberData[]> => {
+  try{
+    const eventAttendeesSnapshot = await getDocs(query(attendanceCollection, where("eventId", "==", eventId)));
+    const attendeeIds = eventAttendeesSnapshot.docs.map(doc => doc.data().student?.studentId).filter(Boolean);
+    const allStudents = await getAllUsers();
+    const absentStudents = allStudents.filter(student => !attendeeIds.includes(student.member.studentId));
+
+    return absentStudents as unknown as MemberData[];
+  }catch(error) {
+    handleFirestoreError(error, `getting absent attendees from an event`);
+    return [];
+  }
+}
+
+
+export const getPartialAttendeesForEvent = async (eventId: string): Promise<MemberData[]> => {
+  try{
+    const eventAttendeesSnapshot = await getDocs(query(attendanceCollection, where("eventId", "==", eventId), where("status", "==", "partially present")));
+    const partialAttendeeIds = eventAttendeesSnapshot.docs.map(doc => doc.data().student?.studentId).filter(Boolean);
+
+      const CHUNK_SIZE    = 30;
+      const PARALLEL_LIMIT = 20; // max concurrent Firestore requests at a time
+
+      const chunks: string[][] = [];
+      for (let i = 0; i < partialAttendeeIds.length; i += CHUNK_SIZE) {
+        chunks.push(partialAttendeeIds.slice(i, i + CHUNK_SIZE));
+      }
+    
+      const studentDocs: MemberData[] = []
+      
+      for (let i = 0; i < chunks.length; i += PARALLEL_LIMIT) {
+          const group = chunks.slice(i, i + PARALLEL_LIMIT);
+
+          const snapshots = await Promise.all(
+            group.map(chunk =>
+              getDocs(query(
+                collection(db, "users"),
+                where("isDeleted", "==", false),
+                where("role", "==", "user"),
+                where("studentId", "in", chunk),
+              ))
+            )
+          );
+
+          snapshots
+            .flatMap(snapshot => snapshot.docs)
+            .forEach(doc => {
+              studentDocs.push({ id: doc.id, ...doc.data() } as MemberData);
+            });
+        }
+
+        if (studentDocs.length === 0) {
+          console.warn(`No fine documents found for ${partialAttendeeIds.length} student IDs.`);
+        }
+
+    return studentDocs;
+  }catch(error) {
+    handleFirestoreError(error, `getting partial attendees from an event`);
+    return [];
+  }
+}
