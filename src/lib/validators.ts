@@ -43,7 +43,14 @@ export const fineTypeSchema = z.object({
   requiresTimeIn: z.boolean(), 
   requiresTimeOut: z.boolean().optional(),
   majorEventsOnly: z.boolean(),
-});
+}).refine(
+  // at least one of these must be true
+  (data) => data.requiresTimeIn || data.requiresTimeOut,
+  {
+    message: "At least one of Time-in or Time-out must be enabled",
+    path: ["requiresTimeIn"], // which field the error appears under
+  }
+);
 
 export type FineTypeFormData = z.infer<typeof fineTypeSchema>;
 
