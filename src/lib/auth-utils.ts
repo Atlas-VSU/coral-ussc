@@ -17,7 +17,6 @@ export function setSessionCookie(days: number = 7) {
   }
   // Set a simple 'session=true' cookie accessible across the site.
   document.cookie = "session=true" + expires + "; path=/";
-  console.log("Session cookie set.");
 }
 
 /**
@@ -25,5 +24,4 @@ export function setSessionCookie(days: number = 7) {
  */
 export function clearSessionCookie() {
   document.cookie = "session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-  console.log("Session cookie cleared.");
 }

@@ -85,8 +85,6 @@ export const cacheUtils = {
 
       // 4. Clear client cookies
       cacheUtils.clearClientCookies();
-
-      console.log("All cache data cleared successfully during logout");
       return true;
     } catch (error) {
       console.error("Error clearing caches:", error);

@@ -201,7 +201,6 @@ const enforceCacheLimits = () => {
     const entriesRemoved = clearOldestCacheEntries(
       membersCache.size - MAX_CACHE_ENTRIES
     );
-    console.log(`Cache pruned: ${entriesRemoved} old entries removed`);
   }
 
   // Check total cache size
@@ -211,9 +210,6 @@ const enforceCacheLimits = () => {
     const percentToRemove = 0.3; // Remove 30% of entries when over limit
     const entriesToRemove = Math.ceil(membersCache.size * percentToRemove);
     clearOldestCacheEntries(entriesToRemove);
-    console.log(
-      `Cache size limit reached (${cacheSize}KB). Removed ${entriesToRemove} entries.`
-    );
   }
 };
 
@@ -295,9 +291,6 @@ export const updateMembersCache = (
       // Clear half of the oldest entries
       const entriesRemoved = clearOldestCacheEntries(
         Math.ceil(membersCache.size / 2)
-      );
-      console.log(
-        `Storage quota exceeded. Removed ${entriesRemoved} cache entries.`
       );
 
       // Try again
@@ -381,8 +374,6 @@ export const clearAllCachesOnLogout = () => {
   } catch (error) {
     console.error("Failed to clear static cache from localStorage", error);
   }
-
-  console.log("All user-specific caches have been cleared.");
 };
 
 // Export cache debugging functions for dev tools
