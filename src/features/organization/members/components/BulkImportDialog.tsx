@@ -402,7 +402,7 @@ export function BulkImportDialog({
                 <Checkbox
                   id="terms"
                   checked={agreed}
-                  onCheckedChange={(checked) => setAgreed(checked === true)}
+                  onCheckedChange={(checked: boolean) => setAgreed(checked === true)}
                   className="mt-0.5"
                 />
                 <div>

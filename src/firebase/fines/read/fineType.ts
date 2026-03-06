@@ -1,7 +1,7 @@
 import { FineType } from "@/features/organization/fines/types";
 import { db } from "@/firebase/firebase.config";
 import { getCurrentUserData } from "@/firebase/users";
-import { query, collection, where, getDocs } from "firebase/firestore";
+import { query, collection, where, getDocs, doc, getDoc, writeBatch, orderBy, limit } from "firebase/firestore";
 
 
   // Centralized error handler
@@ -14,38 +14,36 @@ const handleFirestoreError = (error: any, context: string) => {
 
 export const getFineTypeById = async (fineTypeId : string) => {
     try {
-        let fineTypeQuery = query(
-          collection(db, "fineTypes"),
-          where("isActive", "==", true),
-          where("id", "==", fineTypeId)
-        );
-    
-        const querySnapshot = await getDocs(fineTypeQuery);
-        const doc = querySnapshot.docs[0];
-        if (doc) {
+      const docRef = doc(db, "fineTypes", fineTypeId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+          const doc = docSnap.data();
             return {
-                id: doc.id,
-                orgId: doc.data().orgId || null,
-                name: doc.data().name,
-                description: doc.data().description,
-                defaultAmount: doc.data().defaultAmount,
-                requiresTimeIn: doc.data().requiresTimeIn,
-                requiresTimeOut: doc.data().requiresTimeOut,
-                majorEventsOnly: doc.data().majorEventsOnly,
-                isActive: doc.data().isActive,
+                id: fineTypeId,
+                orgId: doc.orgId || null,
+                name: doc.name,
+                description: doc.description,
+                defaultAmount: doc.defaultAmount,
+                requiresTimeIn: doc.requiresTimeIn,
+                requiresTimeOut: doc.requiresTimeOut,
+                majorEventsOnly: doc.majorEventsOnly,
+                isActive: doc.isActive,
             };
-        }else{
-            return null;
+        } else {
+          console.log("No such document!");
+              return null;
         }
        
       } catch (error) {
         handleFirestoreError(error, "fetch fine type");
         return null;
       }
-  }
-
+}
+  
 
 export const getAllFineTypes = async () => { 
+
   try {
     const currentUser = await getCurrentUserData();
     let fineTypeQuery = query(
