@@ -9,6 +9,7 @@ import {
   BarChart,
   Settings,
   LogOut,
+  AlertTriangle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,6 +22,7 @@ const iconMap = {
   "layout-dashboard": LayoutDashboard,
   calendar: Calendar,
   users: Users,
+  alert: AlertTriangle,
   "bar-chart": BarChart,
   settings: Settings,
 };
@@ -50,6 +52,11 @@ const organizationData = {
       title: "Members",
       url: "/org-members",
       icon: "users",
+    },
+    {
+      title: "Fines",
+      url: "/org-fines",
+      icon: "alert",
     }
     // {
     //   title: "Reports",
@@ -77,6 +84,11 @@ const organizationData = {
       label: "Members",
       icon: "users",
       href: "/org-members",
+    },
+    {
+      label: "Fines",
+      icon: "alert",
+      href: "/org-fines",
     },
   ],
 };
