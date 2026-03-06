@@ -18,14 +18,14 @@ export const updateFineItemCount = async (fines: StudentFines, toAdd?: number, t
                 newItemCount -= toDeduct;
                 toDeduct = 0;
                 if(newItemCount < 0){
-                    newItemCount = 0;
+                    toDeduct = 0;
                 }
             }
             await updateDoc(doc(db, "fines", fines.id!), {
                 fineItemsCount: newItemCount,
                 "metadata.updatedAt": Timestamp.now(),
             });
-            return true;
+            return newItemCount;
         }
     }catch(error){
         console.error(`Error updating fine item count for fine ID ${fines.id}:`, error);

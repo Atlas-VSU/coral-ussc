@@ -11,6 +11,7 @@ import { updateFineItemCount } from "../update/updateFineItemCount";
 import { FineStatus } from "@/constants/status";
 import { BulkFinesProgress, BulkFinesResult, FineGenerationPhase, FineGenerationProgress, OnFineProgress } from "@/features/organization/fines/types";
 import { Event } from "@/features/organization/events/types";
+import { updateFirstFineIssuedAt, updateLastFineIssuedAt } from "../update/fines";
 
 
 const finesCollection: CollectionReference<DocumentData> = collection(
@@ -305,7 +306,12 @@ export const generateFinesOnEvent = async (
 
           batch.set(doc(subColRef), fineItem);
 
-          await updateFineItemCount(fine, 1);
+          const count = await updateFineItemCount(fine, 1);
+          if (count === 1) {
+            await updateFirstFineIssuedAt(fine.id!);
+          } else {
+            await updateLastFineIssuedAt(fine.id!);
+          }
           const calculated = await recalculateFines(fine.id!, amount);
           if (!calculated) {
             report("error", `Failed recalculating fines. See console for details.`);
