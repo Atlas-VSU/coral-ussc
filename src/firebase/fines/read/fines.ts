@@ -91,6 +91,7 @@ export const getFinesByStudents = async (students: MemberData[]) => {
         handleFirestoreError(error, `fetching fine documents for student ID ${studentId}`);
         return null;
     }
+}
 
 export const countFinesOfStudents = async (status: string) => { 
   const currUser = await getCurrentUserData() as unknown as MemberData;
