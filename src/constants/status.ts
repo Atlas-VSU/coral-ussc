@@ -6,7 +6,7 @@ export enum PaymentStatus {
 
 export enum FineStatus {
     UNPAID = "unpaid",
-    PARTIAL = "partially_paid",
+    PARTIAL = "partial",
     PAID = "paid",
     PENDING = "pending",
     WAIVED = "waived",
