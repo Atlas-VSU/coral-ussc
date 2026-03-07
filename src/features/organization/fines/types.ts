@@ -35,6 +35,24 @@ export type ProofOfPayment = {
     notes?: string;
 }
 
+export type PaymentLog = {
+  id: string;
+  paymentNumber: number;
+  amount: number;
+  paymentMethod: string;
+  paymentProofId: string | null;
+  gcashReference: string | null;
+  status: PaymentStatus;
+  paidAt: Timestamp;
+  verifiedBy?: string;
+  verifiedAt?: Timestamp;
+  rejectionReason?: string;
+  notes?: string;
+  metaData: {
+    createdAt: Timestamp;
+  };
+}
+
 export type StudentFines = {
     id?: string;
     orgId: string;

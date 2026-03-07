@@ -19,10 +19,10 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { countFinesOfStudents, countUnsettleFinesOfStudents, getAllFines } from "@/firebase/fines/read/fines";
+import { countFinesOfStudents, countStudentsWithFines, countUnsettleFinesOfStudents, getAllFines } from "@/firebase/fines/read/fines";
 import { FineStatus } from "@/constants/status";
 import { FineBreakdownDialog } from "@/features/organization/fines/components/FineBreakdownDialog";
-
+// import { useAuth } from "@/context/AuthContext";
 
 export default function FinesPage() {
 
@@ -33,6 +33,8 @@ export default function FinesPage() {
   const ITEMS_PER_PAGE = 10;
   const [currentPage, setCurrentPage] = useState(1);
 
+  // const { user, loading } = useAuth();
+  // const isAuthenticated = !!user;
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isBulkGenerateOpen, setIsBulkGenerateOpen] = useState(false);
   const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
@@ -46,12 +48,12 @@ export default function FinesPage() {
   // const [totalUnpaidAmount, setTotalUnpaidAmount] = useState(0);
   // const [totalCollected, setTotalCollected] = useState(0);
   const [totalUnsettled, setTotalUnsettled] = useState(0);
-  const isInitialMount = useRef(true);
+  const [isStatusChanging, setIsStatusChanging] = useState(true);
 
   // Initialize stats
   const initialize = async () => {
     try {
-      let count = await countFinesOfStudents("all");
+      let count = await countStudentsWithFines();
       setTotalStudentsWithFines(count);
       count = await countUnsettleFinesOfStudents();
       setTotalUnsettled(count);
@@ -74,14 +76,23 @@ export default function FinesPage() {
     }
   }, []);
 
-  // Fetch on mount and when status filter changes
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
+
+      // if (loading) return;
+
+      // if (!isAuthenticated || !user) {
+      //   console.log("No user found yet...");
+      //   return;
+      // }
+      if (isStatusChanging) {
+      setIsStatusChanging(false);
       initialize();
-    }
-    fetchAll(filterStatus);
-  }, [filterStatus]);
+      }
+        
+      fetchAll(filterStatus);
+    
+   }, [/*user, loading, isAuthenticated,*/ filterStatus]);
+
 
   // Reset to page 1 when search changes
   useEffect(() => {
@@ -141,6 +152,11 @@ export default function FinesPage() {
       setSelectedFineType(null);
     }
   };
+
+  const handleSuccess = () => {
+    setIsStatusChanging(true);
+    setFilterStatus("paid")
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -384,7 +400,7 @@ export default function FinesPage() {
           </CardContent>
         </Card>
 
-        <FineTypeForm
+        {/* <FineTypeForm
           open={isFormOpen}
           onOpenChange={setIsFormOpen}
           onSubmit={handleFormSubmit}
@@ -394,11 +410,12 @@ export default function FinesPage() {
         <BulkGenerationDialog
           open={isBulkGenerateOpen}
           onOpenChange={setIsBulkGenerateOpen}
-        />
+        /> */}
         <FineBreakdownDialog
           open={isBreakdownOpen}
           onOpenChange={setIsBreakdownOpen}
           fines={selectedFine}
+          onSuccess={() => handleSuccess() }
         />
       </div>
     </div>

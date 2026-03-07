@@ -1,6 +1,6 @@
 import { FineStatus } from "@/constants/status";
 import { FineItem, StudentFines } from "@/features/organization/fines/types";
-import { MemberData } from "@/features/organization/members/types";
+import { Member, MemberData } from "@/features/organization/members/types";
 import { db } from "@/firebase/firebase.config";
 import { getCurrentUserData } from "@/firebase/users";
 import { collection, query, where, getDocs, CollectionReference, DocumentData, DocumentSnapshot, orderBy, limit, startAfter, getCountFromServer } from "firebase/firestore";
@@ -94,7 +94,7 @@ export const getFinesByStudents = async (students: MemberData[]) => {
 }
 
 export const countFinesOfStudents = async (status: string) => { 
-  const currUser = await getCurrentUserData() as unknown as MemberData;
+  const currUser = await getCurrentUserData() as unknown as Member;
   const coll = collection(db, "fines");
   try {
     let q = null;
@@ -115,8 +115,9 @@ export const countFinesOfStudents = async (status: string) => {
 
 }
 
+
 export const countUnsettleFinesOfStudents = async () => { 
-  const currUser = await getCurrentUserData() as unknown as MemberData;
+  const currUser = await getCurrentUserData() as unknown as Member;
   const coll = collection(db, "fines");
   try {
 
@@ -140,6 +141,23 @@ export const countUnsettleFinesOfStudents = async () => {
 
 }
 
+export const countStudentsWithFines = async () => { 
+  const currUser = await getCurrentUserData() as unknown as Member;
+  const coll = collection(db, "fines");
+  try {
+
+    const q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id));
+    const snapshot = await getCountFromServer(q);
+    const total = snapshot.data().count;
+    return total;
+  }
+  catch (error) {
+    handleFirestoreError(error, `counting fines with status ${status}`);
+    return 0;
+  }
+
+}
+
 export const getFineItemsByFineId = async (fineId: string) => {
   try {
     const fineDoc = await getDocs(query(collection(db, "fines", fineId, "fineItems"), where("isArchived", "==", false)));
@@ -153,11 +171,11 @@ export const getFineItemsByFineId = async (fineId: string) => {
 
 export const getAllFines = async (status?: string) => {
   try {
-    const currUser = await getCurrentUserData() as unknown as MemberData;
+    const currUser = await getCurrentUserData() as unknown as Member;
     const constraints = [
       where("metadata.isArchived", "==", false),
       where("orgId", "==", currUser.id),
-      orderBy("userName"),
+      orderBy("metadata.updatedAt", "desc"),
       ...(status && status !== "all" ? [where("status", "==", status)] : []),
     ];
     const snapshot = await getDocs(query(finesCollection, ...constraints));

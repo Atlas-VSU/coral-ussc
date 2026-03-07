@@ -1,33 +1,53 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Banknote, AlertTriangle, XIcon, CalendarIcon, ClockIcon, UserIcon, ShieldCheckIcon, MessageSquareIcon, CheckIcon, Eye, PenLine } from "lucide-react";
-import { paymentStatusConfig, appealStatusConfig } from "../config";
+import { appealStatusConfig } from "../config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FineItem, StudentFines } from "../types";
+import { FineItem, PaymentLog, StudentFines } from "../types";
 import { useEffect, useState } from "react";
 import { getFineItemsByFineId } from "@/firebase/fines/read/fines";
 import { FineItemDetailDialog } from "./FineItemDetailDialog";
+import { getPaymentHistoriesByReferenceId } from "@/firebase/payment/read/paymentHistory";
+import { PaymentType } from "@/constants/types";
+import { computeTotalPaid } from "../utils/fineComputations";
+import { ManualPaymentDialog } from "./ManualPaymentDialog";
 
 interface FineBreakdownDialogProps { 
     open: boolean;
     onOpenChange: (open: boolean) => void;
     fines: StudentFines | null;
+    onSuccess?: (fines:StudentFines) => void;
 }
 
-export function FineBreakdownDialog({ open, onOpenChange, fines }: FineBreakdownDialogProps) {
+export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: FineBreakdownDialogProps) {
 
     const [paymentOpen, setPaymentOpen] = useState(false);
     const [itemOpen, setItemOpen] = useState(false);
     const [fineItems, setFineItems] = useState<FineItem[]>([]);
     const [pendingAppealItems, setPendingAppealItems] = useState<FineItem[]>([]);
     const [selectedItem, setSelectedItem] = useState<FineItem>();
+    const [paymentLogs, setPaymentLogs] = useState<PaymentLog[]>([]);
+    const [verifiedPayments, setVerifiedPayments] = useState<PaymentLog[]>([]);
+    const [rejectedPayments, setRejectedPayments] = useState<PaymentLog[]>([]);
+    const [manualPayOpen, setManualPayOpen] = useState(false);
+    const [totalPaid, setTotalPaid] = useState(0);
+    
+  
+  const fetchFineItems = async (fineId: string) => {
+  const fineItems = await getFineItemsByFineId(fineId);
+  const allPaymentLogs = await getPaymentHistoriesByReferenceId(fineId, PaymentType.FINES);
 
-    const fetchFineItems = async (fineId: string) => {
-        const fineItems = await getFineItemsByFineId(fineId);
-        setFineItems(fineItems);
-        const pendingAppeals = fineItems.filter(item => item.appealStatus === "pending");
-        setPendingAppealItems(pendingAppeals);
-     }
+  const pendingAppeals = fineItems.filter(item => item.appealStatus === "pending");
+  const verified = allPaymentLogs.filter(pl => pl.status === "verified");
+  const rejected = allPaymentLogs.filter(pl => pl.status === "rejected");
+
+  setFineItems(fineItems);
+  setPendingAppealItems(pendingAppeals);
+  setPaymentLogs(allPaymentLogs);
+  setVerifiedPayments(verified);
+    setRejectedPayments(rejected);
+  setTotalPaid(computeTotalPaid(verified));
+};
 
     const openFineDetail = (item: FineItem) => {
         if (item) {
@@ -56,10 +76,15 @@ export function FineBreakdownDialog({ open, onOpenChange, fines }: FineBreakdown
     const cfg = getVariant(fines?.status ?? "unpaid");
     
     useEffect(() => {
-        if (fines) {
+        if (fines && open) {
             fetchFineItems(fines.id!);
         }
     }, [open, fines]);
+  
+  const handlePaymentSucceed = () => {
+    onSuccess && onSuccess(fines!);
+    onOpenChange(false);
+  }
 
     return (
         <div>
@@ -89,7 +114,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines }: FineBreakdown
                 </Button>
                 )}
             </div>
-                {fineItems.length > 0 && (
+                {fineItems.length > 0 && paymentLogs.length >0 && (
                   <p className="text-xs text-muted-foreground">
                     This submission covers{" "}
                     <span className="font-medium text-foreground">
@@ -103,7 +128,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines }: FineBreakdown
                       </span>
                     ))}
                     {" — totalling "}
-                    {/* <span className="font-medium text-foreground">₱{payment.amountPaid.toLocaleString()}</span>. */}
+                    <span className="font-medium text-foreground">₱{totalPaid.toLocaleString()}</span>.
                   </p>
                 )}
 
@@ -123,12 +148,12 @@ export function FineBreakdownDialog({ open, onOpenChange, fines }: FineBreakdown
                 )}
                 
                 {/* Declined rejection reason */}
-                {/* {payment.status === "declined" && payment.rejectionReason && (
+                {rejectedPayments[0] && rejectedPayments[0].rejectionReason && (
                   <div className="flex items-start gap-2 rounded-sm border border-destructive/20 bg-destructive/10 px-3 py-2">
                     <XIcon className="size-3.5 mt-0.5 shrink-0 text-destructive" />
-                    <p className="text-xs text-destructive leading-relaxed">{payment.rejectionReason}</p>
+                    <p className="text-xs text-destructive leading-relaxed">{rejectedPayments[0].rejectionReason}</p>
                   </div>
-                )} */}
+                )}
             </div>
             
                     
@@ -346,8 +371,8 @@ export function FineBreakdownDialog({ open, onOpenChange, fines }: FineBreakdown
                   )}
 
                   {/* Pending bulk payment indicator — shown when this fine is covered by an unreviewed submission */}
-                  {/* {!item.isWaived && liveSelectedRecord?.bulkPaymentSubmission?.status === "pending" && (() => {
-                    const bps = liveSelectedRecord.bulkPaymentSubmission
+                  {!item.isWaived && verifiedPayments[0]?.status === "pending" && (() => {
+                    const bps = verifiedPayments[0];
                     return (
                       <div className="flex items-start gap-2 rounded-sm border border-border bg-muted/50 px-3 py-2">
                         <Banknote className="size-3.5 mt-0.5 shrink-0 text-muted-foreground" />
@@ -356,19 +381,19 @@ export function FineBreakdownDialog({ open, onOpenChange, fines }: FineBreakdown
                           <p className="text-[11px] text-muted-foreground leading-relaxed">
                             This fine is part of a{" "}
                             <span className="font-medium text-foreground">
-                              ₱{bps.amountPaid.toLocaleString()} {bps.paymentMethod}
+                              ₱{bps.amount.toLocaleString()} {bps.paymentMethod}
                             </span>{" "}
-                            submission dated {bps.dateOfPayment}
-                            {bps.gcashReferenceNumber ? ` · Ref: ${bps.gcashReferenceNumber}` : ""}.
+                            submission dated {bps.paidAt.toDate().toLocaleDateString()}
+                            {bps.gcashReference ? ` · Ref: ${bps.gcashReference}` : ""}.
                             {" "}
-                            {item.appeal?.status === "pending"
+                            {item.appealStatus === "pending"
                               ? "This fine also has an unresolved appeal — resolve the appeal first, or use \"Review Payment\" above to settle regardless."
                               : "Use \"Review Payment\" above to approve or decline the full submission."}
                           </p>
                         </div>
                       </div>
                     )
-                  })()} */}
+                  })()}
 
                   {/* View details */}
                   <Button
@@ -399,7 +424,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines }: FineBreakdown
                 )}
 
                 {/* Manual payment action */}
-                {/* {fines && computeBalance(fines) > 0 && !payment && (
+                {fines && fines.balance > 0 && paymentLogs.length === 0 && (
                     <div className="flex justify-end mt-2">
                     <Button
                         size="sm"
@@ -411,12 +436,22 @@ export function FineBreakdownDialog({ open, onOpenChange, fines }: FineBreakdown
                         Log Manual Payment
                     </Button>
                     </div>
-                )}    */}
-        {selectedItem && (<FineItemDetailDialog 
-            open={itemOpen} 
-            onOpenChange={(open) => setItemOpen(open)} 
-            fineItem={selectedItem!}
-        />)}
+                )}   
+            {selectedItem && (<FineItemDetailDialog 
+              open={itemOpen} 
+              onOpenChange={(open) => setItemOpen(open)} 
+              fineItem={selectedItem!}
+            />)}
+            
+            <ManualPaymentDialog
+              open={manualPayOpen}
+              onOpenChange={(open) => setManualPayOpen(open)}
+              fines={fines!}
+              fineItems={fineItems}
+              onSuccess={() => handlePaymentSucceed()}
+            />
+        
+            
         </DialogContent>
         </Dialog>
         </div>
