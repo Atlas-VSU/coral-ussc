@@ -12,8 +12,6 @@ import { PaymentMethod } from "@/features/organization/fees/types";
 
 
 
-const currentUser = await getCurrentUserData() as unknown as Member;
-
 export const addOnlinePayment = async (proofOfPaymentId: string) => {
     try {
         const payment = await getProofOfPaymentById(proofOfPaymentId);
@@ -45,7 +43,8 @@ export const addOnlinePayment = async (proofOfPaymentId: string) => {
     }
 }
 
-export const addOfflinePayment = async (amount: number, type: string, typeId: string, method: PaymentMethod ) => {
+export const addOfflinePayment = async (amount: number, type: string, typeId: string, method: PaymentMethod) => {
+    const currentUser = await getCurrentUserData() as unknown as Member;
     try {
         const subColRef = collection(db, type, typeId, "paymentHistory");
         const querySnapshot = await getCountFromServer(subColRef);
@@ -53,8 +52,6 @@ export const addOfflinePayment = async (amount: number, type: string, typeId: st
         let sequenceNumber = 0;
         querySnapshot.data().count ? sequenceNumber = querySnapshot.data().count + 1: sequenceNumber = 1;
 
-        // const verifier = await getCurrentUserData() as ;
-        // console.log("Verifier data:", verifier.firstName);
 
         await addDoc(subColRef, {
             paymentNumber: sequenceNumber,

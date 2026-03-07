@@ -64,7 +64,7 @@ export type StudentFines = {
     accumulatedAmount: number;
     paidAmount: number;
     balance: number;
-    status: "pending" | "partial" | "paid" | "waived";
+    status: "pending" | "partial" | "paid" | "waived" |"unpaid";
     fineItemsCount: number;
     reason: string | null;
     firstFineIssuedAt: Timestamp | null;

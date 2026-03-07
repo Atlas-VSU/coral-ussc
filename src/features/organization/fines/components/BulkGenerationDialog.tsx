@@ -15,7 +15,6 @@ interface BulkGenerationDialogProps {
 export function BulkGenerationDialog({ open, onOpenChange }: BulkGenerationDialogProps) {
   const [progress, setProgress] = useState<BulkFinesProgress | null>(null);
 
-  // FIX 1: define handleClose
   const handleClose = () => {
     if (isRunning) return;
     setProgress(null);       // reset so next open starts fresh
@@ -23,7 +22,6 @@ export function BulkGenerationDialog({ open, onOpenChange }: BulkGenerationDialo
   };
 
   const handleCreate = async () => {
-    // FIX 2: pass AY and sem as required first two arguments
     const result = await createBulkFines(
       (update) => setProgress(update)
     );
@@ -51,7 +49,6 @@ export function BulkGenerationDialog({ open, onOpenChange }: BulkGenerationDialo
           </DialogDescription>
         </DialogHeader>
 
-        {/* FIX 3: progress && added to all three blocks */}
         {isRunning && progress && (
           <div className="space-y-6 py-4">
             <Card>

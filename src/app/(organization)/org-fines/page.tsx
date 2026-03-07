@@ -400,7 +400,7 @@ export default function FinesPage() {
           </CardContent>
         </Card>
 
-        {/* <FineTypeForm
+        <FineTypeForm
           open={isFormOpen}
           onOpenChange={setIsFormOpen}
           onSubmit={handleFormSubmit}
@@ -410,7 +410,7 @@ export default function FinesPage() {
         <BulkGenerationDialog
           open={isBulkGenerateOpen}
           onOpenChange={setIsBulkGenerateOpen}
-        /> */}
+        />
         <FineBreakdownDialog
           open={isBreakdownOpen}
           onOpenChange={setIsBreakdownOpen}
