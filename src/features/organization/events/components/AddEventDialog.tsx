@@ -189,7 +189,7 @@ export function AddEventDialog({
                       </FormControl>
                       <SelectContent>
                         {fineTypes.map((type: FineType) => (
-                          <SelectItem key={type.id} value={type.id}>
+                          <SelectItem key={type.id} value={type.id!}>
                             {type.name}
                           </SelectItem>
                         ))}

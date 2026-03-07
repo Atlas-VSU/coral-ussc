@@ -3,7 +3,7 @@ import { Banknote, AlertTriangle, XIcon, CalendarIcon, ClockIcon, UserIcon, Shie
 import { appealStatusConfig } from "../config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FineItem, PaymentLog, StudentFines } from "../types";
+import { FineItem, FinesPaymentLog, StudentFines } from "../types";
 import { useEffect, useState } from "react";
 import { getFineItemsByFineId } from "@/firebase/fines/read/fines";
 import { FineItemDetailDialog } from "./FineItemDetailDialog";
@@ -26,9 +26,9 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
     const [fineItems, setFineItems] = useState<FineItem[]>([]);
     const [pendingAppealItems, setPendingAppealItems] = useState<FineItem[]>([]);
     const [selectedItem, setSelectedItem] = useState<FineItem>();
-    const [paymentLogs, setPaymentLogs] = useState<PaymentLog[]>([]);
-    const [verifiedPayments, setVerifiedPayments] = useState<PaymentLog[]>([]);
-    const [rejectedPayments, setRejectedPayments] = useState<PaymentLog[]>([]);
+    const [paymentLogs, setPaymentLogs] = useState<FinesPaymentLog[]>([]);
+    const [verifiedPayments, setVerifiedPayments] = useState<FinesPaymentLog[]>([]);
+    const [rejectedPayments, setRejectedPayments] = useState<FinesPaymentLog[]>([]);
     const [manualPayOpen, setManualPayOpen] = useState(false);
     const [totalPaid, setTotalPaid] = useState(0);
     
