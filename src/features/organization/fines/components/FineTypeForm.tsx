@@ -22,7 +22,6 @@ import { Switch } from "@/components/ui/switch";
 import { FineType } from "../types";
 import { useFineTypeForm } from "../hooks/useFineTypeForm";
 import { FineTypeFormData } from "@/lib/validators";
-import { getCurrentUserData } from "@/firebase/users";
 
 interface FineTypeFormProps {
   open: boolean;
