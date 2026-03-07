@@ -26,6 +26,7 @@ interface EventListItemProps {
   event: Event;
   onEdit: (event: Event) => void;
   onArchive: (event: Event) => void;
+  onIssueFine: (event: Event) => void;
   onUnarchive: (event: Event) => void;
   onDelete: (event: Event) => void;
 }
@@ -34,6 +35,7 @@ export function EventListItem({
   event,
   onEdit,
   onArchive,
+  onIssueFine,
   onUnarchive,
   onDelete,
 }: EventListItemProps) {
@@ -134,6 +136,10 @@ export function EventListItem({
       setIsOperationLoading(false);
     }
   };
+
+  const handleIssueFine = () => { 
+    onIssueFine(event);
+  }
 
   const handleUnarchiveEvent = async () => {
     setIsOperationLoading(true);
@@ -247,6 +253,9 @@ export function EventListItem({
                     </>
                   ) : (
                     <>
+                      {(!event.finesGenerated && event.status === "completed") && (<DropdownMenuItem onClick={handleIssueFine} className="font-medium" disabled={isOperationLoading}>
+                        Issue Fines
+                      </DropdownMenuItem>)}
                       <DropdownMenuItem onClick={handleEditEvent} className="font-medium" disabled={isOperationLoading}>
                         Edit Event
                       </DropdownMenuItem>

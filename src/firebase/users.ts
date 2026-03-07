@@ -18,8 +18,7 @@ import { db } from "./firebase.config";
 import { MemberFormData } from "@/lib/validators";
 import { Member, Program } from "@/features/organization/members/types";
 import { getAuth } from "firebase/auth";
-import { email } from "zod";
-import { getProgramByFacultyId, getProgramById } from "./programs";
+import { getProgramById } from "./programs";
 import {
   getCacheKey,
   getMembersCacheEntry,
@@ -139,6 +138,28 @@ export const getUsers = async () => {
     } else if (accessLevel === 2) {
       usersQuery = query(usersQuery, where("facultyId", "==", currentUser.facultyId ?? ""));
     }
+
+    const querySnapshot = await getDocs(usersQuery);
+    return querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      member: { ...doc.data() },
+    }));
+  } catch (error) {
+    handleFirestoreError(error, "fetch users");
+    return [];
+  }
+};
+
+/**
+ * Fetches all users despite the current user's context (faculty or program).
+ */
+export const getAllUsers = async () => {
+  try {
+    let usersQuery = query(
+      usersCollection,
+      where("isDeleted", "==", false),
+      where("role", "==", "user")
+    );
 
     const querySnapshot = await getDocs(usersQuery);
     return querySnapshot.docs.map((doc) => ({
