@@ -35,7 +35,7 @@ export type ProofOfPayment = {
     notes?: string;
 }
 
-export type PaymentLog = {
+export type FinesPaymentLog = {
   id: string;
   paymentNumber: number;
   amount: number;
