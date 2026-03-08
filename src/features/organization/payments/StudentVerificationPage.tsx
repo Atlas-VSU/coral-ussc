@@ -4,6 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function StudentVerificationPage() {
   const [studentId, setStudentId] = useState("");
@@ -41,19 +48,17 @@ export default function StudentVerificationPage() {
             {/* Program Selection */}
             <div className="space-y-2">
               <Label htmlFor="program">Program</Label>
-              <select
-                id="program"
-                value={program}
-                onChange={(e) => setProgram(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                required
-              >
-                <option value="">Select your program</option>
-                <option value="bscs">Bachelor of Science in Computer Science</option>
-                <option value="bsit">Bachelor of Science in Information Technology</option>
-                <option value="bsce">Bachelor of Science in Civil Engineering</option>
-                <option value="bsee">Bachelor of Science in Electrical Engineering</option>
-              </select>
+              <Select value={program} onValueChange={setProgram} required>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select your program" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bscs">Bachelor of Science in Computer Science</SelectItem>
+                  <SelectItem value="bsit">Bachelor of Science in Information Technology</SelectItem>
+                  <SelectItem value="bsce">Bachelor of Science in Civil Engineering</SelectItem>
+                  <SelectItem value="bsee">Bachelor of Science in Electrical Engineering</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Submit Button */}
