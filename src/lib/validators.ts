@@ -54,10 +54,8 @@ export const fineTypeSchema = z.object({
 
 export type FineTypeFormData = z.infer<typeof fineTypeSchema>;
 
-
 export const paymentSchema = z.object({
-  firstName: z.string().min(2, "First name is required"),
-  lastName: z.string().min(2, "Last name is required"),
+  userName: z.string().min(2, "Name is required"),
   studentId: z
     .string()
     .min(1, "Student ID is required")
@@ -66,14 +64,33 @@ export const paymentSchema = z.object({
       "Student ID must follow format XX-X-XXXXX (e.g., 21-1-12345)"
     ),
   amount: z.number().min(0.01, "Amount must be greater than zero"),
-  senderNumber: z.string()
-  .min(11, "Sender number is required")
-  .max(13, "Sender number is too long")
-  .regex(/^([+]?63|0)9\d{9}$/, "Sender number must be a valid phone number"),
+  paymentMethod: z.string(),
   referenceNumber: z.string().optional(),
+  senderNumber: z.string().optional(),
   imageUrl: z.string().optional(),
   rejectionReason: z.string().optional(),
   notes: z.string().optional(),
+})
+.superRefine((values, ctx) => {
+  if (values.paymentMethod === "gcash") {
+    const phoneRegex = /^([+]?63|0)9\d{9}$/;
+    
+    if (!values.senderNumber || !phoneRegex.test(values.senderNumber)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "A valid phone number is required for GCash payments",
+        path: ["senderNumber"], 
+      });
+    }
+  }
+
+  if ((values.paymentMethod === "bank_transfer" || values.paymentMethod === "gcash") && (!values.referenceNumber || values.referenceNumber.length < 10)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Reference number is required",
+      path: ["referenceNumber"],
+    });
+  }
 });
 
 export type PaymentFormData = z.infer<typeof paymentSchema>; 
