@@ -57,7 +57,7 @@ export default function StudentVerificationPage() {
             </div>
 
             {/* Submit Button */}
-            <Button type="submit" className="w-full mb-2">
+            <Button type="submit" className="w-full mb-6">
               Continue
             </Button>
           </form>
