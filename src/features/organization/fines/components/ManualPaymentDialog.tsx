@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { FineItem, StudentFines } from "../types";
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
-import { addOfflinePayment } from "@/firebase/payment/create/paymentHistory";
+import { addOfflineFinesPayment } from "@/firebase/payment/create/paymentHistory";
 import { toast } from "sonner";
 import { useProofOfPaymentForm } from "../hooks/useProofOfPaymentForm";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -27,8 +27,6 @@ interface ManualPaymentDialogProps {
 export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSuccess }: ManualPaymentDialogProps) {
     
     const [manualPayMethod, setManualPayMethod] = useState<string>("cash");
-    const [manualPayRef, setManualPayRef] = useState<string>("");
-    // const [manualPayDate, setManualPayDate] = useState<string>(new Date().toISOString().split("T")[0]);
     const [manualPayNotes, setManualPayNotes] = useState<string>("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     
@@ -46,7 +44,7 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
     const handleManualPayment = async (data: PaymentFormData) => {
         setIsSubmitting(true);
         try {
-            await addOfflinePayment(fines, PaymentType.FINES, manualPayMethod as any, data.referenceNumber, data.senderNumber);
+            await addOfflineFinesPayment(fines, PaymentType.FINES, manualPayMethod as any, data.referenceNumber, data.senderNumber);
             onSuccess && onSuccess();
         toast.success("A payment was logged successfully.");
         } catch (error) {
@@ -139,21 +137,25 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
                         )}
                         
                         {manualPayMethod === "gcash" && (
-                                <FormField
-                                    control={form.control}
-                                    name="senderNumber"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-col gap-1.5">
-                                        <FormLabel>GCash Number <span className="text-destructive">*</span></FormLabel>
-                                        <FormControl>
-                                            <Input 
-                                            {...field} 
-                                            placeholder="09xxxxxxxxx" 
-                                            />
-                                        </FormControl>
-                                        <FormMessage className="text-[10px]" />
-                                        </FormItem>
-                                    )}
+                               <FormField
+                                control={form.control}
+                                name="notes"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-col gap-1.5">
+                                    <FormLabel>
+                                        Notes <span className="text-xs text-muted-foreground">(optional)</span>
+                                    </FormLabel>
+                                    <FormControl>
+                                        <Textarea
+                                        {...field}
+                                        rows={2}
+                                        placeholder="Any additional notes about this payment…"
+                                        className="resize-none text-xs"
+                                        />
+                                    </FormControl>
+                                    <FormMessage className="text-[10px]" />
+                                    </FormItem>
+                                )}
                                 />
                         )}
                         

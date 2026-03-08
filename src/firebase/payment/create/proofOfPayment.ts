@@ -7,8 +7,13 @@ import { addDoc, collection, Timestamp, updateDoc } from "firebase/firestore";
 export const createOnlineProofOfPayment = async (
     payment: PaymentFormData, type: string ) => {
 
+    let transaction;
     try{
-        const transaction = await getFineByStudentId(payment.studentId) ;
+         if (type === "fines") {
+            transaction = await getFineByStudentId(payment.studentId);
+        } else if (type === "fees") {
+            // For fees if ever
+        }
         if (transaction)
         {
             const paymentData = {
@@ -35,9 +40,13 @@ export const createOnlineProofOfPayment = async (
 
 export const createOfflineProofOfPayment = async (
     payment: PaymentFormData, type: string ) => {
-
-    try{
-        const transaction = await getFineByStudentId(payment.studentId) ;
+        let transaction
+    try {
+        if (type === "fines") {
+            transaction = await getFineByStudentId(payment.studentId);
+        } else if (type === "fees") {
+            // For fees if ever
+        }
         if (transaction)
         {
             const paymentData = {

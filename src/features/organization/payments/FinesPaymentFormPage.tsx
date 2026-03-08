@@ -13,7 +13,7 @@ import { usePaymentForm } from "./hooks/usePaymentForm";
 import { PaymentMethodSelector } from "./components/PaymentMethodSelector";
 import { ImageUpload } from "./components/ImageUpload";
 
-export default function PaymentFormPage() {
+export default function FinesPaymentFormPage() {
   const {
     form,
     image, setImage,

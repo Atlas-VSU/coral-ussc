@@ -7,7 +7,7 @@ import { FineItem, FinesPaymentLog, StudentFines } from "../types";
 import { useEffect, useState } from "react";
 import { getFineItemsByFineId } from "@/firebase/fines/read/fines";
 import { FineItemDetailDialog } from "./FineItemDetailDialog";
-import { getPaymentHistoriesByReferenceId } from "@/firebase/payment/read/paymentHistory";
+import { getFinesPaymentHistoriesByReferenceId} from "@/firebase/payment/read/paymentHistory";
 import { computeTotalPaid } from "../utils/fineComputations";
 import { ManualPaymentDialog } from "./ManualPaymentDialog";
 import { PaymentType } from "@/constants/types";
@@ -36,7 +36,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
   
   const fetchFineItems = async (fineId: string) => {
   const fineItems = await getFineItemsByFineId(fineId);
-  const allPaymentLogs = await getPaymentHistoriesByReferenceId(fineId, PaymentType.FINES);
+  const allPaymentLogs = await getFinesPaymentHistoriesByReferenceId(fineId, PaymentType.FINES);
 
   const pendingAppeals = fineItems.filter(item => item.appealStatus === "pending");
   const verified = allPaymentLogs.filter(pl => pl.status === "verified");
