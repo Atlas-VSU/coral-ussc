@@ -1,6 +1,5 @@
-import FinesPaymentFormPage from "@/features/organization/payments/FinesPaymentFormPage";
-
+import StudentVerificationPage from "@/features/organization/payments/StudentVerificationPage";
 
 export default function PaymentPage() {
-  return <FinesPaymentFormPage />;
+  return <StudentVerificationPage />;
 }
