@@ -20,9 +20,7 @@ import { Button } from "@/components/ui/button";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { countFinesOfStudents, countStudentsWithFines, countUnsettleFinesOfStudents, getAllFines } from "@/firebase/fines/read/fines";
-import { FineStatus } from "@/constants/status";
 import { FineBreakdownDialog } from "@/features/organization/fines/components/FineBreakdownDialog";
-// import { useAuth } from "@/context/AuthContext";
 
 export default function FinesPage() {
 
@@ -33,8 +31,6 @@ export default function FinesPage() {
   const ITEMS_PER_PAGE = 10;
   const [currentPage, setCurrentPage] = useState(1);
 
-  // const { user, loading } = useAuth();
-  // const isAuthenticated = !!user;
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isBulkGenerateOpen, setIsBulkGenerateOpen] = useState(false);
   const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
@@ -42,11 +38,8 @@ export default function FinesPage() {
   const [selectedFineType, setSelectedFineType] = useState<FineType | null>(null);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("paid");
-  // const [filterAppeal, setFilterAppeal] = useState("all");
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
   const [totalStudentsWithFines, setTotalStudentsWithFines] = useState(0);
-  // const [totalUnpaidAmount, setTotalUnpaidAmount] = useState(0);
-  // const [totalCollected, setTotalCollected] = useState(0);
   const [totalUnsettled, setTotalUnsettled] = useState(0);
   const [isStatusChanging, setIsStatusChanging] = useState(true);
 
@@ -78,12 +71,6 @@ export default function FinesPage() {
 
   useEffect(() => {
 
-      // if (loading) return;
-
-      // if (!isAuthenticated || !user) {
-      //   console.log("No user found yet...");
-      //   return;
-      // }
       if (isStatusChanging) {
       setIsStatusChanging(false);
       initialize();
@@ -91,7 +78,7 @@ export default function FinesPage() {
         
       fetchAll(filterStatus);
     
-   }, [/*user, loading, isAuthenticated,*/ filterStatus]);
+   }, [ filterStatus]);
 
 
   // Reset to page 1 when search changes

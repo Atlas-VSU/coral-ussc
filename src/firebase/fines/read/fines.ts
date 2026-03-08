@@ -1,4 +1,4 @@
-import { FineStatus } from "@/constants/status";
+
 import { FineItem, StudentFines } from "@/features/organization/fines/types";
 import { Member, MemberData } from "@/features/organization/members/types";
 import { db } from "@/firebase/firebase.config";
