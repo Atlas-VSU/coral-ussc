@@ -182,14 +182,14 @@ export default function FinesFeesSelectionPage({
                     <Checkbox
                       id="pay-all-fees"
                       checked={payFees}
-                      onCheckedChange={(checked) => setPayFees(checked === true)}
+                      onCheckedChange={(checked) => {
+                        setPayFees(checked === true);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
                     />
-                    <label
-                      htmlFor="pay-all-fees"
-                      className="text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
-                    >
+                    <span className="text-sm font-semibold leading-none flex-1">
                       Pay All Fees
-                    </label>
+                    </span>
                     <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
                       ₱{feesTotal.toFixed(2)}
                     </span>
@@ -257,14 +257,14 @@ export default function FinesFeesSelectionPage({
                     <Checkbox
                       id="pay-all-fines"
                       checked={payFines}
-                      onCheckedChange={(checked) => setPayFines(checked === true)}
+                      onCheckedChange={(checked) => {
+                        setPayFines(checked === true);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
                     />
-                    <label
-                      htmlFor="pay-all-fines"
-                      className="text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
-                    >
+                    <span className="text-sm font-semibold leading-none flex-1">
                       Pay All Fines
-                    </label>
+                    </span>
                     <span className="text-lg font-bold text-red-600 dark:text-red-400">
                       ₱{finesTotal.toFixed(2)}
                     </span>
