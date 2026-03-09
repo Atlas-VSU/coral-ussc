@@ -38,7 +38,11 @@ const PROGRAM_NAMES: Record<string, string> = {
   bsee: "Bachelor of Science in Electrical Engineering",
 };
 
-export default function StudentVerificationPage() {
+interface StudentVerificationPageProps {
+  onVerified: (data: { name: string; studentId: string; program: string }) => void;
+}
+
+export default function StudentVerificationPage({ onVerified }: StudentVerificationPageProps) {
   const [showModal, setShowModal] = useState(false);
   const [studentData, setStudentData] = useState<{
     name: string;
@@ -75,9 +79,10 @@ export default function StudentVerificationPage() {
   };
 
   const handleConfirm = () => {
-    console.log("Student confirmed:", studentData);
-    setShowModal(false);
-    // TODO: Navigate to next page (Organization Selection)
+    if (studentData) {
+      setShowModal(false);
+      onVerified(studentData);
+    }
   };
 
   const handleCancel = () => {
