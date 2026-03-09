@@ -57,7 +57,6 @@ export function FineTypeForm({
 
   const handleFormSubmit = async (data: FineTypeFormData) => {
     if (isSubmitting) return;
-    console.log("Form Data Submitted:", data);
     const fineTypeToSubmit: FineType = {
       ...data,
       isActive: true,

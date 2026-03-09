@@ -1,4 +1,4 @@
-import { PaymentStatus } from "@/constants/status";
+
 import { Timestamp } from "firebase/firestore";
 
 export type FineType = {
@@ -26,7 +26,7 @@ export type ProofOfPayment = {
     referenceNumber: string;
     amount: number;
     imageUrl: string;
-    status: PaymentStatus;
+    status: string;
     submittedAt: string;
     verifiedBy?: string;
     verifiedByName?: string;
@@ -42,7 +42,7 @@ export type FinesPaymentLog = {
   paymentMethod: string;
   paymentProofId: string | null;
   gcashReference: string | null;
-  status: PaymentStatus;
+  status: string;
   paidAt: Timestamp;
   verifiedBy?: string;
   verifiedAt?: Timestamp;
@@ -64,7 +64,7 @@ export type StudentFines = {
     accumulatedAmount: number;
     paidAmount: number;
     balance: number;
-    status: "pending" | "partial" | "paid" | "waived" |"unpaid";
+    status: string;
     fineItemsCount: number;
     reason: string | null;
     firstFineIssuedAt: Timestamp | null;
@@ -148,4 +148,6 @@ export type BulkFinesResult = {
 export type OnBulkFinesProgress = (update: BulkFinesProgress) => void;
 
 export type StudentFineStatus = "unpaid" | "partial" | "paid" | "pending" | "waived";
+
+
 

@@ -20,7 +20,7 @@ export const getPaymentHistoryById = async (paymentHistoryId: string, paymentTyp
     }
 }
 
-export const getPaymentHistoriesByReferenceId = async (paymentReferenceId: string, paymentType: PaymentType) => {
+export const getFinesPaymentHistoriesByReferenceId = async (paymentReferenceId: string, paymentType: PaymentType) => {
     try {
         const subColRef = collection(db, paymentType, paymentReferenceId, "paymentHistory");
         const querySnapshot = await getDocs(subColRef);
@@ -32,7 +32,7 @@ export const getPaymentHistoriesByReferenceId = async (paymentReferenceId: strin
     }
 }
 
-export const getVerifiedPaymentHistoriesByReferenceId = async (paymentReferenceId: string, paymentType: PaymentType) => {
+export const getFinesVerifiedPaymentHistoriesByReferenceId = async (paymentReferenceId: string, paymentType: PaymentType) => {
     try {
         const subColRef = collection(db, paymentType, paymentReferenceId, "paymentHistory");
         const querySnapshot = await getDocs(subColRef);

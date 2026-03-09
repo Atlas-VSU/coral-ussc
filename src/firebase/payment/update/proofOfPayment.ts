@@ -1,11 +1,11 @@
-import { PaymentStatus } from "@/constants/status";
+
 import { ProofOfPayment } from "@/features/organization/fines/types";
-import { MemberData } from "@/features/organization/members/types";
 import { db } from "@/firebase/firebase.config";
 import { getCurrentUserData } from "@/firebase/users";
 import { Member } from "@/features/organization/members/types"; // Import Member type
-import { doc, Timestamp, updateDoc } from "firebase/firestore";
+import { collection, doc, Timestamp, updateDoc } from "firebase/firestore";
 import { rejectPaymentHistory, verifyPaymentHistory } from "./paymentHistory";
+import { PaymentStatus } from "@/constants/status";
 
 
 export const updateProofOfPaymentHistoryId = async (proofOfPaymentId: string, paymentHistoryId: string) => {
@@ -13,7 +13,7 @@ export const updateProofOfPaymentHistoryId = async (proofOfPaymentId: string, pa
         const docRef = doc(db, "proofOfPayments", proofOfPaymentId);
         await updateDoc(docRef, {
             paymentHistoryId: paymentHistoryId,
-            "metaData.updatedAt": Timestamp.now(),
+            "updatedAt": Timestamp.now(),
         });
     }catch(error){
         console.error("Error updating proof of payment with history ID:", error);
@@ -31,7 +31,7 @@ export const verifyPaymentProof = async (proofOfPayment: ProofOfPayment, note: s
             verifiedAt: Timestamp.now(),
             notes: note,
             status: PaymentStatus.VERIFIED,
-            "metaData.updatedAt": Timestamp.now(),
+            "updatedAt": Timestamp.now(),
         });
         await verifyPaymentHistory(proofOfPayment.paymentHistoryId!, proofOfPayment);
         //To Add: email capability
@@ -51,12 +51,34 @@ export const rejectPaymentProof = async (proofOfPayment: ProofOfPayment, reason:
             verifiedAt: Timestamp.now(),
             rejectionReason: reason,
             status: PaymentStatus.REJECTED,
-            "metaData.updatedAt": Timestamp.now(),
+            "updatedAt": Timestamp.now(),
         });
         await rejectPaymentHistory(proofOfPayment.paymentHistoryId!, proofOfPayment);
         //To Add: email capability
     }catch(error){
         console.error("Error rejecting payment proof:", error);
         throw new Error("Failed to reject payment proof. Please try again.");
+    }
+}
+
+export const updateProofOfPaymentStatus = async (
+    proofOfPaymentId: string,
+    status: "pending" | "verified" | "rejected",
+    rejectionReason?: string,
+    verifiedBy?: string,
+    verifiedByName?: string) => {
+    try {
+        const proofRef = doc(db, "proofOfPayments", proofOfPaymentId);
+        await updateDoc(proofRef, {
+            status,
+            rejectionReason: rejectionReason || null,
+            verifiedByName: verifiedByName || null,
+            verifiedBy: verifiedBy || null,
+            verifiedAt: verifiedBy?Timestamp.now():null,
+            updatedAt: Timestamp.now(),
+        })
+    } catch (error) {
+        console.error("Error updating proof of payment status:", error);
+        throw new Error("Failed to update proof of payment status. Please try again.");
     }
 }
