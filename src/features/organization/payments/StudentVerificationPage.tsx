@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ConfirmationModal } from "./components/ConfirmationModal";
 
 // Validation schema
 const verificationSchema = z.object({
@@ -28,7 +30,21 @@ const verificationSchema = z.object({
 
 type VerificationFormData = z.infer<typeof verificationSchema>;
 
+// Program code to full name mapping
+const PROGRAM_NAMES: Record<string, string> = {
+  bscs: "Bachelor of Science in Computer Science",
+  bsit: "Bachelor of Science in Information Technology",
+  bsce: "Bachelor of Science in Civil Engineering",
+  bsee: "Bachelor of Science in Electrical Engineering",
+};
+
 export default function StudentVerificationPage() {
+  const [showModal, setShowModal] = useState(false);
+  const [studentData, setStudentData] = useState<{
+    name: string;
+    studentId: string;
+    program: string;
+  } | null>(null);
   const {
     register,
     handleSubmit,
@@ -46,9 +62,27 @@ export default function StudentVerificationPage() {
   const programValue = watch("program");
 
   const onSubmit = (data: VerificationFormData) => {
-    console.log("Student ID:", data.studentId);
-    console.log("Program:", data.program);
-    // TODO: Handle form submission
+    // TODO: Fetch student data from backend using studentId and program
+    // For now, using mock data
+    const mockStudentName = "Juan Dela Cruz"; // This will be fetched from database later
+    
+    setStudentData({
+      name: mockStudentName,
+      studentId: data.studentId,
+      program: PROGRAM_NAMES[data.program] || data.program,
+    });
+    setShowModal(true);
+  };
+
+  const handleConfirm = () => {
+    console.log("Student confirmed:", studentData);
+    setShowModal(false);
+    // TODO: Navigate to next page (Organization Selection)
+  };
+
+  const handleCancel = () => {
+    setShowModal(false);
+    setStudentData(null);
   };
 
   return (
@@ -101,6 +135,16 @@ export default function StudentVerificationPage() {
                   <SelectItem value="bsce">Bachelor of Science in Civil Engineering</SelectItem>
                   <SelectItem value="bsee">Bachelor of Science in Electrical Engineering</SelectItem>
                 </SelectContent>
+
+      {/* Confirmation Modal */}
+      {studentData && (
+        <ConfirmationModal
+          open={showModal}
+          onClose={handleCancel}
+          onConfirm={handleConfirm}
+          studentData={studentData}
+        />
+      )}
               </Select>
               {errors.program && (
                 <p className="text-xs text-red-500 flex items-center gap-1">
