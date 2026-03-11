@@ -6,8 +6,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-nunito-sans);
-  --font-mono: var(--font-nunito);
+  --font-sans: var(--font-montserrat);
+  --font-mono: var(--font-montserrat);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -47,17 +47,13 @@
   --radius: 0.625rem;
 
   /* Ocean theme - Light mode */
-  --background: oklch(0.98 0.01 240);
-  --foreground: oklch(0.15 0.05 240);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.14 0.06 148);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.14 0.06 148);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.14 0.06 148);
 
-  --card: oklch(1 0 240);
-  --card-foreground: oklch(0.15 0.05 240);
-
-  --popover: oklch(1 0 240);
-  --popover-foreground: oklch(0.15 0.05 240);
-
-  --primary: oklch(0.54 0.18 240);
-  --primary-foreground: oklch(0.98 0.01 240);
 
   --secondary: oklch(0.92 0.05 220);
   --secondary-foreground: oklch(0.2 0.1 240);
@@ -143,15 +139,15 @@
   outline-color: color-mix(in oklch, var(--ring), transparent 50%);
 }
 
-/* Force Nunito font family */
+/* Force Montserrat font family */
 html, body, * {
-  font-family: var(--font-nunito-sans), system-ui, sans-serif;
+  font-family: var(--font-montserrat), system-ui, sans-serif;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-nunito-sans), system-ui, sans-serif;
+  font-family: var(--font-montserrat), system-ui, sans-serif;
 }
 
 /* Custom Fade Animations */
@@ -282,20 +278,15 @@ body {
   animation-delay: 0.85s;
 }
 
-/* Custom Nunito Font Classes */
-.font-nunito {
-  font-family: var(--font-nunito), system-ui, sans-serif;
+/* Custom Montserrat Font Classes */
+.font-montserrat {
+  font-family: var(--font-montserrat), system-ui, sans-serif;
 }
 
-.font-nunito-sans {
-  font-family: var(--font-nunito-sans), system-ui, sans-serif;
-}
-
-/* Replace old font classes with Nunito variants */
-.font-instrument {
-  font-family: var(--font-nunito), system-ui, sans-serif;
-}
-
+/* Aliases for legacy class names */
+.font-nunito,
+.font-nunito-sans,
+.font-instrument,
 .font-poppins {
-  font-family: var(--font-nunito-sans), system-ui, sans-serif;
+  font-family: var(--font-montserrat), system-ui, sans-serif;
 }
