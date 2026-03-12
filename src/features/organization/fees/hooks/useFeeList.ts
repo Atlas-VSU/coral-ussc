@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { AggregatedFee, Fee } from "../types"
-import { getCurrentUserData } from "@/firebase";
 import { fetchFeesForOrg } from "@/firebase/fees";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { getCurrentUserData } from "@/firebase";
 
 export function useFeeList() {
     const [rawFees, setRawFees] = useState<Fee[]>([]);
@@ -16,7 +17,7 @@ export function useFeeList() {
             try {
                 const user = await getCurrentUserData();
                 if(!user) 
-                    throw new Error("Noth Authenticated!");
+                    throw new Error("Not Authenticated!");
                 
                 const data = await fetchFeesForOrg(user.uid);
                 
@@ -51,7 +52,7 @@ export function useFeeList() {
         const loadFees = async() => {
             setIsLoading(true)
             try {
-                const user = await getCurrentUserData();
+                const user =  await getCurrentUserData();
                 if(!user) 
                     throw new Error("Noth Authenticated!");
                 

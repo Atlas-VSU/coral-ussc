@@ -1,5 +1,5 @@
 import { db } from "@/firebase/firebase.config";
-import { addDoc, collection, getCountFromServer, Timestamp } from "firebase/firestore";
+import { addDoc, collection, doc, getCountFromServer, Timestamp, updateDoc } from "firebase/firestore";
 import { getProofOfPaymentById } from "../read/proofOfPayment";
 import { updateProofOfPaymentHistoryId } from "../update/proofOfPayment";
 import { getCurrentUserData } from "@/firebase/users";
@@ -53,6 +53,13 @@ export const addOnlineFinesPayment = async (fines: StudentFines, type:string, me
             createdAt: Timestamp.now(),
         });
         await updateProofOfPaymentHistoryId(proofId!, paymentHist.id)
+
+        if (type === PaymentType.FINES) {
+            const clearanceRef = doc(db, 'clearanceStatus', fines.userId);
+            await updateDoc(clearanceRef, {
+                [`blockingItems.${fines.id}.pendingReview`]: true,
+            });
+        }
         
     } catch (error) {
         console.error("Error adding offline payment history:", error);
@@ -105,6 +112,13 @@ export const addOfflineFinesPayment = async (fines: StudentFines, type:string, m
         if (type === PaymentType.FINES) {
             await recalculateFines(fines.id!, null, fines.balance);
             await markFineItemsAsPaid(fines.id!);
+
+            const clearanceRef = doc(db, 'clearanceStatus', fines.userId);
+            await updateDoc(clearanceRef, {
+                [`blockingItems.${fines.id}.balance`]: 0,
+                [`blockingItems.${fines.id}.status`]: "paid",
+                [`blockingItems.${fines.id}.pendingReview`]: false,
+            });
         }
     } catch (error) {
         console.error("Error adding offline payment history:", error);

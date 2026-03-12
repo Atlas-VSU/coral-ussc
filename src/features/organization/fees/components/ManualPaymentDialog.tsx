@@ -58,10 +58,10 @@ export function ManualPaymentDialog({
             <div className="relative">
                 <span className="absolute left-3 top-2.5 text-muted-foreground font-semibold italic text-sm">₱</span>
                 <Input
+                disabled={true}
                 id="amount"
                 type="number"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
                 className="pl-8 bg-muted/30 border-border focus:ring-1 focus:ring-primary"
                 />
             </div>

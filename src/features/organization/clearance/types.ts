@@ -9,7 +9,7 @@ export interface ClearanceStatus {
   studentId: string; 
   academicYear: string; 
   semester: string; 
-  status: 'pending' | 'cleared' | 'overdue';
+  status: 'pending' | 'cleared' | 'not_cleared';
   visibility: 'public' | 'private';
   blockingItems: Record<string, BlockingItem>; 
   clearanceDate: Timestamp | null; 
@@ -22,7 +22,7 @@ export interface ClearanceStatus {
 }
 
 export interface BlockingItem {
-  type: 'membership_fee' | 'fee' | 'fine';
+  type: 'fee' | 'fine';
   referenceId: string; 
   title: string; 
   balance: number;

@@ -1,6 +1,6 @@
 import { db } from "@/firebase/firebase.config";
 import { getAllUsers, getCurrentUserData } from "@/firebase/users";
-import { collection, addDoc, writeBatch, doc, CollectionReference, DocumentData, Timestamp, getCountFromServer } from "firebase/firestore";
+import { collection, addDoc, writeBatch, doc, CollectionReference, DocumentData, Timestamp, getCountFromServer, setDoc } from "firebase/firestore";
 import { getFineTypeById } from "../read/fineType";
 import { Member } from "@/features/organization/members/types";
 import { getNonAttendeesForEvent, getPartialAttendeesForEvent } from "@/firebase/attendance";
@@ -65,6 +65,24 @@ const handleFirestoreError = (error: any, context: string) => {
       };
       const docRef = await addDoc(finesCollection, fineData);
       console.log("Fine document created with ID: ", docRef.id);
+
+      // Initialize student's clearance document for this fine
+      const clearanceRef = doc(db, 'clearanceStatus', userId);
+      await setDoc(clearanceRef, {
+          blockingItems: {
+              [docRef.id]: {
+                  type: 'fine',
+                  referenceId: docRef.id,
+                  title: 'Fines',
+                  balance: 0,
+                  status: "paid",
+                  paymentHistory: [],
+                  pendingReview: false,
+                  isRequiredForClearance: true
+              }
+          },
+          updatedAt: Timestamp.now()
+      }, { merge: true });
     } catch (error) {
       handleFirestoreError(error, `creating fine document on ID ${userId}`);
       return null;
@@ -144,7 +162,26 @@ export const createBulkFines = async (
           },
         };
 
-        batch.set(doc(finesCollection), fineData);
+        const fineDocRef = doc(finesCollection);
+        batch.set(fineDocRef, fineData);
+
+        // Initialize clearance for this student
+        const clearanceRef = doc(db, 'clearanceStatus', user.id!);
+        batch.set(clearanceRef, {
+            blockingItems: {
+                [fineDocRef.id]: {
+                    type: 'fine',
+                    referenceId: fineDocRef.id,
+                    title: 'Fines',
+                    balance: 0,
+                    status: "paid",
+                    paymentHistory: [],
+                    pendingReview: false,
+                    isRequiredForClearance: true
+                }
+            },
+            updatedAt: Timestamp.now()
+        }, { merge: true });
       }
 
       // If a batch throws, we know exactly where it stopped
@@ -312,11 +349,29 @@ export const generateFinesOnEvent = async (
           } else {
             await updateLastFineIssuedAt(fine.id!);
           }
-          const calculated = await recalculateFines(fine.id!, amount);
-          if (!calculated) {
+          const calculationResult = await recalculateFines(fine.id!, amount);
+          if (!calculationResult.success) {
             report("error", `Failed recalculating fines. See console for details.`);
             return;
           }
+
+          // Update student's clearance document
+          const clearanceRef = doc(db, 'clearanceStatus', fine.userId);
+          batch.set(clearanceRef, {
+            blockingItems: {
+              [fine.id!]: {
+                type: 'fine',
+                referenceId: fine.id!,
+                title: 'Fines',
+                balance: calculationResult.balance,
+                status: calculationResult.status === "paid" ? "paid" : "unpaid",
+                paymentHistory: [],
+                pendingReview: calculationResult.status === "pending",
+                isRequiredForClearance: true
+              }
+            },
+            updatedAt: Timestamp.now()
+          }, { merge: true });
         }
 
         await batch.commit();
@@ -386,11 +441,29 @@ export const generateFinesOnEvent = async (
           batch.set(doc(subColRef), fineItem);
 
           await updateFineItemCount(fine, 1);
-          const calculated = await recalculateFines(fine.id!, amount);
-          if (!calculated) {
+          const calculationResult = await recalculateFines(fine.id!, amount);
+          if (!calculationResult.success) {
             report("error", `Failed recalculating fines. See console for details.`);
             return;
           }
+
+          // Update student's clearance document
+          const clearanceRef = doc(db, 'clearanceStatus', fine.userId);
+          batch.set(clearanceRef, {
+            blockingItems: {
+              [fine.id!]: {
+                type: 'fine',
+                referenceId: fine.id!,
+                title: 'Fines',
+                balance: calculationResult.balance,
+                status: calculationResult.status === "paid" ? "paid" : "unpaid",
+                paymentHistory: [],
+                pendingReview: calculationResult.status === "pending",
+                isRequiredForClearance: true
+              }
+            },
+            updatedAt: Timestamp.now()
+          }, { merge: true });
         }
 
         await batch.commit();
