@@ -35,7 +35,7 @@ import { useStudentSearch } from "../hooks/useStudentSearch";
 import { useAuthState } from "@/hooks/useAuthState";
 import { cn } from "@/lib/utils";
 import { StudentDetailsOutsideOrg } from "./Search/StudentDetailsOutsideOrg";
-import { getCurrentUserData, searchUserByStudentId } from "@/firebase";
+import { searchUserByStudentId } from "@/firebase";
 import { WarningDialog } from "./WarningDialog";
 
 interface AttendanceFormProps {

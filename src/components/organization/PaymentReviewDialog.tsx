@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { CheckCircle, XCircle } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Check, X, FileImage, Calendar, Hash, CreditCard, XCircle, CheckCircle } from "lucide-react"
+import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"

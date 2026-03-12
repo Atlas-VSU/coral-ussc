@@ -5,3 +5,5 @@ export * from "./faculties";
 export * from "./attendance";
 export * from "./bulkImport";
 export * from "./members";
+export * from "./fees";
+export * from "./clearance";

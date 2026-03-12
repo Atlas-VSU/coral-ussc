@@ -87,12 +87,12 @@ export function PaymentDetailDialog({
             </div>
           )}
 
-          {log.paymentProofId && (
+          {log.gcashReceiptImageUrl && (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground font-medium">Payment Proof</p>
               <div className="aspect-video relative rounded-md border border-border overflow-hidden bg-muted group">
                 <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground font-medium italic">
-                  Image placeholder: {log.paymentProofId}
+                  Image placeholder: {log.gcashReceiptImageUrl}
                 </div>
               </div>
             </div>

@@ -5,12 +5,12 @@ import {
   searchUserByName,
   searchUserByStudentId,
   checkLogAttendanceExist,
-  getCurrentUserData,
 } from "@/firebase";
 import { isValidStudentId } from "../utils";
 import { toast } from "sonner";
 import { User } from "firebase/auth";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SearchResult {
   status:
@@ -49,7 +49,8 @@ export function useStudentSearch(
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
-      setCurrentUserData(await getCurrentUserData() as unknown as Member)
+      const auth = useAuth();
+      setCurrentUserData(auth.user as unknown as Member)
     }
     fetchCurrentUser()
   }, [])

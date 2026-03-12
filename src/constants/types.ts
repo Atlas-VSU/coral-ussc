@@ -1,5 +1,5 @@
 export enum PaymentType {
-  MEMBERSHIP = "fees",
+  FEES = "fees",
   FINES = "fines",
 }
 

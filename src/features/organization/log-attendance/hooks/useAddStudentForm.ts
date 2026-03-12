@@ -9,6 +9,7 @@ import {
 } from "@/firebase";
 import { isValidStudentId } from "../utils";
 import { getAuth } from "firebase/auth";
+import { useAuth } from "@/hooks/useAuth";
 
 interface useAddStudentFormProps {
   suggestedId: string;
@@ -123,10 +124,8 @@ export function useAddStudentForm({
         setFormErrors({ studentId: "Student ID already exists" });
         return;
       }
-      const auth = getAuth();
-      const facultyId = await getCurrentUserFacultyId(
-        auth.currentUser?.uid ?? ""
-      );
+      const auth = useAuth();
+      const facultyId = auth.user?.facultyId;
 
       const newStudentData = {
         ...formData,

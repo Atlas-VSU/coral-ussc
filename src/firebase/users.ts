@@ -18,7 +18,7 @@ import {
 import { db } from "./firebase.config";
 import { MemberFormData } from "@/lib/validators";
 import { Member, Program } from "@/features/organization/members/types";
-import { getAuth } from "firebase/auth";
+import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { getProgramById } from "./programs";
 import {
   getCacheKey,
@@ -73,33 +73,50 @@ export const getCurrentUserFacultyId = async (
   return facultyId;
 };
 
+const waitForAuth = (): Promise<User | null> => {
+  const auth = getAuth();
+  return new Promise((resolve, reject) => {
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (user) => {
+        unsubscribe(); // Unsubscribe immediately after getting the initial state
+        resolve(user);
+      },
+      (error) => {
+        reject(error);
+      }
+    );
+  });
+};
+
 /**
  * Fetches the complete user document for the currently authenticated user.
- * This is more efficient as it retrieves all necessary IDs in one go.
+ * This safely waits for Firebase Auth state to resolve before fetching.
  * @returns The user's data object or null if not found.
  */
 export const getCurrentUserData = async () => {
-  const currentUser = getAuth().currentUser;
-  if (!currentUser) {
-    console.error("No user is currently authenticated.");
-    return null;
-  }
-
   try {
+    const currentUser = await waitForAuth();
+
+    if (!currentUser) {
+      console.warn("No user is currently authenticated.");
+      return null;
+    }
     const userDocRef = doc(db, "users", currentUser.uid);
     const userDocSnap = await getDoc(userDocRef);
 
     if (!userDocSnap.exists()) {
-      console.error("Authenticated user's document not found.");
+      console.error("Authenticated user's document not found in Firestore.");
       return null;
     }
+
     return { uid: currentUser.uid, ...userDocSnap.data() };
+    
   } catch (error) {
-    handleFirestoreError(error, "fetching current user");
+    console.error("Error fetching current user:", error);
     return null;
   }
 };
-
 export const getCurrentUser = async (uid: string) => {
   if (!uid) {
     console.error("No user is currently authenticated.");

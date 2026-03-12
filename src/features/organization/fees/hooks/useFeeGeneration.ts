@@ -7,9 +7,10 @@ import { z } from "zod";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { FeeGenerationSchema } from "../utils/feeGenerationSchema";
-import { generateFeesForAllStudents } from "@/firebase/fees";
-import { getCurrentUserData } from "@/firebase";
+import { generateFeesForAllStudentsInAnOrg } from "@/firebase/fees";
 import { Member } from "@/features/organization/members/types";
+import { useAuth } from "@/hooks/useAuth";
+import { getCurrentUserData } from "@/firebase";
 
 export type FeeGenerationFormData = z.infer<typeof FeeGenerationSchema>;
 
@@ -50,10 +51,12 @@ export function useFeeGeneration({ students, onSuccess, onOpenChange }: UseFeeGe
     setIsGenerating(true);
     try {
       const currentUser = await getCurrentUserData();
-      if (!currentUser) throw new Error("User not authenticated.");
-      await generateFeesForAllStudents(
+      if(!currentUser) {
+        throw new Error("No user!")
+      }
+      await generateFeesForAllStudentsInAnOrg(
         pendingFormData,
-        currentUser.uid
+        currentUser,
       );
 
       toast.success(`Successfully generated fees for ${students.length} students!`);

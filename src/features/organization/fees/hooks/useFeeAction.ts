@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PaymentLog } from "../types";
-import { approvePaymentTransaction, recordManualPayment, rejectPaymentTransaction } from "@/firebase/fees";
+import { approvePaymentTransaction, fetchFee, recordManualPaymentAndUpdateClearance, rejectPaymentTransaction } from "@/firebase/fees";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
@@ -17,8 +17,13 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
         setError(null);
         setSuccess(false);
 
+        const feeData = await fetchFee(feeId);
+        if (!feeData) {
+            throw new Error("Fee not found");
+        }
+
         try {
-            await recordManualPayment(feeId, amount, method, userId || "", ref)
+            await recordManualPaymentAndUpdateClearance(feeId, amount, method, userId || "", feeData.userId, user?.firstName + " " + user?.lastName || "",ref)
             setSuccess(true);
             toast.success("Payment recorded successfully!");
             onSuccess?.(feeId);

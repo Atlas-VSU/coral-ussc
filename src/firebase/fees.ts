@@ -1,37 +1,79 @@
 import { Member, MemberData } from "@/features/organization/members/types";
-import { collection, doc, getDoc, getDocs, orderBy, query, runTransaction, setDoc, Timestamp, updateDoc, where, writeBatch } from "firebase/firestore";
+import { collection, doc, getCountFromServer, getDoc, getDocs, orderBy, query, runTransaction, setDoc, Timestamp, updateDoc, where, writeBatch } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { FeeGenerationSchema } from "@/features/organization/fees/utils/feeGenerationSchema";
 import z from "zod";
-import { Fee, PaymentLog } from "@/features/organization/fees/types";
-import { getAllStudents } from "./members";
+import { Fee, FeeWithPaymentHistory, PaymentLog } from "@/features/organization/fees/types";
+import { getAllStudents, getMembersOfAnOrg } from "./members";
 import { setDate } from "date-fns";
 import { toast } from "sonner";
 import { getCurrentUserData } from "./users";
-
-
+import { access } from "fs";
+import { PaymentStatus } from "@/constants/status";
+import { PaymentType } from "@/constants/types";
+import { recalculateClearanceStatus } from "./clearance";
 
 const currentUserName = await getCurrentUserData() as unknown as Member;
 
-export const generateFeesForAllStudents = async (feeData: z.infer<typeof FeeGenerationSchema>, userId: string, eventId?: string) : Promise<void> => {
-    const students = await getAllStudents() as unknown as MemberData[];
+export const checkFeeStatusForClearance = async (userId: string, orgId: string) => {
+    const feeRef = collection(db, "fees");
+    const q = query(
+        feeRef, 
+        where("userId", "==", userId), 
+        where("orgId", "==", orgId), 
+        where("isArchived", "==", false)
+    );
+    
+    const feeSnapshot = await getDocs(q);
+
+    const feesWithHistory = await Promise.all(feeSnapshot.docs.map(async (feeDoc) => {
+        const feeData = feeDoc.data();
+        
+        const paymentHistoryRef = collection(db, "fees", feeDoc.id, "paymentHistory");
+        
+        const paymentHistorySnapshot = await getDocs(paymentHistoryRef);
+        
+        const paymentHistory = paymentHistorySnapshot.docs.map(paymentDoc => ({
+            id: paymentDoc.id,
+            ...paymentDoc.data()
+        }));
+
+        return {
+            id: feeDoc.id,
+            ...feeData,
+            paymentHistory: paymentHistory
+        } as FeeWithPaymentHistory;
+    }));
+
+    return feesWithHistory;
+}
+
+export const generateFeesForAllStudentsInAnOrg = async (feeData: z.infer<typeof FeeGenerationSchema>, currentUserData: any, eventId?: string) : Promise<void> => {
+    const students = await getMembersOfAnOrg(currentUserData) as unknown as MemberData[];
     if (students.length === 0) {
         throw new Error("No students provided");
     }
 
     const feesCollection = collection(db, "fees");
+    const clearanceCollection = collection(db, "clearanceStatus"); // Reference to clearance collection
     const now = Timestamp.now();
 
-    const chunkSize = 400;
-    for(let i=0; i<students.length; i+=chunkSize) {
-        const chunk = students.slice(i, i+chunkSize);
+    // CRITICAL FIX: Max batch size is 500 operations. 
+    // 200 students * 2 writes (fee + clearance) = 400 operations per batch.
+    const chunkSize = 200; 
+    
+    for (let i = 0; i < students.length; i += chunkSize) {
+        const chunk = students.slice(i, i + chunkSize);
         const batch = writeBatch(db);
         
         chunk.forEach(student => {
-            const docRef = doc(feesCollection);
-            batch.set(docRef, {
-                orgId: userId,
-                userId: student.id || "",
+            const feeDocRef = doc(feesCollection);
+            const studentId = student.id || "";
+            
+            // 1. Create the Fee Document
+            batch.set(feeDocRef, {
+                orgId: currentUserData.uid,
+                userId: studentId,
                 userName: `${student.member.firstName} ${student.member.lastName}`,
                 studentId: student.member.studentId,
                 feeType: feeData.feeType,
@@ -46,16 +88,43 @@ export const generateFeesForAllStudents = async (feeData: z.infer<typeof FeeGene
                 eventId: eventId || null,
                 dueDate: feeData.dueDate,
                 isRequiredForClearance: feeData.isRequiredForClearance,
-                createdBy: userId,
+                createdBy: currentUserData.uid,
                 createdAt: now,
                 updatedAt: now,
                 isArchived: false,
-            })
-        })
+            });
+
+            // 2. Update the Student's Clearance Document
+            if (studentId) {
+                const clearanceDocRef = doc(clearanceCollection, studentId);
+                
+                // Using set with { merge: true } is the safest way to append to a Map in Firestore.
+                // It adds the new fee to the blockingItems map without deleting existing items, 
+                // and it won't crash even if a student is somehow missing their clearance document.
+                batch.set(clearanceDocRef, {
+                    blockingItems: {
+                        [feeDocRef.id]: {
+                            type: PaymentType.FEES,
+                            referenceId: feeDocRef.id,
+                            title: feeData.title,
+                            balance: feeData.amount,
+                            status: "unpaid",
+                            paymentHistory: [],
+                            pendingReview: false,
+                            isRequiredForClearance: feeData.isRequiredForClearance
+                        }
+                    },
+                    updatedAt: now // Keep the updated timestamp fresh
+                }, { merge: true });
+            }
+        });
+        
         await batch.commit();
+
+        // Trigger clearance recalculation for all students in this chunk
+        await Promise.all(chunk.map(student => recalculateClearanceStatus(student.id || "")));
     }
 }
-
 export const fetchFeesForOrg = async(orgId: string): Promise<Fee[]> => {
     try {
         const feesRef = collection(db, "fees");
@@ -161,36 +230,41 @@ export async function fetchPaymentLogs(feeId: string) {
     }
 }
 
-export const recordManualPayment = async (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", userId: string, ref?: string) => {
+export const recordManualPaymentAndUpdateClearance = async (
+    feeId: string, 
+    amount: string, 
+    method: "gcash" | "cash" | "bank_transfer" | "waiver", 
+    adminId: string,   
+    studentId: string,
+    adminName: string,
+    ref?: string
+) => {
     try {
-        if (!feeId) {
-            console.error("Missing feeId! The function received:", { feeId, amount, method, userId });
-            throw new Error("Cannot record payment: feeId is missing.");
-        }
-
         const paymentAmount = parseFloat(amount);
         if (isNaN(paymentAmount) || paymentAmount <= 0) {
             throw new Error("Invalid payment amount");
         }
 
         const feeRef = doc(db, "fees", feeId);
+        const paymentProofRef = doc(collection(db, "proofOfPayments"));
         const subCollectionRef = collection(feeRef, "paymentHistory");
         const newLogRef = doc(subCollectionRef);
+        const clearanceRef = doc(db, 'clearanceStatus', studentId);
+
         await runTransaction(db, async (transaction) => {
             const feeDoc = await transaction.get(feeRef);
-
             if (!feeDoc.exists()) {
-                throw new Error(`Fee documenty with ID ${feeId} does not exist.`);
+                throw new Error(`Fee document with ID ${feeId} does not exist.`);
             }
-
+            
             const feeData = feeDoc.data() as Fee;
-
             const currentPaidAmount = feeData.paidAmount || 0;
             const totalRequiredAmount = feeData.amount || 0;
 
             const newPaidAmount = currentPaidAmount + paymentAmount;
             const newBalance = Math.max(0, totalRequiredAmount - newPaidAmount);
-            let newStatus = "pending";
+            
+            let newStatus: "pending" | "partial" | "paid" = "pending";
             if (newBalance <= 0) {
                 newStatus = "paid";
             } else if (newPaidAmount > 0) {
@@ -202,12 +276,12 @@ export const recordManualPayment = async (feeId: string, amount: string, method:
                 paymentNumber: Date.now(), 
                 amount: paymentAmount,
                 paymentMethod: method,
-                paymentProofId: null,
+                paymentProofId: paymentProofRef.id,
                 gcashReference: method === "gcash" && ref ? ref : null,
-                status: "verified",
+                status: PaymentStatus.VERIFIED,
                 paidAt: Timestamp.now(),
-                verifiedBy: userId, 
-                verifiedByName: currentUserName.firstName + " " + currentUserName.lastName, 
+                verifiedBy: adminId, 
+                verifiedByName: adminName, 
                 verifiedAt: Timestamp.now(),
                 rejectionReason: null,
                 notes: "Manual payment recorded by admin",
@@ -217,15 +291,42 @@ export const recordManualPayment = async (feeId: string, amount: string, method:
 
             transaction.set(newLogRef, newLog);
             
+            transaction.set(paymentProofRef, {
+                paymentNumber: 1,
+                type: PaymentType.FEES,
+                amount: paymentAmount,
+                paymentMethod: method,
+                paymentProofId: newLogRef.id,
+                gcashReceiptImageUrl: "",
+                gcashReference: method === "gcash" && ref ? ref : null,
+                senderNumber: null,
+                status: PaymentStatus.VERIFIED,
+                paidAt: Timestamp.now(),
+                verifiedBy: adminId,
+                verifiedByName: adminName,
+                verifiedAt: Timestamp.now(),
+                notes: "Manual payment recorded by admin",
+                metadata: {},
+                createdAt: Timestamp.now(),
+            })
+
             transaction.update(feeRef, {
                 paidAmount: newPaidAmount,
                 balance: newBalance,
                 status: newStatus,
             });
-        })
+
+            transaction.update(clearanceRef, {
+                [`blockingItems.${feeId}.balance`]: newBalance,
+                [`blockingItems.${feeId}.status`]: newBalance <= 0 ? "paid" : "unpaid", 
+                [`blockingItems.${feeId}.pendingReview`]: false,
+            });
+        });
+
+        await recalculateClearanceStatus(studentId);
         return newLogRef.id;
     } catch (error) {
-        console.error("Error approving manual payment:", error);
+        console.error("Error processing manual payment and clearance:", error);
         throw error;
     }
 }
@@ -234,7 +335,7 @@ export const approvePaymentTransaction = async (feeId: string, paymentLogId: str
     try {
         const feeRef = doc(db, "fees", feeId);
         const paymentLogRef = doc(feeRef, "paymentHistory", paymentLogId);
-        await runTransaction(db, async (transaction) => {
+        const clearanceId = await runTransaction(db, async (transaction) => {
             const feeDoc = await transaction.get(feeRef);
             const paymentLogDoc = await transaction.get(paymentLogRef);
 
@@ -261,18 +362,39 @@ export const approvePaymentTransaction = async (feeId: string, paymentLogId: str
             }
 
             transaction.update(paymentLogRef, {
-                status: "verified",
+                status: PaymentStatus.VERIFIED,
                 verifiedBy: userId,
                 verifiedByName: currentUserName.firstName + " " + currentUserName.lastName, 
                 verifiedAt: Timestamp.now(),
             });
+
+            if (paymentLogData.paymentProofId) {
+                const proofRef = doc(db, "proofOfPayments", paymentLogData.paymentProofId);
+                transaction.update(proofRef, {
+                    status: PaymentStatus.VERIFIED,
+                    verifiedBy: userId,
+                    verifiedByName: currentUserName.firstName + " " + currentUserName.lastName,
+                    verifiedAt: Timestamp.now(),
+                });
+            }
 
             transaction.update(feeRef, {
                 paidAmount: newPaidAmount,
                 balance: newBalance,
                 status: newStatus,
             });
+
+            // Update Student's Clearance Document
+            const clearanceRef = doc(db, 'clearanceStatus', feeData.userId);
+            transaction.update(clearanceRef, {
+                [`blockingItems.${feeId}.balance`]: newBalance,
+                [`blockingItems.${feeId}.status`]: newBalance <= 0 ? "paid" : "unpaid",
+                [`blockingItems.${feeId}.pendingReview`]: false,
+            });
+            return clearanceRef.id;
         })
+
+        await recalculateClearanceStatus(clearanceId);
     } catch (error) {
         console.error("Error approving payment:", error);
         throw error;
@@ -283,7 +405,7 @@ export const rejectPaymentTransaction = async (feeId: string, paymentLogId: stri
     try {
         const feeRef = doc(db, "fees", feeId);
         const paymentLogRef = doc(feeRef, "paymentHistory", paymentLogId);
-        await runTransaction(db, async (transaction) => {
+        const clearanceId = await runTransaction(db, async (transaction) => {
             const feeDoc = await transaction.get(feeRef);
             const paymentLogDoc = await transaction.get(paymentLogRef);
 
@@ -310,19 +432,39 @@ export const rejectPaymentTransaction = async (feeId: string, paymentLogId: stri
             }
 
             transaction.update(paymentLogRef, {
-                status: "rejected",
+                status: PaymentStatus.REJECTED,
                 verifiedBy: userId,
                 verifiedByName: currentUserName.firstName + " " + currentUserName.lastName, 
                 verifiedAt: Timestamp.now(),
                 rejectionReason: rejectionReason,
             });
 
+            if (paymentLogData.paymentProofId) {
+                const proofRef = doc(db, "proofOfPayments", paymentLogData.paymentProofId);
+                transaction.update(proofRef, {
+                    status: PaymentStatus.REJECTED,
+                    verifiedBy: userId,
+                    verifiedByName: currentUserName.firstName + " " + currentUserName.lastName,
+                    verifiedAt: Timestamp.now(),
+                    rejectionReason: rejectionReason,
+                });
+            }
+
             transaction.update(feeRef, {
                 paidAmount: newPaidAmount,
                 balance: newBalance,
                 status: newStatus,
             });
+
+            // Update Student's Clearance Document
+            const clearanceRef = doc(db, 'clearanceStatus', feeData.userId);
+            transaction.update(clearanceRef, {
+                [`blockingItems.${feeId}.pendingReview`]: false,
+            });
+            return clearanceRef.id;
         })
+
+        await recalculateClearanceStatus(clearanceId);
     } catch (error) {
         console.error("Error rejecting payment:", error);
         throw error;

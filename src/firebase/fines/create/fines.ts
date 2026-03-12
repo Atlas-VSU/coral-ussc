@@ -1,6 +1,6 @@
 import { db } from "@/firebase/firebase.config";
 import { getAllUsers, getCurrentUserData } from "@/firebase/users";
-import { collection, addDoc, writeBatch, doc, CollectionReference, DocumentData, Timestamp, getCountFromServer } from "firebase/firestore";
+import { collection, addDoc, writeBatch, doc, CollectionReference, DocumentData, Timestamp, getCountFromServer, setDoc } from "firebase/firestore";
 import { getFineTypeById } from "../read/fineType";
 import { Member } from "@/features/organization/members/types";
 import { getNonAttendeesForEvent, getPartialAttendeesForEvent } from "@/firebase/attendance";
@@ -12,6 +12,8 @@ import { FineStatus } from "@/constants/status";
 import { BulkFinesProgress, BulkFinesResult, FineGenerationPhase, FineGenerationProgress, OnFineProgress } from "@/features/organization/fines/types";
 import { Event } from "@/features/organization/events/types";
 import { updateFirstFineIssuedAt, updateLastFineIssuedAt } from "../update/fines";
+import { PaymentType } from "@/constants/types";
+import { recalculateClearanceStatus } from "@/firebase/clearance";
 
 
 const finesCollection: CollectionReference<DocumentData> = collection(
@@ -65,6 +67,26 @@ const handleFirestoreError = (error: any, context: string) => {
       };
       const docRef = await addDoc(finesCollection, fineData);
       console.log("Fine document created with ID: ", docRef.id);
+
+      // Initialize student's clearance document for this fine
+      const clearanceRef = doc(db, 'clearanceStatus', userId);
+      await setDoc(clearanceRef, {
+          blockingItems: {
+              [docRef.id]: {
+                  type: PaymentType.FINES,
+                  referenceId: docRef.id,
+                  title: "Fines",
+                  balance: 0,
+                  status: "paid",
+                  paymentHistory: [],
+                  pendingReview: false,
+                  isRequiredForClearance: true
+              }
+          },
+          updatedAt: Timestamp.now()
+      }, { merge: true });
+
+        await recalculateClearanceStatus(userId);
     } catch (error) {
       handleFirestoreError(error, `creating fine document on ID ${userId}`);
       return null;
@@ -144,7 +166,26 @@ export const createBulkFines = async (
           },
         };
 
-        batch.set(doc(finesCollection), fineData);
+        const fineDocRef = doc(finesCollection);
+        batch.set(fineDocRef, fineData);
+
+        // Initialize clearance for this student
+        const clearanceRef = doc(db, 'clearanceStatus', user.id!);
+        batch.set(clearanceRef, {
+            blockingItems: {
+                [fineDocRef.id]: {
+                    type: PaymentType.FINES,
+                    referenceId: fineDocRef.id,
+                    title: "Fines",
+                    balance: 0,
+                    status: "paid",
+                    paymentHistory: [],
+                    pendingReview: false,
+                    isRequiredForClearance: true
+                }
+            },
+            updatedAt: Timestamp.now()
+        }, { merge: true });
       }
 
       // If a batch throws, we know exactly where it stopped
@@ -159,6 +200,9 @@ export const createBulkFines = async (
 
       result.committed += batchSlice.length;
       report("writing", `Batch ${batchNum}/${totalBatches} committed`, { batchNum, totalBatches });
+
+      // Trigger clearance recalculation for all users in this batch
+      await Promise.all(batchSlice.map(user => recalculateClearanceStatus(user.id!)));
     }
 
     result.success = true;
@@ -312,14 +356,35 @@ export const generateFinesOnEvent = async (
           } else {
             await updateLastFineIssuedAt(fine.id!);
           }
-          const calculated = await recalculateFines(fine.id!, amount);
-          if (!calculated) {
+          const calculationResult = await recalculateFines(fine.id!, amount);
+          if (!calculationResult.success) {
             report("error", `Failed recalculating fines. See console for details.`);
             return;
           }
+
+          // Update student's clearance document
+          const clearanceRef = doc(db, 'clearanceStatus', fine.userId);
+          batch.set(clearanceRef, {
+            blockingItems: {
+              [fine.id!]: {
+                type: PaymentType.FINES,
+                referenceId: fine.id!,
+                title: event.name,
+                balance: calculationResult.balance,
+                status: calculationResult.status === "paid" ? "paid" : "unpaid",
+                paymentHistory: [],
+                pendingReview: calculationResult.status === "pending",
+                isRequiredForClearance: true
+              }
+            },
+            updatedAt: Timestamp.now()
+          }, { merge: true });
         }
 
         await batch.commit();
+
+        // Trigger clearance recalculation for all users in this batch
+        await Promise.all(batchSlice.map(fine => recalculateClearanceStatus(fine.userId)));
 
         // Update the running counter AFTER the commit succeeds
         counts.absentDone += batchSlice.length;
@@ -386,14 +451,36 @@ export const generateFinesOnEvent = async (
           batch.set(doc(subColRef), fineItem);
 
           await updateFineItemCount(fine, 1);
-          const calculated = await recalculateFines(fine.id!, amount);
-          if (!calculated) {
+          const calculationResult = await recalculateFines(fine.id!, amount);
+          if (!calculationResult.success) {
             report("error", `Failed recalculating fines. See console for details.`);
             return;
           }
+
+          // Update student's clearance document
+          const clearanceRef = doc(db, 'clearanceStatus', fine.userId);
+          batch.set(clearanceRef, {
+            blockingItems: {
+              [fine.id!]: {
+                type: PaymentType.FINES,
+                referenceId: fine.id!,
+                title: event.name,
+                balance: calculationResult.balance,
+                status: calculationResult.status === "paid" ? "paid" : "unpaid",
+                paymentHistory: [],
+                pendingReview: calculationResult.status === "pending",
+                isRequiredForClearance: true
+              }
+            },
+            updatedAt: Timestamp.now()
+          }, { merge: true });
         }
 
         await batch.commit();
+
+        // Trigger clearance recalculation for all users in this batch
+        await Promise.all(batchSlice.map(fine => recalculateClearanceStatus(fine.userId)));
+
         counts.partialDone += batchSlice.length;
 
         report(
