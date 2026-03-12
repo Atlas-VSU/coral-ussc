@@ -1,5 +1,6 @@
 import { Timestamp } from "firebase/firestore";
 import { PaymentLog } from "../fees/types";
+import { PaymentType } from "@/constants/types";
 
 export interface ClearanceStatus {
   id: string; 
@@ -22,7 +23,7 @@ export interface ClearanceStatus {
 }
 
 export interface BlockingItem {
-  type: 'fee' | 'fine';
+  type: PaymentType;
   referenceId: string; 
   title: string; 
   balance: number;

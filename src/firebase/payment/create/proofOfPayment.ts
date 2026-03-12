@@ -1,5 +1,4 @@
 import { PaymentStatus } from "@/constants/status";
-import { recordManualPayment } from "@/firebase/fees";
 import { getFineByStudentId } from "@/firebase/fines/read/fines";
 import { db } from "@/firebase/firebase.config";
 import { PaymentFormData } from "@/lib/validators";
@@ -9,6 +8,8 @@ import { updateProofOfPaymentHistoryId } from "../update/proofOfPayment";
 import { nanoid } from 'nanoid';
 import { Fee } from "@/features/organization/fees/types";
 import { generateReceiptId } from "@/features/organization/payments/utils";
+import { recordManualPaymentAndUpdateClearance } from "@/firebase/fees";
+import { useAuth } from "@/hooks/useAuth";
 
 export const createOnlineProofOfPayment = async (
     payment: PaymentFormData, type: string ) => {
@@ -113,7 +114,8 @@ export const createBulkOfflineProofOfPayment = async (payments: PaymentFormData[
                 docRefs.push(docRef.id);
 
                 if(payment.type === "fees"){
-                    await recordManualPayment(transaction.id!, payment.amount.toLocaleString(), payment.paymentMethod as "gcash" | "cash" | "bank_transfer" | "waiver", transaction.userId);
+                    const currentUser = useAuth();
+                    await recordManualPaymentAndUpdateClearance(transaction.id!, payment.amount.toLocaleString(), payment.paymentMethod as "gcash" | "cash" | "bank_transfer" | "waiver", currentUser.user?.uid!,transaction.userId, currentUser.user?.firstName + " " + currentUser.user?.lastName);
                 }
 
                 if(payment.type === "fines"){

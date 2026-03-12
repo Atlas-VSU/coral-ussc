@@ -143,7 +143,7 @@ export function useClearanceActions(
     const items = referenceIds.map(id => ({
       refId: id,
       amount: clearance?.blockingItems[id]?.balance || 0,
-      paymentType: clearance?.blockingItems[id]?.type === "fee" ? PaymentType.FEES : PaymentType.FINES
+      paymentType: clearance?.blockingItems[id]?.type === PaymentType.FEES ? PaymentType.FEES : PaymentType.FINES
     }))
 
 

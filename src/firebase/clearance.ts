@@ -63,7 +63,7 @@ export const updateClearanceDocument = async (userId: string, orgId: string) => 
     
     fees.forEach((fee: FeeWithPaymentHistory) => {
         blockingItems[fee.id] = {
-            type: fee.feeType as "fee" | "fine",
+            type: fee.feeType as PaymentType,
             referenceId: fee.id,
             title: fee.title,
             balance: fee.balance,
@@ -78,7 +78,7 @@ export const updateClearanceDocument = async (userId: string, orgId: string) => 
     const fine = await getFineByStudentId(userId);
     if (fine && fine.balance > 0) {
         blockingItems[fine.id!] = {
-            type: "fine",
+            type: PaymentType.FINES,
             referenceId: fine.id!,
             title: "Fines",
             balance: fine.balance,
@@ -181,10 +181,10 @@ export const approvePaymentClearanceUpdate = async (
   refId: string, 
   adminId: string,
   adminName: string,
-  itemType: 'fee' | 'fine',
+  itemType: PaymentType,
   studentData?: { firstName: string; lastName: string; studentId: string; orgId: string }
 ) => {
-  if (itemType === 'fee') {
+  if (itemType === PaymentType.FEES) {
     const logsRef = collection(db, "fees", refId, "paymentHistory");
     const q = query(logsRef, where("status", "==", "pending_verification"));
     const snapshot = await getDocs(q);
@@ -210,11 +210,11 @@ export const approvePaymentClearanceUpdate = async (
       status: PaymentStatus.VERIFIED,
       verifiedBy: adminId,
       verifiedByName: adminName,
-      verifiedAt: new Date().toISOString(),
+      paymentMethod: logData.paymentMethod,
+      verifiedAt: Timestamp.now(),
       notes: "Verified via Clearance Management",
       orgId: studentData?.orgId || "",
-      firstName: studentData?.firstName || "",
-      lastName: studentData?.lastName || "",
+      userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
       studentId: studentData?.studentId || "",
       senderNumber: logData.senderNumber || "",
       referenceNumber: logData.gcashReference || "",
@@ -232,10 +232,10 @@ export const rejectPaymentClearanceUpdate = async (
    adminId: string,
    adminName: string,
    reason: string,
-   itemType: 'fee' | 'fine',
+   itemType: PaymentType,
    studentData?: { firstName: string; lastName: string; studentId: string; orgId: string }
  ) => {
-   if (itemType === 'fee') {
+   if (itemType === PaymentType.FEES) {
      const logsRef = collection(db, "fees", refId, "paymentHistory");
      const q = query(logsRef, where("status", "==", "pending_verification"));
      const snapshot = await getDocs(q);
@@ -261,12 +261,12 @@ export const rejectPaymentClearanceUpdate = async (
        status: PaymentStatus.REJECTED,
        verifiedBy: adminId,
        verifiedByName: adminName,
-       verifiedAt: new Date().toISOString(),
+       paymentMethod: logData.paymentMethod,
+       verifiedAt: Timestamp.now(),
        rejectionReason: reason,
        notes: "Rejected via Clearance Management",
        orgId: studentData?.orgId || "",
-       firstName: studentData?.firstName || "",
-       lastName: studentData?.lastName || "",
+       userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
        studentId: studentData?.studentId || "",
        senderNumber: logData.senderNumber || "",
        referenceNumber: logData.gcashReference || "",

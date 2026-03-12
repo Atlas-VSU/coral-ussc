@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import type { ClearanceStatus } from "../types" // Adjust path
+import type { ClearanceStatus } from "../types"
+import { PaymentType } from "@/constants/types"
 
 export function useManualPaymentSelection(clearance: ClearanceStatus | null) {
   const items = useMemo(() => {

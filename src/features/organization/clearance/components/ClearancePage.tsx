@@ -31,6 +31,7 @@ import { buildRequirementGroups } from "../utils/clearanceUtils"
 import type { ViewMode } from "@/components/organization/ViewToggle"
 import type { ClearanceStatus } from "../types"
 import type { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
+import { PaymentType } from "@/constants/types"
 
 interface ClearancePageProps {
   orgId: string | undefined
@@ -111,7 +112,7 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
       studentId: logPaymentTarget.studentId,
       items: selection.selectedItems.map(i => ({
         name: i.label,
-        type: i.type === "fee" ? "fee" : "fine",
+        type: i.type === PaymentType.FEES ? "fees" : "fines",
         amount: i.amount,
       })),
       total: selection.total,
@@ -136,7 +137,7 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
       lineItems: [{ label: item.title, amount: item.balance }],
       amountPaid: item.balance,
       paymentMethod: item.paymentHistory[0]?.paymentMethod || "cash",
-      referenceNo: item.paymentHistory[0]?.gcashReference,
+      referenceNo: item.paymentHistory[0]?.gcashReference || "",
       submittedAt: item.paymentHistory[0]?.createdAt.toDate().toISOString(),
       approveConfirmMessage: "This item will be marked as cleared.",
     }

@@ -1,3 +1,4 @@
+import { PaymentType } from "@/constants/types"
 import type { BlockingItem } from "../types" // Adjust path to your actual types
 
 export type ItemStatus = "cleared" | "pending" | "not-cleared"
@@ -18,12 +19,12 @@ export interface RequirementGroup {
 
 export function buildRequirementGroups(blockingItems: Record<string, BlockingItem>): RequirementGroup[] {
   const groups: Record<string, DisplayItem[]> = {
-    Fees: [],
-    Fines: [],
+    "Fees": [],
+    "Fines": [],
   }
 
   Object.entries(blockingItems).forEach(([id, item]) => {
-    const groupName = item.type === "fee" ? "Fees" : "Fines"
+    const groupName = item.type === PaymentType.FEES ? "Fees" : "Fines";
     const status: ItemStatus = item.status === "paid" 
       ? "cleared" 
       : item.pendingReview 
