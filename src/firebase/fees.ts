@@ -11,6 +11,7 @@ import { getCurrentUserData } from "./users";
 import { access } from "fs";
 import { PaymentStatus } from "@/constants/status";
 import { PaymentType } from "@/constants/types";
+import { recalculateClearanceStatus } from "./clearance";
 
 const currentUserName = await getCurrentUserData() as unknown as Member;
 
@@ -103,7 +104,7 @@ export const generateFeesForAllStudentsInAnOrg = async (feeData: z.infer<typeof 
                 batch.set(clearanceDocRef, {
                     blockingItems: {
                         [feeDocRef.id]: {
-                            type: 'fee',
+                            type: PaymentType.FEES,
                             referenceId: feeDocRef.id,
                             title: feeData.title,
                             balance: feeData.amount,
@@ -119,6 +120,9 @@ export const generateFeesForAllStudentsInAnOrg = async (feeData: z.infer<typeof 
         });
         
         await batch.commit();
+
+        // Trigger clearance recalculation for all students in this chunk
+        await Promise.all(chunk.map(student => recalculateClearanceStatus(student.id || "")));
     }
 }
 export const fetchFeesForOrg = async(orgId: string): Promise<Fee[]> => {
@@ -295,6 +299,7 @@ export const recordManualPaymentAndUpdateClearance = async (
             });
         });
 
+        await recalculateClearanceStatus(studentId);
         return newLogRef.id;
     } catch (error) {
         console.error("Error processing manual payment and clearance:", error);
@@ -306,7 +311,7 @@ export const approvePaymentTransaction = async (feeId: string, paymentLogId: str
     try {
         const feeRef = doc(db, "fees", feeId);
         const paymentLogRef = doc(feeRef, "paymentHistory", paymentLogId);
-        await runTransaction(db, async (transaction) => {
+        const clearanceId = await runTransaction(db, async (transaction) => {
             const feeDoc = await transaction.get(feeRef);
             const paymentLogDoc = await transaction.get(paymentLogRef);
 
@@ -362,7 +367,10 @@ export const approvePaymentTransaction = async (feeId: string, paymentLogId: str
                 [`blockingItems.${feeId}.status`]: newBalance <= 0 ? "paid" : "unpaid",
                 [`blockingItems.${feeId}.pendingReview`]: false,
             });
+            return clearanceRef.id;
         })
+
+        await recalculateClearanceStatus(clearanceId);
     } catch (error) {
         console.error("Error approving payment:", error);
         throw error;
@@ -373,7 +381,7 @@ export const rejectPaymentTransaction = async (feeId: string, paymentLogId: stri
     try {
         const feeRef = doc(db, "fees", feeId);
         const paymentLogRef = doc(feeRef, "paymentHistory", paymentLogId);
-        await runTransaction(db, async (transaction) => {
+        const clearanceId = await runTransaction(db, async (transaction) => {
             const feeDoc = await transaction.get(feeRef);
             const paymentLogDoc = await transaction.get(paymentLogRef);
 
@@ -429,7 +437,10 @@ export const rejectPaymentTransaction = async (feeId: string, paymentLogId: stri
             transaction.update(clearanceRef, {
                 [`blockingItems.${feeId}.pendingReview`]: false,
             });
+            return clearanceRef.id;
         })
+
+        await recalculateClearanceStatus(clearanceId);
     } catch (error) {
         console.error("Error rejecting payment:", error);
         throw error;

@@ -12,6 +12,8 @@ import { FineStatus } from "@/constants/status";
 import { BulkFinesProgress, BulkFinesResult, FineGenerationPhase, FineGenerationProgress, OnFineProgress } from "@/features/organization/fines/types";
 import { Event } from "@/features/organization/events/types";
 import { updateFirstFineIssuedAt, updateLastFineIssuedAt } from "../update/fines";
+import { PaymentType } from "@/constants/types";
+import { recalculateClearanceStatus } from "@/firebase/clearance";
 
 
 const finesCollection: CollectionReference<DocumentData> = collection(
@@ -71,9 +73,9 @@ const handleFirestoreError = (error: any, context: string) => {
       await setDoc(clearanceRef, {
           blockingItems: {
               [docRef.id]: {
-                  type: 'fine',
+                  type: PaymentType.FINES,
                   referenceId: docRef.id,
-                  title: 'Fines',
+                  title: "Fines",
                   balance: 0,
                   status: "paid",
                   paymentHistory: [],
@@ -83,6 +85,8 @@ const handleFirestoreError = (error: any, context: string) => {
           },
           updatedAt: Timestamp.now()
       }, { merge: true });
+
+        await recalculateClearanceStatus(userId);
     } catch (error) {
       handleFirestoreError(error, `creating fine document on ID ${userId}`);
       return null;
@@ -170,9 +174,9 @@ export const createBulkFines = async (
         batch.set(clearanceRef, {
             blockingItems: {
                 [fineDocRef.id]: {
-                    type: 'fine',
+                    type: PaymentType.FINES,
                     referenceId: fineDocRef.id,
-                    title: 'Fines',
+                    title: "Fines",
                     balance: 0,
                     status: "paid",
                     paymentHistory: [],
@@ -196,6 +200,9 @@ export const createBulkFines = async (
 
       result.committed += batchSlice.length;
       report("writing", `Batch ${batchNum}/${totalBatches} committed`, { batchNum, totalBatches });
+
+      // Trigger clearance recalculation for all users in this batch
+      await Promise.all(batchSlice.map(user => recalculateClearanceStatus(user.id!)));
     }
 
     result.success = true;
@@ -360,9 +367,9 @@ export const generateFinesOnEvent = async (
           batch.set(clearanceRef, {
             blockingItems: {
               [fine.id!]: {
-                type: 'fine',
+                type: PaymentType.FINES,
                 referenceId: fine.id!,
-                title: 'Fines',
+                title: event.name,
                 balance: calculationResult.balance,
                 status: calculationResult.status === "paid" ? "paid" : "unpaid",
                 paymentHistory: [],
@@ -375,6 +382,9 @@ export const generateFinesOnEvent = async (
         }
 
         await batch.commit();
+
+        // Trigger clearance recalculation for all users in this batch
+        await Promise.all(batchSlice.map(fine => recalculateClearanceStatus(fine.userId)));
 
         // Update the running counter AFTER the commit succeeds
         counts.absentDone += batchSlice.length;
@@ -452,9 +462,9 @@ export const generateFinesOnEvent = async (
           batch.set(clearanceRef, {
             blockingItems: {
               [fine.id!]: {
-                type: 'fine',
+                type: PaymentType.FINES,
                 referenceId: fine.id!,
-                title: 'Fines',
+                title: event.name,
                 balance: calculationResult.balance,
                 status: calculationResult.status === "paid" ? "paid" : "unpaid",
                 paymentHistory: [],
@@ -467,6 +477,10 @@ export const generateFinesOnEvent = async (
         }
 
         await batch.commit();
+
+        // Trigger clearance recalculation for all users in this batch
+        await Promise.all(batchSlice.map(fine => recalculateClearanceStatus(fine.userId)));
+
         counts.partialDone += batchSlice.length;
 
         report(

@@ -12,6 +12,7 @@ import { PaymentFormData } from "@/lib/validators";
 import { createOfflineProofOfPayment } from "./proofOfPayment";
 import { PaymentStatus } from "@/constants/status";
 import { PaymentMethods, PaymentType } from "@/constants/types";
+import { recalculateClearanceStatus } from "@/firebase/clearance";
 
 
 
@@ -59,6 +60,7 @@ export const addOnlineFinesPayment = async (fines: StudentFines, type:string, me
             await updateDoc(clearanceRef, {
                 [`blockingItems.${fines.id}.pendingReview`]: true,
             });
+            await recalculateClearanceStatus(clearanceRef.id)
         }
         
     } catch (error) {
@@ -119,7 +121,10 @@ export const addOfflineFinesPayment = async (fines: StudentFines, type:string, m
                 [`blockingItems.${fines.id}.status`]: "paid",
                 [`blockingItems.${fines.id}.pendingReview`]: false,
             });
+
+            await recalculateClearanceStatus(clearanceRef.id)
         }
+
     } catch (error) {
         console.error("Error adding offline payment history:", error);
         throw new Error("Failed to add offline payment history. Please try again.");
