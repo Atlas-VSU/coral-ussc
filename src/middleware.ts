@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const publicRoutes = ["/login", "/"];
-const orgRoutes = ["/org-dashboard", "/org-events", "/org-members", "/org-fines"];
+const orgRoutes = ["/org-dashboard", "/org-events", "/org-members", "/org-fines", "/org-fees", "/org-payments"];
 const adminRoutes = ["/admin-dashboard", "/admin-students", "/admin-organization"];
 
 export function middleware(request: NextRequest) {
