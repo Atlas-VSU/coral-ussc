@@ -13,6 +13,7 @@ import {
   DocumentData,
   orderBy,
   limit,
+  documentId,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { MemberFormData } from "@/lib/validators";
@@ -406,7 +407,7 @@ export const getUserById = async (userId: string): Promise<Member | null> => {
     const querySnapshot = await getDocs(
       query(
         usersCollection,
-        where("id", "==", userId),
+        where(documentId(), "==", userId),
         where("isDeleted", "==", false)
       )
     );
