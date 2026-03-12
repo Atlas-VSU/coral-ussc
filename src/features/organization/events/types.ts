@@ -3,7 +3,8 @@ export type EventStatus = "ongoing" | "upcoming" | "archived" | "completed";
 
 // Event type
 export type Event = {
-  id: number;
+  id: string;
+  fineTypeId: string;
   name: string;
   date: string;
   majorEvent?: boolean;
@@ -17,4 +18,5 @@ export type Event = {
   status: EventStatus;
   facultyId?: string; // Faculty ID to associate event with creating faculty
   programId?: string; // Program ID to associate event with a specific program
+  finesGenerated?: boolean;
 };

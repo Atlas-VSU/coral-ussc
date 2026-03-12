@@ -248,19 +248,23 @@ export const addEvent = async (eventData: EventFormData) => {
       }
     }
 
-    // 2. Time Out Start should be before Time Out End
     if (eventData.timeOutStart && eventData.timeOutEnd) {
-      if (eventData.timeOutStart >= eventData.timeOutEnd) {
-        throw new Error("Time Out Start must be earlier than Time Out End");
+      // 2. Time Out Start should be before Time Out End
+      if (eventData.timeOutStart && eventData.timeOutEnd) {
+        if (eventData.timeOutStart >= eventData.timeOutEnd) {
+          throw new Error("Time Out Start must be earlier than Time Out End");
+        }
       }
     }
 
-    // 3. Time In End should be before Time Out Start (Time In period should complete before Time Out begins)
-    if (eventData.timeInEnd && eventData.timeOutStart) {
-      if (eventData.timeInEnd > eventData.timeOutStart) {
-        throw new Error(
-          "Time In period must complete before Time Out period begins"
-        );
+    if(eventData.timeInEnd && eventData.timeOutStart){
+      // 3. Time In End should be before Time Out Start (Time In period should complete before Time Out begins)
+      if (eventData.timeInEnd && eventData.timeOutStart) {
+        if (eventData.timeInEnd > eventData.timeOutStart) {
+          throw new Error(
+            "Time In period must complete before Time Out period begins"
+          );
+        }
       }
     }
 
@@ -285,6 +289,7 @@ export const addEvent = async (eventData: EventFormData) => {
       attendees: 0,
       status,
       isDeleted: false,
+      finesGenerated: false,  
       accessLevelEvent: levelAccess,
       ...dynamicFields,
 
@@ -312,19 +317,22 @@ export const updateEvent = async (
       }
     }
 
-    // 2. Time Out Start should be before Time Out End
     if (eventData.timeOutStart && eventData.timeOutEnd) {
-      if (eventData.timeOutStart >= eventData.timeOutEnd) {
-        throw new Error("Time Out Start must be earlier than Time Out End");
+      // 2. Time Out Start should be before Time Out End
+      if (eventData.timeOutStart && eventData.timeOutEnd) {
+        if (eventData.timeOutStart >= eventData.timeOutEnd) {
+          throw new Error("Time Out Start must be earlier than Time Out End");
+        }
       }
     }
-
+    if(eventData.timeInEnd && eventData.timeOutStart){
     // 3. Time In End should be before Time Out Start (Time In period should complete before Time Out begins)
-    if (eventData.timeInEnd && eventData.timeOutStart) {
-      if (eventData.timeInEnd > eventData.timeOutStart) {
-        throw new Error(
-          "Time In period must complete before Time Out period begins"
-        );
+      if (eventData.timeInEnd && eventData.timeOutStart) {
+        if (eventData.timeInEnd > eventData.timeOutStart) {
+          throw new Error(
+            "Time In period must complete before Time Out period begins"
+          );
+        }
       }
     }
 
@@ -363,6 +371,27 @@ export const updateEvent = async (
     handleFirestoreError(error, `update event with ID ${eventId}`);
   }
 };
+
+
+export const disableFineGeneration = async (eventId: string) => {
+  try {
+    const eventDoc = doc(db, "events", eventId);
+    await updateDoc(eventDoc, {
+      finesGenerated: true,
+    });
+
+    console.log(`-------Fine generation disabled for event with ID ${eventId}-----------`);
+
+    // Invalidate specific event cache and any paginated events
+    cacheService.invalidate(`event:${eventId}`);
+    cacheService.invalidateByPrefix("events:");
+  } catch (error) {
+    handleFirestoreError(
+      error,
+      `disable fine generation for event with ID ${eventId}`
+    );
+  }
+ }
 
 export const incrementEventAttendees = async (eventId: string) => {
   try {

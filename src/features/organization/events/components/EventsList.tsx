@@ -5,6 +5,8 @@ import { EditEventDialog } from "./EditEventDialog";
 import { Event } from "../types";
 import { archiveEvent, deleteEvent } from "@/firebase";
 import { ViewMode } from "./ViewToggle";
+import { useEventFineTypes } from "../hooks/useEventFineTypes";
+import { BulkFinesIssuance } from "../../fines/components/BulkFinesIssuance";
 
 interface EventsListProps {
   events: Event[];
@@ -15,10 +17,13 @@ interface EventsListProps {
 export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const { fineTypes, fetchFineTypes } = useEventFineTypes();
+  const [isBulkIssueFinesOpen, setBulkIssueFinesOpen] = useState(false);
 
-  const handleEditClick = (event: Event) => {
+  const handleEditClick = async (event: Event) => {
     setSelectedEvent(event);
     setIsEditDialogOpen(true);
+    fetchFineTypes(); //temporary
   };
 
   const handleArchiveClick = async (event: Event) => {
@@ -26,6 +31,11 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
       await archiveEvent(event.id.toString());
       onEventsUpdate();
     }
+  };
+
+    const handleIssueClick = async (event: Event) => {
+    setSelectedEvent(event);
+    setBulkIssueFinesOpen(true);
   };
 
   const handleDeleteClick = async (event: Event) => {
@@ -83,6 +93,7 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
                 event={event}
                 onEdit={handleEditClick}
                 onArchive={handleArchiveClick}
+                onIssueFine={handleIssueClick}
                 onUnarchive={handleUnarchiveClick}
                 onDelete={handleDeleteClick}
               />
@@ -100,6 +111,7 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
                 event={event}
                 onEdit={handleEditClick}
                 onArchive={handleArchiveClick}
+                onIssueFine={handleIssueClick}
                 onUnarchive={handleUnarchiveClick}
                 onDelete={handleDeleteClick}
               />
@@ -110,9 +122,17 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
       {selectedEvent && (
         <EditEventDialog
           open={isEditDialogOpen}
+          fineTypes ={fineTypes}
           onOpenChange={setIsEditDialogOpen}
           selectedEvent={selectedEvent}
           onEventEdited={handleEventEdited}
+        />
+      )}
+      {selectedEvent && (
+        <BulkFinesIssuance
+        open={isBulkIssueFinesOpen}
+        onOpenChange={setBulkIssueFinesOpen}
+        event={selectedEvent}
         />
       )}
     </>

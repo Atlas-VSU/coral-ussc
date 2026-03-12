@@ -9,6 +9,7 @@ import {
   BarChart,
   Settings,
   LogOut,
+  AlertTriangle,
   Banknote,
   ShieldCheck,
 } from "lucide-react";
@@ -23,6 +24,7 @@ const iconMap = {
   "layout-dashboard": LayoutDashboard,
   calendar: Calendar,
   users: Users,
+  alert: AlertTriangle,
   "bar-chart": BarChart,
   settings: Settings,
   fee: Banknote,
@@ -66,6 +68,11 @@ const organizationData = {
       title: "Clearance",
       url: "/org-clearance",
       icon: "clearance"
+    },
+    {
+      title: "Fines",
+      url: "/org-fines",
+      icon: "alert",
     }
     // {
     //   title: "Reports",
@@ -103,6 +110,11 @@ const organizationData = {
       label: "Clearance",
       icon: "clearance",
       href: "/org-clearance",
+    },
+    {
+      label: "Fines",
+      icon: "alert",
+      href: "/org-fines",
     }
   ],
 };
