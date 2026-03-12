@@ -1,8 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Check, X, FileImage, Calendar, Hash, CreditCard } from "lucide-react"
+import { Check, X, FileImage, Calendar, Hash, CreditCard, XCircle, CheckCircle } from "lucide-react"
 import { format } from "date-fns"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Separator } from "@/components/ui/separator"
 import {
   Dialog,
   DialogContent,
@@ -11,171 +15,321 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 
-export interface ReviewData {
-  lineItems: { label: string; amount: number }[]
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface PaymentReviewLineItem {
+  /** Display label for the item */
+  label: string
+  /** Optional sub-label shown below in muted text (e.g. "fine", "fee") */
+  sublabel?: string
+  amount?: number
+  /**
+   * Group key — when two or more items have different group values, section
+   * headers are rendered above each group (e.g. "Fees" / "Fines").
+   */
+  group?: string
+}
+
+export interface PaymentReviewData {
+  // ── Identity (optional — omit to hide the student/type section) ──────────
+  studentName?: string
+  studentId?: string
+  /** e.g. "Membership Fee", "Bulk Payment" */
+  typeLabel?: string
+
+  // ── Covered items ─────────────────────────────────────────────────────────
+  lineItems?: PaymentReviewLineItem[]
+  /** When true, renders a "Total" row at the bottom of the items table */
+  showLineItemsTotal?: boolean
+
+  // ── Payment proof ─────────────────────────────────────────────────────────
   amountPaid: number
-  paymentMethod: string
-  referenceNo?: string | null
-  submittedAt?: string
-  receiptImageUrl?: string | null
+  /** If omitted the Payment Method row is hidden */
+  paymentMethod?: string
+  referenceNo?: string
+  submittedAt: string
+  /** Text shown inside the receipt placeholder box */
+  receiptContent?: string
+
+  // ── Read-only post-review info (shown when payment was already reviewed) ──
+  declineRemarks?: string
+  reviewedBy?: string
+  reviewedAt?: string
+
+  /** Overrides the default message shown in the approve confirmation dialog */
   approveConfirmMessage?: string
 }
+
+// ─── Props ───────────────────────────────────────────────────────────────────
 
 interface PaymentReviewDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  data: ReviewData | null
-  onApprove: () => void
-  onReject: (reason: string) => void
+  title?: string
+  description?: string
+  data: PaymentReviewData | null
+  /**
+   * Provide both callbacks to enable Approve + Reject actions.
+   * Omit both to render a read-only dialog with a Close button.
+   */
+  onApprove?: () => void
+  onReject?: (reason: string) => void
 }
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export function PaymentReviewDialog({
   open,
   onOpenChange,
+  title = "Review Payment Submission",
+  description = "Review the payment details and approve or reject the submission.",
   data,
   onApprove,
   onReject,
 }: PaymentReviewDialogProps) {
-  const [isRejecting, setIsRejecting] = useState(false)
+  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false)
+  const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectReason, setRejectReason] = useState("")
 
-  // Reset internal state when dialog closes/opens
-  useEffect(() => {
-    if (open) {
-      setIsRejecting(false)
-      setRejectReason("")
-    }
-  }, [open])
+  const isPending = Boolean(onApprove && onReject)
 
-  if (!data) return null
+  function handleApproveConfirmed() {
+    onApprove?.()
+    setApproveConfirmOpen(false)
+    onOpenChange(false)
+  }
 
-  const handleRejectConfirm = () => {
+  function handleRejectConfirmed() {
     if (!rejectReason.trim()) return
-    onReject(rejectReason)
+    onReject?.(rejectReason)
+    setRejectOpen(false)
+    setRejectReason("")
+    onOpenChange(false)
+  }
+
+  function renderLineItems() {
+    if (!data?.lineItems?.length) return null
+    const items = data.lineItems
+
+    // Determine whether to render group headers
+    const groupValues = items.map(i => i.group).filter((g): g is string => Boolean(g))
+    const uniqueGroups = [...new Set(groupValues)]
+    const hasGroups = uniqueGroups.length > 1
+
+    const total = items.reduce((s, i) => s + (i.amount ?? 0), 0)
+
+    const renderRow = (item: PaymentReviewLineItem) => (
+      <div key={item.label} className="flex items-center justify-between px-3 py-2">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm">{item.label}</span>
+          {item.sublabel && (
+            <span className="text-xs capitalize text-muted-foreground">{item.sublabel}</span>
+          )}
+        </div>
+        {item.amount != null && (
+          <span className="text-sm font-medium">₱{item.amount.toLocaleString()}</span>
+        )}
+      </div>
+    )
+
+    return (
+      <div>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Payable Covered
+        </p>
+        <div className="divide-y divide-border rounded-md border border-border">
+          {hasGroups
+            ? uniqueGroups.map(group => (
+                <div key={group}>
+                  <div className="border-b border-border bg-muted/40 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+                    {group}
+                  </div>
+                  {items.filter(i => i.group === group).map(renderRow)}
+                </div>
+              ))
+            : items.map(renderRow)}
+          {data.showLineItemsTotal && (
+            <div className="flex items-center justify-between bg-muted/40 px-3 py-2">
+              <span className="text-sm font-semibold">Total</span>
+              <span className="text-sm font-semibold">₱{total.toLocaleString()}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    )
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Review Payment Submission</DialogTitle>
-          <DialogDescription>
-            Verify the payment details and receipt below before approving.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      {/* ── Main review dialog ─────────────────────────────────────────── */}
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>{description}</DialogDescription>
+          </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-          {/* Left Column: Payment Details */}
-          <div className="flex flex-col gap-4">
-            <div>
-              <Label className="text-xs text-muted-foreground uppercase tracking-wider">Payment For</Label>
-              <div className="mt-2 flex flex-col gap-2">
-                {data.lineItems.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-sm border-b pb-2 last:border-0 last:pb-0">
-                    <span className="font-medium text-foreground">{item.label}</span>
-                    <span className="text-muted-foreground">₱{item.amount.toLocaleString()}</span>
+          {data && (
+            <div className="flex flex-col gap-4">
+              {/* Optional identity section */}
+              {(data.studentName || data.typeLabel) && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    {data.studentName && (
+                      <div>
+                        <Label className="text-muted-foreground">Student</Label>
+                        <p className="mt-0.5 text-sm font-medium">{data.studentName}</p>
+                        {data.studentId && (
+                          <p className="text-xs text-muted-foreground">{data.studentId}</p>
+                        )}
+                      </div>
+                    )}
+                    {data.typeLabel && (
+                      <div>
+                        <Label className="text-muted-foreground">Type</Label>
+                        <p className="mt-0.5 text-sm font-medium">{data.typeLabel.toUpperCase()}</p>
+                      </div>
+                    )}
                   </div>
-                ))}
+                  <Separator />
+                </>
+              )}
+
+              {/* Covered line items */}
+              {renderLineItems()}
+
+              {/* Receipt placeholder */}
+              {data.paymentMethod !== "cash" &&(<div className="flex h-32 items-center justify-center rounded-md border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
+                {data.receiptContent ?? "Receipt Image Preview"}
+              </div>)}
+
+              <Separator />
+
+              {/* Payment details grid */}
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                {data.paymentMethod && (
+                  <div>
+                    <Label className="text-muted-foreground">Payment Method</Label>
+                    <p className="mt-0.5 text-sm font-medium">{data.paymentMethod.toUpperCase()}</p>
+                  </div>
+                )}
+                {data.referenceNo && (
+                  <div>
+                    <Label className="text-muted-foreground">Reference No.</Label>
+                    <p className="mt-0.5 text-sm font-mono">{data.referenceNo}</p>
+                  </div>
+                )}
+                <div>
+                  <Label className="text-muted-foreground">Amount Paid</Label>
+                  <p className="mt-0.5 text-sm font-medium">₱{data.amountPaid.toLocaleString()}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Date Submitted</Label>
+                  <p className="mt-0.5 text-sm">{data.submittedAt}</p>
+                </div>
               </div>
-            </div>
 
-            <Separator />
-
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm flex items-center gap-2 text-muted-foreground">
-                  <CreditCard className="size-4" /> Method
-                </span>
-                <Badge variant="outline" className="uppercase">{data.paymentMethod.replace("_", " ")}</Badge>
-              </div>
-
-              {data.referenceNo && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm flex items-center gap-2 text-muted-foreground">
-                    <Hash className="size-4" /> Reference No.
-                  </span>
-                  <span className="font-mono text-sm">{data.referenceNo}</span>
+              {/* Decline remarks (read-only, shown for declined payments) */}
+              {data.declineRemarks && (
+                <div>
+                  <Label className="text-muted-foreground">Decline Remarks</Label>
+                  <p className="mt-1 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                    {data.declineRemarks}
+                  </p>
                 </div>
               )}
 
-              {data.submittedAt && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm flex items-center gap-2 text-muted-foreground">
-                    <Calendar className="size-4" /> Submitted
-                  </span>
-                  <span className="text-sm">{format(new Date(data.submittedAt), "MMM dd, yyyy p")}</span>
-                </div>
+              {/* Reviewed-by info */}
+              {(data.reviewedBy || data.reviewedAt) && (
+                <p className="text-xs text-muted-foreground">
+                  Reviewed{data.reviewedAt ? ` on ${data.reviewedAt}` : ""}
+                  {data.reviewedBy ? ` by ${data.reviewedBy}` : ""}
+                </p>
               )}
 
-              <div className="flex justify-between items-center pt-2">
-                <span className="font-semibold text-foreground">Total Paid</span>
-                <span className="text-lg font-bold text-primary">₱{data.amountPaid.toLocaleString()}</span>
-              </div>
+              <DialogFooter className="flex-col gap-2 sm:flex-row">
+                {isPending ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="gap-1.5 text-destructive hover:text-destructive"
+                      onClick={() => setRejectOpen(true)}
+                    >
+                      <XCircle className="size-4" /> Reject
+                    </Button>
+                    <Button className="gap-1.5" onClick={() => setApproveConfirmOpen(true)}>
+                      <CheckCircle className="size-4" /> Approve
+                    </Button>
+                  </>
+                ) : (
+                  <Button variant="outline" onClick={() => onOpenChange(false)}>
+                    Close
+                  </Button>
+                )}
+              </DialogFooter>
             </div>
-
-            {isRejecting && (
-              <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-2">
-                <Label htmlFor="reason" className="text-destructive">Reason for Rejection *</Label>
-                <Textarea
-                  id="reason"
-                  placeholder="E.g., Receipt image is blurry, reference number does not match..."
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  className="resize-none border-destructive/50 focus-visible:ring-destructive"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Right Column: Receipt Image */}
-          <div className="flex flex-col gap-2">
-            <Label className="text-xs text-muted-foreground uppercase tracking-wider">Proof of Payment</Label>
-            <div className="flex-1 min-h-[250px] rounded-lg border border-border bg-muted/30 flex items-center justify-center overflow-hidden relative">
-              {data.receiptImageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img 
-                  src={data.receiptImageUrl} 
-                  alt="Payment Receipt" 
-                  className="object-contain w-full h-full"
-                />
-              ) : (
-                <div className="flex flex-col items-center text-muted-foreground">
-                  <FileImage className="size-8 mb-2 opacity-50" />
-                  <span className="text-sm">No receipt provided</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter className="gap-2 sm:gap-0">
-          {!isRejecting ? (
-            <>
-              <Button variant="outline" onClick={() => setIsRejecting(true)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                <X className="size-4 mr-1.5" /> Reject Payment
-              </Button>
-              <Button onClick={onApprove} className="bg-success text-success-foreground hover:bg-success/90">
-                <Check className="size-4 mr-1.5" /> Approve & Clear
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="ghost" onClick={() => setIsRejecting(false)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={handleRejectConfirm} disabled={!rejectReason.trim()}>
-                Confirm Rejection
-              </Button>
-            </>
           )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Approve confirmation ───────────────────────────────────────── */}
+      <Dialog open={approveConfirmOpen} onOpenChange={setApproveConfirmOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Confirm Approval</DialogTitle>
+            <DialogDescription>
+              {data?.approveConfirmMessage ?? "Are you sure you want to approve this payment?"}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApproveConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleApproveConfirmed}>Yes, Approve</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Reject with reason ────────────────────────────────────────── */}
+      <Dialog
+        open={rejectOpen}
+        onOpenChange={v => { setRejectOpen(v); if (!v) setRejectReason("") }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Reject Payment</DialogTitle>
+            <DialogDescription>
+              Provide a reason for rejecting this payment submission.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="prd-rejectReason">Reason for Rejection</Label>
+            <Textarea
+              id="prd-rejectReason"
+              placeholder="e.g. Receipt image is unclear. Please resubmit."
+              value={rejectReason}
+              onChange={e => setRejectReason(e.target.value)}
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => { setRejectOpen(false); setRejectReason("") }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={!rejectReason.trim()}
+              onClick={handleRejectConfirmed}
+            >
+              Reject
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
