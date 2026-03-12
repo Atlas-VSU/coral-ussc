@@ -78,6 +78,30 @@ export const fetchFeesForOrg = async(orgId: string): Promise<Fee[]> => {
     }
 }
 
+export const fetchUnpaidFeesForOrg = async (): Promise<Fee[]> => {
+    try {
+        const currentUser = await getCurrentUserData() as unknown as Member;
+        const feesRef = collection(db, "fees");
+
+        const q = query(
+            feesRef,
+            where("orgId", "==", currentUser.id),
+            where("isArchived", "==", false),
+            where("status", "in", ["unpaid", "partial"]),
+            orderBy("createdAt", "desc")
+        )
+
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        })) as unknown as Fee[];
+    } catch (error) {
+        console.error("Error fetching unpaid fees for org:", error);
+        return [];
+    }
+}
+
 
 export async function fetchFeeRoster(title: string, academicYear: string) {
   try {

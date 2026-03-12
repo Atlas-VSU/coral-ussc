@@ -185,3 +185,14 @@ export const getAllFines = async (status?: string) => {
     return [];
   }
 };
+
+export const getAllUnpaidFinesforOrg = async () => {
+  try {
+    const currUser = await getCurrentUserData() as unknown as Member;
+    const snapshot = await getDocs(query(finesCollection, where("metadata.isArchived", "==", false), where("orgId", "==", currUser.id), where("status", "in", ["unpaid", "partially_paid"])));
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as StudentFines[];
+  }catch (error) {
+    handleFirestoreError(error, "fetching all unpaid fines for org");
+    return [];
+  }
+ }
