@@ -192,6 +192,7 @@ export const getAllFines = async (status?: string) => {
     const constraints = [
       where("metadata.isArchived", "==", false),
       where("orgId", "==", currUser.id),
+      where("accumulatedAmount", ">", 0),
       orderBy("metadata.updatedAt", "desc"),
       ...(status && status !== "all" ? [where("status", "==", status)] : []),
     ];
