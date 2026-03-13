@@ -122,7 +122,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                       {fineItems.filter(item => item.isPaid).length} fine item{fineItems.filter(item => item.isPaid).length !== 1 ? "s" : ""}
                     </span>
                     {" — "}
-                    {fineItems.map((i, idx) => (
+                    {(fineItems.filter(item => item.isPaid)).map((i, idx) => (
                       <span key={i.id}>
                         {i.fineTypeName}{i.eventName ? ` (${i.eventName})` : ""}
                         {idx < fineItems.length - 1 ? ", " : ""}
