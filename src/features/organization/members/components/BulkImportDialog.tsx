@@ -47,7 +47,7 @@ export function BulkImportDialog({
   onImport,
   isImporting = false,
   totalStudents = 9000,
-  batchSize = 400,
+  batchSize = 200,
   importProgress = 0,
   currentBatch = 0,
   totalBatches = Math.ceil(totalStudents / batchSize),

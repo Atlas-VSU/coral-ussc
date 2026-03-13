@@ -1,24 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Fee, PaymentLog, PaymentMethod } from "@/features/organization/fees/types";
-import type { Member } from "@/features/organization/members/types";
-import { Timestamp } from "firebase/firestore";
-import { CreditCard, Landmark, Wallet } from "lucide-react";
-import { useFeeAction } from "../hooks/useFeeAction";
-import { StudentFeeRow } from "../hooks/useFeesRoster";
+import { Wallet } from "lucide-react";
+import type { Fee } from "@/features/organization/fees/types";
+import type { StudentFeeRow } from "../hooks/useFeesRoster";
 
 interface ManualPaymentDialogProps {
   fee: Fee;
   student: StudentFeeRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", ref?: string) => Promise<void>;
+  onSuccess: (feeId: string, amount: string, method: "cash") => Promise<void>;
 }
 
 export function ManualPaymentDialog({
@@ -28,95 +24,67 @@ export function ManualPaymentDialog({
   onOpenChange,
   onSuccess,
 }: ManualPaymentDialogProps) {
-  const [amount, setAmount] = useState(fee.amount.toString());
-  const [method, setMethod] = useState<PaymentMethod>("cash");
-  const [ref, setRef] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!student) return null;
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    await onSuccess(student.id, amount, method, ref);
+    await onSuccess(student.id, fee.amount.toString(), "cash");
     setIsSubmitting(false);
     onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md border-border bg-background">
+      <DialogContent className="max-w-sm border-border bg-background">
         <DialogHeader>
-          <DialogTitle>Log Manual Payment</DialogTitle>
+          <DialogTitle>Cash Payment</DialogTitle>
           <DialogDescription>
-            Record a cash or Gcash payment for {student.memberInfo.firstName || ""} {student.memberInfo.lastName || ""}
+            Record payment for {student.memberInfo.firstName} {student.memberInfo.lastName}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-5 py-4">
+          {/* Fixed amount display */}
           <div className="grid gap-2">
-            <Label htmlFor="amount">Amount Provided</Label>
+            <Label htmlFor="amount" className="text-sm font-medium">
+              Amount Due
+            </Label>
             <div className="relative">
-                <span className="absolute left-3 top-2.5 text-muted-foreground font-semibold italic text-sm">₱</span>
-                <Input
-                disabled={true}
-                id="amount"
-                type="number"
-                value={amount}
-                className="pl-8 bg-muted/30 border-border focus:ring-1 focus:ring-primary"
-                />
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <Label>Payment Method</Label>
-            <Select value={method} onValueChange={(v) => setMethod(v as PaymentMethod)}>
-              <SelectTrigger className="bg-muted/30 border-border">
-                <SelectValue placeholder="Select method" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cash">
-                    <div className="flex items-center gap-2">
-                        <Wallet className="size-4" /> Cash
-                    </div>
-                </SelectItem>
-                <SelectItem value="gcash">
-                    <div className="flex items-center gap-2">
-                        <Wallet className="size-4 text-blue-500" /> GCash
-                    </div>
-                </SelectItem>
-                <SelectItem value="bank_transfer">
-                    <div className="flex items-center gap-2">
-                        <Landmark className="size-4" /> Bank Transfer
-                    </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {method === "gcash" && (
-            <div className="grid gap-2">
-              <Label htmlFor="ref">Reference Number / Name</Label>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">
+                ₱
+              </span>
               <Input
-                id="ref"
-                placeholder="Enter GCash reference..."
-                value={ref}
-                onChange={(e) => setRef(e.target.value)}
-                className="bg-muted/30 border-border"
+                id="amount"
+                type="text"
+                value={fee.amount.toLocaleString()}
+                disabled
+                className="pl-7 bg-muted/20 border-border text-foreground font-medium"
               />
             </div>
-          )}
+          </div>
+
+          {/* Static payment method indicator */}
+          <div className="grid gap-2">
+            <Label className="text-sm font-medium">Payment Method</Label>
+            <div className="flex items-center gap-2 rounded-md border border-border bg-muted/20 px-3 py-2 text-sm text-foreground">
+              <Wallet className="size-4 text-muted-foreground" />
+              <span>Cash</span>
+            </div>
+          </div>
         </div>
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button 
-            className="bg-primary hover:bg-primary/90" 
+          <Button
             onClick={handleSubmit}
-            disabled={isSubmitting || !amount}
+            disabled={isSubmitting}
+            className="min-w-[100px]"
           >
-            {isSubmitting ? "Saving..." : "Record Payment"}
+            {isSubmitting ? "Recording…" : "Record Payment"}
           </Button>
         </DialogFooter>
       </DialogContent>

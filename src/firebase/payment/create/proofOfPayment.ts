@@ -3,15 +3,16 @@ import { getFineByStudentId } from "@/firebase/fines/read/fines";
 import { db } from "@/firebase/firebase.config";
 import { PaymentFormData } from "@/lib/validators";
 import { addDoc, collection, doc, Timestamp, updateDoc, writeBatch } from "firebase/firestore";
-import { createFinesPaymentHistory } from "./paymentHistory";
+
 import { updateProofOfPaymentHistoryId } from "../update/proofOfPayment";
 import { nanoid } from 'nanoid';
 import { Fee } from "@/features/organization/fees/types";
 import { generateReceiptId } from "@/features/organization/payments/utils";
-import { recordManualPaymentAndUpdateClearance } from "@/firebase/fees";
+import { getFeeByStudentId, recordManualPaymentAndUpdateClearance } from "@/firebase/fees";
 import { useAuth } from "@/hooks/useAuth";
 import { getCurrentUserData } from "@/firebase/users";
 import { Member } from "@/features/organization/members/types";
+import { createFinesPaymentHistory } from "./paymentHistory";
 
 export const createOnlineProofOfPayment = async (
     payment: PaymentFormData, type: string ) => {
@@ -21,7 +22,7 @@ export const createOnlineProofOfPayment = async (
          if (type === "fines") {
             transaction = await getFineByStudentId(payment.studentId);
         } else if (type === "fees") {
-            // For fees if ever
+            transaction = await getFeeByStudentId(payment.studentId);
         }
         if (transaction)
         {
@@ -36,6 +37,9 @@ export const createOnlineProofOfPayment = async (
                 metaData: {},
                 createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now(),
+            }
+            if (payment.paymentHistoryId) {
+                (paymentData as any).paymentHistoryId = payment.paymentHistoryId;
             }
             const docRef = await addDoc(collection(db, "proofOfPayments"), paymentData);
             return docRef.id;
@@ -54,7 +58,7 @@ export const createOfflineProofOfPayment = async (
         if (type === "fines") {
             transaction = await getFineByStudentId(payment.studentId);
         } else if (type === "fees") {
-            // For fees if ever
+            transaction = await getFeeByStudentId(payment.studentId);
         }
         if (transaction)
         {

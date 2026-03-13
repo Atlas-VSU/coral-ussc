@@ -67,24 +67,6 @@ const handleFirestoreError = (error: any, context: string) => {
       };
       const docRef = await addDoc(finesCollection, fineData);
 
-      // Initialize student's clearance document for this fine
-      const clearanceRef = doc(db, 'clearanceStatus', userId);
-      await setDoc(clearanceRef, {
-          blockingItems: {
-              [docRef.id]: {
-                  type: PaymentType.FINES,
-                  referenceId: docRef.id,
-                  title: "Fines",
-                  balance: 0,
-                  status: "paid",
-                  paymentHistory: [],
-                  pendingReview: false,
-                  isRequiredForClearance: true
-              }
-          },
-          updatedAt: Timestamp.now()
-      }, { merge: true });
-
         await recalculateClearanceStatus(userId);
     } catch (error) {
       handleFirestoreError(error, `creating fine document on ID ${userId}`);

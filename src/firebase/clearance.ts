@@ -9,7 +9,6 @@ import { PaymentType } from "@/constants/types";
 import { rejectPaymentHistory, verifyPaymentHistory } from "./payment/update/paymentHistory";
 import { PaymentStatus } from "@/constants/status";
 import { addOfflineFinesPayment } from "./payment/create/paymentHistory";
-
 export const fetchClearanceDocuments = async (orgId: string) => {
     const clearanceRef = collection(db, 'clearanceStatus');
     const q = query(
@@ -113,14 +112,13 @@ export const updateClearanceDocumentForAllStudents = async (orgId: string) => {
     });
 }
 
-export const addStudentWithClearance = async (studentData: any, orgId: string) => {
+export const addStudentWithClearance = async (studentId: string,studentData: any, orgId: string) => {
     try {
         const batch = writeBatch(db);
-        
         // 1. Generate references
         // If you auto-generate IDs: const studentRef = doc(collection(db, 'users'));
         // If you use an auth UID: const studentRef = doc(db, 'users', studentAuthId);
-        const studentRef = doc(db, 'users', studentData.uid); 
+        const studentRef = doc(db, 'users', studentId); 
         const clearanceRef = doc(db, 'clearanceStatus', studentRef.id);
 
         const now = Timestamp.now();
@@ -135,7 +133,7 @@ export const addStudentWithClearance = async (studentData: any, orgId: string) =
             studentId: studentData.studentId,
             academicYear: '2025-2026',
             semester: '2nd',
-            status: 'pending',
+            status: 'not_cleared',
             visibility: 'public',
             blockingItems: {},
             clearanceDate: null,
@@ -192,7 +190,28 @@ export const approvePaymentClearanceUpdate = async (
     if (snapshot.empty) throw new Error("No pending payment found for this fee");
     
     const logId = snapshot.docs[0].id;
-    return await approvePaymentTransaction(refId, logId, adminId);
+    const logData = snapshot.docs[0].data();
+
+    const proof: ProofOfPayment = {
+      referenceId: refId,
+      paymentType: "fees",
+      amount: logData.amount,
+      status: PaymentStatus.VERIFIED,
+      verifiedBy: adminId,
+      verifiedByName: adminName,
+      paymentMethod: logData.paymentMethod,
+      verifiedAt: Timestamp.now(),
+      notes: "Verified via Clearance Management",
+      orgId: studentData?.orgId || "",
+      userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
+      studentId: studentData?.studentId || "",
+      senderNumber: logData.senderNumber || "",
+      referenceNumber: logData.gcashReference || "",
+      imageUrl: logData.imageUrl || "",
+      submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+    };
+
+    return await verifyPaymentHistory(logId, proof);
   } else {
     const logsRef = collection(db, "fines", refId, "paymentHistory");
     const q = query(logsRef, where("status", "==", "pending_verification"));
@@ -243,7 +262,29 @@ export const rejectPaymentClearanceUpdate = async (
      if (snapshot.empty) throw new Error("No pending payment found for this fee");
      
      const logId = snapshot.docs[0].id;
-     return await rejectPaymentTransaction(refId, logId, adminId, reason);
+     const logData = snapshot.docs[0].data();
+
+     const proof: ProofOfPayment = {
+       referenceId: refId,
+       paymentType: "fees",
+       amount: logData.amount,
+       status: PaymentStatus.REJECTED,
+       verifiedBy: adminId,
+       verifiedByName: adminName,
+       paymentMethod: logData.paymentMethod,
+       verifiedAt: Timestamp.now(),
+       rejectionReason: reason,
+       notes: "Rejected via Clearance Management",
+       orgId: studentData?.orgId || "",
+       userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
+       studentId: studentData?.studentId || "",
+       senderNumber: logData.senderNumber || "",
+       referenceNumber: logData.gcashReference || "",
+       imageUrl: logData.imageUrl || "",
+       submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+     };
+
+     return await rejectPaymentHistory(logId, proof);
    } else {
      const logsRef = collection(db, "fines", refId, "paymentHistory");
      const q = query(logsRef, where("status", "==", "pending_verification"));
@@ -299,7 +340,7 @@ export const rejectPaymentClearanceUpdate = async (
       );
     } else if(item.paymentType == PaymentType.FINES) {
       const fines = await getFineById(item.refId) as unknown as StudentFines;
-      return await addOfflineFinesPayment(fines, PaymentType.FINES, method as any, adminId, adminName);
+      return await addOfflineFinesPayment(fines, PaymentType.FINES, method as any, "", "");
     }
    }));
 
@@ -353,7 +394,7 @@ export const seedClearanceDocuments = async (orgId: string) => {
         studentId: userData.studentId || "N/A", // Fallback just in case
         academicYear: currentYear,
         semester: currentSemester,
-        status: 'pending', 
+        status: 'cleared', 
         visibility: 'public', 
         blockingItems: {}, 
         clearanceDate: null,

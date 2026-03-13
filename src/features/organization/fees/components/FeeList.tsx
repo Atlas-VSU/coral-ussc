@@ -28,7 +28,8 @@ const ITEMS_PER_PAGE = 10
 export default function FeeListPage() {
   const router = useRouter()
   const { aggregatedFees, isLoading: feesLoading, refetchFees } = useFeeList()
-  const { members, isLoading: membersLoading } = usePaginatedMembers() 
+  const { totalMembers, members, isLoading: membersLoading } = usePaginatedMembers() 
+  
 
   const {
     state: { search, filterStatus, viewMode, generateOpen, currentPage, isLoading },
@@ -209,7 +210,7 @@ export default function FeeListPage() {
       <FeeGenerationDialog
         open={generateOpen}
         onOpenChange={setGenerateOpen}
-        students={members as unknown as Member[]} // pass the fetched student list
+        studentsCount={totalMembers}
         onClose={handleGenerationSuccess}
       />
     </div>

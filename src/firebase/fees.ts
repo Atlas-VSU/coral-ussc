@@ -12,8 +12,25 @@ import { access } from "fs";
 import { PaymentStatus } from "@/constants/status";
 import { PaymentType } from "@/constants/types";
 import { recalculateClearanceStatus } from "./clearance";
+import { generateReceiptId } from "@/features/organization/payments/utils";
+import { getProofOfPaymentById } from "./payment/read/proofOfPayment";
+import { getPaymentHistoryById } from "./payment/read/paymentHistory";
 
 const currentUserName = await getCurrentUserData() as unknown as Member;
+
+export const checkFeeTitleExist = async (title: string, academicYear: string, semester: string) => {
+    const feeRef = collection(db, "fees");
+    const q = query(
+        feeRef, 
+        where("title", "==", title), 
+        where("academicYear", "==", academicYear), 
+        where("semester", "==", semester), 
+        where("orgId", "==", currentUserName.id), 
+    );
+    
+    const feeSnapshot = await getDocs(q);
+    return feeSnapshot.size > 0;
+}
 
 export const checkFeeStatusForClearance = async (userId: string, orgId: string) => {
     const feeRef = collection(db, "fees");
@@ -48,25 +65,39 @@ export const checkFeeStatusForClearance = async (userId: string, orgId: string) 
     return feesWithHistory;
 }
 
-export const generateFeesForAllStudentsInAnOrg = async (feeData: z.infer<typeof FeeGenerationSchema>, currentUserData: any, eventId?: string) : Promise<void> => {
+export interface GenerationProgress {
+    processedCount: number;
+    totalCount: number;
+    currentBatch: number;
+    totalBatches: number;
+}
+
+export const generateFeesForAllStudentsInAnOrg = async (
+    feeData: z.infer<typeof FeeGenerationSchema>, 
+    currentUserData: any, 
+    onProgress?: (progress: GenerationProgress) => void,
+    eventId?: string
+) : Promise<void> => {
     const students = await getMembersOfAnOrg(currentUserData) as unknown as MemberData[];
-    if (students.length === 0) {
+    const totalCount = students.length;
+    if (totalCount === 0) {
         throw new Error("No students provided");
     }
 
     const feesCollection = collection(db, "fees");
-    const clearanceCollection = collection(db, "clearanceStatus"); // Reference to clearance collection
+    const clearanceCollection = collection(db, "clearanceStatus");
     const now = Timestamp.now();
 
-    // CRITICAL FIX: Max batch size is 500 operations. 
-    // 200 students * 2 writes (fee + clearance) = 400 operations per batch.
-    const chunkSize = 200; 
+    const chunkSize = totalCount < 200 ? Math.ceil(totalCount / 3) : 200; 
+    const totalBatches = Math.ceil(totalCount / chunkSize);
+    let processedCount = 0;
     
-    for (let i = 0; i < students.length; i += chunkSize) {
+    for (let i = 0; i < totalCount; i += chunkSize) {
         const chunk = students.slice(i, i + chunkSize);
         const batch = writeBatch(db);
+        const currentBatch = Math.floor(i / chunkSize) + 1;
         
-        chunk.forEach(student => {
+        chunk.forEach((student: MemberData) => {
             const feeDocRef = doc(feesCollection);
             const studentId = student.id || "";
             
@@ -98,9 +129,6 @@ export const generateFeesForAllStudentsInAnOrg = async (feeData: z.infer<typeof 
             if (studentId) {
                 const clearanceDocRef = doc(clearanceCollection, studentId);
                 
-                // Using set with { merge: true } is the safest way to append to a Map in Firestore.
-                // It adds the new fee to the blockingItems map without deleting existing items, 
-                // and it won't crash even if a student is somehow missing their clearance document.
                 batch.set(clearanceDocRef, {
                     blockingItems: {
                         [feeDocRef.id]: {
@@ -114,15 +142,29 @@ export const generateFeesForAllStudentsInAnOrg = async (feeData: z.infer<typeof 
                             isRequiredForClearance: feeData.isRequiredForClearance
                         }
                     },
-                    updatedAt: now // Keep the updated timestamp fresh
+                    updatedAt: now
                 }, { merge: true });
             }
         });
         
         await batch.commit();
 
-        // Trigger clearance recalculation for all students in this chunk
-        await Promise.all(chunk.map(student => recalculateClearanceStatus(student.id || "")));
+        // 3. Recalculate clearance after batch commit (can be optimized but keeping existing logic flow)
+        for (const student of chunk) {
+            if (student.id) {
+                await recalculateClearanceStatus(student.id);
+            }
+        }
+
+        processedCount += chunk.length;
+        if (onProgress) {
+            onProgress({
+                processedCount,
+                totalCount,
+                currentBatch,
+                totalBatches,
+            });
+        }
     }
 }
 export const fetchFeesForOrg = async(orgId: string): Promise<Fee[]> => {
@@ -230,6 +272,28 @@ export async function fetchPaymentLogs(feeId: string) {
     }
 }
 
+export const getFeeByStudentId = async (studentId: string) => {
+    try {
+        const feeRef = collection(db, "fees");
+        const q = query(
+            feeRef,
+            where("studentId", "==", studentId),
+        );
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+            const feeDoc = snapshot.docs[0];
+            return {
+                id: feeDoc.id,
+                ...feeDoc.data()
+            } as Fee;
+        }
+        return null;
+    } catch (error) {
+        console.error("Error fetching fee by student ID:", error);
+        return null;
+    }
+}
+
 export const recordManualPaymentAndUpdateClearance = async (
     feeId: string, 
     amount: string, 
@@ -250,6 +314,9 @@ export const recordManualPaymentAndUpdateClearance = async (
         const subCollectionRef = collection(feeRef, "paymentHistory");
         const newLogRef = doc(subCollectionRef);
         const clearanceRef = doc(db, 'clearanceStatus', studentId);
+
+        const studentData = await getDoc(doc(db, "users", studentId));
+        const currentUser = await getCurrentUserData() as unknown as Member;
 
         await runTransaction(db, async (transaction) => {
             const feeDoc = await transaction.get(feeRef);
@@ -292,22 +359,27 @@ export const recordManualPaymentAndUpdateClearance = async (
             transaction.set(newLogRef, newLog);
             
             transaction.set(paymentProofRef, {
-                paymentNumber: 1,
-                type: PaymentType.FEES,
+                id: paymentProofRef.id,
+                orgId: currentUser.id,
+                userId: studentId,
+                studentId: studentData.data()?.studentId,
+                userName: studentData.data()?.firstName + " " + studentData.data()?.lastName,
+                paymentType: PaymentType.FEES,
+                referenceId: feeId,
+                paymentHistoryId: newLogRef.id,
+                senderNumber: "",
+                referenceNumber: method === "gcash" && ref ? ref : "",
                 amount: paymentAmount,
-                paymentMethod: method,
-                paymentProofId: newLogRef.id,
-                gcashReceiptImageUrl: "",
-                gcashReference: method === "gcash" && ref ? ref : null,
-                senderNumber: null,
+                imageUrl: "",
                 status: PaymentStatus.VERIFIED,
-                paidAt: Timestamp.now(),
+                submittedAt: Timestamp.now(),
                 verifiedBy: adminId,
                 verifiedByName: adminName,
                 verifiedAt: Timestamp.now(),
+                rejectionReason: "",
                 notes: "Manual payment recorded by admin",
                 metadata: {},
-                createdAt: Timestamp.now(),
+                receiptCode: generateReceiptId(),
             })
 
             transaction.update(feeRef, {
@@ -366,6 +438,7 @@ export const approvePaymentTransaction = async (feeId: string, paymentLogId: str
                 verifiedBy: userId,
                 verifiedByName: currentUserName.firstName + " " + currentUserName.lastName, 
                 verifiedAt: Timestamp.now(),
+                "metadata.updatedAt": Timestamp.now(),
             });
 
             if (paymentLogData.paymentProofId) {
@@ -375,6 +448,7 @@ export const approvePaymentTransaction = async (feeId: string, paymentLogId: str
                     verifiedBy: userId,
                     verifiedByName: currentUserName.firstName + " " + currentUserName.lastName,
                     verifiedAt: Timestamp.now(),
+                    "metadata.updatedAt": Timestamp.now(),
                 });
             }
 
@@ -437,6 +511,7 @@ export const rejectPaymentTransaction = async (feeId: string, paymentLogId: stri
                 verifiedByName: currentUserName.firstName + " " + currentUserName.lastName, 
                 verifiedAt: Timestamp.now(),
                 rejectionReason: rejectionReason,
+                "metadata.updatedAt": Timestamp.now(),
             });
 
             if (paymentLogData.paymentProofId) {
@@ -447,6 +522,7 @@ export const rejectPaymentTransaction = async (feeId: string, paymentLogId: stri
                     verifiedByName: currentUserName.firstName + " " + currentUserName.lastName,
                     verifiedAt: Timestamp.now(),
                     rejectionReason: rejectionReason,
+                    "metadata.updatedAt": Timestamp.now(),
                 });
             }
 
@@ -454,6 +530,7 @@ export const rejectPaymentTransaction = async (feeId: string, paymentLogId: stri
                 paidAmount: newPaidAmount,
                 balance: newBalance,
                 status: newStatus,
+                "metadata.updatedAt": Timestamp.now(),
             });
 
             // Update Student's Clearance Document
