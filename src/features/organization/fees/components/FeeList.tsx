@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { Zap, ChevronRight, CircleDollarSign, Loader2 } from "lucide-react"
+import { Zap, ChevronRight, CircleDollarSign, Loader2, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,7 +28,8 @@ const ITEMS_PER_PAGE = 10
 export default function FeeListPage() {
   const router = useRouter()
   const { aggregatedFees, isLoading: feesLoading, refetchFees } = useFeeList()
-  const { members, isLoading: membersLoading } = usePaginatedMembers() 
+  const { totalMembers, members, isLoading: membersLoading } = usePaginatedMembers() 
+  
 
   const {
     state: { search, filterStatus, viewMode, generateOpen, currentPage, isLoading },
@@ -74,6 +75,19 @@ export default function FeeListPage() {
             </div>
           </div>
         </CardHeader>
+        {paginated.length === 0 && (
+                  <div className="flex min-h-[400px] flex-col items-center justify-center rounded-md border border-dashed p-8 mx-8 text-center animate-in fade-in-50">
+                    <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
+                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+                        <Plus className="h-10 w-10" />
+                      </div>
+                      <h3 className="mt-4 text-lg font-semibold">No fees generated yet</h3>
+                      <p className="mb-4 mt-2 text-sm text-muted-foreground">
+                  You haven't generated any fees for this academic year. Click the button above to start.
+                </p>
+              </div>
+            </div>
+                )}
         <CardContent>
           {viewMode === "card" ? (
             <>
@@ -113,12 +127,7 @@ export default function FeeListPage() {
                     </Card>
                   )
                 })}
-                {paginated.length === 0 && (
-                  <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-                    <CircleDollarSign className="size-12 text-muted-foreground" />
-                    <p className="mt-3 text-sm font-medium text-foreground">No fees found</p>
-                  </div>
-                )}
+                
               </div>
               <DataPagination
                 currentPage={currentPage}
@@ -182,13 +191,7 @@ export default function FeeListPage() {
                         </TableRow>
                       )
                     })}
-                    {paginated.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
-                          No fees found
-                        </TableCell>
-                      </TableRow>
-                    )}
+                    
                   </TableBody>
                 </Table>
               </div>
@@ -207,7 +210,7 @@ export default function FeeListPage() {
       <FeeGenerationDialog
         open={generateOpen}
         onOpenChange={setGenerateOpen}
-        students={members as unknown as Member[]} // pass the fetched student list
+        studentsCount={totalMembers}
         onClose={handleGenerationSuccess}
       />
     </div>

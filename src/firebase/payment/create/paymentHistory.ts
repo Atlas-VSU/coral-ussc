@@ -1,5 +1,5 @@
 import { db } from "@/firebase/firebase.config";
-import { addDoc, collection, getCountFromServer, Timestamp } from "firebase/firestore";
+import { addDoc, collection, doc, getCountFromServer, Timestamp, updateDoc } from "firebase/firestore";
 import { getProofOfPaymentById } from "../read/proofOfPayment";
 import { updateProofOfPaymentHistoryId } from "../update/proofOfPayment";
 import { getCurrentUserData } from "@/firebase/users";
@@ -12,9 +12,7 @@ import { PaymentFormData } from "@/lib/validators";
 import { createOfflineProofOfPayment } from "./proofOfPayment";
 import { PaymentStatus } from "@/constants/status";
 import { PaymentMethods, PaymentType } from "@/constants/types";
-
-
-
+import { recalculateClearanceStatus } from "@/firebase/clearance";
 
 export const addOnlineFinesPayment = async (fines: StudentFines, type:string, method: PaymentMethod, payRef?: string, senderNumber?:string) => {
     try {
@@ -53,15 +51,20 @@ export const addOnlineFinesPayment = async (fines: StudentFines, type:string, me
             createdAt: Timestamp.now(),
         });
         await updateProofOfPaymentHistoryId(proofId!, paymentHist.id)
+
+        if (type === PaymentType.FINES) {
+            const clearanceRef = doc(db, 'clearanceStatus', fines.userId);
+            await updateDoc(clearanceRef, {
+                [`blockingItems.${fines.id}.pendingReview`]: true,
+            });
+            await recalculateClearanceStatus(clearanceRef.id)
+        }
         
     } catch (error) {
         console.error("Error adding offline payment history:", error);
         throw new Error("Failed to add offline payment history. Please try again.");
     }
 }
-
-
-
 
 
 export const addOfflineFinesPayment = async (fines: StudentFines, type:string, method: PaymentMethod, payRef?: string, senderNumber?:string) => {
@@ -105,10 +108,54 @@ export const addOfflineFinesPayment = async (fines: StudentFines, type:string, m
         if (type === PaymentType.FINES) {
             await recalculateFines(fines.id!, null, fines.balance);
             await markFineItemsAsPaid(fines.id!);
+
+            const clearanceRef = doc(db, 'clearanceStatus', fines.userId);
+            await updateDoc(clearanceRef, {
+                [`blockingItems.${fines.id}.balance`]: 0,
+                [`blockingItems.${fines.id}.status`]: "paid",
+                [`blockingItems.${fines.id}.pendingReview`]: false,
+            });
+
+            await recalculateClearanceStatus(clearanceRef.id)
         }
+
     } catch (error) {
         console.error("Error adding offline payment history:", error);
         throw new Error("Failed to add offline payment history. Please try again.");
+    }
+}
+
+export const createFinesPaymentHistory = async (proof:PaymentFormData, referenceId:string, proofId:string) => {
+    try {
+        const current = await getCurrentUserData() as unknown as Member;
+        const subColRef = collection(db, proof.type! , referenceId , "paymentHistory");
+        const querySnapshot = await getCountFromServer(subColRef);
+
+        let sequenceNumber = 0;
+        querySnapshot.data().count ? sequenceNumber = querySnapshot.data().count + 1 : sequenceNumber = 1;
+         const paymentHist = await addDoc(subColRef, {
+            paymentNumber: sequenceNumber,
+            amount: proof.amount,
+            paymentMethod: proof.paymentMethod,
+            paymentProofId: proofId,
+            gcashReference: proof.referenceNumber || null,
+            status:PaymentStatus.VERIFIED,
+            paidAt: Timestamp.now(), 
+            verifiedBy: current.firstName + " " + current.lastName,
+            verifiedAt: Timestamp.now(),
+            rejectionReason: null,
+            notes: proof.notes || `Offline payment of ${proof.amount} recorded for ${proof.type}`,
+            metaData: {},
+            createdAt: Timestamp.now(),
+        });
+        if (proof.type! === PaymentType.FINES) {
+            await recalculateFines(referenceId, null, proof.amount);
+            await markFineItemsAsPaid(referenceId);
+        }
+        return paymentHist.id;
+    }catch(error){
+        console.error("Error creating fines payment history:", error);
+        throw new Error("Failed to create fines payment history. Please try again.");
     }
 }
 

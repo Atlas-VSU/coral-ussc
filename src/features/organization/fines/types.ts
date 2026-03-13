@@ -16,21 +16,21 @@ export type FineType = {
 export type ProofOfPayment = {
     id?: string;
     orgId: string;
-    firstName: string;
-    lastName: string;
+    userName: string;
     studentId: string;
     paymentType: string;
     paymentHistoryId?: string;
+    paymentMethod: string;
     referenceId: string;
     senderNumber: string;
     referenceNumber: string;
     amount: number;
     imageUrl: string;
     status: string;
-    submittedAt: string;
+    submittedAt: Timestamp;
     verifiedBy?: string;
     verifiedByName?: string;
-    verifiedAt?: string;
+    verifiedAt?: Timestamp;
     rejectionReason?: string;
     notes?: string;
 }

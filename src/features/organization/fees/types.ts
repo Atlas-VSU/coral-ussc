@@ -37,7 +37,8 @@ export interface PaymentLog {
   paymentNumber: number;
   amount: number;
   paymentMethod: PaymentMethod;
-  paymentProofId?: string | null;
+  paymentProofId: string | null;
+  gcashReceiptImageUrl?: string | null;
   gcashReference?: string | null;
   status: PaymentStatus;
   
@@ -69,4 +70,8 @@ export interface AggregatedFee {
   paidCount: number
   // we might not have description in backend, so omit or use optional
   description?: string
+}
+
+export interface FeeWithPaymentHistory extends Fee {
+    paymentHistory: PaymentLog[];
 }

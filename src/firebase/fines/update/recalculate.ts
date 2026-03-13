@@ -16,7 +16,7 @@ export const recalculateFines = async (fineId: string, addedAmount?: number | nu
         const fineDoc = await getDoc(fineRef);
         if (!fineDoc.exists()) {
             console.error(`Fine with ID ${fineId} not found.`);
-            return false;
+            return { success: false };
         }
 
         const fineData = fineDoc.data();
@@ -57,10 +57,14 @@ export const recalculateFines = async (fineId: string, addedAmount?: number | nu
             status: newStatus,
             "metadata.updatedAt": Timestamp.now(),
         });
-        return true;
+        return { 
+            success: true, 
+            balance: newBalance, 
+            status: newStatus 
+        };
 
     }catch(error){
         handleFirestoreError(error, `recalculating fine with ID ${fineId}`);
-        return false;
+        return { success: false };
     }
   }

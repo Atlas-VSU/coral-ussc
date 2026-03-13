@@ -3,7 +3,7 @@ import { FineItem, StudentFines } from "@/features/organization/fines/types";
 import { Member, MemberData } from "@/features/organization/members/types";
 import { db } from "@/firebase/firebase.config";
 import { getCurrentUserData } from "@/firebase/users";
-import { collection, query, where, getDocs, CollectionReference, DocumentData, DocumentSnapshot, orderBy, limit, startAfter, getCountFromServer } from "firebase/firestore";
+import { collection, query, where, getDocs, CollectionReference, DocumentData, DocumentSnapshot, orderBy, limit, startAfter, getCountFromServer, getDoc, doc } from "firebase/firestore";
 
 const finesCollection: CollectionReference<DocumentData> = collection(
     db,
@@ -91,6 +91,23 @@ export const getFinesByStudents = async (students: MemberData[]) => {
         handleFirestoreError(error, `fetching fine documents for student ID ${studentId}`);
         return null;
     }
+}
+
+export const getFineById = async (fineId: string) => {
+  try{
+    const fineDoc = await getDoc(doc(db, "fines", fineId));
+    if (!fineDoc.exists()) {
+      console.warn(`No fine document found for fine ID: ${fineId}`);
+      return null;
+    }
+    return {
+      id: fineDoc.id,
+      ...fineDoc.data()
+    } as StudentFines;
+  }catch (error) {
+    handleFirestoreError(error, `fetching fine documents for fine ID ${fineId}`);
+    return null;
+  }
 }
 
 export const countFinesOfStudents = async (status: string) => { 
@@ -185,3 +202,14 @@ export const getAllFines = async (status?: string) => {
     return [];
   }
 };
+
+export const getAllUnpaidFinesforOrg = async () => {
+  try {
+    const currUser = await getCurrentUserData() as unknown as Member;
+    const snapshot = await getDocs(query(finesCollection, where("metadata.isArchived", "==", false), where("orgId", "==", currUser.id), where("status", "in", ["unpaid", "partially_paid"])));
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as StudentFines[];
+  }catch (error) {
+    handleFirestoreError(error, "fetching all unpaid fines for org");
+    return [];
+  }
+ }

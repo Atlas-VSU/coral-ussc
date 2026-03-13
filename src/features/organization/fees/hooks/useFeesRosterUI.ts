@@ -60,7 +60,7 @@ export function useFeesRosterUI({
         (r.student.firstName || "").toLowerCase().includes(search.toLowerCase()) ||
         (r.student.lastName || "").toLowerCase().includes(search.toLowerCase()) ||
         (r.student.studentId || "").toLowerCase().includes(search.toLowerCase());
-      const matchesStatus = filterStatus === "all" || r.log?.status === filterStatus;
+      const matchesStatus = filterStatus === "all" || (r.log?.status === filterStatus || r.status === filterStatus);
       return matchesSearch && matchesStatus;
     });
   }, [allStudentRows, search, filterStatus]);

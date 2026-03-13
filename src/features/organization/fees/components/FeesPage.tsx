@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { CircleDollarSign, DollarSign, Plus, Users } from "lucide-react";
+import { CircleDollarSign, DollarSign, Plus, Users, Zap } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,14 +14,19 @@ import { StatCard } from "@/components/organization/StatCard";
 import { useFeeList } from "../hooks/useFeeList";
 import { Fee } from "../types";
 import { usePaginatedMembers } from "../../members/hooks/usePaginatedMembers";
+import { SearchInput } from "@/components/organization/SearchInput";
+import { ViewToggle } from "@/components/organization/ViewToggle";
+import { SearchFilterFee } from "./SearchFilterFee";
+import { useFeeListUI } from "../hooks/useFeeListUI";
 
 
 export function FeesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const { aggregatedFees } = useFeeList()
-    const { members } = usePaginatedMembers()
-  
+    const { totalMembers } = usePaginatedMembers()
+   
+    
     const totalCollected = aggregatedFees.reduce((sum, f) => sum + f.paidCount * f.amount, 0)
     const avgCompletion = aggregatedFees.length > 0
       ? Math.round(aggregatedFees.reduce((sum, f) => sum + (f.totalStudents > 0 ? (f.paidCount / f.totalStudents) * 100 : 0), 0) / aggregatedFees.length)
@@ -41,36 +46,13 @@ export function FeesPage() {
         <StatCard title="Avg. Collection Rate" value={`${avgCompletion}%`} description="Overall completion" icon={Users} />
       </div>
 
-      {aggregatedFees.length > 0 ? (
-        <FeeListPage />
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>No fees generated yet</CardTitle>
-            <CardDescription>
-              You haven't generated any fees for this academic year. Click the button above to start.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex min-h-[400px] flex-col items-center justify-center rounded-md border border-dashed p-8 text-center animate-in fade-in-50">
-              <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-                  <Plus className="h-10 w-10" />
-                </div>
-                <h3 className="mt-4 text-lg font-semibold">No fees generated yet</h3>
-                <p className="mb-4 mt-2 text-sm text-muted-foreground">
-                  You haven't generated any fees for this academic year. Click the button above to start.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <FeeListPage />
+      
 
       <FeeGenerationDialog 
         open={isDialogOpen} 
         onOpenChange={setIsDialogOpen} 
-        students={members.map((m) => m.member)}
+        studentsCount={totalMembers}
       />
     </div>
   );

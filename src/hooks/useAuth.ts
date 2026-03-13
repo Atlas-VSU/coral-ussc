@@ -12,6 +12,7 @@ export type UserData = {
   lastName?: string;
   role?: string;
   facultyId?: string;
+  accessLevel?: number;
 };
 
 export function useAuth() {
@@ -39,6 +40,7 @@ export function useAuth() {
               lastName: firestoreData.lastName,
               role: firestoreData.role || "user",
               facultyId: firestoreData.facultyId,
+              accessLevel: firestoreData.accessLevel,
             });
           } else {
             // Use auth data if Firestore document doesn't exist
@@ -47,7 +49,7 @@ export function useAuth() {
               name: authUser.displayName || "User",
               email: authUser.email || "",
               avatar: authUser.photoURL || "",
-              role: "user",
+              role: "user"
             });
           }
         } else {

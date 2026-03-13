@@ -6,6 +6,7 @@ import { Member } from "@/features/organization/members/types"; // Import Member
 import { collection, doc, Timestamp, updateDoc } from "firebase/firestore";
 import { rejectPaymentHistory, verifyPaymentHistory } from "./paymentHistory";
 import { PaymentStatus } from "@/constants/status";
+import { generateReceiptId } from "@/features/organization/payments/utils";
 
 
 export const updateProofOfPaymentHistoryId = async (proofOfPaymentId: string, paymentHistoryId: string) => {
@@ -30,6 +31,7 @@ export const verifyPaymentProof = async (proofOfPayment: ProofOfPayment, note: s
             verifiedByName: verifier.firstName + " " + verifier.lastName,
             verifiedAt: Timestamp.now(),
             notes: note,
+            receiptCode: generateReceiptId(),
             status: PaymentStatus.VERIFIED,
             "updatedAt": Timestamp.now(),
         });
