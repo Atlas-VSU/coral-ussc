@@ -14,9 +14,6 @@ import { PaymentStatus } from "@/constants/status";
 import { PaymentMethods, PaymentType } from "@/constants/types";
 import { recalculateClearanceStatus } from "@/firebase/clearance";
 
-
-
-
 export const addOnlineFinesPayment = async (fines: StudentFines, type:string, method: PaymentMethod, payRef?: string, senderNumber?:string) => {
     try {
         const subColRef = collection(db, type, fines.id!, "paymentHistory");
@@ -68,9 +65,6 @@ export const addOnlineFinesPayment = async (fines: StudentFines, type:string, me
         throw new Error("Failed to add offline payment history. Please try again.");
     }
 }
-
-
-
 
 
 export const addOfflineFinesPayment = async (fines: StudentFines, type:string, method: PaymentMethod, payRef?: string, senderNumber?:string) => {

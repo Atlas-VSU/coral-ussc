@@ -75,6 +75,7 @@ interface PaymentReviewDialogProps {
    */
   onApprove?: () => void
   onReject?: (reason: string) => void
+  isProcessing?: boolean
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -87,6 +88,7 @@ export function PaymentReviewDialog({
   data,
   onApprove,
   onReject,
+  isProcessing = false,
 }: PaymentReviewDialogProps) {
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false)
   const [rejectOpen, setRejectOpen] = useState(false)
@@ -255,10 +257,15 @@ export function PaymentReviewDialog({
                       variant="outline"
                       className="gap-1.5 text-destructive hover:text-destructive"
                       onClick={() => setRejectOpen(true)}
+                      disabled={isProcessing}
                     >
                       <XCircle className="size-4" /> Reject
                     </Button>
-                    <Button className="gap-1.5" onClick={() => setApproveConfirmOpen(true)}>
+                    <Button 
+                      className="gap-1.5" 
+                      onClick={() => setApproveConfirmOpen(true)}
+                      disabled={isProcessing}
+                    >
                       <CheckCircle className="size-4" /> Approve
                     </Button>
                   </>
@@ -283,10 +290,13 @@ export function PaymentReviewDialog({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setApproveConfirmOpen(false)}>
+            <Button variant="outline" onClick={() => setApproveConfirmOpen(false)} disabled={isProcessing}>
               Cancel
             </Button>
-            <Button onClick={handleApproveConfirmed}>Yes, Approve</Button>
+            <Button onClick={handleApproveConfirmed} disabled={isProcessing} className="gap-2">
+              {isProcessing && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+              Yes, Approve
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -317,14 +327,17 @@ export function PaymentReviewDialog({
             <Button
               variant="outline"
               onClick={() => { setRejectOpen(false); setRejectReason("") }}
+              disabled={isProcessing}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
-              disabled={!rejectReason.trim()}
+              disabled={!rejectReason.trim() || isProcessing}
               onClick={handleRejectConfirmed}
+              className="gap-2"
             >
+              {isProcessing && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
               Reject
             </Button>
           </DialogFooter>

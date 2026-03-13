@@ -35,7 +35,7 @@ import {
 import { useMemberForm } from "../hooks/userMemberForm";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { getCurrentUserFacultyId } from "@/firebase/users";
+import { getCurrentUserData, getCurrentUserFacultyId } from "@/firebase/users";
 import { getAuth } from "firebase/auth";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -86,8 +86,8 @@ export function MemberForm({
 
   const handleFormSubmit = async (data: MemberFormData) => {
     if (!agreed || isSubmitting) return;
-    const auth = useAuth();
-    data.facultyId = auth.user?.facultyId;
+    const currentUser = await getCurrentUserData() as unknown as Member;
+    data.facultyId = currentUser.facultyId;
     const memberToSubmit: Member = {
       ...data,
       role: "user", // Always set role to "user"

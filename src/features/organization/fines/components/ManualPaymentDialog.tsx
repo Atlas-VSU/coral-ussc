@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { FineItem, StudentFines } from "../types";
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
-import { addOfflineFinesPayment } from "@/firebase/payment/create/paymentHistory";
 import { toast } from "sonner";
 import { useProofOfPaymentForm } from "../hooks/useProofOfPaymentForm";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { PaymentType } from "@/constants/types";
 import { PaymentFormData } from "@/lib/validators";
+import { addOfflineFinesPayment } from "@/firebase/payment/create/paymentHistory";
 
 
 interface ManualPaymentDialogProps { 
