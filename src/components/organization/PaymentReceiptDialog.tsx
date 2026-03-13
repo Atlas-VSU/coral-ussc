@@ -1,108 +1,203 @@
 "use client"
 
-import { CheckCircle2, Download, Printer } from "lucide-react"
-import { format } from "date-fns"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
-import { toast } from "sonner"
+import { getCurrentUserData } from "@/firebase"
+import Image from "next/image"
+
+export interface ReceiptItem {
+  name: string
+  type: "fee" | "fine"
+  amount: number
+}
 
 export interface ReceiptData {
   receiptId: string
   studentName: string
   studentId: string
-  items: { name: string; type: string; amount: number }[]
+  items: ReceiptItem[]
   total: number
   date: string
+  verifiedByName: string
+  paymentMethod: string
 }
 
-interface PaymentReceiptDialogProps {
+type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
   data: ReceiptData | null
 }
 
-export default function PaymentReceiptDialog({
-  open,
-  onOpenChange,
-  data,
-}: PaymentReceiptDialogProps) {
-  if (!data) return null
+export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props) {
+  function handlePrint() {
+    if (!data) return
 
-  const handlePrint = () => {
-    // In a real app, you might use window.print() combined with a print stylesheet,
-    // or generate a PDF using a library like jsPDF/html2canvas.
-    window.print()
-    toast.success("Sending to printer...")
+    const itemRows = data.items
+      .map(
+        i =>
+          `<div class="row"><span class="item-name">${i.name}</span><span>₱${i.amount.toLocaleString()}</span></div>`,
+      )
+      .join("")
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Receipt - ${data.receiptId}</title>
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: sans-serif; display: flex; justify-content: center; padding: 32px; background: white; }
+            .receipt { border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; width: 340px; font-size: 14px; color: #000; }
+            .header { text-align: center; margin-bottom: 16px; }
+            .header img { width: 40px; height: 40px; margin: 0 auto 8px; display: block; }
+            .org-name { font-weight: 700; font-size: 16px; }
+            .university { font-size: 11px; margin-top: 2px; }
+            .subtitle { font-size: 11px; color: #6b7280; margin-top: 2px; }
+            hr { border: none; border-top: 1px solid #e5e7eb; margin: 12px 0; }
+            .row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; gap: 8px; }
+            .item-name { flex: 1; }
+            .value { font-weight: 500; }
+            .section-label { font-size: 11px; color: #6b7280; margin-bottom: 4px; }
+            .student-name { font-weight: 500; font-size: 14px; }
+            .student-id { font-size: 11px; margin-top: 2px; }
+            .total-row { display: flex; justify-content: space-between; font-weight: 600; font-size: 16px; }
+            .footer { text-align: center; font-size: 11px; }
+            .footer p + p { margin-top: 4px; }
+            .footer-note { margin-top: 24px; text-align: center; font-size: 11px; color: #6b7280; }
+          </style>
+        </head>
+        <body>
+          <div class="receipt">
+            <div class="header">
+              <img src="/ussc-logo-1.webp" alt="Org Logo" />
+              <p class="org-name">University Supreme Student Council</p>
+              <p class="university">Visayas State University Main Campus</p>
+              <p class="subtitle">Official Payment Receipt</p>
+            </div>
+
+            <hr />
+            <div class="row"><span>Receipt No.</span><span class="value">${data.receiptId}</span></div>
+            <div class="row"><span>Date</span><span>${data.date}</span></div>
+
+            <hr />
+            <p class="section-label">Received From</p>
+            <p class="student-name">${data.studentName}</p>
+            <p class="student-id">${data.studentId}</p>
+
+            <hr />
+            <p class="section-label">Items Paid</p>
+            ${itemRows}
+
+            <hr />
+            <div class="total-row"><span>Total Paid</span><span>₱${data.total.toLocaleString()}</span></div>
+
+            <hr />
+            <div class="footer">
+              <p>Payment Method: Cash (Manual)</p>
+              <p>Verified by Admin</p>
+            </div>
+            <p class="footer-note">This serves as an official proof of payment.</p>
+          </div>
+        </body>
+      </html>
+    `
+
+    const newWindow = window.open("", "", "width=620,height=800")
+    if (newWindow) {
+      newWindow.document.write(html)
+      newWindow.document.close()
+    }
   }
+
+  if (!data) return null
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md sm:max-w-[425px]">
-        <DialogHeader className="sr-only">
+      <DialogContent className="max-w-md">
+        <DialogHeader>
           <DialogTitle>Payment Receipt</DialogTitle>
+          <DialogDescription>Preview before printing</DialogDescription>
         </DialogHeader>
-        
-        {/* Receipt Body */}
-        <div className="flex flex-col items-center pt-6 pb-2" id="printable-receipt">
-          <div className="size-12 rounded-full bg-success/10 flex items-center justify-center mb-4">
-            <CheckCircle2 className="size-6 text-success" />
+
+        <div className="border rounded-lg p-6 bg-white text-black text-sm max-w-sm mx-auto">
+          {/* Header */}
+          <div className="text-center mb-4">
+            <Image
+              src="/ussc-logo-1.webp"
+              alt="Org Logo"
+              width={40}
+              height={40}
+              className="mx-auto mb-2"
+            />
+            <p className="font-bold text-lg">University Supreme Student Council</p>
+            <p className="text-xs">Visayas State University - Baybay Main Campus</p>
+            <p className="text-xs text-muted-foreground">Official Payment Receipt</p>
           </div>
-          <h2 className="text-xl font-bold text-foreground">Payment Successful</h2>
-          <p className="text-sm text-muted-foreground mt-1">Receipt #{data.receiptId}</p>
 
-          <div className="w-full mt-8 bg-muted/30 rounded-lg border border-border p-5">
-            <div className="flex flex-col gap-1 mb-6 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Date:</span>
-                <span className="font-medium">{format(new Date(data.date), "MMM dd, yyyy")}</span>
+          <Separator className="my-3" />
+
+          {/* Receipt info */}
+          <div className="flex justify-between text-xs">
+            <span>Receipt No.</span>
+            <span className="font-medium">{data.receiptId}</span>
+          </div>
+          <div className="flex justify-between text-xs mt-1">
+            <span>Date</span>
+            <span>{data.date}</span>
+          </div>
+
+          <Separator className="my-3" />
+
+          {/* Student info */}
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Received From</p>
+            <p className="font-medium">{data.studentName}</p>
+            <p className="text-xs">{data.studentId}</p>
+          </div>
+
+          <Separator className="my-3" />
+
+          {/* Items */}
+          <div className="space-y-1.5">
+            <p className="text-xs text-muted-foreground mb-1">Items Paid</p>
+            {data.items.map((item, idx) => (
+              <div key={idx} className="flex justify-between text-xs gap-2">
+                <span className="flex-1 leading-snug">
+                  {item.name}
+                  <span className="text-muted-foreground"> ({item.type})</span>
+                </span>
+                <span className="shrink-0 font-medium">₱{item.amount.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Student:</span>
-                <span className="font-medium text-right">{data.studentName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">ID No:</span>
-                <span className="font-medium">{data.studentId}</span>
-              </div>
-            </div>
+            ))}
+          </div>
 
-            <Separator className="border-dashed mb-4" />
+          <Separator className="my-3" />
 
-            <div className="flex flex-col gap-3 mb-6">
-              {data.items.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-start text-sm">
-                  <div className="flex flex-col">
-                    <span className="font-medium text-foreground">{item.name}</span>
-                    <span className="text-[10px] text-muted-foreground uppercase">{item.type}</span>
-                  </div>
-                  <span className="font-medium mt-0.5">₱{item.amount.toLocaleString()}</span>
-                </div>
-              ))}
-            </div>
+          {/* Total */}
+          <div className="flex justify-between font-semibold text-base">
+            <span>Total Paid</span>
+            <span>₱{data.total.toLocaleString()}</span>
+          </div>
 
-            <Separator className="border-dashed mb-4" />
+          <Separator className="my-4" />
 
-            <div className="flex justify-between items-center">
-              <span className="font-bold text-foreground">Amount Paid</span>
-              <span className="text-xl font-black text-primary">₱{data.total.toLocaleString()}</span>
-            </div>
+          {/* Footer */}
+          <div className="text-center text-xs space-y-1">
+            <p>Payment Method: {data.paymentMethod}</p>
+            <p>Verified by {data.verifiedByName}</p>
+          </div>
+
+          <div className="mt-6 text-center text-xs text-muted-foreground">
+            This serves as an official proof of payment.
           </div>
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2 w-full mt-4">
-          <Button variant="outline" className="w-full sm:w-1/2 gap-2" onClick={handlePrint}>
-            <Printer className="size-4" /> Print
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
           </Button>
-          <Button className="w-full sm:w-1/2 gap-2" onClick={() => onOpenChange(false)}>
-            Done
-          </Button>
+          <Button onClick={handlePrint}>Print</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

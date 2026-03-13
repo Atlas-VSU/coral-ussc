@@ -4,12 +4,12 @@ import { Card } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/organization/PageHeader"
 import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog"
-import PaymentReceiptDialog from "./components/PaymentReceiptDialog"
 import { PaymentStats } from "./components/PaymentStats"
 import { SubmissionsTab } from "./components/SubmissionsTab"
 import { UnpaidTab } from "./components/UnpaidTab"
 import { LogPaymentDialog } from "./components/LogPaymentDialog"
 import { usePaymentsPage } from "./hooks/usePaymentsPage"
+import PaymentReceiptDialog from "@/components/organization/PaymentReceiptDialog"
 
 export default function PaymentsPage() {
   const {

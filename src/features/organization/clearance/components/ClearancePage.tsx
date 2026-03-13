@@ -32,6 +32,8 @@ import type { ViewMode } from "@/components/organization/ViewToggle"
 import type { ClearanceStatus } from "../types"
 import type { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
 import { PaymentType } from "@/constants/types"
+import { getCurrentUserData } from "@/firebase"
+import { Member } from "../../members/types"
 
 interface ClearancePageProps {
   orgId: string | undefined
@@ -120,17 +122,20 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
       )
 
       idCounter.current += 1
+      const currentUser = await getCurrentUserData() as unknown as Member;
       setReceiptData({
         receiptId: `CLR-${idCounter.current}`,
         studentName: logPaymentTarget.userName,
         studentId: logPaymentTarget.studentId,
         items: selection.selectedItems.map(i => ({
           name: i.label,
-          type: i.type === PaymentType.FEES ? "fees" : "fines",
+          type: i.type === PaymentType.FEES ? "fee" : "fine",
           amount: i.amount,
         })),
         total: selection.total,
         date: new Date().toISOString().slice(0, 10),
+        verifiedByName: currentUser.firstName + " " + currentUser.lastName,
+        paymentMethod: "Cash (Manual)",
       })
 
       setLogPaymentOpen(false)

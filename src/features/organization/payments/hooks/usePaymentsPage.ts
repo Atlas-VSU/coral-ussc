@@ -7,12 +7,13 @@ import { usePayments } from "./usePayments"
 import { ProofOfPayment } from "../../fines/types"
 import { PaymentStatus } from "@/constants/status"
 import { ViewMode } from "@/components/organization/ViewToggle"
-import { ReceiptData } from "../components/PaymentReceiptDialog"
-import { getProgramById } from "@/firebase"
+import { getCurrentUserData, getProgramById } from "@/firebase"
 import { PaymentFormData } from "@/lib/validators"
 import { createBulkOfflineProofOfPayment } from "@/firebase/payment/create/proofOfPayment"
 import { Fee } from "../../fees/types"
 import { generateReceiptId } from "../utils"
+import { Member } from "../../members/types"
+import { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
 
 export function usePaymentsPage() {
   const {
@@ -217,6 +218,7 @@ export function usePaymentsPage() {
       .filter(Boolean) as StudentUnpaidRecord[]
     )
 
+    const currentUser = await getCurrentUserData() as unknown as Member;
     setReceiptData({
       receiptId,
       studentName,
@@ -224,6 +226,8 @@ export function usePaymentsPage() {
       items: selectedDues.map(d => ({ name: d.name, type: d.type as "fee" | "fine", amount: d.item.balance })),
       total: selectedTotal,
       date: paymentDate,
+      verifiedByName: currentUser.firstName + " " + currentUser.lastName,
+      paymentMethod: "Cash (Manual)",
     })
 
     setDetailOpen(false)
