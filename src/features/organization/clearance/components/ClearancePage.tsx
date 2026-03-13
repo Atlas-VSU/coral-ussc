@@ -53,6 +53,8 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
   const [receiptOpen, setReceiptOpen] = useState(false)
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
 
+  const [isProcessing, setIsProcessing] = useState(false)
+
   const idCounter = useRef(0)
 
   const { approvePayment, rejectPayment, logManualPayment } = useClearanceActions(clearances, setClearances)
@@ -75,18 +77,28 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
     setPaymentReviewOpen(true)
   }
 
-  const handleApprovePayment = () => {
+  const handleApprovePayment = async () => {
     if (!reviewTarget) return
-    approvePayment(reviewTarget.clearanceId, [reviewTarget.referenceId])
-    setReviewTarget(null)
-    setPaymentReviewOpen(false)
+    setIsProcessing(true)
+    try {
+      await approvePayment(reviewTarget.clearanceId, [reviewTarget.referenceId])
+      setReviewTarget(null)
+      setPaymentReviewOpen(false)
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
-  const handleRejectPayment = (reason: string) => {
+  const handleRejectPayment = async (reason: string) => {
     if (!reviewTarget) return
-    rejectPayment(reviewTarget.clearanceId, [reviewTarget.referenceId], reason)
-    setReviewTarget(null)
-    setPaymentReviewOpen(false)
+    setIsProcessing(true)
+    try {
+      await rejectPayment(reviewTarget.clearanceId, [reviewTarget.referenceId], reason)
+      setReviewTarget(null)
+      setPaymentReviewOpen(false)
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   const openLogPayment = (clearanceId: string) => {
@@ -95,35 +107,40 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
     setLogPaymentOpen(true)
   }
 
-  const handleLogPayment = () => {
+  const handleLogPayment = async () => {
     if (!logPaymentTarget || selection.selectedRefIds.size === 0) return
 
-    logManualPayment(
-      logPaymentTarget.id,
-      Array.from(selection.selectedRefIds),
-      selection.total,
-      new Date().toISOString().slice(0, 10)
-    )
+    setIsProcessing(true)
+    try {
+      await logManualPayment(
+        logPaymentTarget.id,
+        Array.from(selection.selectedRefIds),
+        selection.total,
+        new Date().toISOString().slice(0, 10)
+      )
 
-    idCounter.current += 1
-    setReceiptData({
-      receiptId: `CLR-${idCounter.current}`,
-      studentName: logPaymentTarget.userName,
-      studentId: logPaymentTarget.studentId,
-      items: selection.selectedItems.map(i => ({
-        name: i.label,
-        type: i.type === PaymentType.FEES ? "fees" : "fines",
-        amount: i.amount,
-      })),
-      total: selection.total,
-      date: new Date().toISOString().slice(0, 10),
-    })
+      idCounter.current += 1
+      setReceiptData({
+        receiptId: `CLR-${idCounter.current}`,
+        studentName: logPaymentTarget.userName,
+        studentId: logPaymentTarget.studentId,
+        items: selection.selectedItems.map(i => ({
+          name: i.label,
+          type: i.type === PaymentType.FEES ? "fees" : "fines",
+          amount: i.amount,
+        })),
+        total: selection.total,
+        date: new Date().toISOString().slice(0, 10),
+      })
 
-    setLogPaymentOpen(false)
-    setReceiptOpen(true)
-    toast.success(`Payment logged for ${logPaymentTarget.userName}`)
-    setLogPaymentTarget(null)
-    selection.clearSelection()
+      setLogPaymentOpen(false)
+      setReceiptOpen(true)
+      toast.success(`Payment logged for ${logPaymentTarget.userName}`)
+      setLogPaymentTarget(null)
+      selection.clearSelection()
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   const reviewData = useMemo(() => {
@@ -328,6 +345,7 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
         data={reviewData}
         onApprove={handleApprovePayment}
         onReject={handleRejectPayment}
+        isProcessing={isProcessing}
       />
 
       <Dialog open={logPaymentOpen} onOpenChange={setLogPaymentOpen}>
@@ -386,14 +404,23 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setLogPaymentOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setLogPaymentOpen(false)} disabled={isProcessing}>Cancel</Button>
             <Button
-              disabled={selection.selectedRefIds.size === 0}
+              disabled={selection.selectedRefIds.size === 0 || isProcessing}
               className="gap-1.5 border-[#1B5E20]/40 bg-[#1B5E20] text-white hover:bg-[#2E7D32] dark:bg-green-700 dark:hover:bg-green-600"
               onClick={handleLogPayment}
             >
-              <PenLine className="size-3.5" />
-              Log Payment
+              {isProcessing ? (
+                <>
+                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
+                  Logging Payment...
+                </>
+              ) : (
+                <>
+                  <PenLine className="size-3.5" />
+                  Log Payment
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

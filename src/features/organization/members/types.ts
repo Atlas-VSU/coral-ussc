@@ -11,6 +11,7 @@ export type Member = {
   role: "admin" | "user" | "super-admin";
   accessLevel?: number;
   createdAt?: Timestamp;
+  isDeleted?: boolean;
   yearLevel?: number; // Adding year level
 };
 

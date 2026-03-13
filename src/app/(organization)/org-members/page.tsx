@@ -17,9 +17,11 @@ import { MembersFilters } from "@/features/organization/members/components/Membe
 import { MembersPagination } from "@/features/organization/members/components/MembersPagination";
 import { ViewMode } from "@/features/organization/members/components/ViewToggle";
 import {
+  addStudentWithClearance,
   addUser,
   checkStudentIdExist,
   deleteUser,
+  getCurrentUserData,
   processFileForBulkImport,
   updateUser,
 } from "@/firebase";
@@ -112,7 +114,9 @@ export default function MembersPage() {
           return;
         }
         const userId = await addUser(data);
+        const currentUser = await getCurrentUserData() as unknown as Member;
         if (data.role === "user" && userId) {
+          await addStudentWithClearance(userId, data, currentUser.id!);
           await createFinePerStudent(userId,data); 
         }
         toast.success("Member added successfully");
@@ -238,7 +242,7 @@ export default function MembersPage() {
           onImport={handleBulkImport}
           isImporting={isImporting}
           totalStudents={totalStudents}
-          batchSize={400}
+          batchSize={200}
           importProgress={importProgress}
           currentBatch={currentBatch}
           totalBatches={totalBatches}
