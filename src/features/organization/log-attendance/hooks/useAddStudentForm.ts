@@ -3,13 +3,11 @@ import { Member, Program } from "../../members/types";
 import {
   addUser,
   checkStudentIdExist,
-  getCurrentUserFacultyId,
+  getCurrentUserData,
   getProgramByFacultyId,
   getPrograms,
 } from "@/firebase";
 import { isValidStudentId } from "../utils";
-import { getAuth } from "firebase/auth";
-import { useAuth } from "@/hooks/useAuth";
 import { createFinePerStudent } from "@/firebase/fines/create/fines";
 
 interface useAddStudentFormProps {
@@ -125,8 +123,8 @@ export function useAddStudentForm({
         setFormErrors({ studentId: "Student ID already exists" });
         return;
       }
-      const auth = useAuth();
-      const facultyId = auth.user?.facultyId;
+      const currentUser = getCurrentUserData() as unknown as Member;
+      const facultyId = currentUser.facultyId;
 
       const newStudentData = {
         ...formData,

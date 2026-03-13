@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { PaymentLog } from "../types";
 import { approvePaymentTransaction, fetchFee, recordManualPaymentAndUpdateClearance, rejectPaymentTransaction } from "@/firebase/fees";
-import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { getCurrentUserData } from "@/firebase";
+import { Member } from "../../members/types";
 
-export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
+export const useFeeAction = async (onSuccess?: (feeId: string) => void) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
-    const { user } = useAuth();
-    const userId = user?.uid;
+    const user  = await getCurrentUserData() as unknown as Member;
+    const userId = user?.id;
 
     const addManualPayment = async (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", ref?: string) => {
         setIsSubmitting(true);
