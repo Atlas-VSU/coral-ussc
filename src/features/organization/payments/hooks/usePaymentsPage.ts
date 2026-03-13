@@ -193,6 +193,7 @@ export function usePaymentsPage() {
       referenceNumber: "",
       notes: `Manual payment for ${due.name}`,
       type: due.type === "fee" ? "fees" : "fines",
+      referenceId: due.item.id
     }))
 
     try {
