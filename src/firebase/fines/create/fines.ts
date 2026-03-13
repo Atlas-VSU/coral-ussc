@@ -66,7 +66,6 @@ const handleFirestoreError = (error: any, context: string) => {
         }
       };
       const docRef = await addDoc(finesCollection, fineData);
-      console.log("Fine document created with ID: ", docRef.id);
 
       // Initialize student's clearance document for this fine
       const clearanceRef = doc(db, 'clearanceStatus', userId);
@@ -256,7 +255,6 @@ export const generateFinesOnEvent = async (
 
   report("preflight", "Fetching fine type…");
   const type = await getFineTypeById(event.fineTypeId);
-  console.log("Fetched fine type:", type);
   if (!type) {
     report("error", `Fine type ${event.fineTypeId} not found.`);
     console.error(`Fine type with ID ${event.fineTypeId} not found.`);
@@ -270,7 +268,7 @@ export const generateFinesOnEvent = async (
   const absentUsersFines = absentUsers?.length
     ? await getFinesByStudents(absentUsers)
     : [];
-
+  
   let partialUsersFines: typeof absentUsersFines = [];
 
   if (type.requiresTimeOut) {
@@ -326,7 +324,7 @@ export const generateFinesOnEvent = async (
             fineTypeName: type.name,
             eventId: event.id,
             eventName: event.name  ?? "Unknown Event",
-            eventDate: event.date  ?? null,
+            eventDate: Timestamp.fromDate(new Date(event.date))  ?? null,
             amount,
             reason: `Fine for being absent in event ${event.name ?? "."}`,
             issuedBy: issuer ? `${issuer.firstName} ${issuer.lastName}` : "Unknown Issuer",
@@ -426,7 +424,7 @@ export const generateFinesOnEvent = async (
             fineTypeName: type.name,
             eventId: event.id,
             eventName: event.name ?? "Unknown Event",
-            eventDate: event.date ?? null,
+            eventDate: Timestamp.fromDate(new Date(event.date))  ?? null,
             amount,
             reason: `Fine for being partially absent in event ${event.name ?? "."}`,
             issuedBy: issuer ? `${issuer.firstName} ${issuer.lastName}` : "Unknown Issuer",
