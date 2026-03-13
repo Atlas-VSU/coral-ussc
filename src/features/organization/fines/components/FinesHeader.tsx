@@ -33,7 +33,7 @@ export function FinesHeader({
           
           <Button size="sm" onClick={onAddFineType}>
             <TicketPlus className="h-4 w-4 mr-2" />
-            Create Fine Type
+            Create a Type of Fines
           </Button>
         </div>
       </div>

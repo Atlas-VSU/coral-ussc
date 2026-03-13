@@ -20,7 +20,7 @@ const handleFirestoreError = (error: any, context: string) => {
 export const getFinesByStudents = async (students: MemberData[]) => {
   try {
     const studentIds = students.map(s => s.member.studentId);
-
+    
     if (studentIds.length === 0) return [];
 
     // ── Chunk into groups of 30 (Firebase "in" limit) ──────────────────────
@@ -35,7 +35,6 @@ export const getFinesByStudents = async (students: MemberData[]) => {
 
     // ── Process chunks in throttled parallel groups ─────────────────────────
     const fineDocs: StudentFines[] = [];
-
     for (let i = 0; i < chunks.length; i += PARALLEL_LIMIT) {
       const group = chunks.slice(i, i + PARALLEL_LIMIT);
 
@@ -138,11 +137,11 @@ export const countUnsettleFinesOfStudents = async () => {
   const coll = collection(db, "fines");
   try {
 
-    let q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("status", "==", "unpaid"));
+    let q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("status", "==", "unpaid"), where("accumulatedAmount", ">", 0));
     let snapshot = await getCountFromServer(q);
     let total = snapshot.data().count;
 
-    q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("status", "==", "partially paid"));
+    q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("status", "==", "partial"));
     snapshot = await getCountFromServer(q);
     total += snapshot.data().count;
 
@@ -163,7 +162,7 @@ export const countStudentsWithFines = async () => {
   const coll = collection(db, "fines");
   try {
 
-    const q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id));
+    const q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("accumulatedAmount", ">", 0));
     const snapshot = await getCountFromServer(q);
     const total = snapshot.data().count;
     return total;
@@ -192,6 +191,7 @@ export const getAllFines = async (status?: string) => {
     const constraints = [
       where("metadata.isArchived", "==", false),
       where("orgId", "==", currUser.id),
+      where("accumulatedAmount", ">", 0),
       orderBy("metadata.updatedAt", "desc"),
       ...(status && status !== "all" ? [where("status", "==", status)] : []),
     ];
@@ -206,7 +206,11 @@ export const getAllFines = async (status?: string) => {
 export const getAllUnpaidFinesforOrg = async () => {
   try {
     const currUser = await getCurrentUserData() as unknown as Member;
-    const snapshot = await getDocs(query(finesCollection, where("metadata.isArchived", "==", false), where("orgId", "==", currUser.id), where("status", "in", ["unpaid", "partially_paid"])));
+    const snapshot = await getDocs(query(finesCollection,
+      where("metadata.isArchived", "==", false),
+      where("orgId", "==", currUser.id),
+      where("status", "in", ["unpaid", "partial"]),
+      where("accumulatedAmount", ">", 0)));
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as StudentFines[];
   }catch (error) {
     handleFirestoreError(error, "fetching all unpaid fines for org");

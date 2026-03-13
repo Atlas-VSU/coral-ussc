@@ -35,9 +35,7 @@ import {
 import { useMemberForm } from "../hooks/userMemberForm";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { getCurrentUserData, getCurrentUserFacultyId } from "@/firebase/users";
-import { getAuth } from "firebase/auth";
-import { useAuth } from "@/hooks/useAuth";
+import { getCurrentUserData } from "@/firebase/users";
 
 interface MemberFormProps {
   open: boolean;

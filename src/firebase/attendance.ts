@@ -630,7 +630,7 @@ export const getPartialAttendeesForEvent = async (eventId: string): Promise<Memb
           snapshots
             .flatMap(snapshot => snapshot.docs)
             .forEach(doc => {
-              studentDocs.push({ id: doc.id, ...doc.data() } as MemberData);
+              studentDocs.push({ id: doc.id, member: { ...doc.data() } } as unknown as MemberData);
             });
         }
 

@@ -28,7 +28,7 @@ export const recalculateFines = async (fineId: string, addedAmount?: number | nu
             newAccumulatedAmount += addedAmount;
             newStatus = FineStatus.UNPAID;
             newBalance += addedAmount;
-            if((newBalance-addedAmount) > 0 && (newBalance-addedAmount) < newAccumulatedAmount-addedAmount){
+            if(newBalance > 0 && fineData.paidAmount > 0){
                 newStatus = FineStatus.PARTIAL;
             }
         }

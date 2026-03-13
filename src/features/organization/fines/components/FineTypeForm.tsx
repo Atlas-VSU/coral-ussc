@@ -69,7 +69,7 @@ export function FineTypeForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-[90vw] max-h-[80vh] overflow-y-auto py-8">
         <DialogHeader className="pb-2">
-          <DialogTitle>{fineType ? "Edit FineType" : "Add FineType"}</DialogTitle>
+          <DialogTitle>{fineType ? "Edit a Type of Fine" : "Add a Type of Fines"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
@@ -121,24 +121,7 @@ export function FineTypeForm({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="requiresTimeIn"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel>Time-in Required</FormLabel>
-                        <FormMessage />
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+
                <FormField
                 control={form.control}
                 name="requiresTimeOut"
@@ -184,7 +167,7 @@ export function FineTypeForm({
                     {fineType ? "Saving..." : "Adding..."}
                   </>
                 ) : (
-                  fineType ? "Save Changes" : "Add FineType"
+                  fineType ? "Save Changes" : "Add Fine Type"
                 )}
               </Button>
             </DialogFooter>

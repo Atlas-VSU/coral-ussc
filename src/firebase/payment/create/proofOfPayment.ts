@@ -10,6 +10,8 @@ import { Fee } from "@/features/organization/fees/types";
 import { generateReceiptId } from "@/features/organization/payments/utils";
 import { getFeeByStudentId, recordManualPaymentAndUpdateClearance } from "@/firebase/fees";
 import { useAuth } from "@/hooks/useAuth";
+import { getCurrentUserData } from "@/firebase/users";
+import { Member } from "@/features/organization/members/types";
 import { createFinesPaymentHistory } from "./paymentHistory";
 
 export const createOnlineProofOfPayment = async (
@@ -113,13 +115,15 @@ export const createBulkOfflineProofOfPayment = async (payments: PaymentFormData[
                     bulkPaymentId: bulkId,
                     receiptCode: receipt,
                 };
+
                 const docRef = doc(collection(db, "proofOfPayments"));
                 batch.set(docRef, paymentData);
                 docRefs.push(docRef.id);
 
                 if(payment.type === "fees"){
-                    const currentUser = useAuth();
-                    await recordManualPaymentAndUpdateClearance(transaction.id!, payment.amount.toLocaleString(), payment.paymentMethod as "gcash" | "cash" | "bank_transfer" | "waiver", currentUser.user?.uid!,transaction.userId, currentUser.user?.firstName + " " + currentUser.user?.lastName);
+                    console.log("Recording manual payment and updating clearance for transaction: ", transaction.id);
+                    const currentUser = await getCurrentUserData() as unknown as Member;
+                    await recordManualPaymentAndUpdateClearance(transaction.id!, payment.amount.toLocaleString(), payment.paymentMethod as "gcash" | "cash" | "bank_transfer" | "waiver", currentUser.id!,transaction.userId, currentUser.firstName + " " + currentUser.lastName);
                 }
 
                 if(payment.type === "fines"){

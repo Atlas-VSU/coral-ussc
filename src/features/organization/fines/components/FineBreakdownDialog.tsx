@@ -80,7 +80,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
         if (fines && open) {
             fetchFineItems(fines.id!);
         }
-    }, [open, fines]);
+    }, [open, fines?.id]);
   
   const handlePaymentSucceed = () => {
     onSuccess && onSuccess(fines!);
@@ -117,12 +117,12 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
             </div>
                 {fineItems.length > 0 && paymentLogs.length >0 && (
                   <p className="text-xs text-muted-foreground">
-                    This submission covers{" "}
+                    The submission covers{" "}
                     <span className="font-medium text-foreground">
-                      {fineItems.length} fine item{fineItems.length !== 1 ? "s" : ""}
+                      {fineItems.filter(item => item.isPaid).length} fine item{fineItems.filter(item => item.isPaid).length !== 1 ? "s" : ""}
                     </span>
                     {" — "}
-                    {fineItems.map((i, idx) => (
+                    {(fineItems.filter(item => item.isPaid)).map((i, idx) => (
                       <span key={i.id}>
                         {i.fineTypeName}{i.eventName ? ` (${i.eventName})` : ""}
                         {idx < fineItems.length - 1 ? ", " : ""}
@@ -174,9 +174,9 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                       <span className="text-xs font-bold text-muted-foreground tabular-nums">
                         #{item.itemNumber}
                       </span>
-                      {/* <Badge variant="outline" className="font-mono text-xs py-0">
-                        {item.fineTypeCode}
-                      </Badge> */}
+                      <Badge variant="outline" className="font-mono text-xs py-0">
+                        {item.isPaid ? "Paid" : "Unpaid"}
+                      </Badge>
                       {item.isWaived && (
                         <Badge variant="outline" className="text-xs py-0 text-muted-foreground">
                           Waived
@@ -416,10 +416,10 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                 {fineItems && (
                     <div className="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-4 py-3 mt-1">
                     <span className="text-sm font-medium text-muted-foreground">
-                        Total outstanding ({fineItems.filter(i => !i.isWaived).length} fine{fineItems.filter(i => !i.isWaived).length !== 1 ? "s" : ""})
+                        Total outstanding ({fineItems.filter(i => !i.isWaived && !i.isPaid).length} fine{fineItems.filter(i => !i.isWaived && !i.isPaid).length !== 1 ? "s" : ""})
                     </span>
                     <span className="text-base font-bold text-foreground">
-                        ₱{fines?.accumulatedAmount.toLocaleString()}
+                        ₱{fines?.balance.toLocaleString()}
                     </span>
                     </div>
                 )}
