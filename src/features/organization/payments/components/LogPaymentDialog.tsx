@@ -137,8 +137,17 @@ export function LogPaymentDialog({
             className="gap-1.5 bg-[#1B5E20] text-white hover:bg-[#2E7D32] dark:bg-green-700 dark:hover:bg-green-600"
             onClick={onLogPayment}
           >
-            <PenLine className="size-3.5" />
-            Log Payment
+            {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
+                  Logging Payment...
+                </>
+              ) : (
+                <>
+                  <PenLine className="size-3.5" />
+                  Log Payment
+                </>
+              )}
           </Button>
         </DialogFooter>
       </DialogContent>

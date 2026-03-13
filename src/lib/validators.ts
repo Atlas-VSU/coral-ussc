@@ -72,6 +72,7 @@ export const paymentSchema = z.object({
   notes: z.string().optional(),
   type: z.string().optional(),
   paymentHistoryId: z.string().optional(),
+  referenceId: z.string().optional(),
 })
 .superRefine((values, ctx) => {
   if (values.paymentMethod === "gcash") {
