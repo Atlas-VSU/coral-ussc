@@ -117,8 +117,9 @@ export const createBulkOfflineProofOfPayment = async (payments: PaymentFormData[
                 docRefs.push(docRef.id);
 
                 if(payment.type === "fees"){
+                    console.log("Recording manual payment and updating clearance for transaction: ", transaction.id);
                     const currentUser = await getCurrentUserData() as unknown as Member;
-                    await recordManualPaymentAndUpdateClearance(transaction.id!, payment.amount.toLocaleString(), payment.paymentMethod as "gcash" | "cash" | "bank_transfer" | "waiver", currentUser.user?.uid!,transaction.userId, currentUser.user?.firstName + " " + currentUser.user?.lastName);
+                    await recordManualPaymentAndUpdateClearance(transaction.id!, payment.amount.toLocaleString(), payment.paymentMethod as "gcash" | "cash" | "bank_transfer" | "waiver", currentUser.id!,transaction.userId, currentUser.firstName + " " + currentUser.lastName);
                 }
 
                 if(payment.type === "fines"){
