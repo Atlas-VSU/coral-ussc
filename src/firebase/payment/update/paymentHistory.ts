@@ -91,4 +91,4 @@ export const rejectPaymentHistory = async (paymentHistoryId: string, proofOfPaym
             console.error("Error rejecting payment history:", error);
             throw new Error("Failed to reject payment history. Please try again.");
         }
-}
+}
