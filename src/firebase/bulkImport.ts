@@ -493,7 +493,7 @@ export const processFileForBulkImport = async (
 
     const memberData = parseCSVContent(fileContent);
 
-    const BATCH_SIZE = 200; 
+    const BATCH_SIZE = memberData.length < 200 ? Math.ceil(memberData.length / 3) : 200; 
     
     const aggregatedResult: BulkImportResult = {
       success: true,

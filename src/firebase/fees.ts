@@ -18,6 +18,20 @@ import { getPaymentHistoryById } from "./payment/read/paymentHistory";
 
 const currentUserName = await getCurrentUserData() as unknown as Member;
 
+export const checkFeeTitleExist = async (title: string, academicYear: string, semester: string) => {
+    const feeRef = collection(db, "fees");
+    const q = query(
+        feeRef, 
+        where("title", "==", title), 
+        where("academicYear", "==", academicYear), 
+        where("semester", "==", semester), 
+        where("orgId", "==", currentUserName.id), 
+    );
+    
+    const feeSnapshot = await getDocs(q);
+    return feeSnapshot.size > 0;
+}
+
 export const checkFeeStatusForClearance = async (userId: string, orgId: string) => {
     const feeRef = collection(db, "fees");
     const q = query(
@@ -51,23 +65,39 @@ export const checkFeeStatusForClearance = async (userId: string, orgId: string) 
     return feesWithHistory;
 }
 
-export const generateFeesForAllStudentsInAnOrg = async (feeData: z.infer<typeof FeeGenerationSchema>, currentUserData: any, eventId?: string) : Promise<void> => {
+export interface GenerationProgress {
+    processedCount: number;
+    totalCount: number;
+    currentBatch: number;
+    totalBatches: number;
+}
+
+export const generateFeesForAllStudentsInAnOrg = async (
+    feeData: z.infer<typeof FeeGenerationSchema>, 
+    currentUserData: any, 
+    onProgress?: (progress: GenerationProgress) => void,
+    eventId?: string
+) : Promise<void> => {
     const students = await getMembersOfAnOrg(currentUserData) as unknown as MemberData[];
-    if (students.length === 0) {
+    const totalCount = students.length;
+    if (totalCount === 0) {
         throw new Error("No students provided");
     }
 
     const feesCollection = collection(db, "fees");
-    const clearanceCollection = collection(db, "clearanceStatus"); // Reference to clearance collection
+    const clearanceCollection = collection(db, "clearanceStatus");
     const now = Timestamp.now();
 
-    const chunkSize = 200; 
+    const chunkSize = totalCount < 200 ? Math.ceil(totalCount / 3) : 200; 
+    const totalBatches = Math.ceil(totalCount / chunkSize);
+    let processedCount = 0;
     
-    for (let i = 0; i < students.length; i += chunkSize) {
+    for (let i = 0; i < totalCount; i += chunkSize) {
         const chunk = students.slice(i, i + chunkSize);
         const batch = writeBatch(db);
+        const currentBatch = Math.floor(i / chunkSize) + 1;
         
-        chunk.forEach(async (student: MemberData) => {
+        chunk.forEach((student: MemberData) => {
             const feeDocRef = doc(feesCollection);
             const studentId = student.id || "";
             
@@ -114,12 +144,27 @@ export const generateFeesForAllStudentsInAnOrg = async (feeData: z.infer<typeof 
                     },
                     updatedAt: now
                 }, { merge: true });
-
-                await recalculateClearanceStatus(clearanceDocRef.id);
             }
         });
         
         await batch.commit();
+
+        // 3. Recalculate clearance after batch commit (can be optimized but keeping existing logic flow)
+        for (const student of chunk) {
+            if (student.id) {
+                await recalculateClearanceStatus(student.id);
+            }
+        }
+
+        processedCount += chunk.length;
+        if (onProgress) {
+            onProgress({
+                processedCount,
+                totalCount,
+                currentBatch,
+                totalBatches,
+            });
+        }
     }
 }
 export const fetchFeesForOrg = async(orgId: string): Promise<Fee[]> => {
@@ -393,6 +438,7 @@ export const approvePaymentTransaction = async (feeId: string, paymentLogId: str
                 verifiedBy: userId,
                 verifiedByName: currentUserName.firstName + " " + currentUserName.lastName, 
                 verifiedAt: Timestamp.now(),
+                "metadata.updatedAt": Timestamp.now(),
             });
 
             if (paymentLogData.paymentProofId) {
@@ -402,6 +448,7 @@ export const approvePaymentTransaction = async (feeId: string, paymentLogId: str
                     verifiedBy: userId,
                     verifiedByName: currentUserName.firstName + " " + currentUserName.lastName,
                     verifiedAt: Timestamp.now(),
+                    "metadata.updatedAt": Timestamp.now(),
                 });
             }
 
@@ -464,6 +511,7 @@ export const rejectPaymentTransaction = async (feeId: string, paymentLogId: stri
                 verifiedByName: currentUserName.firstName + " " + currentUserName.lastName, 
                 verifiedAt: Timestamp.now(),
                 rejectionReason: rejectionReason,
+                "metadata.updatedAt": Timestamp.now(),
             });
 
             if (paymentLogData.paymentProofId) {
@@ -474,6 +522,7 @@ export const rejectPaymentTransaction = async (feeId: string, paymentLogId: stri
                     verifiedByName: currentUserName.firstName + " " + currentUserName.lastName,
                     verifiedAt: Timestamp.now(),
                     rejectionReason: rejectionReason,
+                    "metadata.updatedAt": Timestamp.now(),
                 });
             }
 
@@ -481,6 +530,7 @@ export const rejectPaymentTransaction = async (feeId: string, paymentLogId: stri
                 paidAmount: newPaidAmount,
                 balance: newBalance,
                 status: newStatus,
+                "metadata.updatedAt": Timestamp.now(),
             });
 
             // Update Student's Clearance Document

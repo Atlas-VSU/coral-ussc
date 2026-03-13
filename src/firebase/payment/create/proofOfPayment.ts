@@ -36,6 +36,9 @@ export const createOnlineProofOfPayment = async (
                 createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now(),
             }
+            if (payment.paymentHistoryId) {
+                (paymentData as any).paymentHistoryId = payment.paymentHistoryId;
+            }
             const docRef = await addDoc(collection(db, "proofOfPayments"), paymentData);
             return docRef.id;
         }

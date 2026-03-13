@@ -24,7 +24,7 @@ export function FeesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const { aggregatedFees } = useFeeList()
-    const { members } = usePaginatedMembers()
+    const { totalMembers } = usePaginatedMembers()
    
     
     const totalCollected = aggregatedFees.reduce((sum, f) => sum + f.paidCount * f.amount, 0)
@@ -52,7 +52,7 @@ export function FeesPage() {
       <FeeGenerationDialog 
         open={isDialogOpen} 
         onOpenChange={setIsDialogOpen} 
-        students={members.map((m) => m.member)}
+        studentsCount={totalMembers}
       />
     </div>
   );
