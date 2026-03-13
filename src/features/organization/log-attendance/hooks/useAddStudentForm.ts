@@ -10,6 +10,7 @@ import {
 import { isValidStudentId } from "../utils";
 import { getAuth } from "firebase/auth";
 import { useAuth } from "@/hooks/useAuth";
+import { createFinePerStudent } from "@/firebase/fines/create/fines";
 
 interface useAddStudentFormProps {
   suggestedId: string;
@@ -133,7 +134,8 @@ export function useAddStudentForm({
         role: "user" as const,
       };
 
-      await addUser(newStudentData);
+      const userId = await addUser(newStudentData);
+      await createFinePerStudent(userId!, newStudentData as Member);
       onStudentAdded(newStudentData);
       onOpenChange(false);
     } catch (error) {
