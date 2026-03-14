@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +31,19 @@ const verificationSchema = z.object({
 
 type VerificationFormData = z.infer<typeof verificationSchema>;
 
+interface StudentData {
+  name: string;
+  studentId: string;
+  program: string;
+}
+
+const PROGRAM_OPTIONS = [
+  { value: "bscs", label: "Bachelor of Science in Computer Science" },
+  { value: "bsit", label: "Bachelor of Science in Information Technology" },
+  { value: "bsce", label: "Bachelor of Science in Civil Engineering" },
+  { value: "bsee", label: "Bachelor of Science in Electrical Engineering" },
+] as const;
+
 // Program code to full name mapping
 const PROGRAM_NAMES: Record<string, string> = {
   bscs: "Bachelor of Science in Computer Science",
@@ -39,20 +53,20 @@ const PROGRAM_NAMES: Record<string, string> = {
 };
 
 interface StudentVerificationPageProps {
-  onVerified: (data: { name: string; studentId: string; program: string }) => void;
+  onVerified: (data: StudentData) => void;
 }
 
 export default function StudentVerificationPage({ onVerified }: StudentVerificationPageProps) {
   const [showModal, setShowModal] = useState(false);
-  const [studentData, setStudentData] = useState<{
-    name: string;
-    studentId: string;
-    program: string;
-  } | null>(null);
+  const [studentData, setStudentData] = useState<StudentData | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
     setValue,
+    clearErrors,
     watch,
     formState: { errors },
   } = useForm<VerificationFormData>({
@@ -65,17 +79,29 @@ export default function StudentVerificationPage({ onVerified }: StudentVerificat
 
   const programValue = watch("program");
 
-  const onSubmit = (data: VerificationFormData) => {
-    // TODO: Fetch student data from backend using studentId and program
-    // For now, using mock data
-    const mockStudentName = "Juan Dela Cruz"; // This will be fetched from database later
-    
-    setStudentData({
-      name: mockStudentName,
-      studentId: data.studentId,
+  const verifyStudent = async (data: VerificationFormData): Promise<StudentData> => {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    return {
+      name: "Juan Dela Cruz",
+      studentId: data.studentId.trim(),
       program: PROGRAM_NAMES[data.program] || data.program,
-    });
-    setShowModal(true);
+    };
+  };
+
+  const onSubmit = async (data: VerificationFormData) => {
+    setSubmitError(null);
+    setIsVerifying(true);
+
+    try {
+      const verifiedStudent = await verifyStudent(data);
+      setStudentData(verifiedStudent);
+      setShowModal(true);
+    } catch {
+      setSubmitError("Unable to verify your student details right now. Please try again.");
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   const handleConfirm = () => {
@@ -129,27 +155,21 @@ export default function StudentVerificationPage({ onVerified }: StudentVerificat
               </Label>
               <Select
                 value={programValue}
-                onValueChange={(value) => setValue("program", value, { shouldValidate: true })}
+                onValueChange={(value) => {
+                  setValue("program", value, { shouldValidate: true });
+                  clearErrors("program");
+                }}
               >
                 <SelectTrigger className={`w-full ${errors.program ? "border-red-500" : ""}`}>
                   <SelectValue placeholder="Select your program" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="bscs">Bachelor of Science in Computer Science</SelectItem>
-                  <SelectItem value="bsit">Bachelor of Science in Information Technology</SelectItem>
-                  <SelectItem value="bsce">Bachelor of Science in Civil Engineering</SelectItem>
-                  <SelectItem value="bsee">Bachelor of Science in Electrical Engineering</SelectItem>
+                  {PROGRAM_OPTIONS.map((program) => (
+                    <SelectItem key={program.value} value={program.value}>
+                      {program.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
-
-      {/* Confirmation Modal */}
-      {studentData && (
-        <ConfirmationModal
-          open={showModal}
-          onClose={handleCancel}
-          onConfirm={handleConfirm}
-          studentData={studentData}
-        />
-      )}
               </Select>
               {errors.program && (
                 <p className="text-xs text-red-500 flex items-center gap-1">
@@ -161,13 +181,34 @@ export default function StudentVerificationPage({ onVerified }: StudentVerificat
               )}
             </div>
 
+            {submitError && (
+              <p className="text-sm text-red-600 dark:text-red-400">{submitError}</p>
+            )}
+
             {/* Submit Button */}
-            <Button type="submit" className="w-full mb-6">
-              Continue
+            <Button type="submit" className="w-full mb-6" disabled={isVerifying}>
+              {isVerifying ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                "Continue"
+              )}
             </Button>
           </form>
         </CardContent>
       </Card>
+
+      {/* Confirmation Modal */}
+      {studentData && (
+        <ConfirmationModal
+          open={showModal}
+          onClose={handleCancel}
+          onConfirm={handleConfirm}
+          studentData={studentData}
+        />
+      )}
     </div>
   );
 }
