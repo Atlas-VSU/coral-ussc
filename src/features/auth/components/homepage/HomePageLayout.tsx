@@ -1,7 +1,7 @@
 import { DesktopHeader } from "../DesktopHeader";
 import { MobileHeader } from "../MobileHeader";
 
-import {LoginCard} from "../login";
+import LoginCard from "./components/LoginCard";
 
 export function HomePageLayout() {
   return (
