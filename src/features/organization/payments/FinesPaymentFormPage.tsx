@@ -41,6 +41,7 @@ interface FinesPaymentFormPageProps {
   organizationData?: OrganizationData;
   selectedPaymentItems?: SelectedPaymentItems;
   onBack?: () => void;
+  onRestart?: () => void;
 }
 
 interface PublicSubmitResult {
@@ -53,6 +54,7 @@ export default function FinesPaymentFormPage({
   organizationData,
   selectedPaymentItems,
   onBack,
+  onRestart,
 }: FinesPaymentFormPageProps) {
   const isContextualFlow = Boolean(studentData && organizationData && selectedPaymentItems);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -144,6 +146,7 @@ export default function FinesPaymentFormPage({
     setSubmitError(null);
     setSubmitResult(null);
     handleReset();
+    onRestart?.();
   };
 
   if (status === "success") {

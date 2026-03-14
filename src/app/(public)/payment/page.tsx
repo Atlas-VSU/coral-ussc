@@ -171,6 +171,7 @@ export default function PaymentPage() {
           organizationData={selectedOrganization}
           selectedPaymentItems={selectedPaymentItems}
           onBack={handleBackToFees}
+          onRestart={handleBackToVerification}
         />
       )}
     </>
