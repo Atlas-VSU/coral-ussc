@@ -153,17 +153,15 @@ export const createBulkFines = async (
         // Initialize clearance for this student
         const clearanceRef = doc(db, 'clearanceStatus', user.id!);
         batch.set(clearanceRef, {
-            blockingItems: {
-                [fineDocRef.id]: {
-                    type: PaymentType.FINES,
-                    referenceId: fineDocRef.id,
-                    title: "Fines",
-                    balance: 0,
-                    status: "paid",
-                    paymentHistory: [],
-                    pendingReview: false,
-                    isRequiredForClearance: true
-                }
+            [`blockingItems.${fineDocRef.id}`]: {
+                type: PaymentType.FINES,
+                referenceId: fineDocRef.id,
+                title: "Fines",
+                balance: 0,
+                status: "paid",
+                paymentHistory: [],
+                pendingReview: false,
+                isRequiredForClearance: true
             },
             updatedAt: Timestamp.now()
         }, { merge: true });
@@ -212,7 +210,6 @@ export const createBulkFines = async (
     ...(batch ?? {}),
   };
 }
-
 export const generateFinesOnEvent = async (
   event: Event,
   onProgress?: OnFineProgress       
@@ -232,8 +229,6 @@ export const generateFinesOnEvent = async (
     message: string,
     batch?: { batchNum: number; totalBatches: number }
   ) => onProgress?.(makeSnapshot(phase, counts, message, batch));
-
-
 
   report("preflight", "Fetching fine type…");
   const type = await getFineTypeById(event.fineTypeId);
@@ -280,7 +275,6 @@ export const generateFinesOnEvent = async (
 
   const batchSize = 20;
 
-
   // ──  ABSENT USERS ────────────────────────────────────────────────────────
 
   if (absentUsersFines.length > 0) {
@@ -299,6 +293,9 @@ export const generateFinesOnEvent = async (
           const subColRef = collection(db, "fines", fine.id!, "fineItems");
           const countSnapshot = await getCountFromServer(subColRef);
           const itemNumber = (countSnapshot.data().count ?? 0) + 1;
+          
+          // 1. Generate the reference first so we have the unique ID
+          const fineItemRef = doc(subColRef);
 
           const fineItem = {
             itemNumber,
@@ -328,7 +325,8 @@ export const generateFinesOnEvent = async (
             isArchived: false,
           };
 
-          batch.set(doc(subColRef), fineItem);
+          // 2. Use the generated reference to save the item
+          batch.set(fineItemRef, fineItem);
 
           const count = await updateFineItemCount(fine, 1);
           if (count === 1) {
@@ -336,24 +334,25 @@ export const generateFinesOnEvent = async (
           } else {
             await updateLastFineIssuedAt(fine.id!);
           }
+          
           const calculationResult = await recalculateFines(fine.id!, amount);
           if (!calculationResult.success) {
             report("error", `Failed recalculating fines. See console for details.`);
             return;
           }
 
-          // Update student's clearance document
+          // 3. Update student's clearance document using the specific fine item ID
           const clearanceRef = doc(db, 'clearanceStatus', fine.userId);
           batch.set(clearanceRef, {
             blockingItems: {
-              [fine.id!]: {
+              [fineItemRef.id]: { // <--- Using the unique item ID to append
                 type: PaymentType.FINES,
-                referenceId: fine.id!,
+                referenceId: fineItemRef.id,
+                parentFineId: fine.id!, // Keep a reference to the main fine document
                 title: event.name,
-                balance: calculationResult.balance,
-                status: calculationResult.status === "paid" ? "paid" : "unpaid",
-                paymentHistory: [],
-                pendingReview: calculationResult.status === "pending",
+                balance: amount, // <--- Using the specific amount, not the running total
+                status: "unpaid",
+                pendingReview: false,
                 isRequiredForClearance: true
               }
             },
@@ -400,6 +399,9 @@ export const generateFinesOnEvent = async (
           const countSnapshot = await getCountFromServer(subColRef);
           const itemNumber    = (countSnapshot.data().count ?? 0) + 1;
 
+          // 1. Generate the reference first so we have the unique ID
+          const fineItemRef = doc(subColRef);
+
           const fineItem = {
             itemNumber,
             fineTypeId: type.id,
@@ -428,7 +430,8 @@ export const generateFinesOnEvent = async (
             isArchived: false,
           };
 
-          batch.set(doc(subColRef), fineItem);
+          // 2. Use the generated reference to save the item
+          batch.set(fineItemRef, fineItem);
 
           await updateFineItemCount(fine, 1);
           const calculationResult = await recalculateFines(fine.id!, amount);
@@ -437,18 +440,18 @@ export const generateFinesOnEvent = async (
             return;
           }
 
-          // Update student's clearance document
+          // 3. Update student's clearance document using the specific fine item ID
           const clearanceRef = doc(db, 'clearanceStatus', fine.userId);
           batch.set(clearanceRef, {
             blockingItems: {
-              [fine.id!]: {
+              [fineItemRef.id]: { // <--- Using the unique item ID to append
                 type: PaymentType.FINES,
-                referenceId: fine.id!,
+                referenceId: fineItemRef.id,
+                parentFineId: fine.id!, // Keep a reference to the main fine document
                 title: event.name,
-                balance: calculationResult.balance,
-                status: calculationResult.status === "paid" ? "paid" : "unpaid",
-                paymentHistory: [],
-                pendingReview: calculationResult.status === "pending",
+                balance: amount, // <--- Using the specific amount, not the running total
+                status: "unpaid",
+                pendingReview: false,
                 isRequiredForClearance: true
               }
             },
