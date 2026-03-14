@@ -15,6 +15,7 @@ import { recalculateClearanceStatus } from "./clearance";
 import { generateReceiptId } from "@/features/organization/payments/utils";
 import { getProofOfPaymentById } from "./payment/read/proofOfPayment";
 import { getPaymentHistoryById } from "./payment/read/paymentHistory";
+import { recalculateFines } from "./fines/update/recalculate";
 
 const currentUserName = await getCurrentUserData() as unknown as Member;
 
@@ -328,7 +329,13 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
             // 1. ALL READS (Must happen before writes)
             // ==========================================
             const itemDocsToUpdate = [];
+            const logsToUpdate = []; // Array to stage log updates for Phase 2
             const logsToWrite = []; // Array to stage writes for Phase 2
+            const finesIdsToExclude = items.filter(i => i.paymentType === PaymentType.FINES && i.parentFineId).map(i => i.refId) || [];
+
+            let fineParentId = "";
+            let totalFinesPaid = 0;
+            let finesLogged = false;
 
             for (const item of items) {
                 // Determine which collection to pull from based on the item type
@@ -337,8 +344,20 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                 let bulkPaymentHistoryRef;
 
                 if (item.parentFineId) {
+                    fineParentId = item.parentFineId;
                     itemRef = doc(db, "fines", item.parentFineId, "fineItems", item.refId);
-                    bulkPaymentHistoryRef = doc(collection(db, "fines", item.parentFineId, "paymentHistory"));
+                    
+                    logsToUpdate.push({
+                        ref: itemRef,
+                        data: {isPaid: true}
+                    });
+
+                    totalFinesPaid += item.amount;
+
+                    if (!finesLogged) {
+                        bulkPaymentHistoryRef = doc(collection(db, "fines", item.parentFineId, "paymentHistory"));
+                        finesLogged = true; // Ensure we only log once for the fine, even if multiple items are paid
+                    }
                 } else {
                     itemRef = doc(db, "fees", item.refId);
                     bulkPaymentHistoryRef = doc(collection(db, "fees", item.refId, "paymentHistory"));
@@ -359,37 +378,42 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                     paymentAmount: item.amount,
                     refId: item.refId
                 });
+                if (bulkPaymentHistoryRef) {
+                    // Stage the log data for the WRITE phase
+                    const newLog = {
+                        id: bulkPaymentHistoryRef.id,
+                        paymentNumber: Date.now(),
+                        amount: totalAmount,
+                        paymentMethod: method,
+                        paymentProofId: paymentProofRef.id,
+                        gcashReference: method === "gcash" && ref ? ref : null,
+                        status: PaymentStatus.VERIFIED,
+                        paidAt: Timestamp.now(),
+                        verifiedBy: adminId,
+                        verifiedByName: adminName,
+                        verifiedAt: Timestamp.now(),
+                        rejectionReason: null,
+                        notes: `Bulk manual payment recorded by admin. Items: ${items.map(i => i.refId).join(', ')}`,
+                        paymentType: overallPaymentType,
+                        metadata: { items },
+                        createdAt: Timestamp.now(),
+                    };
 
-                // Stage the log data for the WRITE phase
-                const newLog = {
-                    id: bulkPaymentHistoryRef.id,
-                    paymentNumber: Date.now(), 
-                    amount: totalAmount,
-                    paymentMethod: method,
-                    paymentProofId: paymentProofRef.id,
-                    gcashReference: method === "gcash" && ref ? ref : null,
-                    status: PaymentStatus.VERIFIED,
-                    paidAt: Timestamp.now(),
-                    verifiedBy: adminId, 
-                    verifiedByName: adminName, 
-                    verifiedAt: Timestamp.now(),
-                    rejectionReason: null,
-                    notes: `Bulk manual payment recorded by admin. Items: ${items.map(i => i.refId).join(', ')}`,
-                    paymentType: overallPaymentType,
-                    metadata: { items },
-                    createdAt: Timestamp.now(),
-                };
-
-                logsToWrite.push({
-                    ref: bulkPaymentHistoryRef,
-                    data: newLog
-                });
+                    logsToWrite.push({
+                        ref: bulkPaymentHistoryRef,
+                        data: newLog
+                    });
+                }
             }
 
+            for(const log of logsToUpdate){
+                transaction.update(log.ref, log.data);
+            }
             // Write all the logs
             for (const log of logsToWrite) {
                 transaction.set(log.ref, log.data);
             }
+            
 
             transaction.set(paymentProofRef, {
                 id: paymentProofRef.id,
@@ -430,12 +454,13 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                 } else if (newPaidAmount > 0) {
                     newStatus = "partial";
                 }
-
-                transaction.update(itemRef, {
-                    paidAmount: newPaidAmount,
-                    balance: newBalance,
-                    status: newStatus,
-                });
+                if (!finesIdsToExclude.includes(refId)) {
+                    transaction.update(itemRef, {
+                        paidAmount: newPaidAmount,
+                        balance: newBalance,
+                        status: newStatus,
+                    });
+                }
 
                 // Prepare fields for the single clearance document update
                 clearanceUpdates[`blockingItems.${refId}.balance`] = newBalance;
@@ -443,11 +468,12 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                 clearanceUpdates[`blockingItems.${refId}.pendingReview`] = false;
             }
 
+            await recalculateFines(fineParentId, null, totalFinesPaid, null, null);
+
             if (Object.keys(clearanceUpdates).length > 0) {
                 transaction.update(clearanceRef, clearanceUpdates);
             }
         });
-
         await recalculateClearanceStatus(studentId);
         
 
