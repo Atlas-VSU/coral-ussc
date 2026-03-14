@@ -11,6 +11,8 @@ import {
   LogOut,
   AlertTriangle,
   Banknote,
+  ShieldCheck,
+  CreditCard,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,7 +28,9 @@ const iconMap = {
   alert: AlertTriangle,
   "bar-chart": BarChart,
   settings: Settings,
-  fee: Banknote
+  fee: Banknote,
+  clearance: ShieldCheck,
+  payments: CreditCard
 };
 
 // Define mobile icon map
@@ -35,6 +39,10 @@ const mobileIconMap = {
   calendar: Calendar,
   users: Users,
   logout: LogOut,
+  fee: Banknote,
+  clearance: ShieldCheck,
+  alert: AlertTriangle,
+  payments: CreditCard
 };
 
 // Organization navigation data
@@ -64,7 +72,17 @@ const organizationData = {
       title: "Fines",
       url: "/org-fines",
       icon: "alert",
-    }
+    },
+    {
+      title: "Payments",
+      url: "/org-payments",
+      icon: "payments",
+    },
+    {
+      title: "Clearance",
+      url: "/org-clearance",
+      icon: "clearance"
+    },
     // {
     //   title: "Reports",
     //   url: "/organization/reports",
@@ -93,9 +111,24 @@ const organizationData = {
       href: "/org-members",
     },
     {
+      label: "Fees",
+      icon: "fee",
+      href: "/org-fees",
+    },
+    {
       label: "Fines",
       icon: "alert",
       href: "/org-fines",
+    },
+    {
+      label: "Payments",
+      icon: "payments",
+      href: "/org-payments",
+    },
+    {
+      label: "Clearance",
+      icon: "clearance",
+      href: "/org-clearance",
     },
   ],
 };

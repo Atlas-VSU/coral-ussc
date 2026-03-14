@@ -21,6 +21,8 @@ import {
 import { getFaculties } from "./faculties";
 import { getPrograms } from "./programs";
 import { parseCSVRow } from "@/features/organization/members/csv.utils";
+import { addStudentWithClearance } from "./clearance";
+import { getCurrentUserData } from "./users";
 
 const usersCollection: CollectionReference<DocumentData> = collection(
   db,
@@ -365,6 +367,8 @@ export const bulkImportUsers = async (
       }
 
       const validatedMember: ValidatedMemberData = {
+        createdAt: Timestamp.now(),
+        isDeleted: false,
         rowNumber: data.rowNumber,
         studentId: (data.studentId as string).trim(),
         firstName: (data.firstName as string).trim(),
@@ -428,9 +432,25 @@ export const bulkImportUsers = async (
       const { rowNumber, ...memberDataWithoutRow } = memberDataForSave;
 
       batch.set(docRef, memberDataWithoutRow);
+      
     });
 
     await batch.commit();
+    const user = await getCurrentUserData();
+    for (const member of membersToImport) {
+      try {
+        const docRef = query(collection(db, "users"), where("studentId", "==", member.studentId));
+        const snapshot = await getDocs(docRef);
+        await addStudentWithClearance(snapshot.docs[0].id, member, user?.uid || "");
+      }
+      catch (error) {
+        result.errors.push({
+          row: member.rowNumber,
+          studentId: member.studentId,
+          error: "Failed to add student with clearance",
+        });
+      }
+    }
 
     result.successfulImports = membersToImport.length;
     result.success = true;
@@ -473,7 +493,7 @@ export const processFileForBulkImport = async (
 
     const memberData = parseCSVContent(fileContent);
 
-    const BATCH_SIZE = 400; 
+    const BATCH_SIZE = memberData.length < 200 ? Math.ceil(memberData.length / 3) : 200; 
     
     const aggregatedResult: BulkImportResult = {
       success: true,
@@ -508,7 +528,7 @@ export const processFileForBulkImport = async (
       }
 
       if (i + BATCH_SIZE < memberData.length) {
-        await sleep(1500);
+        await sleep(1000);
       }
     }
 

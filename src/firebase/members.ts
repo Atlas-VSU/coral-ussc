@@ -253,3 +253,35 @@ export const getAllStudents = async () => {
     return [];
   }
 };
+
+export const getMembersOfAnOrg = async (currentUserData: Member) => {
+  try {
+    const baseConstraints = [
+      where("isDeleted", "==", false),
+      where("role", "==", "user"),
+    ];
+
+    let q = query(
+      usersCollection,
+      ...baseConstraints
+    );
+
+    if(currentUserData.accessLevel == 1) {
+      q = query(q, where("programId", "==", currentUserData.programId));
+    }
+
+    if(currentUserData.accessLevel == 2) {
+      q = query(q, where("facultyId", "==", currentUserData.facultyId));
+    }
+
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      member: { ...doc.data() },
+    })) as unknown as MemberData[];
+  } catch (error) {
+    handleFirestoreError(error, "fetch members of an org");
+    return [];
+  }
+};

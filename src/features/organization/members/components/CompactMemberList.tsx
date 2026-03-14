@@ -1,10 +1,9 @@
-import { MemberData, Faculty, Program } from "../types";
+import { MemberData, Faculty, Program, Member } from "../types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Pencil, Trash2, Mail, Hash, Building2 } from "lucide-react";
-import { getCurrentUserFacultyId } from "@/firebase";
-import { getAuth } from "firebase/auth";
+import { getCurrentUserData } from "@/firebase";
 
 interface CompactMemberListProps {
   members: MemberData[];
@@ -26,9 +25,9 @@ export async function CompactMemberList({
     return program ? program.name : "N/A";
   };
 
-  const currentUserFacultyId = await getCurrentUserFacultyId(
-    getAuth().currentUser?.uid || ""
-  );
+  const currentUser = await getCurrentUserData() as unknown as Member;
+
+  const currentUserFacultyId = currentUser.facultyId;
 
   const getFacultyName = (facultyId: string) => {
     const faculty = faculties.find((f) => f.id === facultyId);

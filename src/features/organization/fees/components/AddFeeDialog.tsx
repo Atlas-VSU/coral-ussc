@@ -1,7 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
-import { AlertTriangle, CalendarIcon } from "lucide-react";
+import { AlertTriangle, CalendarIcon, Clock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -45,14 +45,14 @@ import { Member } from "@/features/organization/members/types";
 interface FeeGenerationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  students: Member[]; 
+  studentsCount: number;
   onClose?: () => void; 
 }
 
 export function FeeGenerationDialog({
   open,
   onOpenChange,
-  students,
+  studentsCount,
   onClose,
 }: FeeGenerationDialogProps) {
   const {
@@ -66,8 +66,11 @@ export function FeeGenerationDialog({
     handleCancel,
     confirmationDescription,
     confirmationNotice,
+    importProgress,
+    currentBatch,
+    totalBatches,
   } = useFeeGeneration({
-    students,
+    studentsCount,
     onOpenChange,
     onSuccess: onClose,
   });
@@ -75,18 +78,55 @@ export function FeeGenerationDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={isGenerating ? undefined : onOpenChange}>
-        <DialogContent className="sm:max-w-[500px] h-[calc(100vh-10rem)] pt-12 pb-4 overflow-y-auto">
+        <DialogContent className="sm:max-w-[500px] h-[calc(100vh-10rem)] pt-12 pb-4 overflow-y-auto" showCloseButton={!isGenerating}>
           <DialogHeader>
             <DialogTitle>Generate Fees for All Students</DialogTitle>
             <DialogDescription>
-              Create a new fee entry that will be applied to all students. Fill in the details below.
+              {isGenerating 
+                ? "Processing fee generation in batches. Please wait..."
+                : "Create a new fee entry that will be applied to all students. Fill in the details below."}
             </DialogDescription>
           </DialogHeader>
 
           <div className="relative">
-            <LoadingOverlay loading={isGenerating} message="Generating fees..." />
+            {isGenerating ? (
+              <div className="space-y-6 py-8">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium flex items-center gap-2">
+                       <Clock className="h-4 w-4 animate-pulse" />
+                       Generating Fees...
+                    </span>
+                    <span className="text-muted-foreground">
+                      {importProgress.toFixed(0)}% complete
+                    </span>
+                  </div>
 
-            <Form {...form}>
+                  {/* Progress bar */}
+                  <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                    <div
+                      className="bg-primary h-2.5 rounded-full transition-all duration-300"
+                      style={{ width: `${importProgress}%` }}
+                    ></div>
+                  </div>
+
+                  {/* Batch info */}
+                  {currentBatch > 0 && totalBatches > 0 && (
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>
+                        Batch {currentBatch} of {totalBatches}
+                      </span>
+                      <span>Processing {studentsCount.toLocaleString()} students</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="p-4 bg-muted/50 rounded-lg border text-sm text-muted-foreground italic">
+                  Please do not close this window or refresh the page while generation is in progress.
+                </div>
+              </div>
+            ) : (
+              <Form {...form}>
               <form onSubmit={form.handleSubmit(onFormSubmit)} className="grid gap-4 py-4">
                 {/* Fee Title */}
                 <FormField
@@ -300,8 +340,9 @@ export function FeeGenerationDialog({
                     Generate Fees
                   </Button>
                 </DialogFooter>
-              </form>
-            </Form>
+                </form>
+              </Form>
+            )}
           </div>
         </DialogContent>
       </Dialog>

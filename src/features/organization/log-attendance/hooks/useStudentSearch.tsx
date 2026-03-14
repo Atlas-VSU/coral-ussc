@@ -49,7 +49,8 @@ export function useStudentSearch(
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
-      setCurrentUserData(await getCurrentUserData() as unknown as Member)
+      const currentUser = await getCurrentUserData() as unknown as Member;
+      setCurrentUserData(currentUser);
     }
     fetchCurrentUser()
   }, [])

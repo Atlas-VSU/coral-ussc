@@ -1,6 +1,7 @@
 export enum PaymentType {
-  MEMBERSHIP = "fees",
+  FEES = "fees",
   FINES = "fines",
+  BULK = "bulk"
 }
 
 export enum PaymentMethods{
