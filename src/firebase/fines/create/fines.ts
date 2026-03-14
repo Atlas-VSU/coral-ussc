@@ -149,22 +149,6 @@ export const createBulkFines = async (
 
         const fineDocRef = doc(finesCollection);
         batch.set(fineDocRef, fineData);
-
-        // Initialize clearance for this student
-        const clearanceRef = doc(db, 'clearanceStatus', user.id!);
-        batch.set(clearanceRef, {
-            [`blockingItems.${fineDocRef.id}`]: {
-                type: PaymentType.FINES,
-                referenceId: fineDocRef.id,
-                title: "Fines",
-                balance: 0,
-                status: "paid",
-                paymentHistory: [],
-                pendingReview: false,
-                isRequiredForClearance: true
-            },
-            updatedAt: Timestamp.now()
-        }, { merge: true });
       }
 
       // If a batch throws, we know exactly where it stopped
