@@ -4,9 +4,9 @@ import { getCurrentUserData, getUserById } from "@/firebase";
 import { getAllProofOfPayments } from "@/firebase/payment/read/proofOfPayment";
 import { toast } from "sonner";
 import { fetchUnpaidFeesForOrg } from "@/firebase/fees";
-import { getAllUnpaidFinesforOrg } from "@/firebase/fines/read/fines";
+import { getAllUnpaidFinesforOrg, getFineItemsByFineId, getUnpaidFineItemsByFineId } from "@/firebase/fines/read/fines";
 import { Fee } from "../../fees/types";
-import { StudentUnpaidRecord, UnpaidDue } from "../types";
+import { StudentFineItem, StudentUnpaidRecord, UnpaidDue } from "../types";
 
 export function usePayments() {
   const [payments, setPayments] = useState<ProofOfPayment[]>([]);
@@ -37,22 +37,26 @@ export function usePayments() {
         fetchUnpaidFeesForOrg(),
         getAllUnpaidFinesforOrg(),
       ]);
-
+      const fineItems: StudentFineItem[] = [] 
+      for (const fine of fines) { 
+        const items = await getUnpaidFineItemsByFineId(fine);
+        fineItems.push(...items);
+      }
       // Build lookup maps to avoid repeated .find() calls
       const feesByUserId = fees.reduce<Record<string, Fee[]>>((acc, fee) => {
         (acc[fee.userId] ??= []).push(fee);
         return acc;
       }, {});
 
-      const finesByUserId = fines.reduce<Record<string, StudentFines>>((acc, fine) => {
-        acc[fine.userId] = fine;
+      const finesByUserId = fineItems.reduce<Record<string, StudentFineItem[]>>((acc, fine) => {
+        (acc[fine.userId] ??= []).push(fine);
         return acc;
       }, {});
 
       // Unique student IDs across both
       const allUserIds = Array.from(new Set([
         ...fees.map(f => f.userId),
-        ...fines.map(f => f.userId),
+        ...fineItems.map(f => f.userId),
       ]));
 
       // Fetch all users in parallel
@@ -66,18 +70,20 @@ export function usePayments() {
           const dues: UnpaidDue[] = [
             ...(feesByUserId[id] ?? []).map(fee => ({
               id: fee.id,
-              type: "fee" as const,
+              type: "fees" as const,
               name: fee.title,
               item: fee,
+              balance: fee.amount - fee.paidAmount,
+              parentId: fee.id,
             })),
-            ...(finesByUserId[id]
-              ? [{
-                  id: finesByUserId[id].id!,
-                  type: "fine" as const,
-                  name: `${finesByUserId[id].semester} Fines`,
-                  item: finesByUserId[id],
-                }]
-              : []),
+            ...(finesByUserId[id] ?? []).map(fine => ({
+                id: fine.refId,
+                type: "fines" as const,
+                name: fine.title,
+                item: fine,
+                balance: fine.amount,
+                parentId: fine.parentFineId,
+            }))
           ];
 
           return { student, dues };

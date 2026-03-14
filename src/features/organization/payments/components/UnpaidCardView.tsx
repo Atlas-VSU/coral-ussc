@@ -19,7 +19,7 @@ export function UnpaidCardView({ paginatedUnpaid, onOpenDetail }: UnpaidCardView
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {paginatedUnpaid.map(record => {
-        const totalDue = record.dues.reduce((s, d) => s + d.item.balance, 0)
+        const totalDue = record.dues.reduce((s, d) => s + d.balance, 0)
         return (
           <Card key={record.student.studentId} className="border-border bg-card">
             <CardContent className="flex flex-col gap-3 p-4">

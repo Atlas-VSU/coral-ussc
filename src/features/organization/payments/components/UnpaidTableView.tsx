@@ -32,7 +32,7 @@ export function UnpaidTableView({ filteredUnpaid, paginatedUnpaid, onOpenDetail 
             </TableRow>
           ) : (
             paginatedUnpaid.map(record => {
-              const totalDue = record.dues.reduce((s, d) => s + d.item.balance, 0)
+              const totalDue = record.dues.reduce((s, d) => s + d.balance, 0)
               return (
                 <TableRow key={record.student.studentId} className="border-border">
                   <TableCell>
