@@ -95,18 +95,6 @@ const isBlockedByPaymentHistoryStatus = (status: unknown): boolean => {
   return status === "pending_verification" || status === "verified";
 };
 
-const DEBUG_PUBLIC_SUBMIT_PAYMENT = process.env.DEBUG_PUBLIC_SUBMIT_PAYMENT === "true";
-
-const debugLog = (message: string, meta?: Record<string, unknown>) => {
-  if (!DEBUG_PUBLIC_SUBMIT_PAYMENT) return;
-  if (meta) {
-    console.log(`[public/submit-payment] ${message}`);
-    console.dir(meta, { depth: null });
-    return;
-  }
-  console.log(`[public/submit-payment] ${message}`);
-};
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -124,14 +112,6 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = parsed.data;
-    debugLog("Payload validated", {
-      studentId: payload.studentId,
-      orgId: payload.orgId,
-      paymentMethod: payload.paymentMethod,
-      selectedFeeCount: payload.fees.length,
-      selectedFineCount: payload.fines.length,
-      hasImageUrl: Boolean(payload.imageUrl),
-    });
 
     const userSnapshot = await adminDb
       .collection("users")
@@ -152,10 +132,6 @@ export async function POST(request: NextRequest) {
 
     const studentDoc = userSnapshot.docs[0];
     const studentData = studentDoc.data();
-    debugLog("Student record resolved", {
-      studentDocId: studentDoc.id,
-      role: studentData.role ?? null,
-    });
 
     if (studentData.role && studentData.role !== "user") {
       return NextResponse.json(
@@ -273,15 +249,6 @@ export async function POST(request: NextRequest) {
           resolveOutstanding(fine.balance, fine.accumulatedAmount) > 0
       );
 
-    debugLog("Validated selected dues", {
-      requestedFeeIds: payload.fees,
-      requestedFineIds: payload.fines,
-      validFeeIds: fees.map((fee) => fee.id),
-      validFineIds: fines.map((fine) => fine.id),
-      validFeeCount: fees.length,
-      validFineCount: fines.length,
-    });
-
     if (fees.length !== payload.fees.length || fines.length !== payload.fines.length) {
       return NextResponse.json(
         {
@@ -299,15 +266,9 @@ export async function POST(request: NextRequest) {
     const proofCollection = adminDb.collection("proofOfPayments");
     const clearanceRef = adminDb.collection("clearanceStatus").doc(studentDoc.id);
     const clearanceSnapshot = await clearanceRef.get();
-    debugLog("Clearance snapshot checked", {
-      clearanceDocId: clearanceRef.id,
-      clearanceExists: clearanceSnapshot.exists,
-    });
     const batch = adminDb.batch();
     const submissionIds: string[] = [];
     const clearanceUpdates: Record<string, boolean> = {};
-    const feeDebugEntries: Array<{ feeId: string; paymentHistoryId: string; path: string }> = [];
-    const fineDebugEntries: Array<{ fineId: string; paymentHistoryId: string; path: string }> = [];
 
     const feeTotal = fees.reduce((sum, fee) => sum + resolveOutstanding(fee.balance, fee.amount), 0);
     const fineTotal = fines.reduce(
@@ -315,11 +276,6 @@ export async function POST(request: NextRequest) {
       0
     );
     const totalAmount = feeTotal + fineTotal;
-    debugLog("Computed payment totals", {
-      feeTotal,
-      fineTotal,
-      totalAmount,
-    });
 
     batch.set(paymentHistoryRef, {
       id: paymentHistoryRef.id,
@@ -407,12 +363,6 @@ export async function POST(request: NextRequest) {
           paymentHistoryItemId: paymentItemRef.id,
         },
         createdAt: now,
-      });
-
-      feeDebugEntries.push({
-        feeId: fee.id,
-        paymentHistoryId: feeLogRef.id,
-        path: `fees/${fee.id}/paymentHistory/${feeLogRef.id}`,
       });
 
       batch.set(docRef, {
@@ -509,12 +459,6 @@ export async function POST(request: NextRequest) {
         createdAt: now,
       });
 
-      fineDebugEntries.push({
-        fineId: fine.id,
-        paymentHistoryId: fineLogRef.id,
-        path: `fines/${fine.id}/paymentHistory/${fineLogRef.id}`,
-      });
-
       batch.set(docRef, {
         orgId: payload.orgId,
         userId: fine.userId ?? studentDoc.id,
@@ -554,39 +498,7 @@ export async function POST(request: NextRequest) {
       batch.update(clearanceRef, clearanceUpdates);
     }
 
-    debugLog("Committing Firestore batch", {
-      paymentHistoryId: paymentHistoryRef.id,
-      submissionCount: submissionIds.length,
-      clearanceUpdateCount: Object.keys(clearanceUpdates).length,
-      clearanceUpdated: Object.keys(clearanceUpdates).length > 0 && clearanceSnapshot.exists,
-      feeCount: fees.length,
-      fineCount: fines.length,
-    });
-
     await batch.commit();
-
-    const debugVerification = DEBUG_PUBLIC_SUBMIT_PAYMENT
-      ? {
-          fees: await Promise.all(
-            feeDebugEntries.map(async (entry) => ({
-              ...entry,
-              exists: (await adminDb.doc(entry.path).get()).exists,
-            }))
-          ),
-          fines: await Promise.all(
-            fineDebugEntries.map(async (entry) => ({
-              ...entry,
-              exists: (await adminDb.doc(entry.path).get()).exists,
-            }))
-          ),
-        }
-      : undefined;
-
-    debugLog("Batch committed successfully", {
-      paymentHistoryId: paymentHistoryRef.id,
-      submissionIds,
-      debugVerification,
-    });
 
     return NextResponse.json({
       success: true,
@@ -600,21 +512,9 @@ export async function POST(request: NextRequest) {
         fineAmount: fineTotal,
         totalAmount,
       },
-      ...(DEBUG_PUBLIC_SUBMIT_PAYMENT
-        ? {
-            debug: {
-              feePaymentHistory: debugVerification?.fees ?? feeDebugEntries,
-              finePaymentHistory: debugVerification?.fines ?? fineDebugEntries,
-            },
-          }
-        : {}),
     });
   } catch (error) {
     console.error("Error submitting public payment:", error);
-    debugLog("Error details", {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : null,
-    });
 
     return NextResponse.json(
       {
