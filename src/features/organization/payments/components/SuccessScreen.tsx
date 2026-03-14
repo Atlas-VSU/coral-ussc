@@ -7,15 +7,24 @@ import { PaymentFormData } from "@/lib/validators";
 interface SuccessScreenProps {
   form: PaymentFormData;
   onReset: () => void;
+  paymentHistoryId?: string;
+  submissionCount?: number;
 }
 
-export function SuccessScreen({ form, onReset }: SuccessScreenProps) {
+export function SuccessScreen({
+  form,
+  onReset,
+  paymentHistoryId,
+  submissionCount = 0,
+}: SuccessScreenProps) {
   const summary = [
     ["Student",        form.userName],
     ["Student ID",     form.studentId],
     ["Amount",         `₱${parseFloat(String(form.amount)).toLocaleString()}`],
     ["Payment Method", form.paymentMethod.replace("_", " ")],
     ...(form.referenceNumber ? [["Reference No.", form.referenceNumber]] : []),
+    ...(submissionCount > 0 ? [["Items Submitted", String(submissionCount)]] : []),
+    ...(paymentHistoryId ? [["Request ID", paymentHistoryId]] : []),
   ];
 
   return (

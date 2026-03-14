@@ -43,6 +43,11 @@ interface FinesPaymentFormPageProps {
   onBack?: () => void;
 }
 
+interface PublicSubmitResult {
+  paymentHistoryId: string;
+  submissionIds: string[];
+}
+
 export default function FinesPaymentFormPage({
   studentData,
   organizationData,
@@ -51,6 +56,7 @@ export default function FinesPaymentFormPage({
 }: FinesPaymentFormPageProps) {
   const isContextualFlow = Boolean(studentData && organizationData && selectedPaymentItems);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitResult, setSubmitResult] = useState<PublicSubmitResult | null>(null);
 
   const selectedTypes = useMemo(() => {
     if (!selectedPaymentItems) return [] as Array<"fees" | "fines">;
@@ -63,6 +69,7 @@ export default function FinesPaymentFormPage({
 
   const handleContextualSubmit = async (data: PaymentFormData, image: ImageData | null) => {
     setSubmitError(null);
+    setSubmitResult(null);
 
     // 1. Upload receipt image if provided
     let imageUrl: string | undefined;
@@ -106,6 +113,11 @@ export default function FinesPaymentFormPage({
       setSubmitError(msg);
       throw new Error(msg);
     }
+
+    setSubmitResult({
+      paymentHistoryId: result.paymentHistoryId ?? "",
+      submissionIds: Array.isArray(result.submissionIds) ? result.submissionIds : [],
+    });
   };
 
   const {
@@ -128,8 +140,21 @@ export default function FinesPaymentFormPage({
 
   const { register, formState: { errors }, watch } = form;
 
+  const handleSuccessReset = () => {
+    setSubmitError(null);
+    setSubmitResult(null);
+    handleReset();
+  };
+
   if (status === "success") {
-    return <SuccessScreen form={form.getValues()} onReset={handleReset} />;
+    return (
+      <SuccessScreen
+        form={form.getValues()}
+        onReset={handleSuccessReset}
+        paymentHistoryId={submitResult?.paymentHistoryId}
+        submissionCount={submitResult?.submissionIds.length ?? 0}
+      />
+    );
   }
 
   return (
