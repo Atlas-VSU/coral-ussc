@@ -58,6 +58,7 @@ type FeeRecord = {
   amount?: number;
   balance?: number;
   isArchived?: boolean;
+  status?: string;
 };
 
 type FineRecord = {
@@ -67,6 +68,7 @@ type FineRecord = {
   studentId?: string;
   accumulatedAmount?: number;
   balance?: number;
+  status?: string;
   metadata?: {
     isArchived?: boolean;
   };
@@ -81,6 +83,16 @@ const resolveOutstanding = (balance: unknown, fallbackAmount: unknown): number =
   const balanceValue = asNumber(balance);
   if (balanceValue > 0) return balanceValue;
   return asNumber(fallbackAmount);
+};
+
+const isPendingSubmissionStatus = (status: unknown): boolean => {
+  if (typeof status !== "string") return false;
+  return status === "pending" || status === "pending_verification";
+};
+
+const isBlockedByPaymentHistoryStatus = (status: unknown): boolean => {
+  if (typeof status !== "string") return false;
+  return status === "pending_verification" || status === "verified";
 };
 
 const DEBUG_PUBLIC_SUBMIT_PAYMENT = process.env.DEBUG_PUBLIC_SUBMIT_PAYMENT === "true";
@@ -158,6 +170,83 @@ export async function POST(request: NextRequest) {
     const feeDocs = await Promise.all(payload.fees.map((feeId) => adminDb.collection("fees").doc(feeId).get()));
     const fineDocs = await Promise.all(payload.fines.map((fineId) => adminDb.collection("fines").doc(fineId).get()));
 
+    const pendingFeeIds = feeDocs
+      .filter((doc) => doc.exists)
+      .map((doc) => ({ id: doc.id, ...doc.data() }) as FeeRecord)
+      .filter(
+        (fee) =>
+          fee.orgId === payload.orgId &&
+          fee.studentId === payload.studentId &&
+          isPendingSubmissionStatus(fee.status)
+      )
+      .map((fee) => fee.id);
+
+    const pendingFineIds = fineDocs
+      .filter((doc) => doc.exists)
+      .map((doc) => ({ id: doc.id, ...doc.data() }) as FineRecord)
+      .filter(
+        (fine) =>
+          fine.orgId === payload.orgId &&
+          fine.studentId === payload.studentId &&
+          isPendingSubmissionStatus(fine.status)
+      )
+      .map((fine) => fine.id);
+
+    const [lockedFeeIdsFromHistory, lockedFineIdsFromHistory] = await Promise.all([
+      Promise.all(
+        payload.fees.map(async (feeId) => {
+          const paymentHistorySnapshot = await adminDb
+            .collection("fees")
+            .doc(feeId)
+            .collection("paymentHistory")
+            .get();
+
+          const hasBlockingHistory = paymentHistorySnapshot.docs.some((paymentDoc) =>
+            isBlockedByPaymentHistoryStatus(paymentDoc.data()?.status)
+          );
+
+          return hasBlockingHistory ? feeId : null;
+        })
+      ),
+      Promise.all(
+        payload.fines.map(async (fineId) => {
+          const paymentHistorySnapshot = await adminDb
+            .collection("fines")
+            .doc(fineId)
+            .collection("paymentHistory")
+            .get();
+
+          const hasBlockingHistory = paymentHistorySnapshot.docs.some((paymentDoc) =>
+            isBlockedByPaymentHistoryStatus(paymentDoc.data()?.status)
+          );
+
+          return hasBlockingHistory ? fineId : null;
+        })
+      ),
+    ]);
+
+    const blockedFeeIds = Array.from(
+      new Set([...pendingFeeIds, ...lockedFeeIdsFromHistory.filter((id): id is string => Boolean(id))])
+    );
+    const blockedFineIds = Array.from(
+      new Set([...pendingFineIds, ...lockedFineIdsFromHistory.filter((id): id is string => Boolean(id))])
+    );
+
+    if (blockedFeeIds.length > 0 || blockedFineIds.length > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Some selected dues already have a pending/verified payment submission and cannot be paid again.",
+          blocked: {
+            fees: blockedFeeIds,
+            fines: blockedFineIds,
+          },
+        },
+        { status: 409 }
+      );
+    }
+
     const fees = feeDocs
       .filter((doc) => doc.exists)
       .map((doc) => ({ id: doc.id, ...doc.data() }) as FeeRecord)
@@ -166,6 +255,8 @@ export async function POST(request: NextRequest) {
           fee.orgId === payload.orgId &&
           fee.studentId === payload.studentId &&
           !fee.isArchived &&
+            !blockedFeeIds.includes(fee.id) &&
+          !isPendingSubmissionStatus(fee.status) &&
           resolveOutstanding(fee.balance, fee.amount) > 0
       );
 
@@ -177,6 +268,8 @@ export async function POST(request: NextRequest) {
           fine.orgId === payload.orgId &&
           fine.studentId === payload.studentId &&
           !fine.metadata?.isArchived &&
+            !blockedFineIds.includes(fine.id) &&
+          !isPendingSubmissionStatus(fine.status) &&
           resolveOutstanding(fine.balance, fine.accumulatedAmount) > 0
       );
 

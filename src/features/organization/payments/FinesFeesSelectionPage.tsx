@@ -25,6 +25,7 @@ interface FeeItem {
   description: string;
   amount: number;
   dueDate?: unknown;
+  latestRejectionReason?: string;
 }
 
 interface FineItem {
@@ -33,6 +34,7 @@ interface FineItem {
   amount: number;
   date?: unknown;
   reason: string;
+  latestRejectionReason?: string;
 }
 
 interface FinesFeesSelectionPageProps {
@@ -208,6 +210,11 @@ export default function FinesFeesSelectionPage({
                       {formatDisplayDate(fee.dueDate) && (
                         <p className="text-xs text-muted-foreground">Due: {formatDisplayDate(fee.dueDate)}</p>
                       )}
+                      {fee.latestRejectionReason && (
+                        <p className="text-xs text-red-600 dark:text-red-400">
+                          Last rejected reason: {fee.latestRejectionReason}
+                        </p>
+                      )}
                     </div>
                     <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 ml-4">
                       ₱{fee.amount.toFixed(2)}
@@ -284,6 +291,11 @@ export default function FinesFeesSelectionPage({
                         <p className="text-xs text-muted-foreground">Date: {formatDisplayDate(fine.date)}</p>
                       )}
                       <p className="text-xs text-muted-foreground italic">{fine.reason}</p>
+                      {fine.latestRejectionReason && (
+                        <p className="text-xs text-red-600 dark:text-red-400">
+                          Last rejected reason: {fine.latestRejectionReason}
+                        </p>
+                      )}
                     </div>
                     <span className="text-sm font-semibold text-red-600 dark:text-red-400 ml-4">
                       ₱{fine.amount.toFixed(2)}

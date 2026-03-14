@@ -27,6 +27,26 @@ type FineRecord = {
   };
 };
 
+type PaymentLogRecord = {
+  status?: string;
+  rejectionReason?: string | null;
+  createdAt?: unknown;
+  verifiedAt?: unknown;
+  metaData?: {
+    updatedAt?: unknown;
+  };
+};
+
+const isPendingSubmissionStatus = (status: unknown): boolean => {
+  if (typeof status !== "string") return false;
+  return status === "pending" || status === "pending_verification";
+};
+
+const isBlockedByPaymentHistoryStatus = (status: unknown): boolean => {
+  if (typeof status !== "string") return false;
+  return status === "pending_verification" || status === "verified";
+};
+
 const asNumber = (value: unknown): number => {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   return 0;
@@ -63,6 +83,55 @@ const toIsoDate = (value: unknown): string | undefined => {
   }
 
   return undefined;
+};
+
+const toMillis = (value: unknown): number => {
+  if (!value) return 0;
+
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? 0 : value.getTime();
+  }
+
+  if (typeof value === "string") {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+  }
+
+  if (typeof value === "object" && value && "toDate" in value) {
+    const maybeTimestamp = value as { toDate?: () => Date };
+    const date = maybeTimestamp.toDate?.();
+    return date && !Number.isNaN(date.getTime()) ? date.getTime() : 0;
+  }
+
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "_seconds" in value &&
+    typeof (value as { _seconds?: unknown })._seconds === "number"
+  ) {
+    return (value as { _seconds: number })._seconds * 1000;
+  }
+
+  return 0;
+};
+
+const getLatestRejectedReason = (logs: PaymentLogRecord[]): string | undefined => {
+  const rejectedLogs = logs
+    .filter((log) => log.status === "rejected" && typeof log.rejectionReason === "string")
+    .map((log) => ({
+      reason: (log.rejectionReason ?? "").trim(),
+      updatedAt: Math.max(
+        toMillis(log.verifiedAt),
+        toMillis(log.metaData?.updatedAt),
+        toMillis(log.createdAt)
+      ),
+    }))
+    .filter((entry) => entry.reason.length > 0)
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+
+  return rejectedLogs[0]?.reason;
 };
 
 const buildOrgDisplay = (orgId: string, data: Record<string, unknown> | undefined) => {
@@ -107,8 +176,21 @@ export async function GET(request: NextRequest) {
         orgId: string;
         feeAmount: number;
         fineAmount: number;
-        fees: Array<{ id: string; description: string; amount: number; dueDate?: string }>;
-        fines: Array<{ id: string; description: string; amount: number; date?: string; reason: string }>;
+        fees: Array<{
+          id: string;
+          description: string;
+          amount: number;
+          dueDate?: string;
+          latestRejectionReason?: string;
+        }>;
+        fines: Array<{
+          id: string;
+          description: string;
+          amount: number;
+          date?: string;
+          reason: string;
+          latestRejectionReason?: string;
+        }>;
       }
     >();
 
@@ -116,6 +198,20 @@ export async function GET(request: NextRequest) {
       const fee = { id: doc.id, ...doc.data() } as FeeRecord;
       if (!fee.orgId) continue;
       if (fee.isArchived) continue;
+      if (isPendingSubmissionStatus(fee.status)) continue;
+
+      const feePaymentHistorySnapshot = await adminDb
+        .collection("fees")
+        .doc(fee.id)
+        .collection("paymentHistory")
+        .get();
+      const feePaymentLogs = feePaymentHistorySnapshot.docs.map(
+        (paymentDoc) => paymentDoc.data() as PaymentLogRecord
+      );
+
+      if (feePaymentLogs.some((log) => isBlockedByPaymentHistoryStatus(log.status))) continue;
+
+      const latestRejectionReason = getLatestRejectedReason(feePaymentLogs);
 
       const outstanding = asNumber(fee.balance) > 0 ? asNumber(fee.balance) : asNumber(fee.amount);
       if (outstanding <= 0) continue;
@@ -134,6 +230,7 @@ export async function GET(request: NextRequest) {
         description: fee.title || fee.feeType || "Outstanding Fee",
         amount: outstanding,
         dueDate: toIsoDate(fee.dueDate),
+        latestRejectionReason,
       });
 
       grouped.set(fee.orgId, existing);
@@ -143,6 +240,20 @@ export async function GET(request: NextRequest) {
       const fine = { id: doc.id, ...doc.data() } as FineRecord;
       if (!fine.orgId) continue;
       if (fine.metadata?.isArchived) continue;
+      if (isPendingSubmissionStatus(fine.status)) continue;
+
+      const finePaymentHistorySnapshot = await adminDb
+        .collection("fines")
+        .doc(fine.id)
+        .collection("paymentHistory")
+        .get();
+      const finePaymentLogs = finePaymentHistorySnapshot.docs.map(
+        (paymentDoc) => paymentDoc.data() as PaymentLogRecord
+      );
+
+      if (finePaymentLogs.some((log) => isBlockedByPaymentHistoryStatus(log.status))) continue;
+
+      const latestRejectionReason = getLatestRejectedReason(finePaymentLogs);
 
       const outstanding =
         asNumber(fine.balance) > 0 ? asNumber(fine.balance) : asNumber(fine.accumulatedAmount);
@@ -163,6 +274,7 @@ export async function GET(request: NextRequest) {
         amount: outstanding,
         date: toIsoDate(fine.dueDate) || toIsoDate(fine.lastFineIssuedAt),
         reason: fine.reason || "Fine/penalty charge",
+        latestRejectionReason,
       });
 
       grouped.set(fine.orgId, existing);

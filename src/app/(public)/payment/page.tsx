@@ -26,6 +26,7 @@ interface FeeItem {
   description: string;
   amount: number;
   dueDate?: string;
+  latestRejectionReason?: string;
 }
 
 interface FineItem {
@@ -34,6 +35,7 @@ interface FineItem {
   amount: number;
   date?: string;
   reason: string;
+  latestRejectionReason?: string;
 }
 
 interface OrganizationDueData extends OrganizationData {
