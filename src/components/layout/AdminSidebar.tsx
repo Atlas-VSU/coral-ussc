@@ -44,8 +44,8 @@ const navItems = [
   { label: "Events",    href: "/org-events",    icon: CalendarDays },
   { label: "Fees",      href: "/org-fees",      icon: Banknote },
   { label: "Fines",     href: "/org-fines",     icon: AlertTriangle },
-  // { label: "Payments",  href: "/org-payments",  icon: CreditCard },
-  // { label: "Clearance", href: "/org-clearance", icon: ShieldCheck },
+  { label: "Payments",  href: "/org-payments",  icon: CreditCard },
+  { label: "Clearance", href: "/org-clearance", icon: ShieldCheck },
   // { label: "Analytics", href: "/org-reports",   icon: BarChart3 },
 ]
 
@@ -207,7 +207,6 @@ export function AdminSidebar({ user, className }: { user?: User; className?: str
   // Get current page label for mobile header
   const allItems = navItems
   const currentItem = allItems.find(i => isActiveHref(i.href, pathname))
-
   return (
     <>
       {/* Desktop sidebar */}
