@@ -171,8 +171,10 @@ export async function POST(request: NextRequest) {
     const paymentHistoryRef = adminDb.collection("paymentHistory").doc();
     const paymentHistoryItemsRef = paymentHistoryRef.collection("items");
     const proofCollection = adminDb.collection("proofOfPayments");
+    const clearanceRef = adminDb.collection("clearanceStatus").doc(studentDoc.id);
     const batch = adminDb.batch();
     const submissionIds: string[] = [];
+    const clearanceUpdates: Record<string, boolean> = {};
 
     const feeTotal = fees.reduce((sum, fee) => sum + resolveOutstanding(fee.balance, fee.amount), 0);
     const fineTotal = fines.reduce(
@@ -213,6 +215,8 @@ export async function POST(request: NextRequest) {
     for (const fee of fees) {
       const amount = resolveOutstanding(fee.balance, fee.amount);
       const paymentItemRef = paymentHistoryItemsRef.doc();
+      // Per-fee subcollection log — required by verifyPaymentHistory / rejectPaymentHistory
+      const feeLogRef = adminDb.collection("fees").doc(fee.id).collection("paymentHistory").doc();
       const docRef = proofCollection.doc();
       submissionIds.push(docRef.id);
 
@@ -241,6 +245,32 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // Write the per-fee payment log so approval/rejection flows can find it
+      batch.set(feeLogRef, {
+        paymentNumber: now.getTime(),
+        amount,
+        paymentMethod: payload.paymentMethod,
+        paymentProofId: docRef.id,
+        gcashReference: payload.referenceNumber ?? null,
+        senderNumber: payload.senderNumber ?? "",
+        imageUrl: payload.imageUrl ?? "",
+        status: "pending_verification",
+        paidAt: now,
+        verifiedBy: null,
+        verifiedByName: null,
+        verifiedAt: null,
+        rejectionReason: null,
+        notes: payload.notes ?? "",
+        metaData: {
+          source: "public_payment_portal",
+          batchId,
+          submittedBy: "student",
+          parentPaymentHistoryId: paymentHistoryRef.id,
+          paymentHistoryItemId: paymentItemRef.id,
+        },
+        createdAt: now,
+      });
+
       batch.set(docRef, {
         orgId: payload.orgId,
         userId: fee.userId ?? studentDoc.id,
@@ -257,7 +287,7 @@ export async function POST(request: NextRequest) {
         submittedAt: now,
         rejectionReason: "",
         notes: payload.notes ?? "",
-        paymentHistoryId: null,
+        paymentHistoryId: feeLogRef.id,
         metaData: {
           source: "public_payment_portal",
           batchId,
@@ -267,11 +297,15 @@ export async function POST(request: NextRequest) {
           createdAt: now,
         },
       });
+
+      clearanceUpdates[`blockingItems.${fee.id}.pendingReview`] = true;
     }
 
     for (const fine of fines) {
       const amount = resolveOutstanding(fine.balance, fine.accumulatedAmount);
       const paymentItemRef = paymentHistoryItemsRef.doc();
+      // Per-fine subcollection log — required by verifyPaymentHistory / rejectPaymentHistory
+      const fineLogRef = adminDb.collection("fines").doc(fine.id).collection("paymentHistory").doc();
       const docRef = proofCollection.doc();
       submissionIds.push(docRef.id);
 
@@ -300,6 +334,32 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // Write the per-fine payment log so approval/rejection flows can find it
+      batch.set(fineLogRef, {
+        paymentNumber: now.getTime(),
+        amount,
+        paymentMethod: payload.paymentMethod,
+        paymentProofId: docRef.id,
+        gcashReference: payload.referenceNumber ?? null,
+        senderNumber: payload.senderNumber ?? "",
+        imageUrl: payload.imageUrl ?? "",
+        status: "pending_verification",
+        paidAt: now,
+        verifiedBy: null,
+        verifiedByName: null,
+        verifiedAt: null,
+        rejectionReason: null,
+        notes: payload.notes ?? "",
+        metaData: {
+          source: "public_payment_portal",
+          batchId,
+          submittedBy: "student",
+          parentPaymentHistoryId: paymentHistoryRef.id,
+          paymentHistoryItemId: paymentItemRef.id,
+        },
+        createdAt: now,
+      });
+
       batch.set(docRef, {
         orgId: payload.orgId,
         userId: fine.userId ?? studentDoc.id,
@@ -316,7 +376,7 @@ export async function POST(request: NextRequest) {
         submittedAt: now,
         rejectionReason: "",
         notes: payload.notes ?? "",
-        paymentHistoryId: null,
+        paymentHistoryId: fineLogRef.id,
         metaData: {
           source: "public_payment_portal",
           batchId,
@@ -326,6 +386,12 @@ export async function POST(request: NextRequest) {
           createdAt: now,
         },
       });
+
+      clearanceUpdates[`blockingItems.${fine.id}.pendingReview`] = true;
+    }
+
+    if (Object.keys(clearanceUpdates).length > 0) {
+      batch.update(clearanceRef, clearanceUpdates);
     }
 
     await batch.commit();
