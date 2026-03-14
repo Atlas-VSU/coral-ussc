@@ -35,7 +35,11 @@ export async function POST(req: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    const bucket = adminStorage.bucket();
+    const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+    if (!bucketName) {
+      throw new Error("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET is not configured.");
+    }
+    const bucket = adminStorage.bucket(bucketName);
     const fileRef = bucket.file(destination);
 
     await fileRef.save(buffer, {
