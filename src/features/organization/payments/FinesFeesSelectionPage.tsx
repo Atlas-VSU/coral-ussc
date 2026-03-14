@@ -31,13 +31,15 @@ interface FineItem {
   id: string;
   description: string;
   amount: number;
-  date: string;
+  date?: string;
   reason: string;
 }
 
 interface FinesFeesSelectionPageProps {
   studentData: StudentData;
   organizationData: OrganizationData;
+  fees: FeeItem[];
+  fines: FineItem[];
   onBack: () => void;
   onNext: (selectedItems: {
     fees: string[];
@@ -51,50 +53,20 @@ interface FinesFeesSelectionPageProps {
 export default function FinesFeesSelectionPage({
   studentData,
   organizationData,
+  fees,
+  fines,
   onBack,
   onNext,
 }: FinesFeesSelectionPageProps) {
   const [payFees, setPayFees] = useState(false);
   const [payFines, setPayFines] = useState(false);
 
-  // Mock data - replace with actual API call based on organizationData.id
-  const fees: FeeItem[] = [
-    {
-      id: "fee-1",
-      description: "Membership Fee - Academic Year 2025-2026",
-      amount: 500.00,
-      dueDate: "March 31, 2026",
-    },
-    {
-      id: "fee-2",
-      description: "ID Card Fee",
-      amount: 150.00,
-    },
-  ];
-
-  const fines: FineItem[] = [
-    {
-      id: "fine-1",
-      description: "Late Event Registration",
-      amount: 200.00,
-      date: "February 15, 2026",
-      reason: "Failed to register for the Annual Tech Summit by the deadline",
-    },
-    {
-      id: "fine-2",
-      description: "Uniform Violation",
-      amount: 150.00,
-      date: "February 28, 2026",
-      reason: "Attended meeting without proper uniform",
-    },
-    {
-      id: "fine-3",
-      description: "Missed Mandatory Meeting",
-      amount: 250.00,
-      date: "March 5, 2026",
-      reason: "Absent from mandatory general assembly without valid excuse",
-    },
-  ];
+  const formatDisplayDate = (value?: string) => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleDateString();
+  };
 
   // Calculate totals
   const feesTotal = useMemo(() => {
@@ -291,7 +263,9 @@ export default function FinesFeesSelectionPage({
                   >
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-medium">{fine.description}</p>
-                      <p className="text-xs text-muted-foreground">Date: {fine.date}</p>
+                      {formatDisplayDate(fine.date) && (
+                        <p className="text-xs text-muted-foreground">Date: {formatDisplayDate(fine.date)}</p>
+                      )}
                       <p className="text-xs text-muted-foreground italic">{fine.reason}</p>
                     </div>
                     <span className="text-sm font-semibold text-red-600 dark:text-red-400 ml-4">

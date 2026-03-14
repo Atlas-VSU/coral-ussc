@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Building2, ChevronRight } from "lucide-react";
+import { ArrowLeft, Building2, ChevronRight, Loader2 } from "lucide-react";
 
 interface StudentData {
   studentId: string;
@@ -22,41 +22,22 @@ interface Organization {
 
 interface OrganizationSelectionPageProps {
   studentData: StudentData;
+  organizations: Organization[];
+  isLoading?: boolean;
+  error?: string | null;
   onBack: () => void;
   onNext: (organizationId: string) => void;
 }
 
 export default function OrganizationSelectionPage({
   studentData,
+  organizations,
+  isLoading = false,
+  error = null,
   onBack,
   onNext,
 }: OrganizationSelectionPageProps) {
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
-
-  // Mock data for organizations - replace with actual API call
-  const organizations: Organization[] = [
-    {
-      id: "org-1",
-      name: "University Student Supreme Council",
-      acronym: "USSC",
-      outstandingAmount: 1250.00,
-      description: "Central student government organization",
-    },
-    {
-      id: "org-2",
-      name: "Computer Science Society",
-      acronym: "CSS",
-      outstandingAmount: 500.00,
-      description: "Department organization for CS students",
-    },
-    {
-      id: "org-3",
-      name: "Engineering Students Organization",
-      acronym: "ESO",
-      outstandingAmount: 0,
-      description: "College-wide engineering organization",
-    },
-  ];
 
   const handleOrgSelect = (orgId: string) => {
     setSelectedOrg(orgId);
@@ -113,61 +94,73 @@ export default function OrganizationSelectionPage({
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
-            <div className="space-y-3">
-              {organizations.map((org) => (
-                <button
-                  key={org.id}
-                  onClick={() => handleOrgSelect(org.id)}
-                  className={`w-full text-left p-4 rounded-lg border-2 transition-all hover:border-primary/50 hover:bg-accent/50 ${
-                    selectedOrg === org.id
-                      ? "border-primary bg-accent"
-                      : "border-border bg-card"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3 flex-1">
-                      <div className="p-2 rounded-lg bg-primary/10 mt-1">
-                        <Building2 className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-base">
-                            {org.name}
-                          </h3>
-                          <Badge variant="secondary" className="text-xs">
-                            {org.acronym}
-                          </Badge>
+            {isLoading ? (
+              <div className="py-10 text-center text-muted-foreground text-sm flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading organizations with outstanding dues...
+              </div>
+            ) : organizations.length === 0 ? (
+              <div className="py-10 text-center space-y-2">
+                <p className="text-sm text-muted-foreground">No outstanding dues found for this student.</p>
+                {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {organizations.map((org) => (
+                  <button
+                    key={org.id}
+                    onClick={() => handleOrgSelect(org.id)}
+                    className={`w-full text-left p-4 rounded-lg border-2 transition-all hover:border-primary/50 hover:bg-accent/50 ${
+                      selectedOrg === org.id
+                        ? "border-primary bg-accent"
+                        : "border-border bg-card"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className="p-2 rounded-lg bg-primary/10 mt-1">
+                          <Building2 className="h-5 w-5 text-primary" />
                         </div>
-                        {org.description && (
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {org.description}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">
-                            Outstanding Balance:
-                          </span>
-                          <span
-                            className={`font-semibold ${
-                              org.outstandingAmount > 0
-                                ? "text-destructive"
-                                : "text-green-600 dark:text-green-400"
-                            }`}
-                          >
-                            ₱{org.outstandingAmount.toFixed(2)}
-                          </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-base">
+                              {org.name}
+                            </h3>
+                            <Badge variant="secondary" className="text-xs">
+                              {org.acronym}
+                            </Badge>
+                          </div>
+                          {org.description && (
+                            <p className="text-sm text-muted-foreground mb-2">
+                              {org.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">
+                              Outstanding Balance:
+                            </span>
+                            <span
+                              className={`font-semibold ${
+                                org.outstandingAmount > 0
+                                  ? "text-destructive"
+                                  : "text-green-600 dark:text-green-400"
+                              }`}
+                            >
+                              ₱{org.outstandingAmount.toFixed(2)}
+                            </span>
+                          </div>
                         </div>
                       </div>
+                      <ChevronRight
+                        className={`h-5 w-5 mt-1 transition-transform ${
+                          selectedOrg === org.id ? "text-primary" : "text-muted-foreground"
+                        }`}
+                      />
                     </div>
-                    <ChevronRight
-                      className={`h-5 w-5 mt-1 transition-transform ${
-                        selectedOrg === org.id ? "text-primary" : "text-muted-foreground"
-                      }`}
-                    />
-                  </div>
-                </button>
-              ))}
-            </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -175,7 +168,7 @@ export default function OrganizationSelectionPage({
         <div className="flex justify-end">
           <Button
             onClick={handleContinue}
-            disabled={!selectedOrg}
+            disabled={!selectedOrg || isLoading || organizations.length === 0}
             size="lg"
             className="gap-2"
           >
