@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -37,7 +37,12 @@ interface StudentData {
   program: string;
 }
 
-const PROGRAM_OPTIONS = [
+interface ProgramOption {
+  value: string;
+  label: string;
+}
+
+const FALLBACK_PROGRAM_OPTIONS: ProgramOption[] = [
   { value: "bscs", label: "Bachelor of Science in Computer Science" },
   { value: "bsit", label: "Bachelor of Science in Information Technology" },
   { value: "bsce", label: "Bachelor of Science in Civil Engineering" },
@@ -59,8 +64,11 @@ interface StudentVerificationPageProps {
 export default function StudentVerificationPage({ onVerified }: StudentVerificationPageProps) {
   const [showModal, setShowModal] = useState(false);
   const [studentData, setStudentData] = useState<StudentData | null>(null);
+  const [programOptions, setProgramOptions] = useState<ProgramOption[]>(FALLBACK_PROGRAM_OPTIONS);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isLoadingPrograms, setIsLoadingPrograms] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [programLoadError, setProgramLoadError] = useState<string | null>(null);
 
   const {
     register,
@@ -79,13 +87,68 @@ export default function StudentVerificationPage({ onVerified }: StudentVerificat
 
   const programValue = watch("program");
 
+  useEffect(() => {
+    const loadPrograms = async () => {
+      setIsLoadingPrograms(true);
+      setProgramLoadError(null);
+
+      try {
+        const response = await fetch("/api/public/programs");
+        const result = await response.json();
+
+        if (!response.ok || !result.success || !Array.isArray(result.programs)) {
+          throw new Error(result.error || "Failed to fetch programs.");
+        }
+
+        const mappedPrograms = result.programs
+          .map((program: { id: string; name?: string; acronym?: string; shortName?: string; code?: string }) => ({
+            value: program.id,
+            label:
+              program.name ||
+              program.shortName ||
+              program.acronym ||
+              program.code ||
+              program.id,
+          }))
+          .sort((a: ProgramOption, b: ProgramOption) => a.label.localeCompare(b.label));
+
+        if (mappedPrograms.length > 0) {
+          setProgramOptions(mappedPrograms);
+        }
+      } catch (error) {
+        console.error("Error loading programs:", error);
+        setProgramLoadError("Unable to load live programs right now. Using fallback options for testing.");
+        setProgramOptions(FALLBACK_PROGRAM_OPTIONS);
+      } finally {
+        setIsLoadingPrograms(false);
+      }
+    };
+
+    void loadPrograms();
+  }, []);
+
   const verifyStudent = async (data: VerificationFormData): Promise<StudentData> => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    const response = await fetch("/api/public/verify-student", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        studentId: data.studentId.trim(),
+        program: data.program,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success || !result.student) {
+      throw new Error(result.error || "Unable to verify student.");
+    }
 
     return {
-      name: "Juan Dela Cruz",
-      studentId: data.studentId.trim(),
-      program: PROGRAM_NAMES[data.program] || data.program,
+      name: result.student.name,
+      studentId: result.student.studentId,
+      program: result.student.program?.name || PROGRAM_NAMES[data.program] || data.program,
     };
   };
 
@@ -97,8 +160,12 @@ export default function StudentVerificationPage({ onVerified }: StudentVerificat
       const verifiedStudent = await verifyStudent(data);
       setStudentData(verifiedStudent);
       setShowModal(true);
-    } catch {
-      setSubmitError("Unable to verify your student details right now. Please try again.");
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "Unable to verify your student details right now. Please try again."
+      );
     } finally {
       setIsVerifying(false);
     }
@@ -154,6 +221,7 @@ export default function StudentVerificationPage({ onVerified }: StudentVerificat
                 Program <span className="text-red-500">*</span>
               </Label>
               <Select
+                disabled={isLoadingPrograms}
                 value={programValue}
                 onValueChange={(value) => {
                   setValue("program", value, { shouldValidate: true });
@@ -161,16 +229,19 @@ export default function StudentVerificationPage({ onVerified }: StudentVerificat
                 }}
               >
                 <SelectTrigger className={`w-full ${errors.program ? "border-red-500" : ""}`}>
-                  <SelectValue placeholder="Select your program" />
+                  <SelectValue placeholder={isLoadingPrograms ? "Loading programs..." : "Select your program"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {PROGRAM_OPTIONS.map((program) => (
+                  {programOptions.map((program) => (
                     <SelectItem key={program.value} value={program.value}>
                       {program.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {programLoadError && !errors.program && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">{programLoadError}</p>
+              )}
               {errors.program && (
                 <p className="text-xs text-red-500 flex items-center gap-1">
                   <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
