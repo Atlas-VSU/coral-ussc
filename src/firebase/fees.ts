@@ -303,7 +303,8 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
     adminId: string,
     adminName: string,
     overallPaymentType: PaymentType, // "fee", "fin", or "bulk payment"
-    ref?: string
+    ref?: string,
+    receipt?: string
 ) => {
     try {
         if (isNaN(totalAmount) || totalAmount <= 0) {
@@ -436,7 +437,7 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                 rejectionReason: "",
                 notes: "Bulk manual payment recorded by admin",
                 metadata: { items },
-                receiptCode: generateReceiptId(),
+                receiptCode: receipt,
             });
 
             const clearanceUpdates: Record<string, any> = {};
