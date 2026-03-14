@@ -27,6 +27,7 @@ export interface BlockingItem {
   referenceId: string; 
   title: string; 
   balance: number;
+  parentFineId?: string;
   status: "unpaid" | "paid";
   paymentHistory: PaymentLog[];
   pendingReview: boolean;

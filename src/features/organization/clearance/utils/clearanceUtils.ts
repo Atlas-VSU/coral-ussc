@@ -1,7 +1,7 @@
 import { PaymentType } from "@/constants/types"
 import type { BlockingItem } from "../types" // Adjust path to your actual types
 
-export type ItemStatus = "cleared" | "pending" | "not-cleared"
+export type ItemStatus = "cleared" | "pending" | "not_cleared"
 
 export interface DisplayItem {
   label: string
@@ -29,7 +29,7 @@ export function buildRequirementGroups(blockingItems: Record<string, BlockingIte
       ? "cleared" 
       : item.pendingReview 
         ? "pending" 
-        : "not-cleared"
+        : "not_cleared"
         
     groups[groupName].push({
       label: item.title,
@@ -42,12 +42,12 @@ export function buildRequirementGroups(blockingItems: Record<string, BlockingIte
 
   return Object.entries(groups).map(([name, items]) => {
     const allCleared = items.every(i => i.status === "cleared")
-    const anyNotCleared = items.some(i => i.status === "not-cleared")
+    const anyNotCleared = items.some(i => i.status === "not_cleared")
     const anyPending = items.some(i => i.status === "pending")
     const groupStatus: ItemStatus = allCleared 
       ? "cleared" 
       : anyNotCleared 
-        ? "not-cleared" 
+        ? "not_cleared" 
         : anyPending 
           ? "pending" 
           : "cleared"
