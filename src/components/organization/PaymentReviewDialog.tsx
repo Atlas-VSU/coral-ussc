@@ -202,9 +202,27 @@ export function PaymentReviewDialog({
               {renderLineItems()}
 
               {/* Receipt placeholder */}
-              {data.paymentMethod !== "cash" &&(<div className="flex h-32 items-center justify-center rounded-md border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
-                {data.receiptContent ?? "Receipt Image Preview"}
-              </div>)}
+             {data.paymentMethod !== "cash" && data.receiptContent && (
+                <div className="group relative h-48 w-full rounded-md border bg-muted/30 overflow-hidden">
+                  <img
+                    src={data.receiptContent}
+                    alt="Receipt"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  
+                  {/* Overlay on Hover */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                    <a 
+                      href={data.receiptContent} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="text-xs font-medium text-white underline"
+                    >
+                      View Full Receipt
+                    </a>
+                  </div>
+                </div>
+              )}
 
               <Separator />
 
