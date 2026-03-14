@@ -179,7 +179,8 @@ export const approvePaymentClearanceUpdate = async (
   itemsToUpdate: { refId: string, type: PaymentType | string }[], 
   adminId: string,
   adminName: string,
-  studentData?: { firstName: string; lastName: string; studentId: string; orgId: string }
+  studentData?: { firstName: string; lastName: string; studentId: string; orgId: string },
+  receiptCode?: string
 ) => {
   for (const item of itemsToUpdate) {
     if (item.type === PaymentType.FEES) {
@@ -211,7 +212,8 @@ export const approvePaymentClearanceUpdate = async (
         submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
         metadata: {
          items:[]
-       }
+        },
+        receiptCode: receiptCode || "",
       };
 
       await verifyPaymentHistory(logId, proof);
@@ -244,7 +246,8 @@ export const approvePaymentClearanceUpdate = async (
         submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
         metadata: {
          items:[]
-       }
+        },
+        receiptCode: receiptCode || "",
       };
       
       await verifyPaymentHistory(logId, proof);
@@ -341,7 +344,8 @@ export const rejectPaymentClearanceUpdate = async (
    method: PaymentMethod,
    adminId: string,
    adminName: string,
-   overallPaymentType?: string | PaymentType
+   overallPaymentType?: string | PaymentType,
+  receiptCode?: string,
  ) => {
   if(!overallPaymentType) {
     throw new Error("Overall payment type is required");
@@ -357,7 +361,9 @@ export const rejectPaymentClearanceUpdate = async (
       method as any,
       adminId,
       adminName,
-      overallPaymentType as PaymentType
+      overallPaymentType as PaymentType,
+      undefined,
+      receiptCode
     );
   
   // else if(overallPaymentType === PaymentType.FINES) {
