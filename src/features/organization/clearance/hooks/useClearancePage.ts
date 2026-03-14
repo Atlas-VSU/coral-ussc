@@ -109,7 +109,7 @@ export function useClearancePage(orgId: string | undefined) {
         studentId: logPaymentTarget.studentId,
         items: selection.selectedItems.map(i => ({
           name: i.label,
-          type: i.type === PaymentType.FEES ? "fee" : "fine",
+          type: i.type === PaymentType.FEES ? "fees" : "fines",
           amount: i.amount,
         })),
         total: selection.total,
