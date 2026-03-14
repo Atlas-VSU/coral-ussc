@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid"
 
 export const generateReceiptId = () => {
-  const receiptId = `RCP-${nanoid(5)}-${Date.now().toLocaleString().slice(0,4).replace(/,/g, "")}`;
+  const timestamp = Date.now().toString();
+  const receiptId = `RCP-${nanoid(5)}-${timestamp.slice(-4)}`;
   return receiptId;
 }
