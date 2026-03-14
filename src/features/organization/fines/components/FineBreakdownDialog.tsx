@@ -115,7 +115,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                 </Button>
                 )}
             </div>
-                {fineItems.length > 0 && paymentLogs.length >0 && (
+                {fineItems.length > 0 && paymentLogs.length > 0 && (
                   <p className="text-xs text-muted-foreground">
                     The submission covers{" "}
                     <span className="font-medium text-foreground">
@@ -425,7 +425,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                 )}
 
                 {/* Manual payment action */}
-                {fines && fines.balance > 0 && paymentLogs.length === 0 && (
+                {fines && fines.balance > 0 && (
                     <div className="flex justify-end mt-2">
                     <Button
                         size="sm"
