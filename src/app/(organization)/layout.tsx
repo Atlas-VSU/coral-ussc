@@ -121,11 +121,6 @@ const organizationData = {
       href: "/org-fines",
     },
     {
-      label: "Fees",
-      icon: "fee",
-      href: "/org-fees",
-    },
-    {
       label: "Payments",
       icon: "payments",
       href: "/org-payments",

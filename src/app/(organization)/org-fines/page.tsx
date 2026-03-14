@@ -192,7 +192,7 @@ export default function FinesPage() {
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="partial">Partial</SelectItem>
                     <SelectItem value="paid">Paid</SelectItem>
-                    <SelectItem value="waived">Waived</SelectItem>
+                    {/* <SelectItem value="waived">Waived</SelectItem> */}
                   </SelectContent>
                 </Select>
                 {/* <Select value={filterAppeal} onValueChange={(v: string) => { setFilterAppeal(v); setCurrentPage(1) }}>
