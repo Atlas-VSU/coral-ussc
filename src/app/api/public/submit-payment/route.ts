@@ -168,14 +168,78 @@ export async function POST(request: NextRequest) {
 
     const now = new Date();
     const batchId = `${payload.studentId.replace(/[^0-9]/g, "")}-${now.getTime()}`;
+    const paymentHistoryRef = adminDb.collection("paymentHistory").doc();
+    const paymentHistoryItemsRef = paymentHistoryRef.collection("items");
     const proofCollection = adminDb.collection("proofOfPayments");
     const batch = adminDb.batch();
     const submissionIds: string[] = [];
 
+    const feeTotal = fees.reduce((sum, fee) => sum + resolveOutstanding(fee.balance, fee.amount), 0);
+    const fineTotal = fines.reduce(
+      (sum, fine) => sum + resolveOutstanding(fine.balance, fine.accumulatedAmount),
+      0
+    );
+    const totalAmount = feeTotal + fineTotal;
+
+    batch.set(paymentHistoryRef, {
+      id: paymentHistoryRef.id,
+      orgId: payload.orgId,
+      userId: studentDoc.id,
+      userName: payload.userName,
+      studentId: payload.studentId,
+      paymentType: "bulk",
+      paymentMethod: payload.paymentMethod,
+      amount: totalAmount,
+      status: "pending",
+      paymentProofId: null,
+      paymentNumber: now.getTime(),
+      gcashReference: payload.referenceNumber ?? null,
+      paidAt: now,
+      verifiedBy: null,
+      verifiedByName: null,
+      verifiedAt: null,
+      rejectionReason: null,
+      notes: payload.notes ?? "Public payment portal submission.",
+      metadata: {
+        source: "public_payment_portal",
+        batchId,
+        submittedBy: "student",
+        feeCount: fees.length,
+        fineCount: fines.length,
+      },
+      createdAt: now,
+    });
+
     for (const fee of fees) {
       const amount = resolveOutstanding(fee.balance, fee.amount);
+      const paymentItemRef = paymentHistoryItemsRef.doc();
       const docRef = proofCollection.doc();
       submissionIds.push(docRef.id);
+
+      batch.set(paymentItemRef, {
+        id: paymentItemRef.id,
+        parentPaymentHistoryId: paymentHistoryRef.id,
+        orgId: payload.orgId,
+        userId: fee.userId ?? studentDoc.id,
+        userName: payload.userName,
+        studentId: payload.studentId,
+        paymentType: "fees",
+        referenceId: fee.id,
+        amount,
+        status: "pending",
+        paidAt: now,
+        verifiedBy: null,
+        verifiedByName: null,
+        verifiedAt: null,
+        rejectionReason: null,
+        notes: payload.notes ?? "",
+        createdAt: now,
+        metadata: {
+          source: "public_payment_portal",
+          batchId,
+          submittedBy: "student",
+        },
+      });
 
       batch.set(docRef, {
         orgId: payload.orgId,
@@ -198,6 +262,8 @@ export async function POST(request: NextRequest) {
           source: "public_payment_portal",
           batchId,
           submittedBy: "student",
+          parentPaymentHistoryId: paymentHistoryRef.id,
+          paymentHistoryItemId: paymentItemRef.id,
           createdAt: now,
         },
       });
@@ -205,8 +271,34 @@ export async function POST(request: NextRequest) {
 
     for (const fine of fines) {
       const amount = resolveOutstanding(fine.balance, fine.accumulatedAmount);
+      const paymentItemRef = paymentHistoryItemsRef.doc();
       const docRef = proofCollection.doc();
       submissionIds.push(docRef.id);
+
+      batch.set(paymentItemRef, {
+        id: paymentItemRef.id,
+        parentPaymentHistoryId: paymentHistoryRef.id,
+        orgId: payload.orgId,
+        userId: fine.userId ?? studentDoc.id,
+        userName: payload.userName,
+        studentId: payload.studentId,
+        paymentType: "fines",
+        referenceId: fine.id,
+        amount,
+        status: "pending",
+        paidAt: now,
+        verifiedBy: null,
+        verifiedByName: null,
+        verifiedAt: null,
+        rejectionReason: null,
+        notes: payload.notes ?? "",
+        createdAt: now,
+        metadata: {
+          source: "public_payment_portal",
+          batchId,
+          submittedBy: "student",
+        },
+      });
 
       batch.set(docRef, {
         orgId: payload.orgId,
@@ -229,6 +321,8 @@ export async function POST(request: NextRequest) {
           source: "public_payment_portal",
           batchId,
           submittedBy: "student",
+          parentPaymentHistoryId: paymentHistoryRef.id,
+          paymentHistoryItemId: paymentItemRef.id,
           createdAt: now,
         },
       });
@@ -236,22 +330,17 @@ export async function POST(request: NextRequest) {
 
     await batch.commit();
 
-    const feeTotal = fees.reduce((sum, fee) => sum + resolveOutstanding(fee.balance, fee.amount), 0);
-    const fineTotal = fines.reduce(
-      (sum, fine) => sum + resolveOutstanding(fine.balance, fine.accumulatedAmount),
-      0
-    );
-
     return NextResponse.json({
       success: true,
       message: "Payment submissions created successfully.",
+      paymentHistoryId: paymentHistoryRef.id,
       submissionIds,
       summary: {
         feeCount: fees.length,
         fineCount: fines.length,
         feeAmount: feeTotal,
         fineAmount: fineTotal,
-        totalAmount: feeTotal + fineTotal,
+        totalAmount,
       },
     });
   } catch (error) {
