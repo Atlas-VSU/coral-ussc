@@ -26,6 +26,8 @@ interface FeeItem {
   amount: number;
   dueDate?: unknown;
   latestRejectionReason?: string;
+  isPayable?: boolean;
+  paymentState?: "unpaid" | "pending" | "rejected";
 }
 
 interface FineItem {
@@ -35,6 +37,8 @@ interface FineItem {
   date?: unknown;
   reason: string;
   latestRejectionReason?: string;
+  isPayable?: boolean;
+  paymentState?: "unpaid" | "pending" | "rejected";
 }
 
 interface FinesFeesSelectionPageProps {
@@ -96,21 +100,34 @@ export default function FinesFeesSelectionPage({
     return fines.reduce((sum, fine) => sum + fine.amount, 0);
   }, [fines]);
 
-  const grandTotal = (payFees ? feesTotal : 0) + (payFines ? finesTotal : 0);
+  const payableFees = useMemo(() => fees.filter((fee) => fee.isPayable !== false), [fees]);
+  const payableFines = useMemo(() => fines.filter((fine) => fine.isPayable !== false), [fines]);
+
+  const feesPayableTotal = useMemo(() => {
+    return payableFees.reduce((sum, fee) => sum + fee.amount, 0);
+  }, [payableFees]);
+
+  const finesPayableTotal = useMemo(() => {
+    return payableFines.reduce((sum, fine) => sum + fine.amount, 0);
+  }, [payableFines]);
+
+  const grandTotal = (payFees ? feesPayableTotal : 0) + (payFines ? finesPayableTotal : 0);
 
   const handleContinue = () => {
     if (payFees || payFines) {
       onNext({
-        fees: payFees ? fees.map((fee) => fee.id) : [],
-        fines: payFines ? fines.map((fine) => fine.id) : [],
-        feeAmount: payFees ? feesTotal : 0,
-        fineAmount: payFines ? finesTotal : 0,
+        fees: payFees ? payableFees.map((fee) => fee.id) : [],
+        fines: payFines ? payableFines.map((fine) => fine.id) : [],
+        feeAmount: payFees ? feesPayableTotal : 0,
+        fineAmount: payFines ? finesPayableTotal : 0,
         totalAmount: grandTotal,
       });
     }
   };
 
   const hasSelection = payFees || payFines;
+  const hasPayableFees = payableFees.length > 0;
+  const hasPayableFines = payableFines.length > 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8 px-4">
@@ -171,17 +188,24 @@ export default function FinesFeesSelectionPage({
               {fees.length > 0 && (
                 <>
                   <div
-                    className={`flex items-center space-x-2 p-4 rounded-lg border-2 transition-colors cursor-pointer ${
+                    className={`flex items-center space-x-2 p-4 rounded-lg border-2 transition-colors ${
                       payFees
                         ? "bg-blue-50 dark:bg-blue-950/20 border-blue-500 dark:border-blue-600"
-                        : "bg-muted/50 border-border hover:bg-muted"
+                        : hasPayableFees
+                          ? "bg-muted/50 border-border hover:bg-muted cursor-pointer"
+                          : "bg-muted/30 border-border opacity-70 cursor-not-allowed"
                     }`}
-                    onClick={() => setPayFees(!payFees)}
+                    onClick={() => {
+                      if (!hasPayableFees) return;
+                      setPayFees(!payFees);
+                    }}
                   >
                     <Checkbox
                       id="pay-all-fees"
                       checked={payFees}
+                      disabled={!hasPayableFees}
                       onCheckedChange={(checked) => {
+                        if (!hasPayableFees) return;
                         setPayFees(checked === true);
                       }}
                       onClick={(e) => e.stopPropagation()}
@@ -190,9 +214,14 @@ export default function FinesFeesSelectionPage({
                       Pay All Fees
                     </span>
                     <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                      ₱{feesTotal.toFixed(2)}
+                      ₱{feesPayableTotal.toFixed(2)}
                     </span>
                   </div>
+                  {!hasPayableFees && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 px-1">
+                      All fee items are currently pending verification and cannot be selected.
+                    </p>
+                  )}
                   <Separator />
                   <p className="text-xs text-muted-foreground px-1">Fee Breakdown:</p>
                 </>
@@ -203,12 +232,19 @@ export default function FinesFeesSelectionPage({
                 {fees.map((fee) => (
                   <div
                     key={fee.id}
-                    className="flex items-start justify-between p-3 rounded-lg bg-card border"
+                    className={`flex items-start justify-between p-3 rounded-lg border ${
+                      fee.isPayable === false ? "bg-amber-50/60 dark:bg-amber-950/20" : "bg-card"
+                    }`}
                   >
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-medium">{fee.description}</p>
                       {formatDisplayDate(fee.dueDate) && (
                         <p className="text-xs text-muted-foreground">Due: {formatDisplayDate(fee.dueDate)}</p>
+                      )}
+                      {fee.paymentState === "pending" && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400">
+                          Status: Pending verification (not selectable)
+                        </p>
                       )}
                       {fee.latestRejectionReason && (
                         <p className="text-xs text-red-600 dark:text-red-400">
@@ -251,17 +287,24 @@ export default function FinesFeesSelectionPage({
               {fines.length > 0 && (
                 <>
                   <div
-                    className={`flex items-center space-x-2 p-4 rounded-lg border-2 transition-colors cursor-pointer ${
+                    className={`flex items-center space-x-2 p-4 rounded-lg border-2 transition-colors ${
                       payFines
                         ? "bg-red-50 dark:bg-red-950/20 border-red-500 dark:border-red-600"
-                        : "bg-muted/50 border-border hover:bg-muted"
+                        : hasPayableFines
+                          ? "bg-muted/50 border-border hover:bg-muted cursor-pointer"
+                          : "bg-muted/30 border-border opacity-70 cursor-not-allowed"
                     }`}
-                    onClick={() => setPayFines(!payFines)}
+                    onClick={() => {
+                      if (!hasPayableFines) return;
+                      setPayFines(!payFines);
+                    }}
                   >
                     <Checkbox
                       id="pay-all-fines"
                       checked={payFines}
+                      disabled={!hasPayableFines}
                       onCheckedChange={(checked) => {
+                        if (!hasPayableFines) return;
                         setPayFines(checked === true);
                       }}
                       onClick={(e) => e.stopPropagation()}
@@ -270,9 +313,14 @@ export default function FinesFeesSelectionPage({
                       Pay All Fines
                     </span>
                     <span className="text-lg font-bold text-red-600 dark:text-red-400">
-                      ₱{finesTotal.toFixed(2)}
+                      ₱{finesPayableTotal.toFixed(2)}
                     </span>
                   </div>
+                  {!hasPayableFines && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 px-1">
+                      All fine items are currently pending verification and cannot be selected.
+                    </p>
+                  )}
                   <Separator />
                   <p className="text-xs text-muted-foreground px-1">Fines Breakdown:</p>
                 </>
@@ -283,7 +331,9 @@ export default function FinesFeesSelectionPage({
                 {fines.map((fine) => (
                   <div
                     key={fine.id}
-                    className="flex items-start justify-between p-3 rounded-lg bg-card border"
+                    className={`flex items-start justify-between p-3 rounded-lg border ${
+                      fine.isPayable === false ? "bg-amber-50/60 dark:bg-amber-950/20" : "bg-card"
+                    }`}
                   >
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-medium">{fine.description}</p>
@@ -291,6 +341,11 @@ export default function FinesFeesSelectionPage({
                         <p className="text-xs text-muted-foreground">Date: {formatDisplayDate(fine.date)}</p>
                       )}
                       <p className="text-xs text-muted-foreground italic">{fine.reason}</p>
+                      {fine.paymentState === "pending" && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400">
+                          Status: Pending verification (not selectable)
+                        </p>
+                      )}
                       {fine.latestRejectionReason && (
                         <p className="text-xs text-red-600 dark:text-red-400">
                           Last rejected reason: {fine.latestRejectionReason}
@@ -324,17 +379,17 @@ export default function FinesFeesSelectionPage({
               {payFees && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
-                    Membership Fees ({fees.length} item{fees.length > 1 ? "s" : ""})
+                    Membership Fees ({payableFees.length} item{payableFees.length > 1 ? "s" : ""})
                   </span>
-                  <span className="font-medium">₱{feesTotal.toFixed(2)}</span>
+                  <span className="font-medium">₱{feesPayableTotal.toFixed(2)}</span>
                 </div>
               )}
               {payFines && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
-                    Fines & Penalties ({fines.length} item{fines.length > 1 ? "s" : ""})
+                    Fines & Penalties ({payableFines.length} item{payableFines.length > 1 ? "s" : ""})
                   </span>
-                  <span className="font-medium">₱{finesTotal.toFixed(2)}</span>
+                  <span className="font-medium">₱{finesPayableTotal.toFixed(2)}</span>
                 </div>
               )}
               {!hasSelection && (

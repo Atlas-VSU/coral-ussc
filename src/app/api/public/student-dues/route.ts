@@ -44,7 +44,7 @@ const isPendingSubmissionStatus = (status: unknown): boolean => {
 
 const isBlockedByPaymentHistoryStatus = (status: unknown): boolean => {
   if (typeof status !== "string") return false;
-  return status === "pending_verification" || status === "verified";
+  return status === "verified";
 };
 
 const asNumber = (value: unknown): number => {
@@ -182,6 +182,8 @@ export async function GET(request: NextRequest) {
           amount: number;
           dueDate?: string;
           latestRejectionReason?: string;
+          isPayable: boolean;
+          paymentState: "unpaid" | "pending" | "rejected";
         }>;
         fines: Array<{
           id: string;
@@ -190,6 +192,8 @@ export async function GET(request: NextRequest) {
           date?: string;
           reason: string;
           latestRejectionReason?: string;
+          isPayable: boolean;
+          paymentState: "unpaid" | "pending" | "rejected";
         }>;
       }
     >();
@@ -198,7 +202,6 @@ export async function GET(request: NextRequest) {
       const fee = { id: doc.id, ...doc.data() } as FeeRecord;
       if (!fee.orgId) continue;
       if (fee.isArchived) continue;
-      if (isPendingSubmissionStatus(fee.status)) continue;
 
       const feePaymentHistorySnapshot = await adminDb
         .collection("fees")
@@ -212,6 +215,15 @@ export async function GET(request: NextRequest) {
       if (feePaymentLogs.some((log) => isBlockedByPaymentHistoryStatus(log.status))) continue;
 
       const latestRejectionReason = getLatestRejectedReason(feePaymentLogs);
+      const hasPendingSubmission =
+        isPendingSubmissionStatus(fee.status) ||
+        feePaymentLogs.some((log) => isPendingSubmissionStatus(log.status));
+      const isPayable = !hasPendingSubmission;
+      const paymentState: "unpaid" | "pending" | "rejected" = hasPendingSubmission
+        ? "pending"
+        : latestRejectionReason
+          ? "rejected"
+          : "unpaid";
 
       const outstanding = asNumber(fee.balance) > 0 ? asNumber(fee.balance) : asNumber(fee.amount);
       if (outstanding <= 0) continue;
@@ -231,6 +243,8 @@ export async function GET(request: NextRequest) {
         amount: outstanding,
         dueDate: toIsoDate(fee.dueDate),
         latestRejectionReason,
+        isPayable,
+        paymentState,
       });
 
       grouped.set(fee.orgId, existing);
@@ -240,7 +254,6 @@ export async function GET(request: NextRequest) {
       const fine = { id: doc.id, ...doc.data() } as FineRecord;
       if (!fine.orgId) continue;
       if (fine.metadata?.isArchived) continue;
-      if (isPendingSubmissionStatus(fine.status)) continue;
 
       const finePaymentHistorySnapshot = await adminDb
         .collection("fines")
@@ -254,6 +267,15 @@ export async function GET(request: NextRequest) {
       if (finePaymentLogs.some((log) => isBlockedByPaymentHistoryStatus(log.status))) continue;
 
       const latestRejectionReason = getLatestRejectedReason(finePaymentLogs);
+      const hasPendingSubmission =
+        isPendingSubmissionStatus(fine.status) ||
+        finePaymentLogs.some((log) => isPendingSubmissionStatus(log.status));
+      const isPayable = !hasPendingSubmission;
+      const paymentState: "unpaid" | "pending" | "rejected" = hasPendingSubmission
+        ? "pending"
+        : latestRejectionReason
+          ? "rejected"
+          : "unpaid";
 
       const outstanding =
         asNumber(fine.balance) > 0 ? asNumber(fine.balance) : asNumber(fine.accumulatedAmount);
@@ -275,6 +297,8 @@ export async function GET(request: NextRequest) {
         date: toIsoDate(fine.dueDate) || toIsoDate(fine.lastFineIssuedAt),
         reason: fine.reason || "Fine/penalty charge",
         latestRejectionReason,
+        isPayable,
+        paymentState,
       });
 
       grouped.set(fine.orgId, existing);

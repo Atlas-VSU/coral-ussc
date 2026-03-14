@@ -27,6 +27,8 @@ interface FeeItem {
   amount: number;
   dueDate?: string;
   latestRejectionReason?: string;
+  isPayable?: boolean;
+  paymentState?: "unpaid" | "pending" | "rejected";
 }
 
 interface FineItem {
@@ -36,6 +38,8 @@ interface FineItem {
   date?: string;
   reason: string;
   latestRejectionReason?: string;
+  isPayable?: boolean;
+  paymentState?: "unpaid" | "pending" | "rejected";
 }
 
 interface OrganizationDueData extends OrganizationData {
