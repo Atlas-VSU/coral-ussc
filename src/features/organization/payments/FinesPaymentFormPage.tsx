@@ -1,6 +1,6 @@
 "use client";
-import { useMemo } from "react";
-import { ArrowLeft, Building2, CreditCard, Loader2, Receipt, ShieldAlert } from "lucide-react";
+import { useMemo, useState } from "react";
+import { AlertCircle, ArrowLeft, Building2, CreditCard, Loader2, Receipt, ShieldAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,10 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { SuccessScreen } from "./components/SuccessScreen";
 import { PaymentFormData } from "@/lib/validators";
-import { usePaymentForm } from "./hooks/usePaymentForm";
+import { usePaymentForm, ImageData } from "./hooks/usePaymentForm";
 import { PaymentMethodSelector } from "./components/PaymentMethodSelector";
 import { ImageUpload } from "./components/ImageUpload";
 
@@ -49,6 +50,7 @@ export default function FinesPaymentFormPage({
   onBack,
 }: FinesPaymentFormPageProps) {
   const isContextualFlow = Boolean(studentData && organizationData && selectedPaymentItems);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const selectedTypes = useMemo(() => {
     if (!selectedPaymentItems) return [] as Array<"fees" | "fines">;
@@ -59,15 +61,51 @@ export default function FinesPaymentFormPage({
     ];
   }, [selectedPaymentItems]);
 
-  const handleContextualSubmit = async (data: PaymentFormData) => {
-    const paymentPayloads = selectedTypes.map((type) => ({
-      ...data,
-      type,
-      amount: type === "fees" ? selectedPaymentItems?.feeAmount ?? 0 : selectedPaymentItems?.fineAmount ?? 0,
-    }));
+  const handleContextualSubmit = async (data: PaymentFormData, image: ImageData | null) => {
+    setSubmitError(null);
 
-    console.log("Prepared backend-compatible payment submissions:", paymentPayloads);
-    await new Promise((resolve) => setTimeout(resolve, 1800));
+    // 1. Upload receipt image if provided
+    let imageUrl: string | undefined;
+    if (image?.file) {
+      const fd = new FormData();
+      fd.append("file", image.file);
+      fd.append("studentId", studentData!.studentId);
+      const uploadRes = await fetch("/api/public/upload-receipt", { method: "POST", body: fd });
+      const uploadResult = await uploadRes.json();
+      if (!uploadRes.ok || !uploadResult.success) {
+        const msg = uploadResult.error ?? "Failed to upload receipt image.";
+        setSubmitError(msg);
+        throw new Error(msg);
+      }
+      imageUrl = uploadResult.url as string;
+    }
+
+    // 2. Submit payment records
+    const payload = {
+      userName: data.userName,
+      studentId: data.studentId,
+      orgId: organizationData!.id,
+      paymentMethod: data.paymentMethod,
+      referenceNumber: data.referenceNumber,
+      senderNumber: data.senderNumber,
+      imageUrl,
+      notes: data.notes,
+      fees: selectedPaymentItems!.fees,
+      fines: selectedPaymentItems!.fines,
+    };
+
+    const res = await fetch("/api/public/submit-payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const result = await res.json();
+
+    if (!res.ok || !result.success) {
+      const msg = result.error ?? "Payment submission failed. Please try again.";
+      setSubmitError(msg);
+      throw new Error(msg);
+    }
   };
 
   const {
@@ -326,6 +364,14 @@ export default function FinesPaymentFormPage({
               </div>
             </CardContent>
           </Card>
+
+          {/* ── Submit Error ── */}
+          {submitError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+          )}
 
           {/* ── Submit ── */}
           <Button
