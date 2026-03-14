@@ -10,7 +10,7 @@ const submitPaymentSchema = z
       .min(1, "Student ID is required")
       .regex(/^\d{2}-\d-\d{5}$/, "Student ID must follow format XX-X-XXXXX"),
     orgId: z.string().min(1, "Organization is required"),
-    paymentMethod: z.enum(["gcash", "bank_transfer", "cash"]),
+    paymentMethod: z.literal("gcash"),
     referenceNumber: z.string().optional(),
     senderNumber: z.string().optional(),
     imageUrl: z.string().optional(),
@@ -38,10 +38,7 @@ const submitPaymentSchema = z
       }
     }
 
-    if (
-      (values.paymentMethod === "gcash" || values.paymentMethod === "bank_transfer") &&
-      (!values.referenceNumber || values.referenceNumber.trim().length < 10)
-    ) {
+    if (!values.referenceNumber || values.referenceNumber.trim().length < 10) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["referenceNumber"],

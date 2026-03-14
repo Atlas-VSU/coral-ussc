@@ -44,7 +44,7 @@ export function usePaymentForm(options?: UsePaymentFormOptions) {
   });
 
   const paymentMethod = form.watch("paymentMethod");
-  const needsRef = ["gcash", "bank_transfer"].includes(paymentMethod ?? "");
+  const needsRef = paymentMethod === "gcash";
   const isGcash  = paymentMethod === "gcash";
 
 

@@ -8,7 +8,7 @@ export type ImageData = {
 };
     
 
-export type OnlinePaymentMethod = "gcash" | "bank_transfer";
+export type OnlinePaymentMethod = "gcash";
 
 export type StudentFineItem = {
   refId: string;
