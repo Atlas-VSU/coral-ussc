@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import StudentVerificationPage from "@/features/organization/payments/StudentVerificationPage";
 import OrganizationSelectionPage from "@/features/organization/payments/OrganizationSelectionPage";
 import FinesFeesSelectionPage from "@/features/organization/payments/FinesFeesSelectionPage";
+import FinesPaymentFormPage from "@/features/organization/payments/FinesPaymentFormPage";
 
 type PaymentStep = "verification" | "organization" | "fees" | "payment";
 
@@ -17,6 +18,14 @@ interface OrganizationData {
   id: string;
   name: string;
   acronym: string;
+}
+
+interface SelectedPaymentItems {
+  fees: string[];
+  fines: string[];
+  feeAmount: number;
+  fineAmount: number;
+  totalAmount: number;
 }
 
 // Mock organization data - should match OrganizationSelectionPage
@@ -42,11 +51,7 @@ export default function PaymentPage() {
   const [currentStep, setCurrentStep] = useState<PaymentStep>("verification");
   const [studentData, setStudentData] = useState<StudentData | null>(null);
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
-  const [selectedPaymentItems, setSelectedPaymentItems] = useState<{
-    fees: string[];
-    fines: string[];
-    totalAmount: number;
-  } | null>(null);
+  const [selectedPaymentItems, setSelectedPaymentItems] = useState<SelectedPaymentItems | null>(null);
 
   const selectedOrganization = useMemo(() => {
     return ORGANIZATIONS.find((org) => org.id === selectedOrgId) || null;
@@ -70,10 +75,9 @@ export default function PaymentPage() {
     setCurrentStep("organization");
   };
 
-  const handleFeesSelected = (items: { fees: string[]; fines: string[]; totalAmount: number }) => {
+  const handleFeesSelected = (items: SelectedPaymentItems) => {
     setSelectedPaymentItems(items);
     setCurrentStep("payment");
-    // TODO: Navigate to payment submission page
   };
 
   const handleBackToFees = () => {
@@ -100,7 +104,14 @@ export default function PaymentPage() {
           onNext={handleFeesSelected}
         />
       )}
-      {/* TODO: Add payment submission page */}
+      {currentStep === "payment" && studentData && selectedOrganization && selectedPaymentItems && (
+        <FinesPaymentFormPage
+          studentData={studentData}
+          organizationData={selectedOrganization}
+          selectedPaymentItems={selectedPaymentItems}
+          onBack={handleBackToFees}
+        />
+      )}
     </>
   );
 }

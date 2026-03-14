@@ -39,7 +39,13 @@ interface FinesFeesSelectionPageProps {
   studentData: StudentData;
   organizationData: OrganizationData;
   onBack: () => void;
-  onNext: (selectedItems: { fees: string[]; fines: string[]; totalAmount: number }) => void;
+  onNext: (selectedItems: {
+    fees: string[];
+    fines: string[];
+    feeAmount: number;
+    fineAmount: number;
+    totalAmount: number;
+  }) => void;
 }
 
 export default function FinesFeesSelectionPage({
@@ -106,6 +112,8 @@ export default function FinesFeesSelectionPage({
       onNext({
         fees: payFees ? fees.map((fee) => fee.id) : [],
         fines: payFines ? fines.map((fine) => fine.id) : [],
+        feeAmount: payFees ? feesTotal : 0,
+        fineAmount: payFines ? finesTotal : 0,
         totalAmount: grandTotal,
       });
     }
