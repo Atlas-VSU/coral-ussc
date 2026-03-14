@@ -1,5 +1,5 @@
 "use client";
-import { AppSidebar } from "@/components/NavBar/app-sidebar";
+import { AdminSidebar } from "@/components/layout/AdminSidebar";
 import { SiteHeader } from "@/components/NavBar/site-header";
 import { MobileBottomNav } from "@/components/NavBar/mobile-bottom-nav";
 import {
@@ -194,10 +194,8 @@ export default function OrganizationLayout({
 
   return (
     <div className="flex min-h-screen w-full">
-      <AppSidebar
+      <AdminSidebar
         user={userData}
-        navMain={organizationData.navMain}
-        iconMap={iconMap}
         className="z-50"
       />
       <div className="flex-1 flex flex-col min-w-0">
