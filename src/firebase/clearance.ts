@@ -1,7 +1,7 @@
 import { collection, doc, getDoc, getDocs, query, serverTimestamp, Timestamp, updateDoc, where, writeBatch } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { BlockingItem, ClearanceStatus } from "@/features/organization/clearance/types";
-import { approvePaymentTransaction, checkFeeStatusForClearance, fetchFee, recordManualPaymentAndUpdateClearance, rejectPaymentTransaction } from "./fees";
+import { approvePaymentTransaction, checkFeeStatusForClearance, fetchFee, recordBulkManualPaymentAndUpdateClearance, recordManualPaymentAndUpdateClearance, rejectPaymentTransaction } from "./fees";
 import { Fee, FeeWithPaymentHistory, PaymentMethod } from "@/features/organization/fees/types";
 import { getFineById, getFineByStudentId } from "./fines/read/fines";
 import { ProofOfPayment, StudentFines } from "@/features/organization/fines/types";
@@ -176,96 +176,97 @@ export const updateClearanceDocumentForPaginatedStudents = async (orgId: string,
 
 export const approvePaymentClearanceUpdate = async (
   clearanceId: string, 
-  refId: string, 
+  itemsToUpdate: { refId: string, type: PaymentType | string }[], 
   adminId: string,
   adminName: string,
-  itemType: PaymentType,
   studentData?: { firstName: string; lastName: string; studentId: string; orgId: string }
 ) => {
-  if (itemType === PaymentType.FEES) {
-    const logsRef = collection(db, "fees", refId, "paymentHistory");
-    const q = query(logsRef, where("status", "==", "pending_verification"));
-    const snapshot = await getDocs(q);
-    
-    if (snapshot.empty) throw new Error("No pending payment found for this fee");
-    
-    const logId = snapshot.docs[0].id;
-    const logData = snapshot.docs[0].data();
+  for (const item of itemsToUpdate) {
+    if (item.type === PaymentType.FEES) {
+      const logsRef = collection(db, "fees", item.refId, "paymentHistory");
+      const q = query(logsRef, where("status", "==", "pending_verification"));
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) continue; // Skip if no pending found
+      
+      const logId = snapshot.docs[0].id;
+      const logData = snapshot.docs[0].data();
 
-    const proof: ProofOfPayment = {
-      referenceId: refId,
-      paymentType: "fees",
-      amount: logData.amount,
-      status: PaymentStatus.VERIFIED,
-      verifiedBy: adminId,
-      verifiedByName: adminName,
-      paymentMethod: logData.paymentMethod,
-      verifiedAt: Timestamp.now(),
-      notes: "Verified via Clearance Management",
-      orgId: studentData?.orgId || "",
-      userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
-      studentId: studentData?.studentId || "",
-      senderNumber: logData.senderNumber || "",
-      referenceNumber: logData.gcashReference || "",
-      imageUrl: logData.imageUrl || "",
-      submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
-    };
+      const proof: ProofOfPayment = {
+        referenceId: item.refId,
+        paymentType: "fees",
+        amount: logData.amount,
+        status: PaymentStatus.VERIFIED,
+        verifiedBy: adminId,
+        verifiedByName: adminName,
+        paymentMethod: logData.paymentMethod,
+        verifiedAt: Timestamp.now(),
+        notes: "Verified via Clearance Management",
+        orgId: studentData?.orgId || "",
+        userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
+        studentId: studentData?.studentId || "",
+        senderNumber: logData.senderNumber || "",
+        referenceNumber: logData.gcashReference || "",
+        imageUrl: logData.imageUrl || "",
+        submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+      };
 
-    return await verifyPaymentHistory(logId, proof);
-  } else {
-    const logsRef = collection(db, "fines", refId, "paymentHistory");
-    const q = query(logsRef, where("status", "==", "pending_verification"));
-    const snapshot = await getDocs(q);
-    
-    if (snapshot.empty) throw new Error("No pending payment found for this fine");
-    
-    const logId = snapshot.docs[0].id;
-    const logData = snapshot.docs[0].data();
-    
-    const proof: ProofOfPayment = {
-      referenceId: refId,
-      paymentType: "fines",
-      amount: logData.amount,
-      status: PaymentStatus.VERIFIED,
-      verifiedBy: adminId,
-      verifiedByName: adminName,
-      paymentMethod: logData.paymentMethod,
-      verifiedAt: Timestamp.now(),
-      notes: "Verified via Clearance Management",
-      orgId: studentData?.orgId || "",
-      userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
-      studentId: studentData?.studentId || "",
-      senderNumber: logData.senderNumber || "",
-      referenceNumber: logData.gcashReference || "",
-      imageUrl: logData.imageUrl || "",
-      submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
-    };
-    
-    return await verifyPaymentHistory(logId, proof);
+      await verifyPaymentHistory(logId, proof);
+    } else {
+      const logsRef = collection(db, "fines", item.refId, "paymentHistory");
+      const q = query(logsRef, where("status", "==", "pending_verification"));
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) continue; // Skip if no pending found
+      
+      const logId = snapshot.docs[0].id;
+      const logData = snapshot.docs[0].data();
+      
+      const proof: ProofOfPayment = {
+        referenceId: item.refId,
+        paymentType: "fines",
+        amount: logData.amount,
+        status: PaymentStatus.VERIFIED,
+        verifiedBy: adminId,
+        verifiedByName: adminName,
+        paymentMethod: logData.paymentMethod,
+        verifiedAt: Timestamp.now(),
+        notes: "Verified via Clearance Management",
+        orgId: studentData?.orgId || "",
+        userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
+        studentId: studentData?.studentId || "",
+        senderNumber: logData.senderNumber || "",
+        referenceNumber: logData.gcashReference || "",
+        imageUrl: logData.imageUrl || "",
+        submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+      };
+      
+      await verifyPaymentHistory(logId, proof);
+    }
   }
 };
 
 export const rejectPaymentClearanceUpdate = async (
  clearanceId: string, 
-   refId: string, 
+   itemsToUpdate: { refId: string, type: PaymentType | string }[], 
    adminId: string,
    adminName: string,
    reason: string,
-   itemType: PaymentType,
    studentData?: { firstName: string; lastName: string; studentId: string; orgId: string }
  ) => {
-   if (itemType === PaymentType.FEES) {
-     const logsRef = collection(db, "fees", refId, "paymentHistory");
+  for (const item of itemsToUpdate) {
+    if (item.type === PaymentType.FEES) {
+     const logsRef = collection(db, "fees", item.refId, "paymentHistory");
      const q = query(logsRef, where("status", "==", "pending_verification"));
      const snapshot = await getDocs(q);
      
-     if (snapshot.empty) throw new Error("No pending payment found for this fee");
+     if (snapshot.empty) continue;
      
      const logId = snapshot.docs[0].id;
      const logData = snapshot.docs[0].data();
 
      const proof: ProofOfPayment = {
-       referenceId: refId,
+       referenceId: item.refId,
        paymentType: "fees",
        amount: logData.amount,
        status: PaymentStatus.REJECTED,
@@ -284,19 +285,19 @@ export const rejectPaymentClearanceUpdate = async (
        submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
      };
 
-     return await rejectPaymentHistory(logId, proof);
+     await rejectPaymentHistory(logId, proof);
    } else {
-     const logsRef = collection(db, "fines", refId, "paymentHistory");
+     const logsRef = collection(db, "fines", item.refId, "paymentHistory");
      const q = query(logsRef, where("status", "==", "pending_verification"));
      const snapshot = await getDocs(q);
      
-     if (snapshot.empty) throw new Error("No pending payment found for this fine");
+     if (snapshot.empty) continue;
      
      const logId = snapshot.docs[0].id;
      const logData = snapshot.docs[0].data();
      
      const proof: ProofOfPayment = {
-       referenceId: refId,
+       referenceId: item.refId,
        paymentType: "fines",
        amount: logData.amount,
        status: PaymentStatus.REJECTED,
@@ -315,36 +316,68 @@ export const rejectPaymentClearanceUpdate = async (
        submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
      };
      
-     return await rejectPaymentHistory(logId, proof);
+     await rejectPaymentHistory(logId, proof);
    }
+  }
  };
 
  
  export const logManualPaymentClearanceUpdate = async (
    clearanceId: string,
    studentId: string,
-   items: { refId: string; amount: number; paymentType: PaymentType }[],
+   items: { refId: string; amount: number; paymentType: PaymentType, parentFineId?: string }[],
    method: PaymentMethod,
    adminId: string,
    adminName: string,
+   overallPaymentType?: string | PaymentType
  ) => {
-  const results = await Promise.all(items.map(async (item) => {
-    if(item.paymentType == PaymentType.FEES) {
-      return await recordManualPaymentAndUpdateClearance(
-        item.refId,
-        item.amount.toString(),
-        method as any,
-        adminId,
-        studentId,
-        adminName
-      );
-    } else if(item.paymentType == PaymentType.FINES) {
-      const fines = await getFineById(item.refId) as unknown as StudentFines;
-      return await addOfflineFinesPayment(fines, PaymentType.FINES, method as any, "", "");
-    }
-   }));
+  if(!overallPaymentType) {
+    throw new Error("Overall payment type is required");
+  }
+  let totalAmount = 0;
+  items.forEach((item) => totalAmount += item.amount);
+  // Handle Bulk Payment separately - it should only be called ONCE
+  console.log(items);
+    return await recordBulkManualPaymentAndUpdateClearance(
+      studentId,
+      items,
+      totalAmount,
+      method as any,
+      adminId,
+      adminName,
+      overallPaymentType as PaymentType
+    );
+  
+  // else if(overallPaymentType === PaymentType.FINES) {
+  //   return await recordBulkManualPaymentAndUpdateClearance(
+  //     studentId,
+  //     items,
+  //     totalAmount,
+  //     method as any,
+  //     adminId,
+  //     adminName,
+  //     overallPaymentType as PaymentType
+  //   );
+  // }
 
-   return results;
+  // // Otherwise handle individual payments
+  // const results = await Promise.all(items.map(async (item) => {
+  //   if (item.paymentType === PaymentType.FEES) {
+  //     return await recordManualPaymentAndUpdateClearance(
+  //       item.refId,
+  //       item.amount.toString(),
+  //       method as any,
+  //       adminId,
+  //       studentId,
+  //       adminName,
+  //     );
+  //   } else if (item.paymentType === PaymentType.FINES) {
+  //     const fines = await getFineById(item.refId) as unknown as StudentFines;
+  //     return await addOfflineFinesPayment(fines, PaymentType.FINES, method as any, "", "");
+  //   }
+  // }));
+
+  // return results;
  };
  
 

@@ -1,27 +1,40 @@
-import { useCallback } from "react"
+"use client"
+
+import { useCallback, useRef, useEffect } from "react"
 import { toast } from "sonner"
-import { doc, getDoc, Timestamp, updateDoc } from "firebase/firestore"
+import { Timestamp } from "firebase/firestore"
 import { useAuth } from "@/hooks/useAuth"
 import type { ClearanceStatus } from "../types" 
-import { PaymentLog, PaymentMethod } from "../../fees/types"
+import { PaymentMethod } from "../../fees/types"
 import { approvePaymentClearanceUpdate, logManualPaymentClearanceUpdate, rejectPaymentClearanceUpdate } from "@/firebase"
 import { recalculateClearanceStatus } from "@/firebase/clearance"
 import { PaymentType } from "@/constants/types"
-import { db } from "@/firebase/firebase.config"
-import { boolean } from "zod"
 
 export function useClearanceActions(
   clearances: ClearanceStatus[], 
   setClearances: React.Dispatch<React.SetStateAction<ClearanceStatus[]>>
 ) {
   const { user: currentUser } = useAuth()
+  
+  // Use a ref to store the latest clearances to avoid dependency churn in callbacks
+  const clearancesRef = useRef(clearances)
+  useEffect(() => {
+    clearancesRef.current = clearances
+  }, [clearances])
 
   const updateItemStatus = useCallback(async (
     clearanceId: string,
     referenceIds: string[],
     newStatus: "paid" | "unpaid",
     options?: { 
-      addPaymentLog?: { items: { refId: string; amount: number; paymentType: PaymentType }[]; total: number; date: string; method: PaymentMethod; refNo?: string },
+      addPaymentLog?: { 
+        items: { refId: string; amount: number; paymentType: PaymentType }[]; 
+        total: number; 
+        date: string; 
+        method: PaymentMethod; 
+        refNo?: string;
+        overallPaymentType?: string | PaymentType; 
+      },
       rejectionReason?: string 
     }
   ) => {
@@ -31,41 +44,62 @@ export function useClearanceActions(
     }
 
     try {
-      // 1. Perform Backend Updates
-      for (const refId of referenceIds) {
-        const clearance = clearances.find(c => c.id === clearanceId)
-        const item = clearance?.blockingItems[refId]
-        if (!item) continue
+      // 1. Gather Data using the ref to avoid dependency on clearances array
+      const currentClearances = clearancesRef.current
+      const clearance = currentClearances.find(c => c.id === clearanceId)
+      if (!clearance) throw new Error("Clearance not found")
 
-        const studentData = clearance ? {
-          firstName: clearance.userName.split(' ')[0],
-          lastName: clearance.userName.split(' ').slice(1).join(' '),
-          studentId: clearance.studentId,
-          orgId: clearance.orgId
-        } : undefined
-
-        if (newStatus === "paid" && !options?.addPaymentLog) {
-          await approvePaymentClearanceUpdate(clearanceId, refId, currentUser.uid, `${currentUser.firstName} ${currentUser.lastName}`, item.type, studentData)
-        } else if (newStatus === "unpaid" && options?.rejectionReason) {
-          await rejectPaymentClearanceUpdate(clearanceId, refId, currentUser.uid, `${currentUser.firstName} ${currentUser.lastName}`, options.rejectionReason, item.type, studentData)
-        }
+      const studentData = {
+        firstName: clearance.userName.split(' ')[0],
+        lastName: clearance.userName.split(' ').slice(1).join(' '),
+        studentId: clearance.studentId,
+        orgId: clearance.orgId
       }
 
-      if (options?.addPaymentLog) {
-        const studentId = clearances.find(c => c.id === clearanceId)?.userId || ""
+      // Map referenceIds into an array of items with their types
+      const itemsToUpdate = referenceIds.map(refId => {
+        const item = clearance.blockingItems[refId]
+        return item ? { refId, type: item.type } : null
+      }).filter(Boolean) as { refId: string, type: PaymentType | string }[]
+
+      // 2. Perform Single Batched Backend Update
+      if (newStatus === "paid" && !options?.addPaymentLog) {
+        await approvePaymentClearanceUpdate(
+          clearanceId, 
+          itemsToUpdate, 
+          currentUser.uid, 
+          `${currentUser.firstName} ${currentUser.lastName}`, 
+          studentData
+        )
+      } else if (newStatus === "unpaid" && options?.rejectionReason) {
+        await rejectPaymentClearanceUpdate(
+          clearanceId, 
+          itemsToUpdate, 
+          currentUser.uid, 
+          `${currentUser.firstName} ${currentUser.lastName}`, 
+          options.rejectionReason, 
+          studentData
+        )
+      } else if (options?.addPaymentLog) {
+        // Manual Log handles its own updates
+        const studentId = clearance.userId || ""
         await logManualPaymentClearanceUpdate(
           clearanceId,
-          studentId, // Pass studentId to backendLogManualPayment
+          studentId, 
           options.addPaymentLog.items,
           options.addPaymentLog.method,
           currentUser.uid,
-          `${currentUser.firstName} ${currentUser.lastName}`
+          `${currentUser.firstName} ${currentUser.lastName}`,
+          options.addPaymentLog.overallPaymentType 
         )
       }
 
-      await recalculateClearanceStatus(clearanceId)
+      // Only recalculate manually if not logged manually (backend does recalculation for manual logs usually)
+      if (!options?.addPaymentLog) {
+        await recalculateClearanceStatus(clearanceId)
+      }
 
-      // 2. Perform optimistic local update (optional since useClearances uses onSnapshot)
+      // 3. Perform optimistic local update
       setClearances(prev => prev.map(cl => {
         if (cl.id !== clearanceId) return cl
         const updatedBlocking = { ...cl.blockingItems }
@@ -74,42 +108,43 @@ export function useClearanceActions(
           const item = updatedBlocking[refId]
           if (!item) return
           
-          item.status = newStatus
-          item.pendingReview = false
+          // Create a NEW item object to ensure reference change triggers re-render
+          const newItem = { ...item }
+          newItem.status = newStatus === "paid" ? "paid" : "unpaid"
+          newItem.pendingReview = false
           
           if (newStatus === "unpaid" && options?.rejectionReason) {
-            const pendingLogIndex = item.paymentHistory.findIndex(p => p.status === "pending_verification")
-            if (pendingLogIndex !== -1) {
-              item.paymentHistory[pendingLogIndex] = {
-                ...item.paymentHistory[pendingLogIndex],
-                status: "rejected",
-                rejectionReason: options.rejectionReason,
-                verifiedAt: Timestamp.now(),
-                verifiedByName: `${currentUser.firstName} ${currentUser.lastName}`,
-              }
-            }
+            newItem.paymentHistory = newItem.paymentHistory.map(p => 
+              p.status === "pending_verification" 
+                ? {
+                    ...p,
+                    status: "rejected",
+                    rejectionReason: options.rejectionReason,
+                    verifiedAt: Timestamp.now(),
+                    verifiedByName: `${currentUser.firstName} ${currentUser.lastName}`,
+                  } 
+                : p
+            )
           }
           
           if (newStatus === "paid" && !options?.addPaymentLog) {
-             const pendingLogIndex = item.paymentHistory.findIndex(p => p.status === "pending_verification")
-             if (pendingLogIndex !== -1) {
-               item.paymentHistory[pendingLogIndex] = {
-                 ...item.paymentHistory[pendingLogIndex],
-                 status: "verified",
-                 verifiedAt: Timestamp.now(),
-                 verifiedByName: `${currentUser.firstName} ${currentUser.lastName}`,
-               }
-             }
+             newItem.paymentHistory = newItem.paymentHistory.map(p => 
+               p.status === "pending_verification" 
+                 ? {
+                     ...p,
+                     status: "verified",
+                     verifiedAt: Timestamp.now(),
+                     verifiedByName: `${currentUser.firstName} ${currentUser.lastName}`,
+                   } 
+                 : p
+             )
           }
-
-          if (options?.addPaymentLog) {
-             // Local update for manual payment logs
-             // (In reality, onSnapshot will override this very soon)
-          }
+          
+          updatedBlocking[refId] = newItem
         })
         
         const overallStatus = Object.values(updatedBlocking).some(
-          i => i.status === "unpaid" && i.isRequiredForClearance
+          i => (i.status === "unpaid" || i.balance > 0) && i.isRequiredForClearance
         ) ? "not_cleared" : "cleared"
         
         return { ...cl, blockingItems: updatedBlocking, status: overallStatus }
@@ -118,7 +153,7 @@ export function useClearanceActions(
       console.error("Action failed:", error)
       toast.error("Something went wrong while updating clearance")
     }
-  }, [setClearances, currentUser, clearances])
+  }, [setClearances, currentUser]) // clearances removed from dependencies
 
   const approvePayment = useCallback(async (clearanceId: string, referenceIds: string[]) => {
     await updateItemStatus(clearanceId, referenceIds, "paid")
@@ -138,14 +173,28 @@ export function useClearanceActions(
     totalAmount: number,
     paymentDate: string
   ) => {
-    // We need to map referenceIds to items {refId, amount}
-    const clearance = clearances.find(c => c.id === clearanceId)
+    const clearance = clearancesRef.current.find(c => c.id === clearanceId)
+    if (!clearance) return
+
     const items = referenceIds.map(id => ({
       refId: id,
-      amount: clearance?.blockingItems[id]?.balance || 0,
-      paymentType: clearance?.blockingItems[id]?.type === PaymentType.FEES ? PaymentType.FEES : PaymentType.FINES
+      amount: clearance.blockingItems[id]?.balance || 0,
+      paymentType: clearance.blockingItems[id]?.type === PaymentType.FEES ? PaymentType.FEES : PaymentType.FINES,
+      parentFineId: clearance.blockingItems[id]?.parentFineId || ""
     }))
 
+    const hasFees = items.some(item => item.paymentType === PaymentType.FEES)
+    const hasFines = items.some(item => item.paymentType === PaymentType.FINES)
+
+    let overallPaymentType: string | PaymentType = ""
+    
+    if (hasFees && hasFines) {
+      overallPaymentType = PaymentType.BULK
+    } else if (hasFees) {
+      overallPaymentType = PaymentType.FEES 
+    } else if (hasFines) {
+      overallPaymentType = PaymentType.FINES 
+    }
 
     await updateItemStatus(clearanceId, referenceIds, "paid", {
       addPaymentLog: {
@@ -153,9 +202,10 @@ export function useClearanceActions(
         total: totalAmount,
         date: paymentDate,
         method: "cash",
+        overallPaymentType
       }
     })
-  }, [updateItemStatus, clearances])
+  }, [updateItemStatus]) // clearances removed from dependencies
 
   return { approvePayment, rejectPayment, logManualPayment }
 }

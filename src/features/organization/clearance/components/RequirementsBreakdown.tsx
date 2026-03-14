@@ -33,7 +33,7 @@ export function RequirementsBreakdown({
             className={cn(
               "rounded-md border p-3",
               group.status === "cleared" ? "border-success/30 bg-success/5"
-              : group.status === "not-cleared" ? "border-destructive/30 bg-destructive/5"
+              : group.status === "not_cleared" ? "border-destructive/30 bg-destructive/5"
               : "border-warning/30 bg-warning/5"
             )}
           >
@@ -41,14 +41,14 @@ export function RequirementsBreakdown({
               <div className="flex items-center gap-2">
                 <div className={cn(
                   "flex size-6 items-center justify-center rounded-full",
-                  group.status === "cleared" ? "bg-success/20" : group.status === "not-cleared" ? "bg-destructive/20" : "bg-warning/20"
+                  group.status === "cleared" ? "bg-success/20" : group.status === "not_cleared" ? "bg-destructive/20" : "bg-warning/20"
                 )}>
-                  <StatusIcon className={cn("size-3", group.status === "cleared" ? "text-success" : group.status === "not-cleared" ? "text-destructive" : "text-warning-foreground")} />
+                  <StatusIcon className={cn("size-3", group.status === "cleared" ? "text-success" : group.status === "not_cleared" ? "text-destructive" : "text-warning-foreground")} />
                 </div>
                 <span className="text-sm font-semibold text-foreground">{group.name}</span>
               </div>
-              <Badge variant={group.status === "cleared" ? "secondary" : group.status === "not-cleared" ? "destructive" : "outline"} className="capitalize text-xs">
-                {group.status.replace("-", " ")}
+              <Badge variant={group.status === "cleared" ? "secondary" : group.status === "not_cleared" ? "destructive" : "outline"} className="capitalize text-xs">
+                {group.status.replace("_", " ")}
               </Badge>
             </div>
             {group.items.length > 0 ? (
@@ -58,7 +58,7 @@ export function RequirementsBreakdown({
                   return (
                     <div key={item.referenceId} className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <ItemIcon className={cn("size-3 shrink-0", item.status === "cleared" ? "text-success" : item.status === "not-cleared" ? "text-destructive" : "text-warning-foreground")} />
+                        <ItemIcon className={cn("size-3 shrink-0", item.status === "cleared" ? "text-success" : item.status === "not_cleared" ? "text-destructive" : "text-warning-foreground")} />
                         <span>{item.label}</span>
                         {item.amount != null && <span className="text-muted-foreground/60">₱{item.amount}</span>}
                       </div>
@@ -66,8 +66,8 @@ export function RequirementsBreakdown({
                         "font-medium capitalize",
                         item.status === "cleared" && "text-success",
                         item.status === "pending" && "text-warning-foreground",
-                        item.status === "not-cleared" && "text-destructive",
-                      )}>{item.status.replace("-", " ")}</span>
+                        item.status === "not_cleared" && "text-destructive",
+                      )}>{item.status.replace("_", " ")}</span>
                     </div>
                   )
                 })}
