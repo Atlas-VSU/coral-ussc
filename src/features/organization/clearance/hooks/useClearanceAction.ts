@@ -28,7 +28,7 @@ export function useClearanceActions(
     newStatus: "paid" | "unpaid",
     options?: { 
       addPaymentLog?: { 
-        items: { refId: string; amount: number; paymentType: PaymentType }[]; 
+        items: { refId: string; title: string; amount: number; paymentType: PaymentType }[]; 
         total: number; 
         date: string; 
         method: PaymentMethod; 
@@ -178,6 +178,7 @@ export function useClearanceActions(
 
     const items = referenceIds.map(id => ({
       refId: id,
+      title: clearance.blockingItems[id]?.title,
       amount: clearance.blockingItems[id]?.balance || 0,
       paymentType: clearance.blockingItems[id]?.type === PaymentType.FEES ? PaymentType.FEES : PaymentType.FINES,
       parentFineId: clearance.blockingItems[id]?.parentFineId || ""

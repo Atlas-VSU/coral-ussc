@@ -296,7 +296,7 @@ export const getFeeByStudentId = async (studentId: string) => {
 
 export const recordBulkManualPaymentAndUpdateClearance = async (
     studentId: string,
-    items: { refId: string; amount: number; paymentType: string, parentFineId?: string }[],
+    items: { refId: string; title: string; amount: number; paymentType: string, parentFineId?: string }[],
     totalAmount: number,
     method: "gcash" | "cash" | "bank_transfer" | "waiver",
     adminId: string,
@@ -354,6 +354,7 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                 // Stage the read data
                 itemDocsToUpdate.push({
                     ref: itemRef,
+                    title: item.title,
                     data: itemDoc.data(),
                     paymentAmount: item.amount,
                     refId: item.refId
