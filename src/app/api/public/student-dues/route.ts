@@ -8,7 +8,7 @@ type FeeRecord = {
   feeType?: string;
   balance?: number;
   amount?: number;
-  dueDate?: string;
+  dueDate?: unknown;
   isArchived?: boolean;
   status?: string;
 };
@@ -50,6 +50,16 @@ const toIsoDate = (value: unknown): string | undefined => {
     if (date && !Number.isNaN(date.getTime())) {
       return date.toISOString();
     }
+  }
+
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "_seconds" in value &&
+    typeof (value as { _seconds?: unknown })._seconds === "number"
+  ) {
+    const seconds = (value as { _seconds: number })._seconds;
+    return new Date(seconds * 1000).toISOString();
   }
 
   return undefined;
@@ -123,7 +133,7 @@ export async function GET(request: NextRequest) {
         id: fee.id,
         description: fee.title || fee.feeType || "Outstanding Fee",
         amount: outstanding,
-        dueDate: fee.dueDate,
+        dueDate: toIsoDate(fee.dueDate),
       });
 
       grouped.set(fee.orgId, existing);

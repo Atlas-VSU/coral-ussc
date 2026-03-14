@@ -24,14 +24,14 @@ interface FeeItem {
   id: string;
   description: string;
   amount: number;
-  dueDate?: string;
+  dueDate?: unknown;
 }
 
 interface FineItem {
   id: string;
   description: string;
   amount: number;
-  date?: string;
+  date?: unknown;
   reason: string;
 }
 
@@ -61,8 +61,25 @@ export default function FinesFeesSelectionPage({
   const [payFees, setPayFees] = useState(false);
   const [payFines, setPayFines] = useState(false);
 
-  const formatDisplayDate = (value?: string) => {
+  const formatDisplayDate = (value?: unknown) => {
     if (!value) return null;
+
+    if (
+      typeof value === "object" &&
+      value !== null &&
+      "_seconds" in value &&
+      typeof (value as { _seconds?: unknown })._seconds === "number"
+    ) {
+      const seconds = (value as { _seconds: number })._seconds;
+      return new Date(seconds * 1000).toLocaleDateString();
+    }
+
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value.toLocaleDateString();
+    }
+
+    if (typeof value !== "string") return null;
+
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) return value;
     return parsed.toLocaleDateString();
@@ -188,8 +205,8 @@ export default function FinesFeesSelectionPage({
                   >
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-medium">{fee.description}</p>
-                      {fee.dueDate && (
-                        <p className="text-xs text-muted-foreground">Due: {fee.dueDate}</p>
+                      {formatDisplayDate(fee.dueDate) && (
+                        <p className="text-xs text-muted-foreground">Due: {formatDisplayDate(fee.dueDate)}</p>
                       )}
                     </div>
                     <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 ml-4">
