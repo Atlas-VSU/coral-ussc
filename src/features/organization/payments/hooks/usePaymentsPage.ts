@@ -14,6 +14,8 @@ import { Fee } from "../../fees/types"
 import { generateReceiptId } from "../utils"
 import { Member } from "../../members/types"
 import { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
+import { is } from "date-fns/locale"
+import { PaymentType } from "@/constants/types"
 
 export function usePaymentsPage() {
   const {
@@ -122,7 +124,7 @@ export function usePaymentsPage() {
   )
 
   const selectedTotal = useMemo(
-    () => selectedDues.reduce((s, d) => s + d.item.balance, 0),
+    () => selectedDues.reduce((s, d) => s + d.balance, 0),
     [selectedDues]
   )
 
@@ -150,7 +152,7 @@ export function usePaymentsPage() {
     setSelectedPayment(null)
   }, [])
 
-  const openReview = useCallback((payment: ProofOfPayment) => {
+  const openReview = useCallback(async(payment: ProofOfPayment) => {
     setSelectedPayment(payment)
     setReviewOpen(true)
   }, [])
@@ -184,22 +186,28 @@ export function usePaymentsPage() {
 
     const receiptId = generateReceiptId()
     const studentName = `${liveSelectedUnpaid.student.firstName} ${liveSelectedUnpaid.student.lastName}`
-    const fees = selectedDues.filter(d => d.type === "fee").map(d => d.item)
+    const fees = selectedDues.filter(d => d.type === "fees").map(d => d.item)
+    let isFine = false, isFee = false, totalAmount = 0;
+    
+    for (const due of selectedDues) {
+      if (due.type === "fines") isFine = true;
+      if (due.type === "fees") isFee = true;
+      totalAmount += due.balance;
+     }
 
-    const lineItems: PaymentFormData[] = selectedDues.map(due => ({
-      userName: studentName,
-      studentId: liveSelectedUnpaid.student.studentId,
-      amount: due.item.balance,
-      paymentMethod: "cash",
-      referenceNumber: "",
-      notes: `Manual payment for ${due.name}`,
-      type: due.type === "fee" ? "fees" : "fines",
-      referenceId: due.item.id
-    }))
+    const lineItems: PaymentFormData = {
+        userName: studentName,
+        studentId: liveSelectedUnpaid.student.studentId,
+        amount: totalAmount,
+        paymentMethod: "cash",
+        referenceNumber: "",
+        notes: `Manual payment for ${isFine && isFee ? "fees and fines" : isFine ? "fines" : "fees"}`,
+        type: isFine && isFee ? PaymentType.BULK : isFine ? PaymentType.FINES : PaymentType.FEES,
+        referenceId: selectedDues.length > 1 ? "bulk_transaction" : selectedDues[0].parentId,
+    }
 
     try {
-      console.log("Creating bulk proof of payment with line items:", lineItems, "and receipt ID:", receiptId)
-      await createBulkOfflineProofOfPayment(lineItems,receiptId, fees as Fee[])
+      await createBulkOfflineProofOfPayment(lineItems,receiptId, selectedDues, liveSelectedUnpaid.student.id!)
     } catch (error) {
       toast.error("Failed to log payment. Please try again.")
       setLoading(false)
@@ -224,7 +232,7 @@ export function usePaymentsPage() {
       receiptId,
       studentName,
       studentId: liveSelectedUnpaid.student.studentId,
-      items: selectedDues.map(d => ({ name: d.name, type: d.type as "fee" | "fine", amount: d.item.balance })),
+      items: selectedDues.map(d => ({ name: d.name, type: d.type as "fees" | "fines", amount: d.balance })),
       total: selectedTotal,
       date: paymentDate,
       verifiedByName: currentUser.firstName + " " + currentUser.lastName,
