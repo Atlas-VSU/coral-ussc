@@ -15,7 +15,7 @@ export const verifyPaymentHistory = async (paymentHistoryId: string, proofOfPaym
                 verifiedAt: proofOfPayment.verifiedAt,
                 notes: proofOfPayment.notes,
                 status: proofOfPayment.status,
-                "metaData.updatedAt": Timestamp.now(),
+                "metadata.updatedAt": Timestamp.now(),
             });
             if(proofOfPayment.paymentType === "fines"){
                 await markFineItemsAsPaid(proofOfPayment.referenceId);
@@ -61,7 +61,7 @@ export const rejectPaymentHistory = async (paymentHistoryId: string, proofOfPaym
                 verifiedAt: proofOfPayment.verifiedAt,
                 rejectionReason: proofOfPayment.rejectionReason,
                 status: proofOfPayment.status,
-                "metaData.updatedAt": Timestamp.now(),
+                "metadata.updatedAt": Timestamp.now(),
             });
 
             if(proofOfPayment.paymentType === "fines"){

@@ -32,7 +32,9 @@ export type ProofOfPayment = {
     verifiedByName?: string;
     verifiedAt?: Timestamp;
     rejectionReason?: string;
+    receiptCode?: string;
     notes?: string;
+    metadata: {items?: {amount: number, title:string, parentFineId: string, paymentType:string, refId:string}[]};
 }
 
 export type FinesPaymentLog = {
@@ -48,7 +50,7 @@ export type FinesPaymentLog = {
   verifiedAt?: Timestamp;
   rejectionReason?: string;
   notes?: string;
-  metaData: {
+  metadata: {
     createdAt: Timestamp;
   };
 }

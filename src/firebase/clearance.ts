@@ -209,6 +209,9 @@ export const approvePaymentClearanceUpdate = async (
         referenceNumber: logData.gcashReference || "",
         imageUrl: logData.imageUrl || "",
         submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+        metadata: {
+         items:[]
+       }
       };
 
       await verifyPaymentHistory(logId, proof);
@@ -239,6 +242,9 @@ export const approvePaymentClearanceUpdate = async (
         referenceNumber: logData.gcashReference || "",
         imageUrl: logData.imageUrl || "",
         submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+        metadata: {
+         items:[]
+       }
       };
       
       await verifyPaymentHistory(logId, proof);
@@ -283,6 +289,9 @@ export const rejectPaymentClearanceUpdate = async (
        referenceNumber: logData.gcashReference || "",
        imageUrl: logData.imageUrl || "",
        submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+       metadata: {
+         items:[]
+       }
      };
 
      await rejectPaymentHistory(logId, proof);
@@ -314,6 +323,9 @@ export const rejectPaymentClearanceUpdate = async (
        referenceNumber: logData.gcashReference || "",
        imageUrl: logData.imageUrl || "",
        submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+       metadata: {
+         items: []
+       }
      };
      
      await rejectPaymentHistory(logId, proof);
@@ -325,7 +337,7 @@ export const rejectPaymentClearanceUpdate = async (
  export const logManualPaymentClearanceUpdate = async (
    clearanceId: string,
    studentId: string,
-   items: { refId: string; amount: number; paymentType: PaymentType, parentFineId?: string }[],
+   items: { refId: string; title: string; amount: number; paymentType: PaymentType, parentFineId?: string }[],
    method: PaymentMethod,
    adminId: string,
    adminName: string,

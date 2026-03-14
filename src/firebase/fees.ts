@@ -296,7 +296,7 @@ export const getFeeByStudentId = async (studentId: string) => {
 
 export const recordBulkManualPaymentAndUpdateClearance = async (
     studentId: string,
-    items: { refId: string; amount: number; paymentType: string, parentFineId?: string }[],
+    items: { refId: string; title: string; amount: number; paymentType: string, parentFineId?: string }[],
     totalAmount: number,
     method: "gcash" | "cash" | "bank_transfer" | "waiver",
     adminId: string,
@@ -319,7 +319,7 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
         
         // Note: Since this covers multiple fees/fines, creating a root-level payment history 
         // makes more sense than putting it inside a single fee's subcollection.
-        const bulkPaymentHistoryRef = doc(collection(db, "paymentHistory")); 
+        
         
         const clearanceRef = doc(db, 'clearanceStatus', studentId);
 
@@ -328,58 +328,69 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
             // 1. ALL READS (Must happen before writes)
             // ==========================================
             const itemDocsToUpdate = [];
+            const logsToWrite = []; // Array to stage writes for Phase 2
 
             for (const item of items) {
                 // Determine which collection to pull from based on the item type
                 const collectionName = item.paymentType === PaymentType.FEES ? "fees" : "fines"; 
                 let itemRef;
+                let bulkPaymentHistoryRef;
+
                 if (item.parentFineId) {
                     itemRef = doc(db, "fines", item.parentFineId, "fineItems", item.refId);
-                }
-                else {
+                    bulkPaymentHistoryRef = doc(collection(db, "fines", item.parentFineId, "paymentHistory"));
+                } else {
                     itemRef = doc(db, "fees", item.refId);
+                    bulkPaymentHistoryRef = doc(collection(db, "fees", item.refId, "paymentHistory"));
                 }
+
+                // Execute the READ
                 const itemDoc = await transaction.get(itemRef);
-                console.log(itemDoc.data());
-                console.log(item);
+                
                 if (!itemDoc.exists()) {
                     throw new Error(`Document with ID ${item.refId} does not exist in ${collectionName}.`);
                 }
 
+                // Stage the read data
                 itemDocsToUpdate.push({
                     ref: itemRef,
+                    title: item.title,
                     data: itemDoc.data(),
                     paymentAmount: item.amount,
                     refId: item.refId
                 });
+
+                // Stage the log data for the WRITE phase
+                const newLog = {
+                    id: bulkPaymentHistoryRef.id,
+                    paymentNumber: Date.now(), 
+                    amount: totalAmount,
+                    paymentMethod: method,
+                    paymentProofId: paymentProofRef.id,
+                    gcashReference: method === "gcash" && ref ? ref : null,
+                    status: PaymentStatus.VERIFIED,
+                    paidAt: Timestamp.now(),
+                    verifiedBy: adminId, 
+                    verifiedByName: adminName, 
+                    verifiedAt: Timestamp.now(),
+                    rejectionReason: null,
+                    notes: `Bulk manual payment recorded by admin. Items: ${items.map(i => i.refId).join(', ')}`,
+                    paymentType: overallPaymentType,
+                    metadata: { items },
+                    createdAt: Timestamp.now(),
+                };
+
+                logsToWrite.push({
+                    ref: bulkPaymentHistoryRef,
+                    data: newLog
+                });
             }
 
-            // ==========================================
-            // 2. ALL WRITES
-            // ==========================================
-            
-            // A. Create the single Unified Payment History Log
-            const newLog = {
-                id: bulkPaymentHistoryRef.id,
-                paymentNumber: Date.now(), 
-                amount: totalAmount,
-                paymentMethod: method,
-                paymentProofId: paymentProofRef.id,
-                gcashReference: method === "gcash" && ref ? ref : null,
-                status: PaymentStatus.VERIFIED,
-                paidAt: Timestamp.now(),
-                verifiedBy: adminId, 
-                verifiedByName: adminName, 
-                verifiedAt: Timestamp.now(),
-                rejectionReason: null,
-                notes: `Bulk manual payment recorded by admin. Items: ${items.map(i => i.refId).join(', ')}`,
-                paymentType: overallPaymentType, // "fee", "fin", or "bulk payment"
-                metadata: { items }, // Save the breakdown in metadata
-                createdAt: Timestamp.now(),
-            };
-            transaction.set(bulkPaymentHistoryRef, newLog);
+            // Write all the logs
+            for (const log of logsToWrite) {
+                transaction.set(log.ref, log.data);
+            }
 
-            // B. Create the single Proof of Payment Log
             transaction.set(paymentProofRef, {
                 id: paymentProofRef.id,
                 orgId: currentUser?.uid || "",
@@ -388,7 +399,7 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                 userName: `${studentData?.firstName || ""} ${studentData?.lastName || ""}`.trim(),
                 paymentType: overallPaymentType, // "fee", "fin", or "bulk payment"
                 referenceId: "bulk_transaction", // Can't be a single fee ID anymore
-                paymentHistoryId: bulkPaymentHistoryRef.id,
+                paymentHistoryId: [], // No payment history for bulk payment
                 senderNumber: "",
                 referenceNumber: method === "gcash" && ref ? ref : "",
                 amount: totalAmount,
@@ -404,7 +415,6 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                 receiptCode: generateReceiptId(),
             });
 
-            // C. Update all individual Fee/Fine documents and prepare Clearance updates
             const clearanceUpdates: Record<string, any> = {};
 
             for (const { ref: itemRef, data, paymentAmount, refId } of itemDocsToUpdate) {
@@ -421,7 +431,6 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                     newStatus = "partial";
                 }
 
-                // Update the actual fee/fine document
                 transaction.update(itemRef, {
                     paidAmount: newPaidAmount,
                     balance: newBalance,
@@ -434,16 +443,13 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                 clearanceUpdates[`blockingItems.${refId}.pendingReview`] = false;
             }
 
-            // D. Apply the updates to the Clearance Document in one go
             if (Object.keys(clearanceUpdates).length > 0) {
                 transaction.update(clearanceRef, clearanceUpdates);
             }
         });
 
-        // 3. Recalculate global clearance status after transaction completes
         await recalculateClearanceStatus(studentId);
         
-        return bulkPaymentHistoryRef.id;
 
     } catch (error) {
         console.error("Error processing bulk manual payment and clearance:", error);

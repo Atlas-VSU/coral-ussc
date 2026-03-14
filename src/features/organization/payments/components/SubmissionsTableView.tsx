@@ -54,7 +54,7 @@ export function SubmissionsTableView({ paginated, filtered, onOpenReview }: Subm
                     ₱{payment.amount.toLocaleString()}
                   </TableCell>
                   <TableCell className="text-sm font-mono text-foreground hidden md:table-cell">
-                    {payment.referenceNumber}
+                    {payment.receiptCode? payment.receiptCode: payment.referenceNumber}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">
                     {(payment.submittedAt).toDate().toLocaleDateString()}
