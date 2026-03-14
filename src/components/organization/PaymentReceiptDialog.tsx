@@ -8,7 +8,7 @@ import Image from "next/image"
 
 export interface ReceiptItem {
   name: string
-  type: "fee" | "fine"
+  type: "fees" | "fines"
   amount: number
 }
 
