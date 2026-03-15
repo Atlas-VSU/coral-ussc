@@ -8,11 +8,16 @@ import { db } from "@/firebase/firebase.config";
 import { verifyPaymentHistory, rejectPaymentHistory } from "@/firebase/payment/update/paymentHistory";
 import { ProofOfPayment } from "@/features/organization/fines/types";
 import { PaymentStatus } from "@/constants/status";
+import { ReceiptData } from "@/components/organization/PaymentReceiptDialog";
+import { generateReceiptId } from "../../payments/utils";
+import { getUserById } from "@/firebase";
 
 export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const [receiptOpen, setReceiptOpen] = useState(false)
+    const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
 
     const { user } = useAuth();
     const userId = user?.uid;
@@ -28,9 +33,30 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
         }
 
         try {
-            await recordManualPaymentAndUpdateClearance(feeId, amount, method, userId || "", feeData.userId, user?.firstName + " " + user?.lastName || "",ref)
+            const receipt = generateReceiptId();
+            await recordManualPaymentAndUpdateClearance(feeId, amount, method, userId || "", feeData.userId, user?.firstName + " " + user?.lastName || "",ref, receipt)
             setSuccess(true);
             toast.success("Payment recorded successfully!");
+            const fee = await fetchFee(feeId);
+            if (fee) {
+                const user = await getUserById(fee.userId || "");
+                    setReceiptData({
+                        receiptId: receipt,
+                        studentName: user?.firstName + " " + user?.lastName || "",
+                        studentId: user?.studentId || "",
+                        items: [{
+                            name: fee.title,
+                            type: "fees",
+                            amount: fee.amount,
+                            }],
+                        total: parseFloat(amount),
+                        date:  new Date().toISOString().slice(0, 10),
+                        verifiedByName: user?.firstName + " " + user?.lastName || "",
+                        paymentMethod: method,
+                    }); 
+                setReceiptOpen(true);
+            }
+            
             onSuccess?.(feeId);
         } catch (err) {
             setError("Failed to perform action");
@@ -130,5 +156,8 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
         addManualPayment,
         approvePayment,
         rejectPayment,
+        setReceiptOpen,
+        receiptData,
+        receiptOpen,
     };
 }
