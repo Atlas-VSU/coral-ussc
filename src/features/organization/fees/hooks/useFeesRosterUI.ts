@@ -11,7 +11,8 @@ interface UseFeesRosterUIProps {
     feeId: string,
     amount: string,
     method: "gcash" | "cash" | "bank_transfer" | "waiver",
-    ref?: string
+    ref?: string,
+    senderNumber?: string
   ) => Promise<void>;
   itemsPerPage?: number;
 }
@@ -105,9 +106,10 @@ export function useFeesRosterUI({
     feeId: string,
     amount: string,
     method: "gcash" | "cash" | "bank_transfer" | "waiver",
-    ref?: string
+    ref?: string,
+    senderNumber?: string
   ) => {
-    await onManualPaymentAdded(feeId, amount, method, ref);
+    await onManualPaymentAdded(feeId, amount, method, ref, senderNumber);
     setManualLogOpen(false);
   };
 

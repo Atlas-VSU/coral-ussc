@@ -56,7 +56,7 @@ export function BulkFinesIssuance({
   const overallPct = totalUsers > 0 ? Math.round((totalDone / totalUsers) * 100) : 0;
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={isRunning ? undefined : handleClose}>
       <DialogContent className="max-w-2xl w-[90vw] overflow-y-auto max-h-[90vh] py-8">
         <DialogHeader className="space-y-4">
           <DialogTitle className="text-xl">Event Fines Issuance</DialogTitle>

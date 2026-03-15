@@ -22,7 +22,7 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
     const { user } = useAuth();
     const userId = user?.uid;
 
-    const addManualPayment = async (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", ref?: string) => {
+    const addManualPayment = async (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", ref?: string, senderNumber?: string) => {
         setIsSubmitting(true);
         setError(null);
         setSuccess(false);
@@ -34,12 +34,13 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
 
         try {
             const receipt = generateReceiptId();
-            await recordManualPaymentAndUpdateClearance(feeId, amount, method, userId || "", feeData.userId, user?.firstName + " " + user?.lastName || "",ref, receipt)
+            await recordManualPaymentAndUpdateClearance(feeId, amount, method, userId || "", feeData.userId, user?.firstName + " " + user?.lastName || "",ref, receipt, senderNumber)
             setSuccess(true);
             toast.success("Payment recorded successfully!");
             const fee = await fetchFee(feeId);
             if (fee) {
                 const user = await getUserById(fee.userId || "");
+                const currentUser = await getUserById(userId || "");
                     setReceiptData({
                         receiptId: receipt,
                         studentName: user?.firstName + " " + user?.lastName || "",
@@ -51,7 +52,7 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
                             }],
                         total: parseFloat(amount),
                         date:  new Date().toISOString().slice(0, 10),
-                        verifiedByName: user?.firstName + " " + user?.lastName || "",
+                        verifiedByName: currentUser?.firstName + " " + currentUser?.lastName || "",
                         paymentMethod: method,
                     }); 
                 setReceiptOpen(true);
@@ -79,7 +80,6 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
             
             if (!logSnap.exists()) throw new Error("Payment log not found");
             const logData = logSnap.data();
-            console.log(logData);
             if (!logData.paymentProofId) {
                 // FALLBACK: If no proof ID, use the old direct transaction method or handle as manual
                 await approvePaymentTransaction(feeId, logId, userId || "");
@@ -120,7 +120,6 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
             
             if (!logSnap.exists()) throw new Error("Payment log not found");
             const logData = logSnap.data();
-            console.log(logData);
             if (!logData.paymentProofId) {
                 await rejectPaymentTransaction(feeId, logId, userId || "", reason);
             } else {

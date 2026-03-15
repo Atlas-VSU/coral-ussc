@@ -492,7 +492,8 @@ export const recordManualPaymentAndUpdateClearance = async (
     studentId: string,
     adminName: string,
     ref?: string,
-    receipt?: string
+    receipt?: string,
+    senderNumber?: string
 ) => {
     try {
         const paymentAmount = parseFloat(amount);
@@ -535,7 +536,6 @@ export const recordManualPaymentAndUpdateClearance = async (
                 amount: paymentAmount,
                 paymentMethod: method,
                 paymentProofId: paymentProofRef.id,
-                gcashReference: method === "gcash" && ref ? ref : null,
                 status: PaymentStatus.VERIFIED,
                 paidAt: Timestamp.now(),
                 verifiedBy: adminId, 
@@ -558,7 +558,7 @@ export const recordManualPaymentAndUpdateClearance = async (
                 paymentType: PaymentType.FEES,
                 referenceId: feeId,
                 paymentHistoryId: newLogRef.id,
-                senderNumber: "",
+                senderNumber: method === "gcash" && senderNumber ? senderNumber : "",
                 referenceNumber: method === "gcash" && ref ? ref : "",
                 amount: paymentAmount,
                 imageUrl: "",
