@@ -226,4 +226,20 @@ export const getAllUnpaidFinesforOrg = async () => {
     handleFirestoreError(error, "fetching all unpaid fines for org");
     return [];
   }
- }
+}
+ 
+export const getFineItemsByIds = async (fineId:string, fineItemIds: string[]) => {
+  try {
+    const colRef = collection(db, "fines", fineId, "fineItems");
+    const q = query(colRef, where("id", "in", fineItemIds));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+      console.log("No items for fines found");
+      return [];
+    }
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as FineItem[];
+  } catch (error) {
+    handleFirestoreError(error, "Fetching all fine items for a student");
+    return [];
+  }
+}

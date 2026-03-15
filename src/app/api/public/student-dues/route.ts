@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/firebase/firebase-admin.config";
+import { Timestamp } from "firebase-admin/firestore";
+import { FineItem } from "@/features/organization/fines/types";
 
 type FeeRecord = {
   id: string;
@@ -39,7 +41,7 @@ type PaymentLogRecord = {
 
 const isPendingSubmissionStatus = (status: unknown): boolean => {
   if (typeof status !== "string") return false;
-  return status === "pending" || status === "pending_verification";
+  return status === "pending" || status === "pending";
 };
 
 const isBlockedByPaymentHistoryStatus = (status: unknown): boolean => {
@@ -170,6 +172,20 @@ export async function GET(request: NextRequest) {
       adminDb.collection("fines").where("studentId", "==", studentId).get(),
     ]);
 
+    let fineItems = null;
+      if (!finesSnapshot.empty) {
+        const docId = finesSnapshot.docs[0].id;
+        
+         fineItems = await adminDb
+          .collection("fines")
+          .doc(docId)
+          .collection("fineItems")
+          .get();
+        
+      } else {
+        console.log("No student found with that ID");
+      }
+
     const grouped = new Map<
       string,
       {
@@ -194,6 +210,14 @@ export async function GET(request: NextRequest) {
           latestRejectionReason?: string;
           isPayable: boolean;
           paymentState: "unpaid" | "pending" | "rejected";
+        }>;
+        fineItems: Array<{
+          refId: string,
+          title: string,
+          amount: number,
+          parentFineId: string,
+          isPaid: boolean,
+          date: Timestamp
         }>;
       }
     >();
@@ -234,6 +258,7 @@ export async function GET(request: NextRequest) {
         fineAmount: 0,
         fees: [],
         fines: [],
+        fineItems:[],
       };
 
       existing.feeAmount += outstanding;
@@ -281,12 +306,31 @@ export async function GET(request: NextRequest) {
         asNumber(fine.balance) > 0 ? asNumber(fine.balance) : asNumber(fine.accumulatedAmount);
       if (outstanding <= 0) continue;
 
+      const items = [] 
+      if (fine && fineItems) {
+        for (const doc of fineItems.docs) {
+          const fineItem = { id: doc.id, ...doc.data() } as FineItem;
+          if (!fineItem.isPaid)
+          {
+            items.push({
+              refId: fineItem.id,
+              title: fineItem.eventName,
+              amount: fineItem.amount,
+              parentFineId: fine.id,
+              isPaid: fineItem.isPaid,
+              date: fineItem.eventDate,
+            });
+          }
+        }
+      }
+
       const existing = grouped.get(fine.orgId) ?? {
         orgId: fine.orgId,
         feeAmount: 0,
         fineAmount: 0,
         fees: [],
         fines: [],
+        fineItems: [],
       };
 
       existing.fineAmount += outstanding;
@@ -300,9 +344,14 @@ export async function GET(request: NextRequest) {
         isPayable,
         paymentState,
       });
+      items.forEach((item) => {
+        existing.fineItems.push(item)
+      });
 
       grouped.set(fine.orgId, existing);
     }
+
+
 
     const orgIds = Array.from(grouped.keys());
     const orgDocs = await Promise.all(orgIds.map((orgId) => adminDb.collection("users").doc(orgId).get()));
@@ -326,6 +375,7 @@ export async function GET(request: NextRequest) {
           fineAmount: due.fineAmount,
           fees: due.fees,
           fines: due.fines,
+          fineItems: due.fineItems,
         };
       })
       .filter(Boolean)

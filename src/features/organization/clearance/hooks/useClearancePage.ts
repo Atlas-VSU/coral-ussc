@@ -31,13 +31,13 @@ export function useClearancePage(orgId: string | undefined) {
   const [logPaymentTarget, setLogPaymentTarget] = useState<ClearanceStatus | null>(null)
 
   // Receipt state
-  const [receiptOpen, setReceiptOpen] = useState(false)
-  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
+  // const [receiptOpen, setReceiptOpen] = useState(false)
+  // const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
 
   const [isProcessing, setIsProcessing] = useState(false)
   const idCounter = useRef(0)
 
-  const { approvePayment, rejectPayment, logManualPayment } = useClearanceActions(clearances, setClearances)
+  const { approvePayment, rejectPayment, logManualPayment, receiptData,setReceiptData, setReceiptOpen, receiptOpen } = useClearanceActions(clearances, setClearances)
   const selection = useManualPaymentSelection(logPaymentTarget)
 
   // Derived state: Filtered/Paginated data

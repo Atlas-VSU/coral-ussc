@@ -15,6 +15,11 @@ import { PaymentFormData } from "@/lib/validators";
 import { usePaymentForm, ImageData } from "./hooks/usePaymentForm";
 import { PaymentMethodSelector } from "./components/PaymentMethodSelector";
 import { ImageUpload } from "./components/ImageUpload";
+import { SelectedPaymentItems } from "@/app/(public)/payment/page";
+import { searchUserByStudentId } from "@/firebase";
+import { UnpaidDue } from "./types";
+import { createOnlinePaymentHistory } from "@/firebase/payment/create/paymentHistory";
+import { createBulkOnlineProofOfPayment } from "@/firebase/payment/create/proofOfPayment";
 
 interface StudentData {
   studentId: string;
@@ -28,13 +33,6 @@ interface OrganizationData {
   acronym: string;
 }
 
-interface SelectedPaymentItems {
-  fees: string[];
-  fines: string[];
-  feeAmount: number;
-  fineAmount: number;
-  totalAmount: number;
-}
 
 interface FinesPaymentFormPageProps {
   studentData?: StudentData;
@@ -74,7 +72,7 @@ export default function FinesPaymentFormPage({
     setSubmitResult(null);
 
     // 1. Upload receipt image if provided
-    let imageUrl: string | undefined;
+    let imageUrl = "";
     if (image?.file) {
       const fd = new FormData();
       fd.append("file", image.file);
@@ -88,38 +86,57 @@ export default function FinesPaymentFormPage({
       }
       imageUrl = uploadResult.url as string;
     }
+    const user = await searchUserByStudentId(data.studentId);
 
-    // 2. Submit payment records
-    const payload = {
+    const fees = selectedPaymentItems?.fees ?? [];
+    const fines = selectedPaymentItems?.fineItems ?? [];
+    const unpaidDues= [];
+    for (const fee of fees) { 
+      unpaidDues.push({
+        refId: fee.id,
+        title: fee.description,
+        amount: fee.amount,
+        paymentType: "fees",
+        parentFineId: "",
+      });
+    }
+    for (const fine of fines) { 
+      unpaidDues.push({
+        refId: fine.refId,
+        title: fine.title,
+        amount: fine.amount,
+        paymentType: "fines",
+        parentFineId: fine.parentFineId,
+      });
+    }
+
+    let ref = null;
+    if (selectedPaymentItems?.fees.length === 1 && selectedPaymentItems?.fineItems.length === 0) {
+      ref = selectedPaymentItems.fees[0].id;
+    } else if (selectedPaymentItems?.fineItems.length === 1 && selectedPaymentItems?.fees.length === 0) { 
+      ref = selectedPaymentItems.fines[0].id;
+    }
+
+    const payment = {
       userName: data.userName,
       studentId: data.studentId,
-      orgId: organizationData!.id,
+      amount: data.amount,
       paymentMethod: data.paymentMethod,
       referenceNumber: data.referenceNumber,
       senderNumber: data.senderNumber,
       imageUrl,
+      type: selectedTypes.length === 1 ? selectedTypes[0] : "bulk",
+      referenceId: ref? ref : "bulk_transaction",
       notes: data.notes,
-      fees: selectedPaymentItems!.fees,
-      fines: selectedPaymentItems!.fines,
-    };
+    } as PaymentFormData;
 
-    const res = await fetch("/api/public/submit-payment", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const result = await res.json();
+    const result = await createBulkOnlineProofOfPayment(payment, unpaidDues, user?.id ?? "unknown");
 
-    if (!res.ok || !result.success) {
-      const msg = result.error ?? "Payment submission failed. Please try again.";
+    if (!result[0].success) {
+      const msg = result[0].message ?? "Payment submission failed. Please try again.";
       setSubmitError(msg);
       throw new Error(msg);
     }
-
-    setSubmitResult({
-      paymentHistoryId: result.paymentHistoryId ?? "",
-      submissionIds: Array.isArray(result.submissionIds) ? result.submissionIds : [],
-    });
   };
 
   const {
@@ -186,9 +203,6 @@ export default function FinesPaymentFormPage({
                 <CreditCard className="h-4 w-4 text-green-600" />
                 Payment Summary
               </CardTitle>
-              <CardDescription>
-                This flow now mirrors the accepted backend structure for fees and fines.
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
@@ -216,7 +230,7 @@ export default function FinesPaymentFormPage({
                   <div className="flex items-center justify-between text-sm">
                     <span className="flex items-center gap-2">
                       <ShieldAlert className="h-4 w-4 text-red-600" />
-                      Fines ({selectedPaymentItems.fines.length} item{selectedPaymentItems.fines.length > 1 ? "s" : ""})
+                      Fines ({selectedPaymentItems.fineItems.length} item{selectedPaymentItems.fineItems.length > 1 ? "s" : ""})
                     </span>
                     <span className="font-semibold">₱{selectedPaymentItems.fineAmount.toFixed(2)}</span>
                   </div>
@@ -228,11 +242,6 @@ export default function FinesPaymentFormPage({
                 </div>
               </div>
 
-              {selectedTypes.length > 1 && (
-                <p className="text-xs text-muted-foreground">
-                  Combined fee and fine payments will map to separate backend payment records during full integration.
-                </p>
-              )}
             </CardContent>
           </Card>
         )}

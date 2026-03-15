@@ -31,8 +31,8 @@ export function FeesRosterContent({
 }: {
   fee: Fee;
   studentRows: StudentFeeRow[];
-  onApprovePayment: (feeId: string, logId: string) => Promise<void>;
-  onRejectPayment: (feeId: string, logId: string, reason: string) => Promise<void>;
+  onApprovePayment: (proofId: string) => Promise<void>;
+  onRejectPayment: (proofId: string, reason: string) => Promise<void>;
   onManualPaymentAdded: (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", ref?: string) => Promise<void>;
 }) {
   const router = useRouter();
@@ -177,7 +177,7 @@ export function FeesRosterContent({
         log={selectedLog}
         open={detailOpen}
         onOpenChange={setDetailOpen}
-        onApprove={() => handleApprove(fee.id!, selectedLog!.id)}
+        onApprove={() => handleApprove(selectedLog!.paymentProofId!)}
         onReject={() => {
           setDetailOpen(false);
           setRejectOpen(true);
@@ -189,7 +189,7 @@ export function FeesRosterContent({
         onOpenChange={setRejectOpen}
         rejectionReason={rejectionReason}
         onReasonChange={setRejectionReason}
-        onConfirm={() => handleReject(fee.id!, selectedLog!.id)}
+        onConfirm={() => handleReject(selectedLog!.paymentProofId!)}
       />
     </div>
   );
