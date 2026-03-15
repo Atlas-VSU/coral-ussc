@@ -569,7 +569,15 @@ export const recordManualPaymentAndUpdateClearance = async (
                 verifiedAt: Timestamp.now(),
                 rejectionReason: "",
                 notes: "Manual payment recorded by admin",
-                metadata: {},
+                metadata: {
+                    items: [{
+                        refId: feeId,
+                        title: feeData.title,
+                        amount: paymentAmount,
+                        paymentType: PaymentType.FEES,
+                        parentFineId: "",
+                    }]
+                },
                 receiptCode: receipt,
             })
 
