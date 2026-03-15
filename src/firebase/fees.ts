@@ -491,7 +491,8 @@ export const recordManualPaymentAndUpdateClearance = async (
     adminId: string,   
     studentId: string,
     adminName: string,
-    ref?: string
+    ref?: string,
+    receipt?: string
 ) => {
     try {
         const paymentAmount = parseFloat(amount);
@@ -568,8 +569,16 @@ export const recordManualPaymentAndUpdateClearance = async (
                 verifiedAt: Timestamp.now(),
                 rejectionReason: "",
                 notes: "Manual payment recorded by admin",
-                metadata: {},
-                receiptCode: generateReceiptId(),
+                metadata: {
+                    items: [{
+                        refId: feeId,
+                        title: feeData.title,
+                        amount: paymentAmount,
+                        paymentType: PaymentType.FEES,
+                        parentFineId: "",
+                    }]
+                },
+                receiptCode: receipt,
             })
 
             transaction.update(feeRef, {
