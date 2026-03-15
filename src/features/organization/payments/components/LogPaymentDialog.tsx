@@ -94,7 +94,7 @@ export function LogPaymentDialog({
                       <Badge variant="outline" className="mt-1 text-[10px] capitalize">{due.type}</Badge>
                     </div>
                     <span className="text-sm font-semibold text-foreground shrink-0">
-                      ₱{due.item.balance.toLocaleString()}
+                      ₱{due.balance.toLocaleString()}
                     </span>
                   </label>
                 ))}

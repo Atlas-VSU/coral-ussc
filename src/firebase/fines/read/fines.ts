@@ -1,6 +1,7 @@
 
 import { FineItem, StudentFines } from "@/features/organization/fines/types";
 import { Member, MemberData } from "@/features/organization/members/types";
+import { StudentFineItem } from "@/features/organization/payments/types";
 import { db } from "@/firebase/firebase.config";
 import { getCurrentUserData } from "@/firebase/users";
 import { collection, query, where, getDocs, CollectionReference, DocumentData, DocumentSnapshot, orderBy, limit, startAfter, getCountFromServer, getDoc, doc } from "firebase/firestore";
@@ -184,6 +185,15 @@ export const getFineItemsByFineId = async (fineId: string) => {
   }
 }
 
+export const getUnpaidFineItemsByFineId = async (fine: StudentFines ) => {
+  try {
+    const fineDoc = await getDocs(query(collection(db, "fines", fine.id!, "fineItems"), where("isArchived", "==", false,), where("isPaid", "==", false)));
+    return fineDoc.docs.map(doc => ({ refId: doc.id, userId:fine.userId, fine:fine, parentFineId:fine.id!, title: doc.data().eventName, amount: doc.data().amount})) as StudentFineItem[];
+  } catch (error) {
+    handleFirestoreError(error, `fetching fine items for fine ID ${fine.id}`);
+    return [];
+  }
+}
 
 export const getAllFines = async (status?: string) => {
   try {
