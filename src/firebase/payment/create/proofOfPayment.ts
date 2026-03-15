@@ -12,7 +12,7 @@ import { getFeeByStudentId, recordManualPaymentAndUpdateClearance } from "@/fire
 import { useAuth } from "@/hooks/useAuth";
 import { getCurrentUserData } from "@/firebase/users";
 import { Member } from "@/features/organization/members/types";
-import { createFinesPaymentHistory } from "./paymentHistory";
+import { createFinesPaymentHistory, createOnlinePaymentHistory } from "./paymentHistory";
 import { UnpaidDue } from "@/features/organization/payments/types";
 import { FineItem, StudentFines } from "@/features/organization/fines/types";
 
@@ -52,6 +52,57 @@ export const createOnlineProofOfPayment = async (
     }catch{
         throw new Error("Failed to submit proof of payment. Please try again.");
     }
+}
+
+
+export const createBulkOnlineProofOfPayment = async (
+  payment: PaymentFormData,
+  dues: {refId: string, title: string, amount: number, paymentType: string, parentFineId: string}[],
+  userId: string,
+) => {
+  try {
+      const paymentData = {
+        ...payment,
+        orgId: "5nii7NKwaiTM0ZigxVBcUzQTyTu2", //hardcoded for now since wala paman sila portal, necessary man ang ordId sa queries
+        userId: userId,
+        paymentType: payment.type,
+        status: PaymentStatus.PENDING,
+        submittedAt: Timestamp.now(),
+        metadata: {},
+        verifiedBy:"",
+        verifiedByName: "",
+        verifiedAt: null,
+      }
+      const ref = collection(db, "proofOfPayments");
+      const docRef = await addDoc(ref, paymentData);
+      const items = [];
+    for (const due of dues) {
+      let referenceId = "";
+      if (due.paymentType === "fines") {
+        referenceId = due.parentFineId;
+      }
+      else if (due.paymentType === "fees") {
+        referenceId = due.refId;
+       }
+        await createOnlinePaymentHistory(payment, referenceId, docRef.id, userId, due);
+        items.push({
+          refId: due.refId || null,
+          title: due.title || null,
+          amount: due.amount || null,
+          paymentType: due.paymentType || null,
+          parentFineId: due.paymentType === "fines" ? due.parentFineId : "",
+        })
+    }
+        await updateDoc(doc(db, "proofOfPayments", docRef.id), {
+          metadata: {
+            items: items,
+          }
+        })
+    return [{ success: true, message: "Proof of payment submitted successfully." }];
+  }catch(error) {
+    console.error("Error creating bulk online proof of payment:", error);
+    return [{ success: false, message: "Failed to submit proof of payment. Please try again." }, {status: 500}];
+  }
 }
 
 

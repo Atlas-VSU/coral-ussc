@@ -5,25 +5,27 @@ import StudentVerificationPage from "@/features/organization/payments/StudentVer
 import OrganizationSelectionPage from "@/features/organization/payments/OrganizationSelectionPage";
 import FinesFeesSelectionPage from "@/features/organization/payments/FinesFeesSelectionPage";
 import FinesPaymentFormPage from "@/features/organization/payments/FinesPaymentFormPage";
+import { Timestamp } from "firebase/firestore";
 
 type PaymentStep = "verification" | "organization" | "fees" | "payment";
 
-interface StudentData {
+export interface StudentData {
   studentId: string;
   program: string;
   name: string;
 }
 
-interface OrganizationData {
+export interface OrganizationData {
   id: string;
   name: string;
   acronym: string;
   outstandingAmount: number;
 }
 
-interface FeeItem {
+export interface FeeItem {
   id: string;
   description: string;
+  title: string;
   amount: number;
   dueDate?: string;
   latestRejectionReason?: string;
@@ -31,7 +33,16 @@ interface FeeItem {
   paymentState?: "unpaid" | "pending" | "rejected";
 }
 
-interface FineItem {
+export interface FineItem {
+  refId: string,
+  title: string,
+  amount: number,
+  parentFineId: string,
+  isPaid: boolean,
+  date: Timestamp
+}
+
+export interface Fine {
   id: string;
   description: string;
   amount: number;
@@ -46,12 +57,14 @@ interface OrganizationDueData extends OrganizationData {
   feeAmount: number;
   fineAmount: number;
   fees: FeeItem[];
-  fines: FineItem[];
+  fines: Fine[];
+  fineItems: FineItem[];
 }
 
-interface SelectedPaymentItems {
-  fees: string[];
-  fines: string[];
+export interface SelectedPaymentItems {
+  fees: FeeItem[];
+  fines: Fine[];
+  fineItems: FineItem[];
   feeAmount: number;
   fineAmount: number;
   totalAmount: number;
@@ -94,6 +107,7 @@ export default function PaymentPage() {
           fineAmount: Number(org.fineAmount ?? 0),
           fees: Array.isArray(org.fees) ? org.fees : [],
           fines: Array.isArray(org.fines) ? org.fines : [],
+          fineItems: Array.isArray(org.fineItems) ? org.fineItems : [],
         }))
       );
     } catch (error) {
@@ -167,6 +181,7 @@ export default function PaymentPage() {
           organizationData={selectedOrganization}
           fees={selectedOrganization.fees}
           fines={selectedOrganization.fines}
+          fineItems = {selectedOrganization.fineItems}
           onBack={handleBackToOrganization}
           onNext={handleFeesSelected}
         />
