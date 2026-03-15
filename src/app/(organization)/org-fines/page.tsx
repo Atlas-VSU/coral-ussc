@@ -44,8 +44,6 @@ export default function FinesPage() {
   const [totalUnsettled, setTotalUnsettled] = useState(0);
   const [isStatusChanging, setIsStatusChanging] = useState(true);
 
-  const { approvePayment } = usePaymentApproval();
-
   // Initialize stats
   const initialize = async () => {
     try {
