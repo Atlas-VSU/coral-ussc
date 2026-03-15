@@ -9,7 +9,7 @@ export default function LoginCard() {
       <div
         className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden z-0"
         style={{
-          backgroundImage: "url('/searchfortruth-2.png')",
+          backgroundImage: "url('/images/searchfortruth-2.png')",
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
@@ -19,9 +19,10 @@ export default function LoginCard() {
       <div
         className="relative z-10 w-full rounded-2xl px-8 py-10 flex flex-col items-center gap-6"
         style={{
-          background: "rgba(255, 255, 255, 0.75)",
-          backdropFilter: "blur(16px) saturate(180%)",
-          WebkitBackdropFilter: "blur(16px) saturate(180%)",
+        background: "rgba(255, 255, 255, 0.75)",
+          backdropFilter: "blur(3px) saturate(100%)",
+          WebkitBackdropFilter: "blur(3px) saturate(100%)",
+          border: "1px solid rgba(255, 255, 255, 0.3)",
           boxShadow: "0 8px 40px rgba(27, 94, 32, 0.15), 0 2px 8px rgba(0,0,0,0.08)",
         }}
       >
