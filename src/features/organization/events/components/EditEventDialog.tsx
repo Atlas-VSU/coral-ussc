@@ -121,7 +121,7 @@ export function EditEventDialog({
 
   return (
     <Dialog open={open} onOpenChange={loading ? undefined : onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] overflow-hidden">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Update Event</DialogTitle>
           <DialogDescription>
