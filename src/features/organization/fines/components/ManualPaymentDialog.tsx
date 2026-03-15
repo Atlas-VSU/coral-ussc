@@ -57,7 +57,15 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
                 receiptId: proofData?.receiptCode!,
                 studentName: proofData?.userName!,
                 studentId: proofData?.studentId!,
-                items: proofData?.metadata.items! as unknown as ReceiptItem[],
+                items: proofData?.metadata.items!.map((item) => {
+                    return {
+                        refId: item.refId,
+                        name: item.title,
+                        amount: item.amount,
+                        type: item.paymentType as "fees" | "fines",
+                        parentFineId: item.parentFineId,
+                    };
+                })!,
                 total: proofData?.amount!,
                 date: proofData?.submittedAt?.toDate().toLocaleString() || "",
                 verifiedByName: proofData?.verifiedByName!,

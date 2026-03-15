@@ -51,10 +51,8 @@ export function ManualPaymentDialog({
   if (!student) return null;
 
   const handleManualPayment = async (data: PaymentFormData) => {
-    console.log("here");
     setIsSubmitting(true);
     try {
-      console.log(data);
       await onSuccess(student.id, fee.amount.toString(), manualPayMethod as any, data.referenceNumber, data.senderNumber);
       // NOTE: We don't need a local receipt state/dialog here because `useFeesRosterUI` 
       // already handles showing the receipt globally after `onManualPaymentAdded` completes.

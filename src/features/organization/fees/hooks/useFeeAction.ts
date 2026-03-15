@@ -80,7 +80,6 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
             
             if (!logSnap.exists()) throw new Error("Payment log not found");
             const logData = logSnap.data();
-            console.log(logData);
             if (!logData.paymentProofId) {
                 // FALLBACK: If no proof ID, use the old direct transaction method or handle as manual
                 await approvePaymentTransaction(feeId, logId, userId || "");
@@ -121,7 +120,6 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
             
             if (!logSnap.exists()) throw new Error("Payment log not found");
             const logData = logSnap.data();
-            console.log(logData);
             if (!logData.paymentProofId) {
                 await rejectPaymentTransaction(feeId, logId, userId || "", reason);
             } else {
