@@ -2,7 +2,7 @@ import { PaymentStatus } from "@/constants/status";
 import { PaymentType } from "@/constants/types";
 import { FinesPaymentLog } from "@/features/organization/fines/types";
 import { db } from "@/firebase/firebase.config";
-import { collection, doc, getDoc, getDocs } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 
 
 export const getPaymentHistoryById = async (paymentHistoryId: string, paymentType: PaymentType, paymentReferenceId: string) => { 
@@ -20,9 +20,9 @@ export const getPaymentHistoryById = async (paymentHistoryId: string, paymentTyp
     }
 }
 
-export const getFinesPaymentHistoriesByReferenceId = async (paymentReferenceId: string, paymentType: PaymentType) => {
+export const getFinesPaymentHistoriesByReferenceId = async (paymentReferenceId: string) => {
     try {
-        const subColRef = collection(db, paymentType, paymentReferenceId, "paymentHistory");
+        const subColRef = collection(db, "fines", paymentReferenceId, "paymentHistory");
         const querySnapshot = await getDocs(subColRef);
         const paymentHistories = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         return paymentHistories as FinesPaymentLog[];
@@ -41,5 +41,22 @@ export const getFinesVerifiedPaymentHistoriesByReferenceId = async (paymentRefer
     } catch (error) {
         console.error("Error fetching approved payment histories:", error);
         throw new Error("Failed to fetch approved payment histories. Please try again.");
+    }
+}
+
+export const getPendingPaymentHistory = async (paymentTypeRefId: string, paymentType: string) => {
+    try {
+        console.log("Fetching pending payment history for", paymentType, paymentTypeRefId);
+        const subColRef = collection(db, paymentType, paymentTypeRefId, "paymentHistory");
+        const querySnapshot = await getDocs(query(subColRef, where("status", "==", "pending")));
+        const firstDoc = querySnapshot.docs[0] 
+        const paymentHistory = {
+            id: firstDoc.id,
+            ...firstDoc.data()
+        } as FinesPaymentLog;
+        return paymentHistory;
+    } catch (error) {
+        console.error("Error fetching payment history");
+        throw new Error("Failed to fetch payment history");
     }
 }

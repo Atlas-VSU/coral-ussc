@@ -5,8 +5,8 @@ import type { StudentFeeRow } from "./useFeesRoster";
 interface UseFeesRosterUIProps {
   fee: Fee;
   studentRows: StudentFeeRow[];
-  onApprovePayment: (feeId: string, logId: string) => Promise<void>;
-  onRejectPayment: (feeId: string, logId: string, reason: string) => Promise<void>;
+  onApprovePayment: (proofId: string) => Promise<void>;
+  onRejectPayment: (proofId: string ,reason: string) => Promise<void>;
   onManualPaymentAdded: (
     feeId: string,
     amount: string,
@@ -81,21 +81,21 @@ export function useFeesRosterUI({
   );
 
   const stats = useMemo(() => ({
-    pending: allLogs.filter((l) => l.status === "pending_verification").length,
+    pending: allLogs.filter((l) => l.status === "pending").length,
     verified: allLogs.filter((l) => l.status === "verified").length,
     rejected: allLogs.filter((l) => l.status === "rejected").length,
     unpaid: allStudentRows.filter((r) => r.status === "unpaid").length,
   }), [allLogs, allStudentRows]);
 
-  const handleApprove = async (feeId: string, logId: string) => {
-    await onApprovePayment(feeId, logId);
+  const handleApprove = async (proofId: string) => {
+    await onApprovePayment(proofId);
     setDetailOpen(false);
     setSelectedLog(null);
   };
 
-  const handleReject = async (feeId: string, logId: string) => {
+  const handleReject = async (proofId: string) => {
     if (!rejectionReason.trim()) return;
-    await onRejectPayment(feeId, logId, rejectionReason);
+    await onRejectPayment(proofId, rejectionReason);
     setRejectOpen(false);
     setDetailOpen(false);
     setSelectedLog(null);

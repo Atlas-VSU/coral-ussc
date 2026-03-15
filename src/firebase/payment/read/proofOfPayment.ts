@@ -33,3 +33,23 @@ export const getAllProofOfPayments = async (orgId:string) => {
         throw new Error("Failed to fetch pending proof of payments. Please try again.");
     }
 }
+
+export const getProofOfPaymentByUserId = async (userId: string, orgId?:string) => {
+    try {
+        const constraints = [where("userId", "==", userId)];
+        if (orgId) {
+            constraints.push(where("orgId", "==", orgId));
+        }
+        const docSnap = await getDocs(query(collection(db, "proofOfPayments"),
+            ...constraints));
+        
+        if (docSnap.empty) {
+            return null;
+        }
+        const doc = docSnap.docs[0];
+        return { id: doc.id, ...doc.data() } as ProofOfPayment;
+    } catch (error) {
+        console.error("Error fetching proof of payment:", error);
+        throw new Error("Failed to fetch proof of payment. Please try again.");
+    }
+}
