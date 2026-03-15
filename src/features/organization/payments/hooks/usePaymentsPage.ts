@@ -14,8 +14,10 @@ import { Fee } from "../../fees/types"
 import { generateReceiptId } from "../utils"
 import { Member } from "../../members/types"
 import { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
-import { is } from "date-fns/locale"
+import { is, se } from "date-fns/locale"
 import { PaymentType } from "@/constants/types"
+import { usePaymentApproval } from "./usePaymentApproval"
+import { set } from "zod"
 
 export function usePaymentsPage() {
   const {
@@ -56,6 +58,8 @@ export function usePaymentsPage() {
 
   // ── Student program ───────────────────────────────────────────────────────
   const [studentProgram, setStudentProgram] = useState<Awaited<ReturnType<typeof getProgramById>> | null>(null)
+
+  const { _approvePayment, _rejectPayment } = usePaymentApproval()
 
   // Sync payments from hook into local state
   useEffect(() => { if (payments.length > 0) setPaymentsList(payments) }, [payments])
@@ -129,26 +133,47 @@ export function usePaymentsPage() {
   )
 
   // ── Handlers: submissions ─────────────────────────────────────────────────
-  const handleApprove = useCallback((id: string) => {
-    setPaymentsList(prev => prev.map(p => p.id !== id ? p : {
-      ...p,
-      status: "verified" as PaymentStatus,
-      reviewedDate: new Date().toISOString().split("T")[0],
-      reviewedBy: "Admin",
-    }))
-    toast.success("Payment approved successfully")
+  const handleApprove = useCallback(async (payment: ProofOfPayment) => {
+    setLoading(true);
+    try {
+      const result = await _approvePayment(payment);
+      setReceiptData(result?.receipt!);
+      setDetailOpen(false)
+      setReceiptOpen(true)
+      setLoading(false)
+      toast.success("Payment approved successfully")
+    } catch (error) {
+      console.log("Error approving payment:", error);
+      toast.error("Failed to approve payment. Please try again.")
+      setLoading(false);
+    }
+      setPaymentsList(prev => prev.map(p => p.id !== payment.id ? p : {
+        ...p,
+        status: "verified" as PaymentStatus,
+        reviewedDate: new Date().toISOString().split("T")[0],
+        reviewedBy: "Admin",
+      }))
     setSelectedPayment(null)
   }, [])
 
-  const handleDecline = useCallback((id: string, reason: string) => {
-    setPaymentsList(prev => prev.map(p => p.id !== id ? p : {
+  const handleDecline = useCallback(async(payment: ProofOfPayment, reason: string) => {
+    try {
+      await _rejectPayment(payment, reason);
+      toast.success("Payment declined successfully")
+    }catch(error){
+      console.error("Error declining payment:", error);
+      toast.error("Failed to decline payment. Please try again.")
+      setLoading(false)
+      return;
+    }
+    setPaymentsList(prev => prev.map(p => p.id !== payment.id ? p : {
       ...p,
       status: "rejected" as PaymentStatus,
       reviewedDate: new Date().toISOString().split("T")[0],
       reviewedBy: "Admin",
       remarks: reason,
     }))
-    toast.success("Payment declined with remarks")
+    setDetailOpen(false)
     setSelectedPayment(null)
   }, [])
 

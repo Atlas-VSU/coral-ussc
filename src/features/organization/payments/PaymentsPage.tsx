@@ -113,8 +113,8 @@ export default function PaymentsPage() {
           reviewedAt: selectedPayment.verifiedAt?.toDate().toLocaleDateString(),
           paymentMethod:selectedPayment.paymentMethod,
         } : null}
-        // onApprove={selectedPayment?.status === "pending" ? () => handleApprove(selectedPayment!.id) : undefined}
-        // onReject={selectedPayment?.status === "pending"  ? reason => handleDecline(selectedPayment!.id, reason) : undefined}
+        onApprove={selectedPayment?.status === "pending" ? () => handleApprove(selectedPayment) : undefined}
+        onReject={selectedPayment?.status === "pending"  ? reason => handleDecline(selectedPayment, reason) : undefined}
       />
 
       {/* ── Log Payment Dialog ── */}
