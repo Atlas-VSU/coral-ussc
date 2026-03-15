@@ -22,20 +22,18 @@ export const updateProofOfPaymentHistoryId = async (proofOfPaymentId: string, pa
     }
 }
 
-export const verifyPaymentProof = async (proofOfPayment: ProofOfPayment, note: string) => { 
+export const verifyPaymentProof = async (proofOfPayment: ProofOfPayment, verifier: Member, receipt?: string) => { 
     try { 
-        const verifier = await getCurrentUserData() as unknown as Member;
         const docRef = doc(db, "proofOfPayments", proofOfPayment.id!);
         await updateDoc(docRef, {
-            verifiedBy: verifier.studentId,
+            verifiedBy: verifier.id,
             verifiedByName: verifier.firstName + " " + verifier.lastName,
             verifiedAt: Timestamp.now(),
-            notes: note,
-            receiptCode: generateReceiptId(),
+            receiptCode: receipt,
             status: PaymentStatus.VERIFIED,
-            "updatedAt": Timestamp.now(),
+            updatedAt: Timestamp.now(),
         });
-        await verifyPaymentHistory(proofOfPayment.paymentHistoryId!, proofOfPayment);
+
         //To Add: email capability
     }catch(error){
         console.error("Error verifying payment proof:", error);
@@ -43,19 +41,18 @@ export const verifyPaymentProof = async (proofOfPayment: ProofOfPayment, note: s
     }
 }
 
-export const rejectPaymentProof = async (proofOfPayment: ProofOfPayment, reason: string) => {
+export const rejectPaymentProof = async (proofOfPayment: ProofOfPayment, verifier: Member,  reason?: string) => {
     try { 
-        const verifier = await getCurrentUserData() as unknown as Member;
         const docRef = doc(db, "proofOfPayments", proofOfPayment.id!);
         await updateDoc(docRef, {
-            verifiedBy: verifier.studentId,
+            verifiedBy: verifier.id,
             verifiedByName: verifier.firstName + " " + verifier.lastName,
             verifiedAt: Timestamp.now(),
-            rejectionReason: reason,
+            rejectionReason: reason || "Payment proof rejected, please contact the organization for more details.",
             status: PaymentStatus.REJECTED,
-            "updatedAt": Timestamp.now(),
+            updatedAt: Timestamp.now(),
         });
-        await rejectPaymentHistory(proofOfPayment.paymentHistoryId!, proofOfPayment);
+
         //To Add: email capability
     }catch(error){
         console.error("Error rejecting payment proof:", error);

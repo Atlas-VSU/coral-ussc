@@ -60,10 +60,13 @@ export const createBulkOnlineProofOfPayment = async (
   dues: {refId: string, title: string, amount: number, paymentType: string, parentFineId: string}[],
   userId: string,
 ) => {
+
+  const tempOrgIdForStudents = "5nii7NKwaiTM0ZigxVBcUzQTyTu2"; //hardcoded for now since wala paman sila portal, necessary man ang ordId sa queries
+  
   try {
       const paymentData = {
         ...payment,
-        orgId: "5nii7NKwaiTM0ZigxVBcUzQTyTu2", //hardcoded for now since wala paman sila portal, necessary man ang ordId sa queries
+        orgId: tempOrgIdForStudents,
         userId: userId,
         paymentType: payment.type,
         status: PaymentStatus.PENDING,
@@ -76,6 +79,7 @@ export const createBulkOnlineProofOfPayment = async (
       const ref = collection(db, "proofOfPayments");
       const docRef = await addDoc(ref, paymentData);
       const items = [];
+      
     for (const due of dues) {
       let referenceId = "";
       if (due.paymentType === "fines") {
@@ -85,6 +89,10 @@ export const createBulkOnlineProofOfPayment = async (
         referenceId = due.refId;
        }
         await createOnlinePaymentHistory(payment, referenceId, docRef.id, userId, due);
+        const clearanceRef = doc(db, 'clearanceStatus', userId);
+        await updateDoc(clearanceRef, {
+          [`blockingItems.${due.refId}.pendingReview`]: true,
+        })
         items.push({
           refId: due.refId || null,
           title: due.title || null,
@@ -93,6 +101,8 @@ export const createBulkOnlineProofOfPayment = async (
           parentFineId: due.paymentType === "fines" ? due.parentFineId : "",
         })
     }
+        await updateDoc(doc(db, "clearanceStatus", userId), { status: "pending" });
+    
         await updateDoc(doc(db, "proofOfPayments", docRef.id), {
           metadata: {
             items: items,
