@@ -119,7 +119,7 @@ export function useClearanceActions(
           
           if (newStatus === "unpaid" && options?.rejectionReason) {
             newItem.paymentHistory = newItem.paymentHistory.map(p => 
-              p.status === "pending_verification" 
+              p.status === "pending" 
                 ? {
                     ...p,
                     status: "rejected",
@@ -133,7 +133,7 @@ export function useClearanceActions(
           
           if (newStatus === "paid" && !options?.addPaymentLog) {
              newItem.paymentHistory = newItem.paymentHistory.map(p => 
-               p.status === "pending_verification" 
+               p.status === "pending" 
                  ? {
                      ...p,
                      status: "verified",

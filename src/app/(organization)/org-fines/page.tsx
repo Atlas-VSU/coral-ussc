@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { countFinesOfStudents, countStudentsWithFines, countUnsettleFinesOfStudents, getAllFines } from "@/firebase/fines/read/fines";
 import { FineBreakdownDialog } from "@/features/organization/fines/components/FineBreakdownDialog";
+import { usePaymentApproval } from "@/features/organization/payments/hooks/usePaymentApproval";
 
 export default function FinesPage() {
 
@@ -43,6 +44,8 @@ export default function FinesPage() {
   const [totalUnsettled, setTotalUnsettled] = useState(0);
   const [isStatusChanging, setIsStatusChanging] = useState(true);
 
+  const { approvePayment } = usePaymentApproval();
+
   // Initialize stats
   const initialize = async () => {
     try {
@@ -60,6 +63,7 @@ export default function FinesPage() {
     setIsLoading(true);
     try {
       const docs = await getAllFines(status);
+      console.log("Fetched fines:", docs);
       setAllFines(docs);
       setCurrentPage(1); // always reset to page 1 on new fetch
     } catch (error) {
@@ -140,7 +144,7 @@ export default function FinesPage() {
     }
   };
 
-  const handleSuccess = () => {
+  const handleSuccess = async () => {
     setIsStatusChanging(true);
     setFilterStatus("paid")
   }

@@ -68,7 +68,7 @@ export const updateClearanceDocument = async (userId: string, orgId: string) => 
             balance: fee.balance,
             status: fee.status as "unpaid" | "paid",
             paymentHistory: fee.paymentHistory,
-            pendingReview: fee.paymentHistory.some(payment => payment.status === "pending_verification"),
+            pendingReview: fee.paymentHistory.some(payment => payment.status === "pending"),
             isRequiredForClearance: fee.isRequiredForClearance,
         };
     });
@@ -83,7 +83,7 @@ export const updateClearanceDocument = async (userId: string, orgId: string) => 
             balance: fine.balance,
             status: fine.status as "unpaid" | "paid",
             paymentHistory: [], // Payment history for fines is stored in a subcollection, not aggregated here for now
-            pendingReview: fine.status === "pending" || fine.status === "pending_verification",
+            pendingReview: fine.status === "pending" || fine.status === "pending",
             isRequiredForClearance: true, // Fines are usually required for clearance
         };
     }
@@ -185,7 +185,7 @@ export const approvePaymentClearanceUpdate = async (
   for (const item of itemsToUpdate) {
     if (item.type === PaymentType.FEES) {
       const logsRef = collection(db, "fees", item.refId, "paymentHistory");
-      const q = query(logsRef, where("status", "==", "pending_verification"));
+      const q = query(logsRef, where("status", "==", "pending"));
       const snapshot = await getDocs(q);
       
       if (snapshot.empty) continue; // Skip if no pending found
@@ -219,7 +219,7 @@ export const approvePaymentClearanceUpdate = async (
       await verifyPaymentHistory(logId, proof);
     } else {
       const logsRef = collection(db, "fines", item.refId, "paymentHistory");
-      const q = query(logsRef, where("status", "==", "pending_verification"));
+      const q = query(logsRef, where("status", "==", "pending"));
       const snapshot = await getDocs(q);
       
       if (snapshot.empty) continue; // Skip if no pending found
@@ -266,7 +266,7 @@ export const rejectPaymentClearanceUpdate = async (
   for (const item of itemsToUpdate) {
     if (item.type === PaymentType.FEES) {
      const logsRef = collection(db, "fees", item.refId, "paymentHistory");
-     const q = query(logsRef, where("status", "==", "pending_verification"));
+     const q = query(logsRef, where("status", "==", "pending"));
      const snapshot = await getDocs(q);
      
      if (snapshot.empty) continue;
@@ -300,7 +300,7 @@ export const rejectPaymentClearanceUpdate = async (
      await rejectPaymentHistory(logId, proof);
    } else {
      const logsRef = collection(db, "fines", item.refId, "paymentHistory");
-     const q = query(logsRef, where("status", "==", "pending_verification"));
+     const q = query(logsRef, where("status", "==", "pending"));
      const snapshot = await getDocs(q);
      
      if (snapshot.empty) continue;

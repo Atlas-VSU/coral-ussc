@@ -106,7 +106,7 @@ export function PaymentDetailDialog({
           )}
         </div>
 
-        {log.status === "pending_verification" && (
+        {log.status === "pending" && (
           <DialogFooter className="gap-2 sm:gap-0 font-medium">
             <Button variant="outline" className="flex-1 text-destructive hover:bg-destructive/10" onClick={() => onReject(feeId, log.id)}>
               <XCircle className="size-4 mr-1" /> Reject
