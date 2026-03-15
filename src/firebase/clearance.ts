@@ -179,7 +179,8 @@ export const approvePaymentClearanceUpdate = async (
   itemsToUpdate: { refId: string, type: PaymentType | string }[], 
   adminId: string,
   adminName: string,
-  studentData?: { firstName: string; lastName: string; studentId: string; orgId: string }
+  studentData?: { firstName: string; lastName: string; studentId: string; orgId: string },
+  receiptCode?: string
 ) => {
   for (const item of itemsToUpdate) {
     if (item.type === PaymentType.FEES) {
@@ -209,6 +210,10 @@ export const approvePaymentClearanceUpdate = async (
         referenceNumber: logData.gcashReference || "",
         imageUrl: logData.imageUrl || "",
         submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+        metadata: {
+         items:[]
+        },
+        receiptCode: receiptCode || "",
       };
 
       await verifyPaymentHistory(logId, proof);
@@ -239,6 +244,10 @@ export const approvePaymentClearanceUpdate = async (
         referenceNumber: logData.gcashReference || "",
         imageUrl: logData.imageUrl || "",
         submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+        metadata: {
+         items:[]
+        },
+        receiptCode: receiptCode || "",
       };
       
       await verifyPaymentHistory(logId, proof);
@@ -283,6 +292,9 @@ export const rejectPaymentClearanceUpdate = async (
        referenceNumber: logData.gcashReference || "",
        imageUrl: logData.imageUrl || "",
        submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+       metadata: {
+         items:[]
+       }
      };
 
      await rejectPaymentHistory(logId, proof);
@@ -314,6 +326,9 @@ export const rejectPaymentClearanceUpdate = async (
        referenceNumber: logData.gcashReference || "",
        imageUrl: logData.imageUrl || "",
        submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+       metadata: {
+         items: []
+       }
      };
      
      await rejectPaymentHistory(logId, proof);
@@ -325,11 +340,12 @@ export const rejectPaymentClearanceUpdate = async (
  export const logManualPaymentClearanceUpdate = async (
    clearanceId: string,
    studentId: string,
-   items: { refId: string; amount: number; paymentType: PaymentType, parentFineId?: string }[],
+   items: { refId: string; title: string; amount: number; paymentType: PaymentType, parentFineId?: string }[],
    method: PaymentMethod,
    adminId: string,
    adminName: string,
-   overallPaymentType?: string | PaymentType
+   overallPaymentType?: string | PaymentType,
+  receiptCode?: string,
  ) => {
   if(!overallPaymentType) {
     throw new Error("Overall payment type is required");
@@ -345,7 +361,9 @@ export const rejectPaymentClearanceUpdate = async (
       method as any,
       adminId,
       adminName,
-      overallPaymentType as PaymentType
+      overallPaymentType as PaymentType,
+      undefined,
+      receiptCode
     );
   
   // else if(overallPaymentType === PaymentType.FINES) {

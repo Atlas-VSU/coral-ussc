@@ -4,7 +4,6 @@ import { OnlinePaymentMethod } from "../types";
 
 const PAYMENT_METHODS = [
   { value: "gcash",         label: "GCash", icon: "📱", description: "Mobile wallet" },
-  { value: "bank_transfer", label: "Bank",  icon: "🏦", description: "Wire transfer" },
 ] as const;
 
 interface PaymentMethodSelectorProps {
