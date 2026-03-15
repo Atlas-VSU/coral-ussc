@@ -1,5 +1,6 @@
 import { DesktopHeader } from "./components/DesktopHeader";
 import { MobileHeader } from "./components/MobileHeader";
+import { TemporaryLogin } from "./components/TemporaryLogin";
 
 import LoginCard from "./components/LoginCard";
 
@@ -52,10 +53,11 @@ export function HomePageLayout() {
                 }}
               />
 
-              <div className="relative w-full max-w-2xl mx-auto px-4 lg:pr-8 h-[70vh] lg:h-[70vh] flex items-center justify-center">
+              <div className="relative w-full max-w-2xl mx-auto px-4 lg:pr-8 h-[70vh] lg:h-[80vh] flex items-center justify-center">
                 {/* Main Sign-in Card */}
+                {/* When login card is uncommented change top-0 */}
                 <div
-                  className="absolute w-full h-full top-0 left-0 right-[30] z-3 animate-fade-in-up"
+                  className="absolute w-full h-full top-8 left-0 right-[30] z-3 animate-fade-in-up"
                   style={{
                     backgroundImage: `url('/images/searchfortruth-2.png')`,
                     backgroundSize: "contain",
@@ -63,7 +65,10 @@ export function HomePageLayout() {
                     backgroundRepeat: "no-repeat",
                   }}
                 />
-                <LoginCard />
+
+                {/* Temporary Login Admin Card */}
+                <TemporaryLogin />
+                {/* <LoginCard /> Uncomment if homepage with student login*/}
               </div>
             </div>
           </div>
@@ -115,7 +120,8 @@ export function HomePageLayout() {
                 //   backgroundRepeat: "no-repeat",
                 // }}
               />
-              <LoginCard />
+              {/* <LoginCard /> Uncomment if student login is available*/}
+              <TemporaryLogin />
             </div>
           </div>
         </div>
