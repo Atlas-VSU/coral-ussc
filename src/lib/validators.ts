@@ -1,3 +1,4 @@
+import { PaymentMethods } from "@/constants/types";
 import { z } from "zod";
 import { fa } from "zod/v4/locales";
 
@@ -64,7 +65,7 @@ export const paymentSchema = z.object({
       "Student ID must follow format XX-X-XXXXX (e.g., 21-1-12345)"
     ),
   amount: z.number().min(0.01, "Amount must be greater than zero"),
-  paymentMethod: z.string(),
+  paymentMethod: z.enum(PaymentMethods),
   referenceNumber: z.string().optional(),
   senderNumber: z.string().optional(),
   imageUrl: z.string().optional(),
