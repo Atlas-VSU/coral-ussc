@@ -40,6 +40,7 @@ export interface PaymentLog {
   paymentProofId: string | null;
   gcashReceiptImageUrl?: string | null;
   gcashReference?: string | null;
+  senderNumber?: string | null;
   status: PaymentStatus;
   
   // Timestamps from Firestore

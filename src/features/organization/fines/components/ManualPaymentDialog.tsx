@@ -13,6 +13,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { PaymentType } from "@/constants/types";
 import { PaymentFormData } from "@/lib/validators";
 import { addOfflineFinesPayment } from "@/firebase/payment/create/paymentHistory";
+import PaymentReceiptDialog, { ReceiptData, ReceiptItem } from "@/components/organization/PaymentReceiptDialog";
+import { getProofOfPaymentById } from "@/firebase/payment/read/proofOfPayment";
+import { string } from "zod";
 
 
 interface ManualPaymentDialogProps { 
@@ -29,6 +32,9 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
     const [manualPayMethod, setManualPayMethod] = useState<string>("cash");
     const [manualPayNotes, setManualPayNotes] = useState<string>("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [receiptOpen, setReceiptOpen] = useState(false);
+    const [receiptData, setReceiptData] = useState<ReceiptData>();
     
     const form = useProofOfPaymentForm(
         {
@@ -44,14 +50,25 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
     const handleManualPayment = async (data: PaymentFormData) => {
         setIsSubmitting(true);
         try {
-            await addOfflineFinesPayment(fines, PaymentType.FINES, manualPayMethod as any, data.referenceNumber, data.senderNumber);
-            onSuccess && onSuccess();
-        toast.success("A payment was logged successfully.");
+            const proofId = await addOfflineFinesPayment(fines, PaymentType.FINES, manualPayMethod as any, data.referenceNumber, data.senderNumber);
+            
+            const proofData = await getProofOfPaymentById(proofId!);
+            setReceiptData({
+                receiptId: proofData?.receiptCode!,
+                studentName: proofData?.userName!,
+                studentId: proofData?.studentId!,
+                items: proofData?.metadata.items! as unknown as ReceiptItem[],
+                total: proofData?.amount!,
+                date: proofData?.submittedAt?.toDate().toLocaleString() || "",
+                verifiedByName: proofData?.verifiedByName!,
+                paymentMethod: proofData?.paymentMethod!,
+            });
+            setReceiptOpen(true);
+            toast.success("A payment was logged successfully.");
         } catch (error) {
         toast.error("Failed to log payment. Please try again.");
         } finally {
         setIsSubmitting(false);
-            onOpenChange(false);
         }
     };
 
@@ -92,7 +109,7 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
                                 onValueChange={(value) => {
                                 field.onChange(value); 
                                 setManualPayMethod(value);
-                                if (value === "cash") {
+                                if (value === "gcash") {
                                     form.setValue("senderNumber", "");
                                     form.setValue("referenceNumber", "");
                                 }
@@ -135,22 +152,19 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
                                 )}
                             />
                         )}
-                        
                         {manualPayMethod === "gcash" && (
                                <FormField
                                 control={form.control}
-                                name="notes"
+                                name="senderNumber"
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col gap-1.5">
                                     <FormLabel>
-                                        Notes <span className="text-xs text-muted-foreground">(optional)</span>
+                                        Sender Number <span className="text-destructive">*</span>
                                     </FormLabel>
                                     <FormControl>
-                                        <Textarea
+                                        <Input
                                         {...field}
-                                        rows={2}
-                                        placeholder="Any additional notes about this payment…"
-                                        className="resize-none text-xs"
+                                        placeholder="09123456789"
                                         />
                                     </FormControl>
                                     <FormMessage className="text-[10px]" />
@@ -158,7 +172,6 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
                                 )}
                                 />
                         )}
-                        
                         {/* I think this input is not necessary na since we can just use the "now date" once successful ang payment log */}
                         {/* <div className="flex flex-col gap-1.5">
                         <Label htmlFor="manualPayDate">Date of Payment <span className="text-destructive">*</span></Label>
@@ -196,6 +209,18 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
                     </Form>
                 </DialogContent>
             </Dialog>
+
+             <PaymentReceiptDialog
+                open={receiptOpen}
+                onOpenChange={(v) => {
+                    setReceiptOpen(v);
+                    if (!v) {
+                        onSuccess && onSuccess();
+                        onOpenChange(false);
+                    }
+                }}
+                data={receiptData!}
+             />               
             </div>
         )
     }
