@@ -30,7 +30,7 @@ export type Fee = {
 
 
 export type PaymentMethod = "gcash" | "cash" | "bank_transfer" | "waiver";
-export type PaymentStatus = "pending_verification" | "verified" | "rejected";
+export type PaymentStatus = "pending" | "verified" | "rejected";
 
 export interface PaymentLog {
   id: string;

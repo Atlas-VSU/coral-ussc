@@ -33,7 +33,7 @@ export function SearchFilterBar({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Status</SelectItem>
-          <SelectItem value="pending_verification">Pending</SelectItem>
+          <SelectItem value="pending">Pending</SelectItem>
           <SelectItem value="verified">Verified</SelectItem>
           <SelectItem value="rejected">Rejected</SelectItem>
           {showUnpaidFilter && <SelectItem value="unpaid">Unpaid</SelectItem>}

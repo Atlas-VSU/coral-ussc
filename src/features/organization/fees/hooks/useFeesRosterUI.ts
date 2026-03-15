@@ -81,7 +81,7 @@ export function useFeesRosterUI({
   );
 
   const stats = useMemo(() => ({
-    pending: allLogs.filter((l) => l.status === "pending_verification").length,
+    pending: allLogs.filter((l) => l.status === "pending").length,
     verified: allLogs.filter((l) => l.status === "verified").length,
     rejected: allLogs.filter((l) => l.status === "rejected").length,
     unpaid: allStudentRows.filter((r) => r.status === "unpaid").length,
