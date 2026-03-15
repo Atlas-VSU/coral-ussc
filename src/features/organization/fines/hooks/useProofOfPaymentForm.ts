@@ -10,6 +10,11 @@ export const useProofOfPaymentForm = (values?: {
     studentId?: string;
     amount?: number;
     paymentMethod?: string;
+    referenceNumber?: string;
+    senderNumber?: string;
+    imageUrl?: string;
+    rejectionReason?: string;
+    notes?: string;
   };
 }) => {
   return useForm<PaymentFormData>({

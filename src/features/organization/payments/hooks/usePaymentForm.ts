@@ -73,7 +73,6 @@ export function usePaymentForm(options?: UsePaymentFormOptions) {
       //   data.imageUrl = supabase.storage.from('receipts').getPublicUrl(uploaded!.path).data.publicUrl;
       // ─────────────────────────────────────────────────────────────────
 
-      console.log("Submitting:", data);
       await new Promise(r => setTimeout(r, 1800)); // remove when wiring real upload
       }
       setStatus("success");

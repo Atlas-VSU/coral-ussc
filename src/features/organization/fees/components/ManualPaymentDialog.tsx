@@ -4,8 +4,14 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { PenLine } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Wallet } from "lucide-react";
+import { toast } from "sonner";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useProofOfPaymentForm } from "@/features/organization/fines/hooks/useProofOfPaymentForm";
+import { PaymentFormData } from "@/lib/validators";
 import type { Fee } from "@/features/organization/fees/types";
 import type { StudentFeeRow } from "../hooks/useFeesRoster";
 
@@ -14,7 +20,7 @@ interface ManualPaymentDialogProps {
   student: StudentFeeRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: (feeId: string, amount: string, method: "cash") => Promise<void>;
+  onSuccess: (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", ref?: string, senderNumber?: string) => Promise<void>;
 }
 
 export function ManualPaymentDialog({
@@ -24,69 +30,182 @@ export function ManualPaymentDialog({
   onOpenChange,
   onSuccess,
 }: ManualPaymentDialogProps) {
+  const [manualPayMethod, setManualPayMethod] = useState<string>("cash");
+  const [manualPayNotes, setManualPayNotes] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useProofOfPaymentForm({
+    defaultValues: {
+      userName: student ? `${student.memberInfo.firstName} ${student.memberInfo.lastName}` : "",
+      studentId: student?.memberInfo.studentId || "",
+      amount: fee.amount,
+      paymentMethod: "cash",
+      referenceNumber: "",
+      senderNumber: "",
+      imageUrl: "",
+      rejectionReason: "",
+      notes: "",
+    },
+  });
 
   if (!student) return null;
 
-  const handleSubmit = async () => {
+  const handleManualPayment = async (data: PaymentFormData) => {
     setIsSubmitting(true);
-    await onSuccess(student.id, fee.amount.toString(), "cash");
-    setIsSubmitting(false);
-    onOpenChange(false);
+    try {
+      await onSuccess(student.id, fee.amount.toString(), manualPayMethod as any, data.referenceNumber, data.senderNumber);
+      // NOTE: We don't need a local receipt state/dialog here because `useFeesRosterUI` 
+      // already handles showing the receipt globally after `onManualPaymentAdded` completes.
+    } catch (error) {
+       console.error(error);
+    } finally {
+      setIsSubmitting(false);
+      onOpenChange(false);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm border-border bg-background">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Cash Payment</DialogTitle>
+          <DialogTitle>Log Manual Payment</DialogTitle>
           <DialogDescription>
-            Record payment for {student.memberInfo.firstName} {student.memberInfo.lastName}
+            Record a cash or direct payment for{" "}
+            <span className="font-medium text-foreground">
+              {student.memberInfo.firstName} {student.memberInfo.lastName}
+            </span>.
+            This will immediately mark the fee as settled.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-5 py-4">
-          {/* Fixed amount display */}
-          <div className="grid gap-2">
-            <Label htmlFor="amount" className="text-sm font-medium">
-              Amount Due
-            </Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">
-                ₱
-              </span>
-              <Input
-                id="amount"
-                type="text"
-                value={fee.amount.toLocaleString()}
-                disabled
-                className="pl-7 bg-muted/20 border-border text-foreground font-medium"
+        <Form {...form}>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            await handleManualPayment(form.getValues());
+          }}>
+            <div className="flex flex-col gap-4">
+              <div className="rounded-lg border border-border bg-muted/40 px-4 py-3">
+                <p className="text-xs text-muted-foreground">Amount to settle</p>
+                <p className="text-lg font-bold text-foreground mt-0.5">
+                  ₱{fee.amount.toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {fee.title}
+                </p>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="paymentMethod"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col gap-1.5">
+                    <FormLabel>Payment Method <span className="text-destructive">*</span></FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setManualPayMethod(value);
+                        if (value === "cash") {
+                          form.clearErrors("senderNumber");
+                          form.clearErrors("referenceNumber");
+                        }
+                        if (value === "gcash") {
+                          form.setValue("senderNumber", "");
+                          form.setValue("referenceNumber", "");
+                        }
+                        if (value === "bank_transfer") {
+                          form.setValue("senderNumber", "");
+                        }
+                      }}
+                      defaultValue={manualPayMethod}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a method" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="gcash">GCash</SelectItem>
+                        <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-          </div>
 
-          {/* Static payment method indicator */}
-          <div className="grid gap-2">
-            <Label className="text-sm font-medium">Payment Method</Label>
-            <div className="flex items-center gap-2 rounded-md border border-border bg-muted/20 px-3 py-2 text-sm text-foreground">
-              <Wallet className="size-4 text-muted-foreground" />
-              <span>Cash</span>
-            </div>
-          </div>
-        </div>
+              {manualPayMethod !== "cash" && (
+                <FormField
+                  control={form.control}
+                  name="referenceNumber"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col gap-1.5">
+                      <FormLabel>Reference Number <span className="text-destructive">*</span></FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder={
+                            manualPayMethod === "gcash" ? "GCash reference no." : "Bank transaction ref."
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage className="text-[10px]" />
+                    </FormItem>
+                  )}
+                />
+              )}
 
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="min-w-[100px]"
-          >
-            {isSubmitting ? "Recording…" : "Record Payment"}
-          </Button>
-        </DialogFooter>
+              {manualPayMethod === "gcash" && (
+                <FormField
+                  control={form.control}
+                  name="senderNumber"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col gap-1.5">
+                      <FormLabel>
+                        Sender Number <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="09123456789" />
+                      </FormControl>
+                      <FormMessage className="text-[10px]" />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="manualPayNotes">
+                  Notes <span className="text-xs text-muted-foreground">(optional)</span>
+                </Label>
+                <Textarea
+                  id="manualPayNotes"
+                  rows={2}
+                  placeholder="Any additional notes about this payment…"
+                  value={manualPayNotes}
+                  onChange={(e) => setManualPayNotes(e.target.value)}
+                  className="resize-none text-xs"
+                />
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="gap-1.5" disabled={isSubmitting}>
+                  <PenLine className="size-3.5" />
+                  {isSubmitting ? (
+                     <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                        Processing...
+                     </>
+                  ) : (
+                    "Mark as Paid"
+                  )}
+                </Button>
+              </DialogFooter>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

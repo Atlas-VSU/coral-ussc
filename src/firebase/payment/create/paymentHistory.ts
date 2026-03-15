@@ -125,6 +125,8 @@ export const addOfflineFinesPayment = async (fines: StudentFines, type:string, m
             await recalculateClearanceStatus(clearanceRef.id)
         }
 
+        return proofId;
+
     } catch (error) {
         console.error("Error adding offline payment history:", error);
         throw new Error("Failed to add offline payment history. Please try again.");
