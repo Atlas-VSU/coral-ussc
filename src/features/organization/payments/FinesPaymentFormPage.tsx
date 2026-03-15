@@ -1,5 +1,6 @@
 "use client";
-import { Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { AlertCircle, ArrowLeft, Building2, CreditCard, Loader2, Receipt, ShieldAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,13 +8,120 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { SuccessScreen } from "./components/SuccessScreen";
-import { usePaymentForm } from "./hooks/usePaymentForm";
+import { PaymentFormData } from "@/lib/validators";
+import { usePaymentForm, ImageData } from "./hooks/usePaymentForm";
 import { PaymentMethodSelector } from "./components/PaymentMethodSelector";
 import { ImageUpload } from "./components/ImageUpload";
 
-export default function FinesPaymentFormPage() {
+interface StudentData {
+  studentId: string;
+  program: string;
+  name: string;
+}
+
+interface OrganizationData {
+  id: string;
+  name: string;
+  acronym: string;
+}
+
+interface SelectedPaymentItems {
+  fees: string[];
+  fines: string[];
+  feeAmount: number;
+  fineAmount: number;
+  totalAmount: number;
+}
+
+interface FinesPaymentFormPageProps {
+  studentData?: StudentData;
+  organizationData?: OrganizationData;
+  selectedPaymentItems?: SelectedPaymentItems;
+  onBack?: () => void;
+  onRestart?: () => void;
+}
+
+interface PublicSubmitResult {
+  paymentHistoryId: string;
+  submissionIds: string[];
+}
+
+export default function FinesPaymentFormPage({
+  studentData,
+  organizationData,
+  selectedPaymentItems,
+  onBack,
+  onRestart,
+}: FinesPaymentFormPageProps) {
+  const isContextualFlow = Boolean(studentData && organizationData && selectedPaymentItems);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitResult, setSubmitResult] = useState<PublicSubmitResult | null>(null);
+
+  const selectedTypes = useMemo(() => {
+    if (!selectedPaymentItems) return [] as Array<"fees" | "fines">;
+
+    return [
+      ...(selectedPaymentItems.fees.length > 0 ? (["fees"] as const) : []),
+      ...(selectedPaymentItems.fines.length > 0 ? (["fines"] as const) : []),
+    ];
+  }, [selectedPaymentItems]);
+
+  const handleContextualSubmit = async (data: PaymentFormData, image: ImageData | null) => {
+    setSubmitError(null);
+    setSubmitResult(null);
+
+    // 1. Upload receipt image if provided
+    let imageUrl: string | undefined;
+    if (image?.file) {
+      const fd = new FormData();
+      fd.append("file", image.file);
+      fd.append("studentId", studentData!.studentId);
+      const uploadRes = await fetch("/api/public/upload-receipt", { method: "POST", body: fd });
+      const uploadResult = await uploadRes.json();
+      if (!uploadRes.ok || !uploadResult.success) {
+        const msg = uploadResult.error ?? "Failed to upload receipt image.";
+        setSubmitError(msg);
+        throw new Error(msg);
+      }
+      imageUrl = uploadResult.url as string;
+    }
+
+    // 2. Submit payment records
+    const payload = {
+      userName: data.userName,
+      studentId: data.studentId,
+      orgId: organizationData!.id,
+      paymentMethod: data.paymentMethod,
+      referenceNumber: data.referenceNumber,
+      senderNumber: data.senderNumber,
+      imageUrl,
+      notes: data.notes,
+      fees: selectedPaymentItems!.fees,
+      fines: selectedPaymentItems!.fines,
+    };
+
+    const res = await fetch("/api/public/submit-payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const result = await res.json();
+
+    if (!res.ok || !result.success) {
+      const msg = result.error ?? "Payment submission failed. Please try again.";
+      setSubmitError(msg);
+      throw new Error(msg);
+    }
+
+    setSubmitResult({
+      paymentHistoryId: result.paymentHistoryId ?? "",
+      submissionIds: Array.isArray(result.submissionIds) ? result.submissionIds : [],
+    });
+  };
+
   const {
     form,
     image, setImage,
@@ -22,17 +130,46 @@ export default function FinesPaymentFormPage() {
     handleMethodSelect,
     handleReset,
     onSubmit,
-  } = usePaymentForm();
+  } = usePaymentForm({
+    initialValues: {
+      userName: studentData?.name ?? "",
+      studentId: studentData?.studentId ?? "",
+      amount: selectedPaymentItems?.totalAmount ?? 0,
+      type: selectedTypes.length === 1 ? selectedTypes[0] : undefined,
+    },
+    onSubmitPayment: isContextualFlow ? handleContextualSubmit : undefined,
+  });
 
   const { register, formState: { errors }, watch } = form;
 
+  const handleSuccessReset = () => {
+    setSubmitError(null);
+    setSubmitResult(null);
+    handleReset();
+    onRestart?.();
+  };
+
   if (status === "success") {
-    return <SuccessScreen form={form.getValues()} onReset={handleReset} />;
+    return (
+      <SuccessScreen
+        form={form.getValues()}
+        onReset={handleSuccessReset}
+        paymentHistoryId={submitResult?.paymentHistoryId}
+        submissionCount={submitResult?.submissionIds.length ?? 0}
+      />
+    );
   }
 
   return (
     <div className="min-h-screen bg-green-50/50 dark:bg-background">
       <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
+
+        {onBack && (
+          <Button variant="ghost" onClick={onBack} className="mb-4 gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Fees & Fines
+          </Button>
+        )}
 
         {/* ── Page Header ── */}
         <div className="mb-6">
@@ -41,6 +178,64 @@ export default function FinesPaymentFormPage() {
             Submit your payment details and receipt for verification.
           </p>
         </div>
+
+        {isContextualFlow && studentData && organizationData && selectedPaymentItems && (
+          <Card className="mb-5 border-border">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm text-foreground flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-green-600" />
+                Payment Summary
+              </CardTitle>
+              <CardDescription>
+                This flow now mirrors the accepted backend structure for fees and fines.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Building2 className="h-4 w-4 text-green-600" />
+                  <span>{organizationData.name}</span>
+                  <span className="text-muted-foreground">({organizationData.acronym})</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {studentData.name} • {studentData.studentId} • {studentData.program}
+                </div>
+              </div>
+
+              <div className="space-y-2 rounded-lg border bg-card p-4">
+                {selectedPaymentItems.feeAmount > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2">
+                      <Receipt className="h-4 w-4 text-blue-600" />
+                      Fees ({selectedPaymentItems.fees.length} item{selectedPaymentItems.fees.length > 1 ? "s" : ""})
+                    </span>
+                    <span className="font-semibold">₱{selectedPaymentItems.feeAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                {selectedPaymentItems.fineAmount > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2">
+                      <ShieldAlert className="h-4 w-4 text-red-600" />
+                      Fines ({selectedPaymentItems.fines.length} item{selectedPaymentItems.fines.length > 1 ? "s" : ""})
+                    </span>
+                    <span className="font-semibold">₱{selectedPaymentItems.fineAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                <Separator />
+                <div className="flex items-center justify-between font-semibold">
+                  <span>Total Due</span>
+                  <span className="text-green-600 dark:text-green-400">₱{selectedPaymentItems.totalAmount.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {selectedTypes.length > 1 && (
+                <p className="text-xs text-muted-foreground">
+                  Combined fee and fine payments will map to separate backend payment records during full integration.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
 
@@ -61,6 +256,7 @@ export default function FinesPaymentFormPage() {
                     id="userName"
                     placeholder="e.g. Juan dela Cruz"
                     {...register("userName")}
+                    readOnly={isContextualFlow}
                     className={errors.userName ? "border-destructive focus-visible:ring-destructive" : ""}
                   />
                   {errors.userName && <FieldError message={errors.userName.message!} />}
@@ -74,6 +270,7 @@ export default function FinesPaymentFormPage() {
                     id="studentId"
                     placeholder="21-1-12345"
                     {...register("studentId")}
+                    readOnly={isContextualFlow}
                     className={errors.studentId ? "border-destructive focus-visible:ring-destructive" : ""}
                   />
                   {errors.studentId
@@ -106,10 +303,16 @@ export default function FinesPaymentFormPage() {
                     min="0"
                     placeholder="0.00"
                     {...register("amount", { valueAsNumber: true })}
+                    readOnly={isContextualFlow}
                     className={`pl-7 ${errors.amount ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   />
                 </div>
                 {errors.amount && <FieldError message={errors.amount.message!} />}
+                {isContextualFlow && (
+                  <p className="text-xs text-muted-foreground">
+                    Amount is fixed to match the selected dues and backend-compatible record breakdown.
+                  </p>
+                )}
               </div>
 
               <Separator />
@@ -189,6 +392,14 @@ export default function FinesPaymentFormPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* ── Submit Error ── */}
+          {submitError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+          )}
 
           {/* ── Submit ── */}
           <Button
