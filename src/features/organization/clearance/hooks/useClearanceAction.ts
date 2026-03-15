@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useRef, useEffect } from "react"
+import { useCallback, useRef, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Timestamp } from "firebase/firestore"
 import { useAuth } from "@/hooks/useAuth"
@@ -10,12 +10,16 @@ import { approvePaymentClearanceUpdate, logManualPaymentClearanceUpdate, rejectP
 import { recalculateClearanceStatus } from "@/firebase/clearance"
 import { PaymentType } from "@/constants/types"
 import { generateReceiptId } from "../../payments/utils"
+import { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
+import { set } from "zod"
 
 export function useClearanceActions(
   clearances: ClearanceStatus[], 
   setClearances: React.Dispatch<React.SetStateAction<ClearanceStatus[]>>
 ) {
   const { user: currentUser } = useAuth()
+  const [receiptOpen, setReceiptOpen] = useState(false)
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
   
   // Use a ref to store the latest clearances to avoid dependency churn in callbacks
   const clearancesRef = useRef(clearances)
@@ -66,7 +70,7 @@ export function useClearanceActions(
 
       // 2. Perform Single Batched Backend Update
       if (newStatus === "paid" && !options?.addPaymentLog) {
-        await approvePaymentClearanceUpdate(
+        const result = await approvePaymentClearanceUpdate(
           clearanceId, 
           itemsToUpdate, 
           currentUser.uid, 
@@ -74,6 +78,8 @@ export function useClearanceActions(
           studentData,
           receiptCode
         )
+        setReceiptData(result?.receipt!);
+        setReceiptOpen(true);
       } else if (newStatus === "unpaid" && options?.rejectionReason) {
         await rejectPaymentClearanceUpdate(
           clearanceId, 
@@ -215,5 +221,5 @@ export function useClearanceActions(
     )
   }, [updateItemStatus]) // clearances removed from dependencies
 
-  return { approvePayment, rejectPayment, logManualPayment }
+  return { approvePayment, rejectPayment, logManualPayment, receiptOpen, setReceiptOpen, receiptData, setReceiptData }
 }

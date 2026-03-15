@@ -9,6 +9,10 @@ import { PaymentType } from "@/constants/types";
 import { rejectPaymentHistory, verifyPaymentHistory } from "./payment/update/paymentHistory";
 import { PaymentStatus } from "@/constants/status";
 import { addOfflineFinesPayment } from "./payment/create/paymentHistory";
+import { toast } from "sonner";
+import { getProofOfPaymentByUserId } from "./payment/read/proofOfPayment";
+import { use } from "react";
+import { usePaymentApproval } from "@/features/organization/payments/hooks/usePaymentApproval";
 export const fetchClearanceDocuments = async (orgId: string) => {
     const clearanceRef = collection(db, 'clearanceStatus');
     const q = query(
@@ -22,6 +26,8 @@ export const fetchClearanceDocuments = async (orgId: string) => {
         ...doc.data() 
     })) as ClearanceStatus[];
 }
+
+
 
 /**
  * Recalculates and updates the overall status of a clearance document based on its blocking items.
@@ -182,77 +188,89 @@ export const approvePaymentClearanceUpdate = async (
   studentData?: { firstName: string; lastName: string; studentId: string; orgId: string },
   receiptCode?: string
 ) => {
-  for (const item of itemsToUpdate) {
-    if (item.type === PaymentType.FEES) {
-      const logsRef = collection(db, "fees", item.refId, "paymentHistory");
-      const q = query(logsRef, where("status", "==", "pending"));
-      const snapshot = await getDocs(q);
-      
-      if (snapshot.empty) continue; // Skip if no pending found
-      
-      const logId = snapshot.docs[0].id;
-      const logData = snapshot.docs[0].data();
+  const { _approvePayment} = usePaymentApproval();
 
-      const proof: ProofOfPayment = {
-        referenceId: item.refId,
-        paymentType: "fees",
-        amount: logData.amount,
-        status: PaymentStatus.VERIFIED,
-        verifiedBy: adminId,
-        verifiedByName: adminName,
-        paymentMethod: logData.paymentMethod,
-        verifiedAt: Timestamp.now(),
-        notes: "Verified via Clearance Management",
-        orgId: studentData?.orgId || "",
-        userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
-        studentId: studentData?.studentId || "",
-        senderNumber: logData.senderNumber || "",
-        referenceNumber: logData.gcashReference || "",
-        imageUrl: logData.imageUrl || "",
-        submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
-        metadata: {
-         items:[]
-        },
-        receiptCode: receiptCode || "",
-      };
-
-      await verifyPaymentHistory(logId, proof);
-    } else {
-      const logsRef = collection(db, "fines", item.refId, "paymentHistory");
-      const q = query(logsRef, where("status", "==", "pending"));
-      const snapshot = await getDocs(q);
-      
-      if (snapshot.empty) continue; // Skip if no pending found
-      
-      const logId = snapshot.docs[0].id;
-      const logData = snapshot.docs[0].data();
-      
-      const proof: ProofOfPayment = {
-        referenceId: item.refId,
-        paymentType: "fines",
-        amount: logData.amount,
-        status: PaymentStatus.VERIFIED,
-        verifiedBy: adminId,
-        verifiedByName: adminName,
-        paymentMethod: logData.paymentMethod,
-        verifiedAt: Timestamp.now(),
-        notes: "Verified via Clearance Management",
-        orgId: studentData?.orgId || "",
-        userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
-        studentId: studentData?.studentId || "",
-        senderNumber: logData.senderNumber || "",
-        referenceNumber: logData.gcashReference || "",
-        imageUrl: logData.imageUrl || "",
-        submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
-        metadata: {
-         items:[]
-        },
-        receiptCode: receiptCode || "",
-      };
-      
-      await verifyPaymentHistory(logId, proof);
-    }
+  const proof = await getProofOfPaymentByUserId(clearanceId, studentData?.orgId);
+  if(!proof) {
+    toast.error("No pending payment found for this clearance. Please refresh and try again.");
+    return;
   }
+  const result = await _approvePayment(proof);
+  toast.success("Payment clearance update approved successfully!");
+  return result;
+//   console.log("Approving payment clearance update for items:------------", itemsToUpdate);
+//   toast.success("Approving payment clearance update. This may take a moment...")
+//   for (const item of itemsToUpdate) {
+//     if (item.type === PaymentType.FEES) {
+//       const logsRef = collection(db, "fees", item.refId, "paymentHistory");
+//       const q = query(logsRef, where("status", "==", "pending"));
+//       const snapshot = await getDocs(q);
+      
+//       if (snapshot.empty) continue; // Skip if no pending found
+      
+//       const logId = snapshot.docs[0].id;
+//       const logData = snapshot.docs[0].data();
+
+//       const proof: ProofOfPayment = {
+//         referenceId: item.refId,
+//         paymentType: "fees",
+//         amount: logData.amount,
+//         status: PaymentStatus.VERIFIED,
+//         verifiedBy: adminId,
+//         verifiedByName: adminName,
+//         paymentMethod: logData.paymentMethod,
+//         verifiedAt: Timestamp.now(),
+//         notes: "Verified via Clearance Management",
+//         orgId: studentData?.orgId || "",
+//         userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
+//         studentId: studentData?.studentId || "",
+//         senderNumber: logData.senderNumber || "",
+//         referenceNumber: logData.gcashReference || "",
+//         imageUrl: logData.imageUrl || "",
+//         submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+//         metadata: {
+//          items:[]
+//         },
+//         receiptCode: receiptCode || "",
+//       };
+// // ---------------------------------to fix toms------------
+//       // await verifyPaymentHistory(logId, proof);
+//     } else {
+//       const logsRef = collection(db, "fines", item.refId, "paymentHistory");
+//       const q = query(logsRef, where("status", "==", "pending"));
+//       const snapshot = await getDocs(q);
+      
+//       if (snapshot.empty) continue; // Skip if no pending found
+      
+//       const logId = snapshot.docs[0].id;
+//       const logData = snapshot.docs[0].data();
+      
+//       const proof: ProofOfPayment = {
+//         referenceId: item.refId,
+//         paymentType: "fines",
+//         amount: logData.amount,
+//         status: PaymentStatus.VERIFIED,
+//         verifiedBy: adminId,
+//         verifiedByName: adminName,
+//         paymentMethod: logData.paymentMethod,
+//         verifiedAt: Timestamp.now(),
+//         notes: "Verified via Clearance Management",
+//         orgId: studentData?.orgId || "",
+//         userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
+//         studentId: studentData?.studentId || "",
+//         senderNumber: logData.senderNumber || "",
+//         referenceNumber: logData.gcashReference || "",
+//         imageUrl: logData.imageUrl || "",
+//         submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+//         metadata: {
+//          items:[]
+//         },
+//         receiptCode: receiptCode || "",
+//       };
+//       // ---------------------------------to fix toms------------
+//       // await verifyPaymentHistory(logId, proof);
+//     }
+//   }
 };
 
 export const rejectPaymentClearanceUpdate = async (
@@ -262,78 +280,91 @@ export const rejectPaymentClearanceUpdate = async (
    adminName: string,
    reason: string,
    studentData?: { firstName: string; lastName: string; studentId: string; orgId: string }
- ) => {
-  for (const item of itemsToUpdate) {
-    if (item.type === PaymentType.FEES) {
-     const logsRef = collection(db, "fees", item.refId, "paymentHistory");
-     const q = query(logsRef, where("status", "==", "pending"));
-     const snapshot = await getDocs(q);
-     
-     if (snapshot.empty) continue;
-     
-     const logId = snapshot.docs[0].id;
-     const logData = snapshot.docs[0].data();
+) => {
 
-     const proof: ProofOfPayment = {
-       referenceId: item.refId,
-       paymentType: "fees",
-       amount: logData.amount,
-       status: PaymentStatus.REJECTED,
-       verifiedBy: adminId,
-       verifiedByName: adminName,
-       paymentMethod: logData.paymentMethod,
-       verifiedAt: Timestamp.now(),
-       rejectionReason: reason,
-       notes: "Rejected via Clearance Management",
-       orgId: studentData?.orgId || "",
-       userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
-       studentId: studentData?.studentId || "",
-       senderNumber: logData.senderNumber || "",
-       referenceNumber: logData.gcashReference || "",
-       imageUrl: logData.imageUrl || "",
-       submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
-       metadata: {
-         items:[]
-       }
-     };
+  const { _rejectPayment} = usePaymentApproval();
 
-     await rejectPaymentHistory(logId, proof);
-   } else {
-     const logsRef = collection(db, "fines", item.refId, "paymentHistory");
-     const q = query(logsRef, where("status", "==", "pending"));
-     const snapshot = await getDocs(q);
-     
-     if (snapshot.empty) continue;
-     
-     const logId = snapshot.docs[0].id;
-     const logData = snapshot.docs[0].data();
-     
-     const proof: ProofOfPayment = {
-       referenceId: item.refId,
-       paymentType: "fines",
-       amount: logData.amount,
-       status: PaymentStatus.REJECTED,
-       verifiedBy: adminId,
-       verifiedByName: adminName,
-       paymentMethod: logData.paymentMethod,
-       verifiedAt: Timestamp.now(),
-       rejectionReason: reason,
-       notes: "Rejected via Clearance Management",
-       orgId: studentData?.orgId || "",
-       userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
-       studentId: studentData?.studentId || "",
-       senderNumber: logData.senderNumber || "",
-       referenceNumber: logData.gcashReference || "",
-       imageUrl: logData.imageUrl || "",
-       submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
-       metadata: {
-         items: []
-       }
-     };
-     
-     await rejectPaymentHistory(logId, proof);
-   }
+  const proof = await getProofOfPaymentByUserId(clearanceId, studentData?.orgId);
+  if(!proof) {
+    toast.error("No pending payment found for this clearance. Please refresh and try again.");
+    return;
   }
+  const result = await _rejectPayment(proof, reason);
+  toast.success("Payment was successfully rejected!");
+  return result;
+
+  // for (const item of itemsToUpdate) {
+  //   if (item.type === PaymentType.FEES) {
+  //    const logsRef = collection(db, "fees", item.refId, "paymentHistory");
+  //    const q = query(logsRef, where("status", "==", "pending"));
+  //    const snapshot = await getDocs(q);
+     
+  //    if (snapshot.empty) continue;
+     
+  //    const logId = snapshot.docs[0].id;
+  //    const logData = snapshot.docs[0].data();
+
+  //    const proof: ProofOfPayment = {
+  //      referenceId: item.refId,
+  //      paymentType: "fees",
+  //      amount: logData.amount,
+  //      status: PaymentStatus.REJECTED,
+  //      verifiedBy: adminId,
+  //      verifiedByName: adminName,
+  //      paymentMethod: logData.paymentMethod,
+  //      verifiedAt: Timestamp.now(),
+  //      rejectionReason: reason,
+  //      notes: "Rejected via Clearance Management",
+  //      orgId: studentData?.orgId || "",
+  //      userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
+  //      studentId: studentData?.studentId || "",
+  //      senderNumber: logData.senderNumber || "",
+  //      referenceNumber: logData.gcashReference || "",
+  //      imageUrl: logData.imageUrl || "",
+  //      submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+  //      metadata: {
+  //        items:[]
+  //      }
+  //    };
+
+  //     // ---------------------------------to fix toms------------
+  //   //  await rejectPaymentHistory(logId, proof);
+  //  } else {
+  //    const logsRef = collection(db, "fines", item.refId, "paymentHistory");
+  //    const q = query(logsRef, where("status", "==", "pending"));
+  //    const snapshot = await getDocs(q);
+     
+  //    if (snapshot.empty) continue;
+     
+  //    const logId = snapshot.docs[0].id;
+  //    const logData = snapshot.docs[0].data();
+     
+  //    const proof: ProofOfPayment = {
+  //      referenceId: item.refId,
+  //      paymentType: "fines",
+  //      amount: logData.amount,
+  //      status: PaymentStatus.REJECTED,
+  //      verifiedBy: adminId,
+  //      verifiedByName: adminName,
+  //      paymentMethod: logData.paymentMethod,
+  //      verifiedAt: Timestamp.now(),
+  //      rejectionReason: reason,
+  //      notes: "Rejected via Clearance Management",
+  //      orgId: studentData?.orgId || "",
+  //      userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
+  //      studentId: studentData?.studentId || "",
+  //      senderNumber: logData.senderNumber || "",
+  //      referenceNumber: logData.gcashReference || "",
+  //      imageUrl: logData.imageUrl || "",
+  //      submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+  //      metadata: {
+  //        items: []
+  //      }
+  //    };
+  //    // ---------------------------------to fix toms------------
+  //   //  await rejectPaymentHistory(logId, proof);
+  //  }
+  // }
  };
 
  
@@ -480,3 +511,4 @@ export const seedClearanceDocuments = async (orgId: string) => {
     console.error('❌ Error seeding clearance documents:', error);
   }
 };
+
