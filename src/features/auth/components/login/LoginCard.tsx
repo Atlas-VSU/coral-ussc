@@ -196,6 +196,27 @@ export function LoginCard() {
           <div className="lg:hidden w-full flex justify-center items-center order-1 animate-fade-in-up animation-delay-300"></div>
 
           {/* Login Form */}
+
+          {/* Search for Truth Blur Background */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
+            <div className="relative w-full h-full max-w-[1200px] flex items-center justify-center top-15 animate-fade-in-up animation-delay-300">
+              <img
+                src="/images/searchfortruth-2.png"
+                alt="Background Decor"
+                className="
+        w-[0%] md:w-[80%] lg:w-[85%] 
+        h-auto 
+        object-contain 
+        opacity-80 
+        transition-all 
+        duration-700
+        rotate-[-15deg] 
+        lg:rotate-[5deg]
+      "
+              />
+            </div>
+          </div>
+
           <div className="w-full max-w-lg mx-auto lg:mx-0 lg:max-w-none flex flex-col justify-center order-2 lg:order-1">
             {/* Error Display */}
             {error && (
@@ -217,25 +238,6 @@ export function LoginCard() {
               </div>
             )}
 
-            {/* Search for Truth Blur Background */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
-              <div className="relative w-full h-full max-w-[1200px] flex items-center justify-center top-15 animate-fade-in-up animation-delay-300">
-                <img
-                  src="/images/searchfortruth-2.png"
-                  alt="Background Decor"
-                  className="
-        w-[0%] md:w-[80%] lg:w-[85%] 
-        h-auto 
-        object-contain 
-        opacity-80 
-        transition-all 
-        duration-700
-        rotate-[-15deg] 
-        lg:rotate-[5deg]
-      "
-                />
-              </div>
-            </div>
             {/* Login Form Container */}
             <form
               onSubmit={handleSubmit}
