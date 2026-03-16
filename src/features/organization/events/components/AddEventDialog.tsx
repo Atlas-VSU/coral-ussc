@@ -1,360 +1,202 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+"use client"
+
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Calendar } from "@/components/ui/calendar"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { EventFormData, eventSchema } from "@/lib/validators";
-import { addEvent } from "@/firebase";
-import { useForm } from "react-hook-form";
-import { Checkbox } from "@/components/ui/checkbox";
-import { LoadingOverlay } from "../../../../components/ui/loading-overlay";
-import { toast } from "sonner";
-import { FineType } from "../../fines/types";
-import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/components/ui/select";
+} from "@/components/ui/popover"
+import { Checkbox } from "@/components/ui/checkbox"
+import { CalendarIcon, Loader2 } from "lucide-react"
+import { format } from "date-fns"
+import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 interface AddEventDialogProps {
-  open: boolean;
-  fineTypes: FineType[];
-  onOpenChange: (open: boolean) => void;
-  onEventAdded: () => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onEventAdded: () => void
 }
 
-export function AddEventDialog({
-  open,
-  fineTypes,
-  onOpenChange,
-  onEventAdded,
-}: AddEventDialogProps) {
-  const form = useForm<EventFormData>({
-    resolver: zodResolver(eventSchema),
-    defaultValues: {
-      name: "",
-      date: undefined,
-      fineTypeId: "",
-      location: "",
-      timeInStart: "",
-      timeInEnd: "",
-      timeOutStart: "",
-      timeOutEnd: "",
-      note: "",
-      majorEvent: false,
-    },
-  });
+export function AddEventDialog({ open, onOpenChange, onEventAdded }: AddEventDialogProps) {
+  const [loading, setLoading] = useState(false)
+  const [date, setDate] = useState<Date | undefined>(undefined)
+  const [name, setName] = useState("")
+  const [location, setLocation] = useState("")
+  const [note, setNote] = useState("")
+  const [majorEvent, setMajorEvent] = useState(false)
+  const [timeInStart, setTimeInStart] = useState("")
+  const [timeInEnd, setTimeInEnd] = useState("")
+  const [timeOutStart, setTimeOutStart] = useState("")
+  const [timeOutEnd, setTimeOutEnd] = useState("")
 
-  const [loading, setLoading] = useState(false);
-  const selectedFineType = form.watch("fineTypeId"); 
-  //Get the fine type object based on the selected fineTypeId to check if timeIn and timeOut are required
-  const selectedFineTypeObj = fineTypes.find((type) => type.id === selectedFineType);
-  const timeInRequired = selectedFineTypeObj?.requiresTimeIn || false;
-  const timeOutRequired = selectedFineTypeObj?.requiresTimeOut || false;
+  const resetForm = () => {
+    setDate(undefined)
+    setName("")
+    setLocation("")
+    setNote("")
+    setMajorEvent(false)
+    setTimeInStart("")
+    setTimeInEnd("")
+    setTimeOutStart("")
+    setTimeOutEnd("")
+  }
 
-  const onSubmit = async (data: EventFormData) => {
-    try {
-      setLoading(true);
-      await addEvent(data);
-      toast.success("Event created successfully!");
-      onEventAdded();
-      onOpenChange(false);
-      form.reset();
-    } catch (error) {
-      console.error("Error adding event:", error);
-      // Extract error message from the error object
-      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim() || !location.trim() || !date) {
+      toast.error("Please fill in all required fields.")
+      return
     }
-  };
+    setLoading(true)
+    await new Promise((r) => setTimeout(r, 600))
+    toast.success("Event created (mock)")
+    onEventAdded()
+    onOpenChange(false)
+    resetForm()
+    setLoading(false)
+  }
 
-  const handleCancel = () => {
+  const handleOpenChange = (val: boolean) => {
     if (!loading) {
-      onOpenChange(false);
+      onOpenChange(val)
+      if (!val) resetForm()
     }
-  };
+  }
 
   return (
-    <Dialog open={open} onOpenChange={loading ? undefined : onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] h-[calc(100vh-10rem)] pt-12 pb-4 overflow-y-auto">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-125 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Event</DialogTitle>
-          <DialogDescription>
-            Create a new event for your organization. Fill in the details below.
-          </DialogDescription>
+          <DialogDescription>Create a new event for your organization.</DialogDescription>
         </DialogHeader>
 
-        <div className="relative">
-          <LoadingOverlay loading={loading} message="Creating event..." />
+        <form onSubmit={handleSubmit} className="grid gap-4 py-2">
+          {/* Name */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium" htmlFor="ev-name">
+              Event Name <span className="text-destructive">*</span>
+            </label>
+            <Input
+              id="ev-name"
+              placeholder="e.g. State of the Student Address"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={loading}
+              required
+            />
+          </div>
 
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="grid gap-4 py-4"
-            >
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Event Name</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter event name"
-                        {...field}
-                        disabled={loading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Event Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild disabled={loading}>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !field.value && "text-muted-foreground",
-                              loading && "opacity-50 cursor-not-allowed"
-                            )}
-                            disabled={loading}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={loading}
-                          autoFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="fineTypeId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Type of Fines</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a type of fines" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {fineTypes.map((type: FineType) => (
-                          <SelectItem key={type.id} value={type.id!}>
-                            {type.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {timeInRequired && (
-                <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="timeInStart"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Time-in Start</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="time"
-                          {...field}
-                          value={field.value || ""}
-                          disabled={loading}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="timeInEnd"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Time-in End</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="time"
-                          {...field}
-                          value={field.value || ""}
-                          disabled={loading}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
-              
-              {timeOutRequired && (
-                <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="timeOutStart"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Time-out Start</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="time"
-                          {...field}
-                          value={field.value || ""}
-                          disabled={loading}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="timeOutEnd"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Time-out End</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="time"
-                          {...field}
-                          value={field.value || ""}
-                          disabled={loading}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              )}
-
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Location</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter event location"
-                        {...field}
-                        disabled={loading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="note"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Note (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Add notes or instructions for this event"
-                        className="resize-none"
-                        {...field}
-                        disabled={loading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="majorEvent"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        disabled={loading}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Mark as a major event</FormLabel>
-                    </div>
-                  </FormItem>
-                )}
-              />
-
-              <DialogFooter>
+          {/* Date */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium">
+              Date <span className="text-destructive">*</span>
+            </label>
+            <Popover>
+              <PopoverTrigger asChild>
                 <Button
-                  variant="outline"
                   type="button"
-                  onClick={handleCancel}
+                  variant="outline"
                   disabled={loading}
+                  className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
                 >
-                  Cancel
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date ? format(date, "PPP") : "Pick a date"}
                 </Button>
-                <Button type="submit" disabled={loading}>
-                  Create Event
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={date} onSelect={setDate} autoFocus />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Location */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium" htmlFor="ev-loc">
+              Location <span className="text-destructive">*</span>
+            </label>
+            <Input
+              id="ev-loc"
+              placeholder="Venue"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              disabled={loading}
+              required
+            />
+          </div>
+
+          {/* Time In */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium" htmlFor="ev-tis">Time-in Start</label>
+              <Input id="ev-tis" type="time" value={timeInStart} onChange={(e) => setTimeInStart(e.target.value)} disabled={loading} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium" htmlFor="ev-tie">Time-in End</label>
+              <Input id="ev-tie" type="time" value={timeInEnd} onChange={(e) => setTimeInEnd(e.target.value)} disabled={loading} />
+            </div>
+          </div>
+
+          {/* Time Out */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium" htmlFor="ev-tos">Time-out Start</label>
+              <Input id="ev-tos" type="time" value={timeOutStart} onChange={(e) => setTimeOutStart(e.target.value)} disabled={loading} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium" htmlFor="ev-toe">Time-out End</label>
+              <Input id="ev-toe" type="time" value={timeOutEnd} onChange={(e) => setTimeOutEnd(e.target.value)} disabled={loading} />
+            </div>
+          </div>
+
+          {/* Note */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium" htmlFor="ev-note">Notes</label>
+            <Textarea
+              id="ev-note"
+              placeholder="Additional notes..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              disabled={loading}
+              rows={3}
+            />
+          </div>
+
+          {/* Major Event */}
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="ev-major"
+              checked={majorEvent}
+              onCheckedChange={(v) => setMajorEvent(!!v)}
+              disabled={loading}
+            />
+            <label htmlFor="ev-major" className="text-sm font-medium cursor-pointer">
+              Mark as Major Event
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={loading}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Creating…</> : "Create Event"}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
-  );
+  )
 }
