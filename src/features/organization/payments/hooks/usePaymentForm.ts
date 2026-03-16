@@ -49,7 +49,7 @@ export function usePaymentForm(options?: UsePaymentFormOptions) {
 
 
   const handleMethodSelect = (value: OnlinePaymentMethod) => {
-    form.setValue("paymentMethod", value, { shouldValidate: true });
+    form.setValue("paymentMethod", PaymentMethods.GCASH, { shouldValidate: true });
     form.setValue("referenceNumber", "");
     form.setValue("senderNumber", "");
     form.clearErrors(["referenceNumber", "senderNumber"]);
