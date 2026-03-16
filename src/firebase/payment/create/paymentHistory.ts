@@ -242,7 +242,6 @@ export const createOnlinePaymentHistory = async (
     userId: string,
     paid?: {refId:string, title:string, amount:number, paymentType: string, parentFineId:string}) => {
     try {
-        const current = await getCurrentUserData() as unknown as Member;
         const subColRef = collection(db, paid?.paymentType? paid.paymentType : proof.type! , referenceId , "paymentHistory");
         const querySnapshot = await getCountFromServer(subColRef);
 
@@ -257,8 +256,8 @@ export const createOnlinePaymentHistory = async (
             gcashReference: proof.referenceNumber || null,
             status:PaymentStatus.PENDING,
             paidAt: Timestamp.now(), 
-            verifiedBy: current.id!,
-            verifiedByName: current.firstName + " " + current.lastName,
+            verifiedBy: "",
+            verifiedByName: "",
             verifiedAt: Timestamp.now(),
             rejectionReason: null,
             notes: proof.notes || `Offline payment of ${proof.amount} recorded for ${paid?.paymentType? paid.paymentType : proof.type!}`,
@@ -279,7 +278,7 @@ export const createOnlinePaymentHistory = async (
         cacheService.invalidateByPrefix('clearance:');
 
         // Pre-emptive warming
-        getAllProofOfPayments(current.id!).catch(console.error);
+        // getAllProofOfPayments(current.id!).catch(console.error);
         getAllFines().catch(console.error);
         getAllUnpaidFinesforOrg().catch(console.error);
 

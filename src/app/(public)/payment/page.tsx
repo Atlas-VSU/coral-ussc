@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import StudentVerificationPage from "@/features/organization/payments/StudentVerificationPage";
 import OrganizationSelectionPage from "@/features/organization/payments/OrganizationSelectionPage";
 import FinesFeesSelectionPage from "@/features/organization/payments/FinesFeesSelectionPage";
-import FinesPaymentFormPage from "@/features/organization/payments/FinesPaymentFormPage";
 import { Timestamp } from "firebase/firestore";
+import FinesPaymentFormPage from "@/features/organization/payments/FinesPaymentFormPage.ts";
 
 type PaymentStep = "verification" | "organization" | "fees" | "payment";
 

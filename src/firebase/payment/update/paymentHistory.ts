@@ -9,6 +9,7 @@ import { cacheService } from "@/services/cacheService";
 import { getAllProofOfPayments } from "../read/proofOfPayment";
 import { fetchFeesForOrg, fetchUnpaidFeesForOrg } from "@/firebase/fees";
 import { getAllFines, getAllUnpaidFinesforOrg } from "@/firebase/fines/read/fines";
+import { recalculateClearanceStatus } from "@/firebase/clearance";
 
 
 export const verifyPaymentHistory = async (
@@ -17,7 +18,8 @@ export const verifyPaymentHistory = async (
     type: string,
     refId: string,
     amount: number,
-    note?: string
+    note?: string | null,
+    itemIds?: string[],
 ) => {
     const docRef = doc(db, type, refId, "paymentHistory", paymentHistoryId);
         try { 
@@ -29,6 +31,7 @@ export const verifyPaymentHistory = async (
                 status: PaymentStatus.VERIFIED,
                 "metadata.updatedAt": Timestamp.now(),
             });
+
             if(type === "fines"){
                 await recalculateFines(refId, null, amount);
 
@@ -37,11 +40,13 @@ export const verifyPaymentHistory = async (
                 if (fineSnap.exists()) {
                     const fineData = fineSnap.data();
                     const clearanceRef = doc(db, 'clearanceStatus', fineData.userId);
-                    await updateDoc(clearanceRef, {
-                        [`blockingItems.${refId}.balance`]: fineData.balance,
-                        [`blockingItems.${refId}.status`]: fineData.status === "paid" ? "paid" : "unpaid",
-                        [`blockingItems.${refId}.pendingReview`]: false,
-                    });
+                    for (const itemId of itemIds ?? []) {
+                        await updateDoc(clearanceRef, {
+                            [`blockingItems.${itemId}.balance`]: fineData.balance,
+                            [`blockingItems.${itemId}.status`]: fineData.status === "paid" ? "paid" : "unpaid",
+                            [`blockingItems.${itemId}.pendingReview`]: false,
+                        });
+                     }
                 }
             }
 
