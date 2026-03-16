@@ -1,20 +1,15 @@
 "use client"
 
-import { AppSidebar } from "@/components/NavBar/app-sidebar";
+import { AdminSidebar } from "@/components/layout/AdminSidebar";
 import { MobileBottomNav } from "@/components/NavBar/mobile-bottom-nav";
 import { SiteHeader } from "@/components/NavBar/site-header";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { useAuth } from "@/hooks/useAuth";
 import { cacheUtils } from "@/utils/cacheUtils";
-import { Building, LayoutDashboard, LogOut, Users } from "lucide-react";
+import { LogOut, LayoutDashboard, Building, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const iconMap = {
-    "layout-dashboard": LayoutDashboard,
-    "building": Building,
-    "users": Users,
-}
 const mobileIconMap = {
   dashboard: LayoutDashboard,
   building: Building,
@@ -23,23 +18,6 @@ const mobileIconMap = {
 };
 
 const adminData = {
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/admin-dashboard",
-      icon: "layout-dashboard",
-    },
-    {
-      title: "Organization",
-      url: "/admin-organization",
-      icon: "building",
-    },
-    {
-      title: "Members",
-      url: "/admin-students",
-      icon: "users",
-    },
-  ],
   mobileNavLinks: [
     {
       label: "Dashboard",
@@ -118,12 +96,7 @@ export default function AdminLayout({
 
     return (
         <div className="flex min-h-screen w-full">
-            <AppSidebar
-                user={userData}
-                navMain={adminData.navMain}
-                iconMap={iconMap}
-                className="z-50"
-            />
+            <AdminSidebar user={userData} className="z-50" />
             <div className="flex-1 flex flex-col min-w-0">
                 <SiteHeader
                     user={userData}

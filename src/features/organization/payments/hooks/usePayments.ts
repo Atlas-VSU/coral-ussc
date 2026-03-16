@@ -20,7 +20,7 @@ export function usePayments() {
       const currentUser = await getCurrentUserData();
       if (!currentUser) throw new Error("Not Authenticated!");
       const data = await getAllProofOfPayments(currentUser.uid);
-      setPayments(data.sort((a, b) => b.submittedAt.toMillis() - a.submittedAt.toMillis()));
+      setPayments(data);
     } catch (error) {
       toast.error("Could not load payments at this time.");
       console.error(error);

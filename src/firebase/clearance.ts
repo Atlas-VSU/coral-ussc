@@ -12,19 +12,26 @@ import { addOfflineFinesPayment } from "./payment/create/paymentHistory";
 import { toast } from "sonner";
 import { getProofOfPaymentByUserId } from "./payment/read/proofOfPayment";
 import { use } from "react";
+import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 import { usePaymentApproval } from "@/features/organization/payments/hooks/usePaymentApproval";
 export const fetchClearanceDocuments = async (orgId: string) => {
-    const clearanceRef = collection(db, 'clearanceStatus');
-    const q = query(
-        clearanceRef, 
-        where('orgId', '==', orgId), 
-        where('isArchived', '==', false)
+    return cacheService.getOrFetch(
+        CACHE_KEYS.clearanceAll(orgId),
+        async () => {
+            const clearanceRef = collection(db, 'clearanceStatus');
+            const q = query(
+                clearanceRef, 
+                where('orgId', '==', orgId), 
+                where('isArchived', '==', false)
+            );
+            const snapshot = await getDocs(q);
+            return snapshot.docs.map(doc => ({ 
+                id: doc.id, 
+                ...doc.data() 
+            })) as ClearanceStatus[];
+        },
+        CACHE_DURATIONS.CLEARANCE
     );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data() 
-    })) as ClearanceStatus[];
 }
 
 
@@ -59,6 +66,9 @@ export const recalculateClearanceStatus = async (clearanceId: string) => {
         updatedAt: now,
         clearanceDate: status === 'cleared' ? now : null
     });
+
+    cacheService.invalidateByPrefix('clearance:');
+    fetchClearanceDocuments(clearance.orgId).catch(console.error);
 }
 
 export const updateClearanceDocument = async (userId: string, orgId: string) => {
@@ -101,6 +111,8 @@ export const updateClearanceDocument = async (userId: string, orgId: string) => 
     });
 
     await recalculateClearanceStatus(userId);
+    cacheService.invalidateByPrefix('clearance:');
+    fetchClearanceDocuments(orgId).catch(console.error);
 }
 
 
@@ -159,6 +171,9 @@ export const addStudentWithClearance = async (studentId: string,studentData: any
         await batch.commit();
         console.log(`✅ Successfully added student ${studentData.firstName} and initialized clearance.`);
         
+        cacheService.invalidateByPrefix('clearance:');
+        fetchClearanceDocuments(orgId).catch(console.error);
+
         return studentRef.id;
     } catch (error) {
         console.error("❌ Error adding student and clearance:", error);
@@ -507,6 +522,8 @@ export const seedClearanceDocuments = async (orgId: string) => {
     }
 
     console.log(`✅ Successfully seeded clearance documents for ${totalAddedCount} new students.`);
+    cacheService.invalidateByPrefix('clearance:');
+    fetchClearanceDocuments(orgId).catch(console.error);
   } catch (error) {
     console.error('❌ Error seeding clearance documents:', error);
   }

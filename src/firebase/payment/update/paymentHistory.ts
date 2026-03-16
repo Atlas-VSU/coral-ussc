@@ -5,6 +5,10 @@ import { recalculateFines } from "@/firebase/fines/update/recalculate";
 import { recalculateFees } from "@/firebase/fees/update/recalculate";
 import { Member } from "@/features/organization/members/types";
 import { PaymentStatus } from "@/constants/status";
+import { cacheService } from "@/services/cacheService";
+import { getAllProofOfPayments } from "../read/proofOfPayment";
+import { fetchFeesForOrg, fetchUnpaidFeesForOrg } from "@/firebase/fees";
+import { getAllFines, getAllUnpaidFinesforOrg } from "@/firebase/fines/read/fines";
 
 
 export const verifyPaymentHistory = async (
@@ -57,6 +61,16 @@ export const verifyPaymentHistory = async (
             console.error("Error verifying payment history:", error);
             throw new Error("Failed to verify payment history. Please try again.");
         }
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('clearance:');
+        // Pre-emptive warming
+        getAllProofOfPayments(verifier.id!).catch(console.error);
+        fetchFeesForOrg(verifier.id!).catch(console.error);
+        fetchUnpaidFeesForOrg().catch(console.error);
+        getAllFines().catch(console.error);
+        getAllUnpaidFinesforOrg().catch(console.error);
 }
 
 export const rejectPaymentHistory = async (
@@ -109,4 +123,14 @@ export const rejectPaymentHistory = async (
             console.error("Error rejecting payment history:", error);
             throw new Error("Failed to reject payment history. Please try again.");
         }
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('clearance:');
+        // Pre-emptive warming
+        getAllProofOfPayments(verifier.id!).catch(console.error);
+        fetchFeesForOrg(verifier.id!).catch(console.error);
+        fetchUnpaidFeesForOrg().catch(console.error);
+        getAllFines().catch(console.error);
+        getAllUnpaidFinesforOrg().catch(console.error);
 }

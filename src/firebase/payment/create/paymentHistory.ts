@@ -1,6 +1,6 @@
 import { db } from "@/firebase/firebase.config";
 import { addDoc, collection, doc, getCountFromServer, Timestamp, updateDoc } from "firebase/firestore";
-import { getProofOfPaymentById } from "../read/proofOfPayment";
+import { getProofOfPaymentById, getAllProofOfPayments } from "../read/proofOfPayment";
 import { updateProofOfPaymentHistoryId } from "../update/proofOfPayment";
 import { getCurrentUserData } from "@/firebase/users";
 import { Member, MemberData } from "@/features/organization/members/types";
@@ -15,7 +15,8 @@ import { PaymentMethods, PaymentType } from "@/constants/types";
 import { recalculateClearanceStatus } from "@/firebase/clearance";
 import { recalculateFees } from "@/firebase/fees/update/recalculate";
 import { UnpaidDue } from "@/features/organization/payments/types";
-import { getFineItemsByFineId } from "@/firebase/fines/read/fines";
+import { getFineItemsByFineId, getAllFines, getAllUnpaidFinesforOrg } from "@/firebase/fines/read/fines";
+import { cacheService } from "@/services/cacheService";
 
 export const addOnlineFinesPayment = async (fines: StudentFines, type:string, method: PaymentMethod, payRef?: string, senderNumber?:string) => {
     try {
@@ -63,6 +64,14 @@ export const addOnlineFinesPayment = async (fines: StudentFines, type:string, me
             });
             await recalculateClearanceStatus(clearanceRef.id)
         }
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('clearance:');
+        // Pre-emptive warming
+        getAllProofOfPayments(fines.orgId).catch(console.error);
+        getAllFines().catch(console.error);
+        getAllUnpaidFinesforOrg().catch(console.error);
         
     } catch (error) {
         console.error("Error adding offline payment history:", error);
@@ -125,6 +134,14 @@ export const addOfflineFinesPayment = async (fines: StudentFines, type:string, m
             await recalculateClearanceStatus(clearanceRef.id)
         }
 
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('clearance:');
+        // Pre-emptive warming
+        getAllProofOfPayments(fines.orgId).catch(console.error);
+        getAllFines().catch(console.error);
+        getAllUnpaidFinesforOrg().catch(console.error);
         return proofId;
 
     } catch (error) {
@@ -196,6 +213,16 @@ export const createFinesPaymentHistory = async (
             throw new Error("Payment recorded, but failed to update clearance status. Please check the clearance record.");
         }
 
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('clearance:');
+
+        // Pre-emptive warming
+        getAllProofOfPayments(current.id!).catch(console.error);
+        getAllFines().catch(console.error);
+        getAllUnpaidFinesforOrg().catch(console.error);
+
         return paymentHist.id;
     }catch(error){
         console.error("Error creating fines payment history:", error);
@@ -246,6 +273,16 @@ export const createOnlinePaymentHistory = async (
                     throw new Error("Payment recorded, but failed to update fines. Please check the fines record.");
                 }
             }
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('clearance:');
+
+        // Pre-emptive warming
+        getAllProofOfPayments(current.id!).catch(console.error);
+        getAllFines().catch(console.error);
+        getAllUnpaidFinesforOrg().catch(console.error);
+
         return paymentHist.id;
     }catch(error){
         console.error("Error creating fines payment history:", error);

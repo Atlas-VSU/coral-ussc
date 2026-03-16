@@ -5,6 +5,7 @@ import { StudentFineItem } from "@/features/organization/payments/types";
 import { db } from "@/firebase/firebase.config";
 import { getCurrentUserData } from "@/firebase/users";
 import { collection, query, where, getDocs, CollectionReference, DocumentData, DocumentSnapshot, orderBy, limit, startAfter, getCountFromServer, getDoc, doc } from "firebase/firestore";
+import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 
 const finesCollection: CollectionReference<DocumentData> = collection(
     db,
@@ -68,164 +69,155 @@ export const getFinesByStudents = async (students: MemberData[]) => {
   }
 };
 
-  export const getFineByStudentId = async (studentId: string) => {
-    try{
-        const fineQuery = query(
-            finesCollection,
-            where("studentId", "==", studentId),
-            where("metadata.isArchived", "==", false)
-        );
-        const querySnapshot = await getDocs(fineQuery);
-        if (!querySnapshot.empty) {
-            const fineDoc = querySnapshot.docs[0];
-            return {
-                id: fineDoc.id,
-                ...fineDoc.data()
-            } as StudentFines; 
-        }else
-        {
+export const getFineByStudentId = async (studentId: string) => {
+    return cacheService.getOrFetch(
+        CACHE_KEYS.fineByStudent(studentId),
+        async () => {
+            const fineQuery = query(
+                finesCollection,
+                where("studentId", "==", studentId),
+                where("metadata.isArchived", "==", false)
+            );
+            const querySnapshot = await getDocs(fineQuery);
+            if (!querySnapshot.empty) {
+                const fineDoc = querySnapshot.docs[0];
+                return { id: fineDoc.id, ...fineDoc.data() } as StudentFines;
+            }
             console.warn(`No fine document found for student ID: ${studentId}`);
             return null;
-        }
-    }catch (error) {
-        handleFirestoreError(error, `fetching fine documents for student ID ${studentId}`);
-        return null;
-    }
+        },
+        CACHE_DURATIONS.FINES
+    );
 }
 
 export const getFineById = async (fineId: string) => {
-  try{
-    const fineDoc = await getDoc(doc(db, "fines", fineId));
-    if (!fineDoc.exists()) {
-      console.warn(`No fine document found for fine ID: ${fineId}`);
-      return null;
-    }
-    return {
-      id: fineDoc.id,
-      ...fineDoc.data()
-    } as StudentFines;
-  }catch (error) {
-    handleFirestoreError(error, `fetching fine documents for fine ID ${fineId}`);
-    return null;
-  }
+  return cacheService.getOrFetch(
+    CACHE_KEYS.fineDoc(fineId),
+    async () => {
+      const fineDoc = await getDoc(doc(db, "fines", fineId));
+      if (!fineDoc.exists()) {
+        console.warn(`No fine document found for fine ID: ${fineId}`);
+        return null;
+      }
+      return { id: fineDoc.id, ...fineDoc.data() } as StudentFines;
+    },
+    CACHE_DURATIONS.FINES
+  );
 }
 
 export const countFinesOfStudents = async (status: string) => { 
   const currUser = await getCurrentUserData() as unknown as Member;
-  const coll = collection(db, "fines");
-  try {
-    let q = null;
-    if (status === "all") {
-      q = query(coll, where("metadata.isArchived", "==", false), where("orgId", "==", currUser.id));
-    } else {
-      q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("status", "==", status));
-    }
+  return cacheService.getOrFetch(
+    `fines:count:${currUser.id}:${status}`,
+    async () => {
+      const coll = collection(db, "fines");
+      let q = null;
+      if (status === "all") {
+        q = query(coll, where("metadata.isArchived", "==", false), where("orgId", "==", currUser.id));
+      } else {
+        q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("status", "==", status));
+      }
 
-    const snapshot = await getCountFromServer(q);
-    const total = snapshot.data().count;
-    return total;
-  }
-  catch (error) {
-    handleFirestoreError(error, `counting fines with status ${status}`);
-    return 0;
-  }
-
+      const snapshot = await getCountFromServer(q);
+      return snapshot.data().count;
+    },
+    CACHE_DURATIONS.FINES
+  );
 }
 
 
 export const countUnsettleFinesOfStudents = async () => { 
   const currUser = await getCurrentUserData() as unknown as Member;
-  const coll = collection(db, "fines");
-  try {
+  return cacheService.getOrFetch(
+    `fines:countUnsettled:${currUser.id}`,
+    async () => {
+      const coll = collection(db, "fines");
+      let q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("status", "==", "unpaid"), where("accumulatedAmount", ">", 0));
+      let snapshot = await getCountFromServer(q);
+      let total = snapshot.data().count;
 
-    let q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("status", "==", "unpaid"), where("accumulatedAmount", ">", 0));
-    let snapshot = await getCountFromServer(q);
-    let total = snapshot.data().count;
+      q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("status", "==", "partial"));
+      snapshot = await getCountFromServer(q);
+      total += snapshot.data().count;
 
-    q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("status", "==", "partial"));
-    snapshot = await getCountFromServer(q);
-    total += snapshot.data().count;
-
-    q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("status", "==", "pending"));
-    snapshot = await getCountFromServer(q);
-    total += snapshot.data().count;
-    return total;
-  }
-  catch (error) {
-    handleFirestoreError(error, `counting fines with status ${status}`);
-    return 0;
-  }
-
+      q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("status", "==", "pending"));
+      snapshot = await getCountFromServer(q);
+      total += snapshot.data().count;
+      return total;
+    },
+    CACHE_DURATIONS.FINES
+  );
 }
 
 export const countStudentsWithFines = async () => { 
   const currUser = await getCurrentUserData() as unknown as Member;
-  const coll = collection(db, "fines");
-  try {
-
-    const q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("accumulatedAmount", ">", 0));
-    const snapshot = await getCountFromServer(q);
-    const total = snapshot.data().count;
-    return total;
-  }
-  catch (error) {
-    handleFirestoreError(error, `counting fines with status ${status}`);
-    return 0;
-  }
-
+  return cacheService.getOrFetch(
+    `fines:countWithFines:${currUser.id}`,
+    async () => {
+      const coll = collection(db, "fines");
+      const q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("accumulatedAmount", ">", 0));
+      const snapshot = await getCountFromServer(q);
+      return snapshot.data().count;
+    },
+    CACHE_DURATIONS.FINES
+  );
 }
 
 export const getFineItemsByFineId = async (fineId: string) => {
-  try {
-    const fineDoc = await getDocs(query(collection(db, "fines", fineId, "fineItems"), where("isArchived", "==", false)));
-    return fineDoc.docs.map(doc => ({ id: doc.id, ...doc.data() })) as FineItem[];
-  } catch (error) {
-    handleFirestoreError(error, `fetching fine items for fine ID ${fineId}`);
-    return [];
-  }
+  return cacheService.getOrFetch(
+    CACHE_KEYS.fineItems(fineId),
+    async () => {
+      const fineDoc = await getDocs(query(collection(db, "fines", fineId, "fineItems"), where("isArchived", "==", false)));
+      return fineDoc.docs.map(doc => ({ id: doc.id, ...doc.data() })) as FineItem[];
+    },
+    CACHE_DURATIONS.FINES
+  );
 }
 
-export const getUnpaidFineItemsByFineId = async (fine: StudentFines ) => {
-  try {
-    const fineDoc = await getDocs(query(collection(db, "fines", fine.id!, "fineItems"), where("isArchived", "==", false,), where("isPaid", "==", false)));
-    return fineDoc.docs.map(doc => ({ refId: doc.id, userId:fine.userId, fine:fine, parentFineId:fine.id!, title: doc.data().eventName, amount: doc.data().amount})) as StudentFineItem[];
-  } catch (error) {
-    handleFirestoreError(error, `fetching fine items for fine ID ${fine.id}`);
-    return [];
-  }
+export const getUnpaidFineItemsByFineId = async (fine: StudentFines) => {
+  return cacheService.getOrFetch(
+    CACHE_KEYS.fineUnpaidItems(fine.id!),
+    async () => {
+      const fineDoc = await getDocs(query(collection(db, "fines", fine.id!, "fineItems"), where("isArchived", "==", false), where("isPaid", "==", false)));
+      return fineDoc.docs.map(doc => ({ refId: doc.id, userId: fine.userId, fine: fine, parentFineId: fine.id!, title: doc.data().eventName, amount: doc.data().amount })) as StudentFineItem[];
+    },
+    CACHE_DURATIONS.PAYMENTS
+  );
 }
 
 export const getAllFines = async (status?: string) => {
-  try {
-    const currUser = await getCurrentUserData() as unknown as Member;
-    const constraints = [
-      where("metadata.isArchived", "==", false),
-      where("orgId", "==", currUser.id),
-      where("accumulatedAmount", ">", 0),
-      orderBy("metadata.updatedAt", "desc"),
-      ...(status && status !== "all" ? [where("status", "==", status)] : []),
-    ];
-    const snapshot = await getDocs(query(finesCollection, ...constraints));
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as StudentFines[];
-  } catch (error) {
-    handleFirestoreError(error, "fetching all fines lightweight");
-    return [];
-  }
+  const currUser = await getCurrentUserData() as unknown as Member;
+  return cacheService.getOrFetch(
+    CACHE_KEYS.finesAll(currUser.id || '', status || 'all'),
+    async () => {
+      const constraints = [
+        where("metadata.isArchived", "==", false),
+        where("orgId", "==", currUser.id),
+        where("accumulatedAmount", ">", 0),
+        orderBy("metadata.updatedAt", "desc"),
+        ...(status && status !== "all" ? [where("status", "==", status)] : []),
+      ];
+      const snapshot = await getDocs(query(finesCollection, ...constraints));
+      return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as StudentFines[];
+    },
+    CACHE_DURATIONS.FINES
+  );
 };
 
 export const getAllUnpaidFinesforOrg = async () => {
-  try {
-    const currUser = await getCurrentUserData() as unknown as Member;
-    const snapshot = await getDocs(query(finesCollection,
-      where("metadata.isArchived", "==", false),
-      where("orgId", "==", currUser.id),
-      where("status", "in", ["unpaid", "partial"]),
-      where("accumulatedAmount", ">", 0)));
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as StudentFines[];
-  }catch (error) {
-    handleFirestoreError(error, "fetching all unpaid fines for org");
-    return [];
-  }
+  const currUser = await getCurrentUserData() as unknown as Member;
+  return cacheService.getOrFetch(
+    CACHE_KEYS.finesUnpaid(currUser.id || ''),
+    async () => {
+      const snapshot = await getDocs(query(finesCollection,
+        where("metadata.isArchived", "==", false),
+        where("orgId", "==", currUser.id),
+        where("status", "in", ["unpaid", "partial"]),
+        where("accumulatedAmount", ">", 0)));
+      return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as StudentFines[];
+    },
+    CACHE_DURATIONS.PAYMENTS
+  );
 }
  
 export const getFineItemsByIds = async (fineId:string, fineItemIds: string[]) => {

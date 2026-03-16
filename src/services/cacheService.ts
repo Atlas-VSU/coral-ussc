@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Timestamp } from "firebase/firestore";
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
@@ -25,12 +26,55 @@ class CacheService {
       if (savedCache) {
         const parsed = JSON.parse(savedCache);
         Object.entries(parsed).forEach(([key, value]) => {
-          this.cache.set(key, value as CacheEntry<any>);
+          const entry = value as CacheEntry<any>;
+          // Hydrate data if it contains timestamps
+          entry.data = this.hydrateTimestamps(entry.data);
+          this.cache.set(key, entry);
         });
       }
     } catch (error) {
       console.error("Failed to load cache from localStorage", error);
     }
+  }
+
+  // Helper to recursively hydrate Firestore Timestamps
+  private hydrateTimestamps(data: any): any {
+    if (data === null || data === undefined) return data;
+
+    // Handle arrays
+    if (Array.isArray(data)) {
+      return data.map((item) => this.hydrateTimestamps(item));
+    }
+
+    // Handle objects
+    if (typeof data === "object") {
+      // Check if this is a serialized Timestamp (Firestore JS SDK format)
+      if (
+        typeof data.seconds === "number" &&
+        typeof data.nanoseconds === "number" &&
+        typeof data.toDate !== "function"
+      ) {
+        return new Timestamp(data.seconds, data.nanoseconds);
+      }
+
+      // Check for _seconds/_nanoseconds (Firebase Admin or older SDKs)
+      if (
+        typeof data._seconds === "number" &&
+        typeof data._nanoseconds === "number" &&
+        typeof data.toDate !== "function"
+      ) {
+        return new Timestamp(data._seconds, data._nanoseconds);
+      }
+
+      // Recursively hydrate all properties
+      const hydrated: any = {};
+      for (const [key, value] of Object.entries(data)) {
+        hydrated[key] = this.hydrateTimestamps(value);
+      }
+      return hydrated;
+    }
+
+    return data;
   }
 
   public static getInstance(): CacheService {
@@ -56,6 +100,7 @@ class CacheService {
     fetchFn: () => Promise<T>,
     ttl: number = this.DEFAULT_TTL
   ): Promise<T> {
+    const startTime = performance.now();
     // Check if we have valid cache
     const cached = this.cache.get(key);
     const now = Date.now();
@@ -70,13 +115,16 @@ class CacheService {
       // Cache hit
       this.metrics.hits++;
       keyMetrics.hits++;
+      const duration = performance.now() - startTime;
       return cached.data as T;
     }
 
     // Cache miss
     this.metrics.misses++;
     keyMetrics.misses++;
+    
     const data = await fetchFn();
+    const duration = performance.now() - startTime;
 
     // Store in cache
     this.cache.set(key, {
@@ -247,4 +295,39 @@ export const CACHE_DURATIONS = {
     RECENT_MEMBERS: 30 * 60 * 1000, // 30 minutes
   },
   UI_STATE: 30 * 1000, // 30 seconds for UI state
+  FEES: 5 * 60 * 1000, // 5 minutes
+  FINES: 5 * 60 * 1000, // 5 minutes
+  PAYMENTS: 2 * 60 * 1000, // 2 minutes (payments change more frequently)
+  PAYMENT_HISTORY: 5 * 60 * 1000, // 5 minutes
+  CLEARANCE: 5 * 60 * 1000, // 5 minutes
+};
+
+// Structured cache key helpers — use these everywhere instead of raw strings
+export const CACHE_KEYS = {
+  // Fees
+  feesForOrg:   (orgId: string) => `fees:org:${orgId}`,
+  feesUnpaid:   (orgId: string) => `fees:unpaid:${orgId}`,
+  feeRoster:    (orgId: string, title: string, year: string) => `fees:roster:${orgId}:${title}:${year}`,
+  feeDoc:       (feeId: string) => `fees:doc:${feeId}`,
+  feeLogs:      (feeId: string) => `fees:logs:${feeId}`,
+
+  // Fines
+  finesAll:        (orgId: string, status: string) => `fines:all:${orgId}:${status}`,
+  finesUnpaid:     (orgId: string) => `fines:unpaid:${orgId}`,
+  fineByStudent:   (studentId: string) => `fines:student:${studentId}`,
+  fineDoc:         (fineId: string) => `fines:doc:${fineId}`,
+  fineItems:       (fineId: string) => `fines:items:${fineId}`,
+  fineUnpaidItems: (fineId: string) => `fines:unpaiditems:${fineId}`,
+
+  // Payments (proof of payment)
+  proofOfPayments: (orgId: string) => `payments:proofs:${orgId}`,
+  proofOfPayment:  (id: string)    => `payments:proof:${id}`,
+
+  // Payment history
+  paymentHistory:  (refId: string)               => `payments:history:${refId}`,
+  verifiedHistory: (type: string, refId: string) => `payments:verified:${type}:${refId}`,
+
+  // Clearance
+  clearanceAll:   (orgId: string) => `clearance:all:${orgId}`,
+  clearanceDoc:   (userId: string) => `clearance:doc:${userId}`,
 };
