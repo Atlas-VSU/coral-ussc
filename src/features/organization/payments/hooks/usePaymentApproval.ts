@@ -29,7 +29,7 @@ export const usePaymentApproval = () => {
                 for (const item of items) {
                     if (item.paymentType === "fees") {
                         const paymentHistory = await getPendingPaymentHistory(item.refId, "fees");
-                        await verifyPaymentHistory(paymentHistory.id, verifier, "fees", item.refId, item.amount);
+                        await verifyPaymentHistory(paymentHistory!.id, verifier, "fees", item.refId, item.amount);
                     }
                     if (item.paymentType === "fines") {
                         parentFine = item.parentFineId;
@@ -39,7 +39,7 @@ export const usePaymentApproval = () => {
                 }
                 if (parentFine !== "") {
                     const paymentHistory = await getPendingPaymentHistory(parentFine, "fines");
-                    await verifyPaymentHistory(paymentHistory.id, verifier, "fines", parentFine, totalFine);
+                    await verifyPaymentHistory(paymentHistory!.id!, verifier, "fines", parentFine, totalFine);
                 }
                     setReceiptData({
                         receiptId: receipt,
@@ -79,7 +79,7 @@ export const usePaymentApproval = () => {
                 for (const item of items) {
                     if (item.paymentType === "fees") {
                         const paymentHistory = await getPendingPaymentHistory(item.refId, "fees");
-                        await rejectPaymentHistory(paymentHistory.id, verifier, "fees", item.refId, reason);
+                        await rejectPaymentHistory(paymentHistory!.id, verifier, "fees", item.refId, reason);
                     }
                     if (item.paymentType === "fines") {
                         parentFine = item.parentFineId;
@@ -87,7 +87,7 @@ export const usePaymentApproval = () => {
                 }
                 if (parentFine !== "") {
                     const paymentHistory = await getPendingPaymentHistory(parentFine, "fines");
-                    await rejectPaymentHistory(paymentHistory.id, verifier, "fines", parentFine, reason);
+                    await rejectPaymentHistory(paymentHistory!.id, verifier, "fines", parentFine, reason);
                 }
                 
                 return {
