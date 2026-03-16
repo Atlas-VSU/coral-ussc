@@ -7,7 +7,7 @@ export const getProofOfPaymentById = async (proofOfPaymentId: string) => {
     try {
         const docRef = doc(db, "proofOfPayments", proofOfPaymentId);
         const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
+        if (docSnap.exists() && !docSnap.data().isArchived) {
             return { id: docSnap.id, ...docSnap.data() } as ProofOfPayment;
         } else {
             return null;
@@ -21,7 +21,7 @@ export const getProofOfPaymentById = async (proofOfPaymentId: string) => {
 export const getAllProofOfPayments = async (orgId:string) => { 
     try {
         const proofOfPaymentsRef = collection(db, "proofOfPayments");
-        const q = query(proofOfPaymentsRef, where("orgId", "==", orgId));
+        const q = query(proofOfPaymentsRef, where("orgId", "==", orgId), where("isArchived", "==", false));
         const querySnapshot = await getDocs(q);
         const proofOfPayments: ProofOfPayment[] = [];
         querySnapshot.forEach((doc) => {
@@ -36,7 +36,7 @@ export const getAllProofOfPayments = async (orgId:string) => {
 
 export const getProofOfPaymentByUserId = async (userId: string, orgId?:string) => {
     try {
-        const constraints = [where("userId", "==", userId)];
+        const constraints = [where("userId", "==", userId), where("isArchived", "==", false)];
         if (orgId) {
             constraints.push(where("orgId", "==", orgId));
         }

@@ -1,9 +1,11 @@
 import { useState, useMemo } from "react";
 import type { Fee, PaymentLog } from "../types";
 import type { StudentFeeRow } from "./useFeesRoster";
+import { useRouter } from "next/navigation";
 
 interface UseFeesRosterUIProps {
   fee: Fee;
+  router: ReturnType<typeof useRouter>;
   studentRows: StudentFeeRow[];
   onApprovePayment: (proofId: string) => Promise<void>;
   onRejectPayment: (proofId: string ,reason: string) => Promise<void>;
@@ -14,19 +16,24 @@ interface UseFeesRosterUIProps {
     ref?: string,
     senderNumber?: string
   ) => Promise<void>;
+  onArchiveFee: (feeTitle: string, academicYear: string, semester: string) => Promise<void>;
   itemsPerPage?: number;
 }
 
 export function useFeesRosterUI({
   fee,
+  router,
   studentRows,
   onApprovePayment,
   onRejectPayment,
   onManualPaymentAdded,
+  onArchiveFee,
   itemsPerPage = 10,
 }: UseFeesRosterUIProps) {
   const allLogs = useMemo(() => studentRows.flatMap((row) => row.logs), [studentRows]);
 
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
@@ -140,8 +147,24 @@ export function useFeesRosterUI({
     setCurrentPage(1);
   };
 
+  const handleArchiveConfirm = async () => {
+    try {
+      setIsArchiving(true);
+      await onArchiveFee(fee.title, fee.academicYear, fee.semester!);
+      console.log("archive");
+      router.back(); 
+    } catch (error) {
+      console.error('Failed to archive fee:', error);
+    } finally {
+      setIsArchiving(false);
+      setArchiveDialogOpen(false);
+    }
+  };
+
   return {
     state: {
+      archiveDialogOpen,
+      isArchiving,
       search,
       filterStatus,
       viewMode,
@@ -163,6 +186,9 @@ export function useFeesRosterUI({
       filteredRowsCount: filteredRows.length,
     },
     actions: {
+      setArchiveDialogOpen,
+      setIsArchiving,
+      handleArchiveConfirm,
       setSearch: handleSearchChange,
       setFilterStatus: handleStatusChange,
       setViewMode,
