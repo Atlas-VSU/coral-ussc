@@ -15,7 +15,7 @@ import { generateReceiptId } from "../utils"
 import { Member } from "../../members/types"
 import { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
 import { is, se } from "date-fns/locale"
-import { PaymentType } from "@/constants/types"
+import { PaymentMethods, PaymentType } from "@/constants/types"
 import { usePaymentApproval } from "./usePaymentApproval"
 import { set } from "zod"
 
@@ -224,7 +224,7 @@ export function usePaymentsPage() {
         userName: studentName,
         studentId: liveSelectedUnpaid.student.studentId,
         amount: totalAmount,
-        paymentMethod: "cash",
+        paymentMethod: PaymentMethods.CASH,
         referenceNumber: "",
         notes: `Manual payment for ${isFine && isFee ? "fees and fines" : isFine ? "fines" : "fees"}`,
         type: isFine && isFee ? PaymentType.BULK : isFine ? PaymentType.FINES : PaymentType.FEES,

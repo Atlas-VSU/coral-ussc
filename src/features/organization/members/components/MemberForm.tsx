@@ -210,6 +210,7 @@ export function MemberForm({
                         <SelectItem value="3">3rd Year</SelectItem>
                         <SelectItem value="4">4th Year</SelectItem>
                         <SelectItem value="5">5th Year</SelectItem>
+                        <SelectItem value="6">6th Year</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
