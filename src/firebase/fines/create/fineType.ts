@@ -1,7 +1,8 @@
+import { FineType } from "@/features/organization/fines/types";
 import { db } from "@/firebase/firebase.config";
 import { getCurrentUser, getCurrentUserData } from "@/firebase/users";
 import { FineTypeFormData } from "@/lib/validators";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
+import { collection, addDoc, Timestamp, updateDoc, doc } from "firebase/firestore";
 
 
   // Centralized error handler
@@ -39,3 +40,51 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
         return null;
     }
   }
+
+  export const updateFineType = async (fineTypeId: string, fineTypeData : FineType) => {
+    try {
+      //for now orgId = userId
+      const currentUser = await getCurrentUserData();
+      if (!currentUser) {
+        throw new Error("User not authenticated");
+      }
+  
+          await updateDoc(doc(collection(db, "fineTypes"), fineTypeId), {
+              name: fineTypeData.name,
+              description: fineTypeData.description,
+              defaultAmount: fineTypeData.defaultAmount,
+              requiresTimeIn: fineTypeData.requiresTimeIn,
+              requiresTimeOut: fineTypeData.requiresTimeOut || false,
+              majorEventsOnly: fineTypeData.majorEventsOnly,
+              isActive : true,
+              orgId : currentUser.uid,
+              metadata: {
+                  createdAt: Timestamp.now(),
+                  updatedAt: Timestamp.now(),
+              }
+          });
+      } catch (error) {
+          handleFirestoreError(error, `updating fine type`);
+          return null;
+      }
+    }
+
+    export const deleteFineType = async (fineTypeId: string) => {
+      try {
+        //for now orgId = userId
+        const currentUser = await getCurrentUserData();
+        if (!currentUser) {
+          throw new Error("User not authenticated");
+        }
+    
+            await updateDoc(doc(collection(db, "fineTypes"), fineTypeId), {
+                isActive : false,
+                metadata: {
+                    updatedAt: Timestamp.now(),
+                }
+            });
+        } catch (error) {
+            handleFirestoreError(error, `deleting fine type`);
+            return null;
+        }
+      }

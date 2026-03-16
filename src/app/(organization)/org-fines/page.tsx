@@ -11,7 +11,7 @@ import { BulkGenerationDialog } from "@/features/organization/fines/components/B
 import { FinesHeader } from "@/features/organization/fines/components/FinesHeader";
 import { FineTypeForm } from "@/features/organization/fines/components/FineTypeForm";
 import { FineType, StudentFines } from "@/features/organization/fines/types";
-import { createFineType } from "@/firebase/fines/create/fineType";
+import { createFineType, deleteFineType, updateFineType } from "@/firebase/fines/create/fineType";
 import { Users, AlertTriangle, Banknote, CircleDollarSign, ChevronRight, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -22,6 +22,8 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { countFinesOfStudents, countStudentsWithFines, countUnsettleFinesOfStudents, getAllFines } from "@/firebase/fines/read/fines";
 import { FineBreakdownDialog } from "@/features/organization/fines/components/FineBreakdownDialog";
 import { usePaymentApproval } from "@/features/organization/payments/hooks/usePaymentApproval";
+import { FineTypeDialog } from "@/features/organization/fines/components/FineTypeDialog";
+import { getAllFineTypes } from "@/firebase/fines/read/fineType";
 
 export default function FinesPage() {
 
@@ -43,6 +45,8 @@ export default function FinesPage() {
   const [totalStudentsWithFines, setTotalStudentsWithFines] = useState(0);
   const [totalUnsettled, setTotalUnsettled] = useState(0);
   const [isStatusChanging, setIsStatusChanging] = useState(true);
+
+  const [fineTypes, setFineTypes] = useState<FineType[]>([]);
 
   // Initialize stats
   const initialize = async () => {
@@ -71,6 +75,15 @@ export default function FinesPage() {
     }
   }, []);
 
+  const fetchFineTypes = async () => {
+    try {
+      const docs = await getAllFineTypes();
+      setFineTypes(docs);
+    } catch (error) {
+      console.error("Failed to fetch fine types:", error);
+    }
+  };
+
   useEffect(() => {
 
       if (isStatusChanging) {
@@ -79,6 +92,7 @@ export default function FinesPage() {
       }
         
       fetchAll(filterStatus);
+      fetchFineTypes();
     
    }, [ filterStatus]);
 
@@ -128,19 +142,50 @@ export default function FinesPage() {
     setIsFormOpen(true);
   };
 
-  const handleFormSubmit = async (data: FineType) => {
+
+  const handleAddFineSubmission = async (data: FineType) => {
     setIsFormSubmitting(true);
     try {
       await createFineType(data);
-      toast.success("A type of fine was added successfully");
+      fetchFineTypes();
+      toast.success(`${data.name} was added successfully`);
     } catch (error) {
-      toast.error(selectedFineType ? "Failed to update fine type" : "Failed to add fine type");
+      toast.error(`Failed to add ${data.name}`);
     } finally {
       setIsFormSubmitting(false);
-      setIsFormOpen(false);
       setSelectedFineType(null);
     }
   };
+
+  const handleUpdateFineType = async (fineTypeId: string, data: FineType) => {
+    setIsFormSubmitting(true);
+    try {
+      await updateFineType(fineTypeId, data);
+      fetchFineTypes();
+      toast.success(`${data.name} was updated successfully`);
+    } catch (error) {
+      toast.error(`Failed to update ${data.name}`);
+    } finally {
+      setIsFormSubmitting(false);
+      setSelectedFineType(null);
+    }
+  };
+
+  const handleDeleteFineType = async (fineTypeId: string) => {
+    setIsFormSubmitting(true);
+    try {
+      await deleteFineType(fineTypeId);
+      fetchFineTypes();
+      toast.success(`Fine type was deleted successfully`);
+    } catch (error) {
+      toast.error(`Failed to delete fine type`);
+    } finally {
+      setIsFormSubmitting(false);
+      setSelectedFineType(null);
+    }
+  };
+
+
 
   const handleSuccess = async () => {
     setIsStatusChanging(true);
@@ -388,14 +433,18 @@ export default function FinesPage() {
             )}
           </CardContent>
         </Card>
-
-        <FineTypeForm
+        
+        <FineTypeDialog
           open={isFormOpen}
           onOpenChange={setIsFormOpen}
-          onSubmit={handleFormSubmit}
-          fineType={selectedFineType}
-          isSubmitting={isFormSubmitting}
+          fineTypes={fineTypes}
+          onAddFineType={handleAddFineSubmission}
+          onUpdateFineType={handleUpdateFineType}
+          onDeleteFineType={handleDeleteFineType}
+          isProcessing={isFormSubmitting}
+          fetchFineTypes={fetchFineTypes}
         />
+
         <BulkGenerationDialog
           open={isBulkGenerateOpen}
           onOpenChange={setIsBulkGenerateOpen}
