@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PaymentLog } from "../types";
-import { approvePaymentTransaction, fetchFee, recordManualPaymentAndUpdateClearance, rejectPaymentTransaction } from "@/firebase/fees";
+import { approvePaymentTransaction, archiveFeeDocuments, fetchFee, recordManualPaymentAndUpdateClearance, rejectPaymentTransaction } from "@/firebase/fees";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { collection, doc, getDoc, query, where, getDocs } from "firebase/firestore";
@@ -126,6 +126,24 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
         }
     };
 
+    const archiveFee = async (feeTitle: string, academicYear: string, semester: string) => {
+        setIsSubmitting(true);
+        setError(null);
+        setSuccess(false);
+
+        try {
+            await archiveFeeDocuments(feeTitle, academicYear, semester);
+            setSuccess(true);
+            toast.success("Fee archived successfully!");
+            onSuccess?.(feeTitle);
+        } catch (err) {
+            setError("Failed to perform action");
+            toast.error("Failed to archive fee");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return {
         isSubmitting,
         error,
@@ -133,6 +151,7 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
         addManualPayment,
         approvePayment,
         rejectPayment,
+        archiveFee,
         setReceiptOpen,
         receiptData,
         receiptOpen,

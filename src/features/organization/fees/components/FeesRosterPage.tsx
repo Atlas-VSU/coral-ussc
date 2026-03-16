@@ -18,7 +18,7 @@ export default function FeesRosterPage({
   academicYear,
 }: FeesRosterPageProps) {
   const { fee, studentRows, isLoading, error, refetchStudentRow } = useFeesRoster(title, academicYear);
-  const { approvePayment, rejectPayment, addManualPayment,receiptData,receiptOpen,setReceiptOpen } = useFeeAction(refetchStudentRow);
+  const { approvePayment, rejectPayment, addManualPayment, receiptData, receiptOpen, setReceiptOpen, archiveFee, isSubmitting } = useFeeAction(refetchStudentRow);
 
   if (isLoading) {
     return (
@@ -57,7 +57,15 @@ export default function FeesRosterPage({
       />
     )}
      
-    <FeesRosterContent fee={fee as any} studentRows={studentRows} onApprovePayment={approvePayment} onManualPaymentAdded={addManualPayment} onRejectPayment={rejectPayment} />
+    <FeesRosterContent 
+      fee={fee as any} 
+      studentRows={studentRows} 
+      onApprovePayment={approvePayment} 
+      onManualPaymentAdded={addManualPayment} 
+      onRejectPayment={rejectPayment} 
+      onArchiveFee={archiveFee}
+      isSubmitting={isSubmitting}
+    />
     </>
   );
 }
