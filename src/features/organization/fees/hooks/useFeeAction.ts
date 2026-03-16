@@ -78,14 +78,14 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
         setSuccess(false);
 
         try {
-
             const proof = await getProofOfPaymentById(proofId);
             if (proof) {
                 const result = await _approvePayment(proof);
-                setReceiptData(result?.receipt!);
-                setReceiptOpen(true);
+                console.log("Approval result:", result?.receipt);
                 setSuccess(true);
                 toast.success("Payment approved successfully!");
+                setReceiptData(result?.receipt! as ReceiptData);
+                setReceiptOpen(true);
                 onSuccess?.(proof.referenceId);
             }else{
                 toast.error("Proof of payment not found, please try again or contact the developer");

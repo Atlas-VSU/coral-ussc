@@ -3,7 +3,7 @@ import { FineItem, ProofOfPayment } from "../../fines/types"
 import { generateReceiptId } from "../utils"
 import { Fee } from "../../fees/types"
 import { getPendingPaymentHistory } from "@/firebase/payment/read/paymentHistory"
-import { getCurrentUserData } from "@/firebase/users"
+import { getCurrentUserData, searchUserByStudentId } from "@/firebase/users"
 import { Member } from "../../members/types"
 import { rejectPaymentHistory, verifyPaymentHistory } from "@/firebase/payment/update/paymentHistory"
 import { markFineItemsAsPaid } from "@/firebase/fines/update/fineItemsStatus"
@@ -11,6 +11,9 @@ import { toast } from "sonner"
 import { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
 import { useState } from "react"
 import { Timestamp } from "firebase/firestore"
+import { recalculateClearanceStatus } from "@/firebase"
+import { recalculateFines } from "@/firebase/fines/update/recalculate"
+import { recalculateFees } from "@/firebase/fees/update/recalculate"
 
 export const usePaymentApproval = () => {
     const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
@@ -18,12 +21,18 @@ export const usePaymentApproval = () => {
     const _approvePayment = async (payment: ProofOfPayment) => {
         try {
             const verifier = await getCurrentUserData() as unknown as Member;
+            const paymentOwner = await searchUserByStudentId(payment.studentId);
+            if (paymentOwner === null) {
+                toast.error("Payment owner not found, cannot verify payment.")
+                return;
+            };
             const receipt = generateReceiptId();
             verifyPaymentProof(payment, verifier, receipt);
             if (payment.metadata.items?.length) {
 
                 const items = payment.metadata.items;
                 let parentFine = "";
+                let fineItemIds: string[] = [];
                 let totalFine = 0;
 
                 for (const item of items) {
@@ -33,14 +42,17 @@ export const usePaymentApproval = () => {
                     }
                     if (item.paymentType === "fines") {
                         parentFine = item.parentFineId;
+                        fineItemIds.push(item.refId);
                         totalFine += item.amount;
                         await markFineItemsAsPaid(item.parentFineId, item.refId);
                     }
                 }
                 if (parentFine !== "") {
                     const paymentHistory = await getPendingPaymentHistory(parentFine, "fines");
-                    await verifyPaymentHistory(paymentHistory!.id!, verifier, "fines", parentFine, totalFine);
+                    await verifyPaymentHistory(paymentHistory!.id, verifier, "fines", parentFine, totalFine,null, fineItemIds);
                 }
+                await recalculateClearanceStatus(paymentOwner.id!);
+                
                     setReceiptData({
                         receiptId: receipt,
                         studentName: payment.userName,
@@ -57,7 +69,6 @@ export const usePaymentApproval = () => {
                     receipt: receiptData,
                 }
             }
-
         } catch (error) {
             console.error("Failed payment approval.")
             toast.error("Failed payment approval, please contact the developer")
@@ -70,6 +81,11 @@ export const usePaymentApproval = () => {
     const _rejectPayment = async (payment: ProofOfPayment, reason: string) => {
         try {
             const verifier = await getCurrentUserData() as unknown as Member;
+            const paymentOwner = await searchUserByStudentId(payment.studentId);
+            if (paymentOwner === null) {
+                toast.error("Payment owner not found, cannot verify payment.")
+                return;
+            };
             rejectPaymentProof(payment, verifier, reason);
             if (payment.metadata.items?.length) {
 
@@ -80,6 +96,7 @@ export const usePaymentApproval = () => {
                     if (item.paymentType === "fees") {
                         const paymentHistory = await getPendingPaymentHistory(item.refId, "fees");
                         await rejectPaymentHistory(paymentHistory!.id, verifier, "fees", item.refId, reason);
+                        await recalculateFees(item.refId,0);
                     }
                     if (item.paymentType === "fines") {
                         parentFine = item.parentFineId;
@@ -89,6 +106,8 @@ export const usePaymentApproval = () => {
                     const paymentHistory = await getPendingPaymentHistory(parentFine, "fines");
                     await rejectPaymentHistory(paymentHistory!.id, verifier, "fines", parentFine, reason);
                 }
+                await recalculateFines(parentFine,0);
+                await recalculateClearanceStatus(paymentOwner.id!);
                 
                 return {
                     success: true,

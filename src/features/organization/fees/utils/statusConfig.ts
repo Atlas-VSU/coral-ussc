@@ -7,11 +7,6 @@ export const statusConfig: Record<string, { label: string; variant: "default" | 
     variant: "secondary",
     icon: Clock,
   },
-  "pending": {
-    label: "Pending",
-    variant: "secondary",
-    icon: Clock,
-  },
   "verified": {
     label: "Verified",
     variant: "default",
