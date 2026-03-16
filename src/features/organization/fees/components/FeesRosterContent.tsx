@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { AlertTriangle, Archive, ArrowLeft, Loader } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,6 +17,17 @@ import { ManualPaymentDialog } from "@/features/organization/fees/components/Man
 import { PaymentDetailDialog } from "@/features/organization/fees/components/PaymentDetailDialog";
 import { RejectDialog } from "@/features/organization/fees/components/RejectDialog";
 import type { Fee, PaymentLog } from "@/features/organization/fees/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 import { StudentFeeRow } from "../hooks/useFeesRoster";
 import { useFeesRosterUI } from "../hooks/useFeesRosterUI";
 
@@ -27,25 +38,32 @@ export function FeesRosterContent({
   studentRows,
   onApprovePayment,
   onRejectPayment,
-  onManualPaymentAdded
+  onManualPaymentAdded,
+  onArchiveFee,
+  isSubmitting = false,
 }: {
   fee: Fee;
   studentRows: StudentFeeRow[];
   onApprovePayment: (proofId: string) => Promise<void>;
   onRejectPayment: (proofId: string, reason: string) => Promise<void>;
   onManualPaymentAdded: (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", ref?: string) => Promise<void>;
+  onArchiveFee: (feeTitle: string, academicYear: string, semester: string) => Promise<void>;
+  isSubmitting?: boolean;
 }) {
   const router = useRouter();
   const { state, computed, actions } = useFeesRosterUI({
     fee,
+    router,
     studentRows,
     onApprovePayment,
     onRejectPayment,
     onManualPaymentAdded,
+    onArchiveFee,
     itemsPerPage: ITEMS_PER_PAGE,
   });
 
   const {
+    archiveDialogOpen,
     search,
     filterStatus,
     viewMode,
@@ -57,7 +75,11 @@ export function FeesRosterContent({
     rejectionReason,
     manualLogOpen,
     studentRowFee,
+    isArchiving: isStateArchiving,
   } = state;
+
+  // Use the prop isSubmitting if provided, otherwise fallback to local isArchiving state
+  const isCurrentlyArchiving = isSubmitting || isStateArchiving;
 
   const {
     paginatedLogs,
@@ -69,6 +91,7 @@ export function FeesRosterContent({
   } = computed;
 
   const {
+    setArchiveDialogOpen,
     setSearch,
     setFilterStatus,
     setViewMode,
@@ -84,6 +107,7 @@ export function FeesRosterContent({
     handleViewDetails,
     handleManualLogRequest,
     setStudentRowFee,
+    handleArchiveConfirm
   } = actions;
 
   return (
@@ -92,17 +116,32 @@ export function FeesRosterContent({
         <Button
           variant="ghost"
           size="sm"
-          className="w-fit -ml-2 text-muted-foreground"
+          className="w-fit -ml-2 text-muted-foreground hover:text-foreground"
           onClick={() => router.back()}
         >
           <ArrowLeft className="size-4 mr-1" /> Back
         </Button>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">{fee.title}</h1>
-        <p className="text-sm text-muted-foreground">
-          Fees Roster · {fee.semester ? fee.semester + " Semester" : ""} {fee.academicYear ? " - " + fee.academicYear + " A.Y." : ""} · ₱{(fee.amount || 0).toLocaleString()}
-        </p>
+        
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">{fee.title}</h1>
+            <p className="text-sm text-muted-foreground">
+              Fees Roster · {fee.semester ? fee.semester + " Semester" : ""} {fee.academicYear ? " - " + fee.academicYear + " A.Y." : ""} · ₱{(fee.amount || 0).toLocaleString()}
+            </p>
+          </div>
+          
+          <Button
+            variant="outline"
+            size="default"
+            className="gap-2 text-destructive hover:text-destructive border-destructive/20 hover:bg-destructive/10 w-full sm:w-auto"
+            onClick={() => setArchiveDialogOpen(true)}
+          >
+            <Archive className="size-4" />
+            Archive Fee
+          </Button>
+        </div>
       </div>
-
+      
       <StatCards stats={stats} />
 
       <Card className="border-border">
@@ -162,6 +201,47 @@ export function FeesRosterContent({
         </CardContent>
       </Card>
 
+      {/* Archive Confirmation Dialog */}
+      <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 text-destructive mb-2">
+              <div className="p-2 rounded-full bg-destructive/10">
+                <AlertTriangle className="size-5" />
+              </div>
+              <AlertDialogTitle className="text-destructive">Archive Fee</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription>
+              Are you sure you want to archive <span className="font-semibold text-foreground">"{fee.title}"</span>?
+            </AlertDialogDescription>
+            
+            <div className="bg-muted/50 p-3 rounded-md space-y-1 text-sm text-foreground my-2 text-left">
+              <div><span className="font-medium">Semester:</span> {fee.semester || 'N/A'}</div>
+              <div><span className="font-medium">Academic Year:</span> {fee.academicYear || 'N/A'}</div>
+              <div><span className="font-medium">Amount:</span> ₱{(fee.amount || 0).toLocaleString()}</div>
+            </div>
+            
+            <p className="text-sm text-muted-foreground text-left">
+              This fee will be moved to archives and will no longer be active. Students will not be able to make new payments for this fee.
+            </p>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel disabled={isCurrentlyArchiving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleArchiveConfirm();
+              }}
+              disabled={isCurrentlyArchiving}
+              className="gap-2 bg-destructive hover:bg-destructive/90"
+            >
+              {isCurrentlyArchiving && <Loader className="size-4 animate-spin" />}
+              {isCurrentlyArchiving ? 'Archiving...' : 'Archive Fee'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <ManualPaymentDialog
         fee={fee}
         student={studentRowFee || null}
@@ -182,6 +262,7 @@ export function FeesRosterContent({
           setDetailOpen(false);
           setRejectOpen(true);
         }}
+        isSubmitting={isSubmitting}
       />
       <RejectDialog
         log={selectedLog}
@@ -190,6 +271,7 @@ export function FeesRosterContent({
         rejectionReason={rejectionReason}
         onReasonChange={setRejectionReason}
         onConfirm={() => handleReject(selectedLog!.paymentProofId!)}
+        isSubmitting={isSubmitting}
       />
     </div>
   );

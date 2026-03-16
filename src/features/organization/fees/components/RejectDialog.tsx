@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { PaymentLog } from "@/features/organization/fees/types";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader } from "lucide-react";
 
 interface RejectDialogProps {
   log: PaymentLog | null;
@@ -13,6 +13,7 @@ interface RejectDialogProps {
   rejectionReason: string;
   onReasonChange: (reason: string) => void;
   onConfirm: (id: string) => void;
+  isSubmitting?: boolean;
 }
 
 export function RejectDialog({
@@ -22,6 +23,7 @@ export function RejectDialog({
   rejectionReason,
   onReasonChange,
   onConfirm,
+  isSubmitting = false,
 }: RejectDialogProps) {
   if (!log) return null;
 
@@ -47,19 +49,22 @@ export function RejectDialog({
             value={rejectionReason}
             onChange={(e) => onReasonChange(e.target.value)}
             className="min-h-[100px] bg-muted/30 border-border focus:ring-1 focus:ring-primary"
+            disabled={isSubmitting}
           />
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancel
           </Button>
           <Button 
             variant="destructive" 
             onClick={() => onConfirm(log.id)}
-            disabled={!rejectionReason.trim()}
+            disabled={!rejectionReason.trim() || isSubmitting}
+            className="gap-2"
           >
-            Confirm Rejection
+            {isSubmitting && <Loader className="size-4 animate-spin" />}
+            {isSubmitting ? "Rejecting..." : "Confirm Rejection"}
           </Button>
         </DialogFooter>
       </DialogContent>
