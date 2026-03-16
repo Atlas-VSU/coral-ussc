@@ -125,13 +125,20 @@ export const addOfflineFinesPayment = async (fines: StudentFines, type:string, m
             await recalculateClearanceStatus(clearanceRef.id)
         }
 
+        return proofId;
+
     } catch (error) {
         console.error("Error adding offline payment history:", error);
         throw new Error("Failed to add offline payment history. Please try again.");
     }
 }
 
-export const createFinesPaymentHistory = async (proof:PaymentFormData, referenceId:string, proofId:string, userId:string, paid?: UnpaidDue) => {
+export const createFinesPaymentHistory = async (
+    proof: PaymentFormData,
+    referenceId: string,
+    proofId: string, 
+    userId: string,
+    paid?: UnpaidDue) => {
     try {
         const current = await getCurrentUserData() as unknown as Member;
         const subColRef = collection(db, paid?.type? paid.type : proof.type! , referenceId , "paymentHistory");
@@ -197,4 +204,52 @@ export const createFinesPaymentHistory = async (proof:PaymentFormData, reference
 }
 
 
+
+
+
+
+export const createOnlinePaymentHistory = async (
+    proof: PaymentFormData,
+    referenceId: string,
+    proofId: string,
+    userId: string,
+    paid?: {refId:string, title:string, amount:number, paymentType: string, parentFineId:string}) => {
+    try {
+        const current = await getCurrentUserData() as unknown as Member;
+        const subColRef = collection(db, paid?.paymentType? paid.paymentType : proof.type! , referenceId , "paymentHistory");
+        const querySnapshot = await getCountFromServer(subColRef);
+
+        let sequenceNumber = 0;
+        querySnapshot.data().count ? sequenceNumber = querySnapshot.data().count + 1 : sequenceNumber = 1;
+         const paymentHist = await addDoc(subColRef, {
+            paymentNumber: sequenceNumber,
+            amount: proof.amount,
+            paymentMethod: proof.paymentMethod,
+            paymentProofId: proofId,
+            paymentType: proof.type!,
+            gcashReference: proof.referenceNumber || null,
+            status:PaymentStatus.PENDING,
+            paidAt: Timestamp.now(), 
+            verifiedBy: current.id!,
+            verifiedByName: current.firstName + " " + current.lastName,
+            verifiedAt: Timestamp.now(),
+            rejectionReason: null,
+            notes: proof.notes || `Offline payment of ${proof.amount} recorded for ${paid?.paymentType? paid.paymentType : proof.type!}`,
+            metadata: {},
+            createdAt: Timestamp.now(),
+         });
+            if ((paid?.paymentType ? paid.paymentType : proof.type!) === "fines") { 
+                try {
+                     await updateDoc(doc(db, "fines", referenceId), {status: "pending"})
+                }catch(error){
+                    console.error("Error updating fines after payment:", error);
+                    throw new Error("Payment recorded, but failed to update fines. Please check the fines record.");
+                }
+            }
+        return paymentHist.id;
+    }catch(error){
+        console.error("Error creating fines payment history:", error);
+        throw new Error("Failed to create fines payment history. Please try again.");
+    }
+}
 

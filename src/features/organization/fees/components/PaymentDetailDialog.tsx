@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { statusConfig, paymentMethodLabels } from "@/features/organization/fees/utils/statusConfig";
 import type { Fee, PaymentLog } from "@/features/organization/fees/types";
-import { Calendar, CreditCard, User, History, CheckCircle2, XCircle } from "lucide-react";
+import { Calendar, CreditCard, User, History, CheckCircle2, XCircle, Loader } from "lucide-react";
 import { Separator } from "@radix-ui/react-separator";
 
 interface PaymentDetailDialogProps {
@@ -15,6 +15,7 @@ interface PaymentDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   onApprove: (feeId: string, logId: string) => void;
   onReject: (feeId: string, logId: string) => void;
+  isSubmitting?: boolean;
 }
 
 export function PaymentDetailDialog({
@@ -24,6 +25,7 @@ export function PaymentDetailDialog({
   onOpenChange,
   onApprove,
   onReject,
+  isSubmitting = false,
 }: PaymentDetailDialogProps) {
   if (!log) return null;
 
@@ -90,7 +92,7 @@ export function PaymentDetailDialog({
           {log.gcashReceiptImageUrl && (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground font-medium">Payment Proof</p>
-              <div className="aspect-video relative rounded-md border border-border overflow-hidden bg-muted group">
+              <div className="aspect-video relative rounded-md border border-border bg-muted group">
                 <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground font-medium italic">
                   Image placeholder: {log.gcashReceiptImageUrl}
                 </div>
@@ -106,13 +108,27 @@ export function PaymentDetailDialog({
           )}
         </div>
 
-        {log.status === "pending_verification" && (
+        {log.status === "pending" && (
           <DialogFooter className="gap-2 sm:gap-0 font-medium">
-            <Button variant="outline" className="flex-1 text-destructive hover:bg-destructive/10" onClick={() => onReject(feeId, log.id)}>
+            <Button 
+              variant="outline" 
+              className="flex-1 text-destructive hover:bg-destructive/10" 
+              onClick={() => onReject(feeId, log.id)}
+              disabled={isSubmitting}
+            >
               <XCircle className="size-4 mr-1" /> Reject
             </Button>
-            <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={() => onApprove(feeId, log.id)}>
-              <CheckCircle2 className="size-4 mr-1" /> Approve
+            <Button 
+              className="flex-1 bg-primary hover:bg-primary/90 gap-2" 
+              onClick={() => onApprove(feeId, log.id)}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <Loader className="size-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="size-4" />
+              )}
+              {isSubmitting ? "Approving..." : "Approve"}
             </Button>
           </DialogFooter>
         )}

@@ -203,7 +203,7 @@ export function PaymentReviewDialog({
 
               {/* Receipt placeholder */}
              {data.paymentMethod !== "cash" && data.receiptContent && (
-                <div className="group relative h-48 w-full rounded-md border bg-muted/30 overflow-hidden">
+                <div className="group relative h-48 w-full rounded-md border bg-muted/30">
                   <img
                     src={data.receiptContent}
                     alt="Receipt"

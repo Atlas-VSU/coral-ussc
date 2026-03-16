@@ -1,5 +1,5 @@
 import { Member, MemberData } from "@/features/organization/members/types";
-import { collection, doc, getCountFromServer, getDoc, getDocs, orderBy, query, runTransaction, setDoc, Timestamp, updateDoc, where, writeBatch } from "firebase/firestore";
+import { collection, deleteField, doc, getCountFromServer, getDoc, getDocs, orderBy, query, runTransaction, setDoc, Timestamp, updateDoc, where, writeBatch } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { FeeGenerationSchema } from "@/features/organization/fees/utils/feeGenerationSchema";
 import z from "zod";
@@ -27,6 +27,7 @@ export const checkFeeTitleExist = async (title: string, academicYear: string, se
         where("academicYear", "==", academicYear), 
         where("semester", "==", semester), 
         where("orgId", "==", currentUserName.id), 
+        where("isArchived", "==", false)
     );
     
     const feeSnapshot = await getDocs(q);
@@ -223,7 +224,8 @@ export async function fetchFeeRoster(title: string, academicYear: string) {
     const rosterQuery = query(
       feesRef,
       where("title", "==", title),
-      where("academicYear", "==", academicYear)
+      where("academicYear", "==", academicYear),
+      where("isArchived", "==", false)
     );
 
     const snapshot = await getDocs(rosterQuery);
@@ -279,6 +281,7 @@ export const getFeeByStudentId = async (studentId: string) => {
         const q = query(
             feeRef,
             where("studentId", "==", studentId),
+            where("isArchived", "==", false)
         );
         const snapshot = await getDocs(q);
         if (!snapshot.empty) {
@@ -292,6 +295,87 @@ export const getFeeByStudentId = async (studentId: string) => {
     } catch (error) {
         console.error("Error fetching fee by student ID:", error);
         return null;
+    }
+}
+
+export const archiveFeeDocuments = async (feeTitle: string, academicYear: string, semester: string) => {
+    try {
+        const userIdMap = new Map<string, string>(); 
+        const feeRef = collection(db, "fees");
+        
+        let q = query(
+            feeRef,
+            where("title", "==", feeTitle),
+            where("academicYear", "==", academicYear),
+            where("semester", "==", semester),
+            where("isArchived", "==", false)
+        );
+        
+        const snapshot = await getDocs(q);
+        const batchSize = 200; 
+
+        if (!snapshot.empty) {
+            for (let i = 0; i < snapshot.docs.length; i += batchSize) {
+                const chunk = snapshot.docs.slice(i, i + batchSize);
+                const batch = writeBatch(db);
+                
+                chunk.forEach((feeDoc) => {
+                    userIdMap.set(feeDoc.data().userId, feeDoc.id);
+                    batch.update(feeDoc.ref, { isArchived: true });
+                });
+                
+                await batch.commit();
+            }
+        }
+
+        const userIds = Array.from(userIdMap.keys());
+
+        if (userIds.length > 0) {
+            const clearanceStatusRef = collection(db, "clearanceStatus");
+            const maxInQuerySize = 30; 
+
+            for (let i = 0; i < userIds.length; i += maxInQuerySize) {
+                const userIdChunk = userIds.slice(i, i + maxInQuerySize);
+                
+                const clearanceQuery = query(
+                    clearanceStatusRef,
+                    where("userId", "in", userIdChunk),
+                    where("isArchived", "==", false)
+                );
+                
+                const clearanceSnapshot = await getDocs(clearanceQuery);
+                
+                if (!clearanceSnapshot.empty) {
+                    const batch = writeBatch(db);
+                    
+                    clearanceSnapshot.forEach((clearanceDoc) => {
+                        const currentUserId = clearanceDoc.data().userId;
+                        const correspondingFeeId = userIdMap.get(currentUserId);
+                        
+                        if (correspondingFeeId) {
+                            const currentData = clearanceDoc.data();
+                            const currentBlockingItems = currentData.blockingItems || {};
+
+                            const checkRemainingItemKeys = Object.keys(currentBlockingItems).filter(key => key !== correspondingFeeId);
+
+                            const updatePayLoad: Record<string, any> = {
+                                [`blockingItems.${correspondingFeeId}`]: deleteField()
+                            }
+                            if(checkRemainingItemKeys.length == 0) {
+                                updatePayLoad.status = "cleared";
+                            }
+
+                            batch.update(clearanceDoc.ref, updatePayLoad);
+                        }
+                    });
+                    
+                    await batch.commit();
+                }
+            }
+        }
+    } catch (error) {
+        console.error("Error archiving fee:", error);
+        throw error;
     }
 }
 
@@ -438,6 +522,7 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                 notes: "Bulk manual payment recorded by admin",
                 metadata: { items },
                 receiptCode: receipt,
+                isArchived: false,
             });
 
             const clearanceUpdates: Record<string, any> = {};
@@ -491,7 +576,9 @@ export const recordManualPaymentAndUpdateClearance = async (
     adminId: string,   
     studentId: string,
     adminName: string,
-    ref?: string
+    ref?: string,
+    receipt?: string,
+    senderNumber?: string
 ) => {
     try {
         const paymentAmount = parseFloat(amount);
@@ -534,7 +621,6 @@ export const recordManualPaymentAndUpdateClearance = async (
                 amount: paymentAmount,
                 paymentMethod: method,
                 paymentProofId: paymentProofRef.id,
-                gcashReference: method === "gcash" && ref ? ref : null,
                 status: PaymentStatus.VERIFIED,
                 paidAt: Timestamp.now(),
                 verifiedBy: adminId, 
@@ -557,7 +643,7 @@ export const recordManualPaymentAndUpdateClearance = async (
                 paymentType: PaymentType.FEES,
                 referenceId: feeId,
                 paymentHistoryId: newLogRef.id,
-                senderNumber: "",
+                senderNumber: method === "gcash" && senderNumber ? senderNumber : "",
                 referenceNumber: method === "gcash" && ref ? ref : "",
                 amount: paymentAmount,
                 imageUrl: "",
@@ -568,8 +654,17 @@ export const recordManualPaymentAndUpdateClearance = async (
                 verifiedAt: Timestamp.now(),
                 rejectionReason: "",
                 notes: "Manual payment recorded by admin",
-                metadata: {},
-                receiptCode: generateReceiptId(),
+                metadata: {
+                    items: [{
+                        refId: feeId,
+                        title: feeData.title,
+                        amount: paymentAmount,
+                        paymentType: PaymentType.FEES,
+                        parentFineId: "",
+                    }]
+                },
+                receiptCode: receipt,
+                isArchived: false,
             })
 
             transaction.update(feeRef, {

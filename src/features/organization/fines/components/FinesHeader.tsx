@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/features/organization/fines/components/PageHeader";
-import { TicketPlus, UserPlus } from "lucide-react";
+import { Eye, TicketPlus, UserPlus } from "lucide-react";
 
 interface FinesHeaderProps {
   onAddFineType: () => void;
@@ -31,9 +31,9 @@ export function FinesHeader({
             Create Fines to All Users
           </Button> */}
           
-          <Button size="sm" onClick={onAddFineType}>
-            <TicketPlus className="h-4 w-4 mr-2" />
-            Create a Type of Fines
+          <Button variant="outline" size="lg" onClick={onAddFineType}>
+            <Eye className="h-4 w-4 mr-2" />
+            View Fine Types
           </Button>
         </div>
       </div>

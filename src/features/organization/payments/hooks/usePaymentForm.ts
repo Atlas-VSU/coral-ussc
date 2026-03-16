@@ -49,7 +49,7 @@ export function usePaymentForm(options?: UsePaymentFormOptions) {
 
 
   const handleMethodSelect = (value: OnlinePaymentMethod) => {
-    form.setValue("paymentMethod", value, { shouldValidate: true });
+    form.setValue("paymentMethod", PaymentMethods.GCASH, { shouldValidate: true });
     form.setValue("referenceNumber", "");
     form.setValue("senderNumber", "");
     form.clearErrors(["referenceNumber", "senderNumber"]);
@@ -73,7 +73,6 @@ export function usePaymentForm(options?: UsePaymentFormOptions) {
       //   data.imageUrl = supabase.storage.from('receipts').getPublicUrl(uploaded!.path).data.publicUrl;
       // ─────────────────────────────────────────────────────────────────
 
-      console.log("Submitting:", data);
       await new Promise(r => setTimeout(r, 1800)); // remove when wiring real upload
       }
       setStatus("success");

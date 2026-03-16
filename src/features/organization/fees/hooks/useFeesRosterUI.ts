@@ -1,31 +1,39 @@
 import { useState, useMemo } from "react";
 import type { Fee, PaymentLog } from "../types";
 import type { StudentFeeRow } from "./useFeesRoster";
+import { useRouter } from "next/navigation";
 
 interface UseFeesRosterUIProps {
   fee: Fee;
+  router: ReturnType<typeof useRouter>;
   studentRows: StudentFeeRow[];
-  onApprovePayment: (feeId: string, logId: string) => Promise<void>;
-  onRejectPayment: (feeId: string, logId: string, reason: string) => Promise<void>;
+  onApprovePayment: (proofId: string) => Promise<void>;
+  onRejectPayment: (proofId: string ,reason: string) => Promise<void>;
   onManualPaymentAdded: (
     feeId: string,
     amount: string,
     method: "gcash" | "cash" | "bank_transfer" | "waiver",
-    ref?: string
+    ref?: string,
+    senderNumber?: string
   ) => Promise<void>;
+  onArchiveFee: (feeTitle: string, academicYear: string, semester: string) => Promise<void>;
   itemsPerPage?: number;
 }
 
 export function useFeesRosterUI({
   fee,
+  router,
   studentRows,
   onApprovePayment,
   onRejectPayment,
   onManualPaymentAdded,
+  onArchiveFee,
   itemsPerPage = 10,
 }: UseFeesRosterUIProps) {
   const allLogs = useMemo(() => studentRows.flatMap((row) => row.logs), [studentRows]);
 
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
@@ -80,21 +88,21 @@ export function useFeesRosterUI({
   );
 
   const stats = useMemo(() => ({
-    pending: allLogs.filter((l) => l.status === "pending_verification").length,
+    pending: allLogs.filter((l) => l.status === "pending").length,
     verified: allLogs.filter((l) => l.status === "verified").length,
     rejected: allLogs.filter((l) => l.status === "rejected").length,
     unpaid: allStudentRows.filter((r) => r.status === "unpaid").length,
   }), [allLogs, allStudentRows]);
 
-  const handleApprove = async (feeId: string, logId: string) => {
-    await onApprovePayment(feeId, logId);
+  const handleApprove = async (proofId: string) => {
+    await onApprovePayment(proofId);
     setDetailOpen(false);
     setSelectedLog(null);
   };
 
-  const handleReject = async (feeId: string, logId: string) => {
+  const handleReject = async (proofId: string) => {
     if (!rejectionReason.trim()) return;
-    await onRejectPayment(feeId, logId, rejectionReason);
+    await onRejectPayment(proofId, rejectionReason);
     setRejectOpen(false);
     setDetailOpen(false);
     setSelectedLog(null);
@@ -105,9 +113,10 @@ export function useFeesRosterUI({
     feeId: string,
     amount: string,
     method: "gcash" | "cash" | "bank_transfer" | "waiver",
-    ref?: string
+    ref?: string,
+    senderNumber?: string
   ) => {
-    await onManualPaymentAdded(feeId, amount, method, ref);
+    await onManualPaymentAdded(feeId, amount, method, ref, senderNumber);
     setManualLogOpen(false);
   };
 
@@ -138,8 +147,24 @@ export function useFeesRosterUI({
     setCurrentPage(1);
   };
 
+  const handleArchiveConfirm = async () => {
+    try {
+      setIsArchiving(true);
+      await onArchiveFee(fee.title, fee.academicYear, fee.semester!);
+      console.log("archive");
+      router.back(); 
+    } catch (error) {
+      console.error('Failed to archive fee:', error);
+    } finally {
+      setIsArchiving(false);
+      setArchiveDialogOpen(false);
+    }
+  };
+
   return {
     state: {
+      archiveDialogOpen,
+      isArchiving,
       search,
       filterStatus,
       viewMode,
@@ -161,6 +186,9 @@ export function useFeesRosterUI({
       filteredRowsCount: filteredRows.length,
     },
     actions: {
+      setArchiveDialogOpen,
+      setIsArchiving,
+      handleArchiveConfirm,
       setSearch: handleSearchChange,
       setFilterStatus: handleStatusChange,
       setViewMode,
