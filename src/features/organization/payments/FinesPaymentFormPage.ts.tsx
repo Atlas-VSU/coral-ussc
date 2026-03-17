@@ -321,7 +321,7 @@ export default function FinesPaymentFormPage({
 
   return (
     <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background">
-      <div className="mx-auto max-w-2xl px-4 py-8 pb-36 sm:pb-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-2xl px-4 py-8 pb-36 sm:px-6 lg:px-8">
 
         <PaymentBrandHeader />
         <div className="mb-6">
@@ -517,7 +517,7 @@ export default function FinesPaymentFormPage({
             </Alert>
           )}
 
-          <div className="fixed inset-x-0 bottom-16 sm:bottom-0 z-[60] border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] shadow-lg">
+          <div className="fixed inset-x-0 bottom-0 z-[60] border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] shadow-lg">
             <div className="mx-auto max-w-2xl flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">Total Amount</p>
