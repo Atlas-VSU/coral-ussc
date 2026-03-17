@@ -189,7 +189,9 @@ export default function StudentVerificationPage({ onVerified, currentStep }: Stu
   return (
     <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background flex flex-col items-center justify-center p-4">
       <PaymentBrandHeader stepLabel="Enter your student information to continue" />
-      <PaymentProgressBar currentStep={currentStep} />
+      <div className="mb-6">
+        <PaymentProgressBar currentStep={currentStep} />
+      </div>
       <Card className="w-full max-w-md shadow-sm">
         <CardContent className="pt-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

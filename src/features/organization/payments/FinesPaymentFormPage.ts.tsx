@@ -324,7 +324,9 @@ export default function FinesPaymentFormPage({
       <div className="mx-auto max-w-2xl px-4 py-8 pb-36 sm:pb-8 sm:px-6 lg:px-8">
 
         <PaymentBrandHeader />
-        <PaymentProgressBar currentStep={currentStep} />
+        <div className="mb-6">
+          <PaymentProgressBar currentStep={currentStep} />
+        </div>
 
         {onBack && (
           <Button variant="ghost" onClick={onBack} className="mb-4 gap-2">
