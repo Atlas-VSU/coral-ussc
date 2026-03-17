@@ -14,7 +14,7 @@ export function DesktopHeader() {
           />
         </div>
         <nav className="hidden md:flex items-center gap-8 text-sm font-regular text-[#2E7D32]">
-          <Link
+          {/* <Link
             href="/"
             className="hover:text-[#2E7D32] transition-colors uppercase"
           >
@@ -33,13 +33,20 @@ export function DesktopHeader() {
             className="hover:text-[#2E7D32] transition-colors uppercase"
           >
             Contact
-          </Link>
+          </Link> */}
 
-          <Link
+          {/* <Link
             href="/login"
             className="px-4 py-2 rounded-lg bg-linear-to-r from-[#8BC34A] to-[#2E7D32] text-white hover:bg-[#2E7D32] transition-colors uppercase"
           >
             Login
+          </Link> */}
+
+          <Link
+            href="/payment"
+            className="px-4 py-2 rounded-lg bg-linear-to-r from-[#8BC34A] to-[#2E7D32] text-white hover:bg-[#2E7D32] transition-colors uppercase font-semibold"
+          >
+            Payment
           </Link>
         </nav>
       </header>
