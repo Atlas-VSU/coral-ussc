@@ -11,15 +11,23 @@ const steps = [
 
 export function PaymentProgressBar({ currentStep }: PaymentProgressBarProps) {
   return (
-    <div className="w-full max-w-3xl mx-auto px-2">
-      <div className="flex items-center justify-between gap-2">
+    <div className="w-full max-w-2xl mx-auto px-2">
+      <div className="grid grid-cols-4 items-start">
         {steps.map((step, index) => {
           const isCompleted = currentStep > step.id;
           const isActive = currentStep === step.id;
 
           return (
-            <div key={step.id} className="flex flex-1 items-center">
-              <div className="flex flex-col items-center gap-1.5 min-w-0">
+            <div key={step.id} className="relative flex flex-col items-center min-w-0">
+              {index < steps.length - 1 && (
+                <div
+                  className={`absolute top-4 left-1/2 h-0.5 w-full ${
+                    currentStep > step.id ? "bg-[#1B5E20]" : "bg-border"
+                  }`}
+                />
+              )}
+
+              <div className="relative z-10 flex flex-col items-center gap-1.5 min-w-0">
                 <div
                   className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
                     isCompleted || isActive
@@ -37,13 +45,6 @@ export function PaymentProgressBar({ currentStep }: PaymentProgressBarProps) {
                   {step.label}
                 </span>
               </div>
-              {index < steps.length - 1 && (
-                <div
-                  className={`mx-2 h-0.5 flex-1 rounded-full ${
-                    currentStep > step.id ? "bg-[#1B5E20]" : "bg-border"
-                  }`}
-                />
-              )}
             </div>
           );
         })}
