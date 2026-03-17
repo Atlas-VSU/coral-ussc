@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Event } from "../types";
 import { getPaginatedEvents, getEvents } from "@/firebase";
-import { TabValue } from "@/features/organization/events/components/EventsTabNavigation";
+import { EventStatus } from "../components/EventsTabNavigation";
 import { cacheService, CACHE_DURATIONS } from "@/services/cacheService";
 
 interface SortOptions {
@@ -9,7 +9,7 @@ interface SortOptions {
   direction: "asc" | "desc";
 }
 
-export function useEventsData(currentTab: TabValue) {
+export function useEventsData(currentTab: EventStatus) {
   const [events, setEvents] = useState<Event[]>([]);
   const [totalEvents, setTotalEvents] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -46,44 +46,42 @@ export function useEventsData(currentTab: TabValue) {
     }
   };
 
-  // fixed: Make this function return the array immediately
-  const ensureSearchCache = useCallback(async (): Promise<Event[]> => {
-    const cacheKey = "events:client-cache:all";
-    const cachedEvents = cacheService.get<Event[]>(cacheKey);
+  // Load search cache only when search is actually used
+  const ensureSearchCache = useCallback(async () => {
+    if (!searchCacheLoadedRef.current) {
+      // Check if we already have events in the client-side cache
+      const cacheKey = "events:client-cache:all";
+      const cachedEvents = cacheService.get<Event[]>(cacheKey);
 
-    // If it's already in the local storage cache, return it immediately
-    if (cachedEvents?.data) {
-      if (!searchCacheLoadedRef.current) {
+      if (cachedEvents?.data) {
         setCachedAllEvents(cachedEvents.data);
-        searchCacheLoadedRef.current = true;
-      }
-      return cachedEvents.data;
-    }
+      } else {
+        try {
+          // Fetch all events and cache them for future searches
+          const allEvents = await getEvents();
+          setCachedAllEvents(allEvents);
 
-    // Otherwise, fetch from Firebase, save it, and return it
-    try {
-      const allEvents = await getEvents();
-      setCachedAllEvents(allEvents);
-      cacheService.set(cacheKey, allEvents, CACHE_DURATIONS.EVENTS);
+          // Store in cache for future use
+          cacheService.set(cacheKey, allEvents, CACHE_DURATIONS.EVENTS);
+        } catch (error) {
+          console.error("Error fetching events for search:", error);
+        }
+      }
+
       searchCacheLoadedRef.current = true;
-      return allEvents;
-    } catch (error) {
-      console.error("Error fetching events for search:", error);
-      return [];
     }
   }, []);
 
-// Create a cache key for the current view
+  // Create a cache key for the current view
   const createViewCacheKey = useCallback(() => {
     const dateStr = filterDate
       ? filterDate.toISOString().split("T")[0]
       : "no-date";
-    
-    // Put the actual searchQuery into the string, not just true/false
     return `ui:events:view:${currentTab}:${sortOptions.field}-${
       sortOptions.direction
-    }:page${currentPage}:date${dateStr}:search:${searchQuery}`; 
-    
+    }:page${currentPage}:date${dateStr}:search${
+      searchQuery ? "true" : "false"
+    }`;
   }, [currentTab, sortOptions, currentPage, filterDate, searchQuery]);
 
   // Fetch events - separate logic for search vs. normal tab view
@@ -91,10 +89,9 @@ export function useEventsData(currentTab: TabValue) {
     setLoading(true);
 
     try {
-      // fixed: Grab the data directly into a local variable so we don't wait for React state
-      let dataForSearch = cachedAllEvents;
+      // If this is a search query, ensure we have the search cache loaded
       if (searchQuery) {
-        dataForSearch = await ensureSearchCache(); 
+        await ensureSearchCache();
       }
 
       // Use a client-side caching approach for the current view
@@ -105,8 +102,8 @@ export function useEventsData(currentTab: TabValue) {
         viewCacheKey,
         async () => {
           if (searchQuery) {
-            // fixed: Use 'dataForSearch' instead of 'cachedAllEvents'
-            let filteredEvents = dataForSearch.filter(
+            // For search, filter the cached all events array client-side
+            let filteredEvents = cachedAllEvents.filter(
               (event) =>
                 event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 event.location.toLowerCase().includes(searchQuery.toLowerCase())

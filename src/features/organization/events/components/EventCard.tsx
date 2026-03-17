@@ -394,7 +394,7 @@ export function EventCard({
                 asChild
                 variant="outline"
                 size="sm"
-                className="w-full justify-center hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold text-sm h-11 border-2"              className="w-full justify-center gap-1.5 h-10 sm:h-9 text-xs font-semibold"                disabled={isViewAttendeesLoading}
+                className="w-full justify-center hover:bg-gray-50 dark:hover:bg-gray-700 font-semibold text-sm h-11 border-2"  
                 onClick={handleViewAttendees}
               >
                 <Link href={`/org-events/${event.id}/attendees`}>
