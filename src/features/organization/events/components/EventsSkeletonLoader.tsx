@@ -1,114 +1,115 @@
-import { Skeleton } from "@/components/ui/skeleton"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import type { ViewMode } from "./ViewToggle"
+import { Skeleton } from "@/components/ui/skeleton";
+import { ViewMode } from "./ViewToggle";
 
 interface EventsSkeletonLoaderProps {
-  viewMode: ViewMode
-  count?: number
+  viewMode?: ViewMode;
 }
 
-function CardSkeleton() {
-  return (
-    <Card className="overflow-hidden h-full flex flex-col">
-      <CardHeader className="px-5 pt-5 pb-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex gap-1.5 mb-3">
-              <Skeleton className="h-5 w-20 rounded-full" />
-            </div>
-            <Skeleton className="h-5 w-3/4 mb-2" />
-            <div className="flex items-center gap-1.5 mt-2">
-              <Skeleton className="h-3.5 w-3.5 rounded-sm" />
-              <Skeleton className="h-4 w-28" />
-            </div>
-          </div>
-          <Skeleton className="h-8 w-8 rounded-md shrink-0" />
-        </div>
-      </CardHeader>
-
-      <div className="mx-5 border-t border-border" />
-
-      <CardContent className="px-5 py-4 flex-1 flex flex-col gap-4">
-        {/* Location */}
-        <div className="flex items-start gap-3">
-          <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
-          <div className="flex-1">
-            <Skeleton className="h-3 w-16 mb-1.5" />
-            <Skeleton className="h-4 w-3/4" />
-          </div>
-        </div>
-
-        {/* Schedule */}
-        <div className="flex items-start gap-3">
-          <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
-          <div className="flex-1">
-            <Skeleton className="h-3 w-16 mb-1.5" />
-            <Skeleton className="h-4 w-2/3" />
-          </div>
-        </div>
-
-        {/* Attendees */}
-        <div className="flex items-start gap-3">
-          <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
-          <div className="flex-1">
-            <Skeleton className="h-3 w-20 mb-1.5" />
-            <Skeleton className="h-4 w-1/2" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function ListItemSkeleton() {
-  return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-0">
-        <div className="flex items-center gap-4 px-5 py-4">
-          <Skeleton className="w-1 self-stretch rounded-full shrink-0 min-h-14" />
-          <div className="flex-1 min-w-0 grid sm:grid-cols-[1fr_auto] gap-3 sm:gap-6 items-center">
-            <div>
-              <div className="flex gap-2 mb-1">
-                <Skeleton className="h-5 w-20 rounded-full" />
-              </div>
-              <Skeleton className="h-4 w-1/2 mb-2" />
-              <div className="flex gap-4 mt-2">
-                <Skeleton className="h-3.5 w-24" />
-                <Skeleton className="h-3.5 w-28" />
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right hidden sm:block">
-                <Skeleton className="h-4 w-8 mb-1 ml-auto" />
-                <Skeleton className="h-3 w-16" />
-              </div>
-              <Skeleton className="h-8 w-8 rounded-md" />
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-export function EventsSkeletonLoader({ viewMode, count = 6 }: EventsSkeletonLoaderProps) {
-  const items = Array.from({ length: count })
-
-  if (viewMode === "card") {
+export function EventsSkeletonLoader({ viewMode = "card" }: EventsSkeletonLoaderProps) {
+  if (viewMode === "list") {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {items.map((_, i) => (
-          <CardSkeleton key={i} />
-        ))}
+      <div className="space-y-3">
+        {Array(5)
+          .fill(0)
+          .map((_, index) => (
+            <div key={index} className="rounded-lg border shadow-sm bg-white dark:bg-gray-800">
+              <div className="p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Skeleton className="h-5 w-48" />
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-4" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-4" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-4" />
+                        <Skeleton className="h-4 w-28" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Skeleton className="h-8 w-20" />
+                    <Skeleton className="h-8 w-8" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
       </div>
-    )
+    );
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {items.map((_, i) => (
-        <ListItemSkeleton key={i} />
-      ))}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {Array(6)
+        .fill(0)
+        .map((_, index) => (
+          <div key={index} className="rounded-lg border shadow-sm bg-white dark:bg-gray-800">
+            <div className="p-4">
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-4" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-6 w-20 rounded-full" />
+                  <Skeleton className="h-8 w-8" />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                  <div className="flex-1 pt-1">
+                    <Skeleton className="h-4 w-16 mb-1" />
+                    <Skeleton className="h-4 w-28" />
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                  <div className="flex-1 pt-1">
+                    <Skeleton className="h-4 w-20 mb-1" />
+                    <Skeleton className="h-4 w-36" />
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                  <div className="flex-1 pt-1">
+                    <Skeleton className="h-4 w-24 mb-1" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
     </div>
-  )
+  );
 }
