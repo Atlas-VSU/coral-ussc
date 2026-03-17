@@ -9,11 +9,18 @@ export function MobileHeader() {
           alt="USSC-Connect"
           className="h-12 w-auto object-contain"
         />
-        <Link
+        {/* <Link
           href="/login"
           className="px-3 py-1.5 rounded-lg bg-linear-to-r from-[#8BC34A] to-[#2E7D32] text-white hover:bg-[#2E7D32] text-xs font-semibold transition-colors uppercase"
         >
           Login
+        </Link> */}
+
+        <Link
+          href="/payment"
+          className="px-3 py-1.5 rounded-lg bg-linear-to-r from-[#8BC34A] to-[#2E7D32] text-white hover:bg-[#2E7D32] text-xs font-semibold transition-colors uppercase"
+        >
+          Payment
         </Link>
       </header>
     </div>
