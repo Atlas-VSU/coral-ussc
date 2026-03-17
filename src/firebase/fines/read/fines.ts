@@ -20,53 +20,53 @@ const handleFirestoreError = (error: any, context: string) => {
   };
 
 export const getFinesByStudents = async (students: MemberData[]) => {
-  try {
-    const studentIds = students.map(s => s.member.studentId);
-    
-    if (studentIds.length === 0) return [];
+  const studentIds = students.map(s => s.member.studentId).sort();
+  if (studentIds.length === 0) return [];
 
-    // ── Chunk into groups of 30 (Firebase "in" limit) ──────────────────────
-    const CHUNK_SIZE    = 30;
-    const PARALLEL_LIMIT = 20; // max concurrent Firestore requests at a time
+  // Simple hash for the student IDs to use as a cache key
+  const hash = studentIds.join(',').length + studentIds.reduce((acc, id) => acc + id.split('').reduce((a, c) => a + c.charCodeAt(0), 0), 0);
+  const cacheKey = CACHE_KEYS.finesBatch(hash.toString());
 
-    const chunks: string[][] = [];
-    for (let i = 0; i < studentIds.length; i += CHUNK_SIZE) {
-      chunks.push(studentIds.slice(i, i + CHUNK_SIZE));
-    }
-    // e.g. 9000 students → 300 chunks → 15 groups of 20 parallel queries
+  return cacheService.getOrFetch(
+    cacheKey,
+    async () => {
+      try {
+        // ── Chunk into groups of 30 (Firebase "in" limit) ──────────────────────
+        const CHUNK_SIZE    = 30;
+        const PARALLEL_LIMIT = 20; // max concurrent Firestore requests at a time
 
-    // ── Process chunks in throttled parallel groups ─────────────────────────
-    const fineDocs: StudentFines[] = [];
-    for (let i = 0; i < chunks.length; i += PARALLEL_LIMIT) {
-      const group = chunks.slice(i, i + PARALLEL_LIMIT);
+        const chunks: string[][] = [];
+        for (let i = 0; i < studentIds.length; i += CHUNK_SIZE) {
+          chunks.push(studentIds.slice(i, i + CHUNK_SIZE));
+        }
 
-      const snapshots = await Promise.all(
-        group.map(chunk =>
-          getDocs(query(
-            finesCollection,
-            where("studentId", "in", chunk),
-            where("metadata.isArchived", "==", false)
-          ))
-        )
-      );
+        const fineDocs: StudentFines[] = [];
+        for (let i = 0; i < chunks.length; i += PARALLEL_LIMIT) {
+          const group = chunks.slice(i, i + PARALLEL_LIMIT);
+          const snapshots = await Promise.all(
+            group.map(chunk =>
+              getDocs(query(
+                finesCollection,
+                where("studentId", "in", chunk),
+                where("metadata.isArchived", "==", false)
+              ))
+            )
+          );
 
-      snapshots
-        .flatMap(snapshot => snapshot.docs)
-        .forEach(doc => {
-          fineDocs.push({ id: doc.id, ...doc.data() } as StudentFines);
-        });
-    }
-
-    if (fineDocs.length === 0) {
-      console.warn(`No fine documents found for ${studentIds.length} student IDs.`);
-    }
-
-    return fineDocs;
-
-  } catch (error) {
-    handleFirestoreError(error, `fetching fine documents for student IDs`);
-    return [];
-  }
+          snapshots
+            .flatMap(snapshot => snapshot.docs)
+            .forEach(doc => {
+              fineDocs.push({ id: doc.id, ...doc.data() } as StudentFines);
+            });
+        }
+        return fineDocs;
+      } catch (error) {
+        handleFirestoreError(error, `fetching fine documents for student IDs`);
+        return [];
+      }
+    },
+    CACHE_DURATIONS.FINES
+  );
 };
 
 export const getFineByStudentId = async (studentId: string) => {
@@ -221,17 +221,24 @@ export const getAllUnpaidFinesforOrg = async () => {
 }
  
 export const getFineItemsByIds = async (fineId:string, fineItemIds: string[]) => {
-  try {
-    const colRef = collection(db, "fines", fineId, "fineItems");
-    const q = query(colRef, where("id", "in", fineItemIds));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-      console.log("No items for fines found");
-      return [];
-    }
-    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as FineItem[];
-  } catch (error) {
-    handleFirestoreError(error, "Fetching all fine items for a student");
-    return [];
-  }
+  const hash = fineItemIds.sort().join(',');
+  return cacheService.getOrFetch(
+    `fines:items:subset:${fineId}:${hash}`,
+    async () => {
+      try {
+        const colRef = collection(db, "fines", fineId, "fineItems");
+        const q = query(colRef, where("id", "in", fineItemIds));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+          console.log("No items for fines found");
+          return [];
+        }
+        return snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as FineItem[];
+      } catch (error) {
+        handleFirestoreError(error, "Fetching all fine items for a student");
+        return [];
+      }
+    },
+    CACHE_DURATIONS.FINES
+  );
 }
