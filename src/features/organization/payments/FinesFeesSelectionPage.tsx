@@ -107,7 +107,7 @@ export default function FinesFeesSelectionPage({
   const hasPayableFines = payableFines.length > 0;
 
   return (
-    <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background py-8 px-4">
+    <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background py-8 pb-36 sm:pb-8 px-4">
       <div className="max-w-5xl mx-auto space-y-6">
         <PaymentBrandHeader />
         <PaymentProgressBar currentStep={currentStep} />
@@ -390,16 +390,24 @@ export default function FinesFeesSelectionPage({
               </>
             )}
 
+          </CardContent>
+        </Card>
+
+        <div className="fixed inset-x-0 bottom-16 sm:bottom-0 z-[60] border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] shadow-lg">
+          <div className="mx-auto max-w-5xl flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Total Amount</p>
+              <p className="text-lg font-bold text-[#1B5E20] dark:text-[#8BC34A]">₱{grandTotal.toFixed(2)}</p>
+            </div>
             <Button
               onClick={handleContinue}
               disabled={!hasSelection}
-              className="w-full bg-[#1B5E20] hover:bg-[#2E7D32] text-white dark:bg-[#1B5E20] dark:hover:bg-[#2E7D32]"
-              size="lg"
+              className="bg-[#1B5E20] hover:bg-[#2E7D32] text-white dark:bg-[#1B5E20] dark:hover:bg-[#2E7D32]"
             >
               Continue to Payment
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

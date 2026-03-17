@@ -155,6 +155,10 @@ export default function FinesPaymentFormPage({
   });
 
   const { register, formState: { errors }, watch } = form;
+  const watchedAmount = Number(watch("amount") ?? 0);
+  const mobileTotal = isContextualFlow
+    ? Number(selectedPaymentItems?.totalAmount ?? 0)
+    : (Number.isFinite(watchedAmount) ? watchedAmount : 0);
 
   const handleSuccessReset = () => {
     setSubmitError(null);
@@ -177,7 +181,7 @@ export default function FinesPaymentFormPage({
 
   return (
     <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background">
-      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-2xl px-4 py-8 pb-36 sm:pb-8 sm:px-6 lg:px-8">
 
         <PaymentBrandHeader />
         <PaymentProgressBar currentStep={currentStep} />
@@ -371,11 +375,22 @@ export default function FinesPaymentFormPage({
             </Alert>
           )}
 
-          <Button type="submit" disabled={status === "submitting"}
-            className="w-full bg-[#1B5E20] hover:bg-[#2E7D32] text-white dark:bg-[#1B5E20] dark:hover:bg-[#2E7D32] gap-2">
-            {status === "submitting" && <Loader2 className="size-4 animate-spin" />}
-            {status === "submitting" ? "Submitting…" : "Submit Payment"}
-          </Button>
+          <div className="fixed inset-x-0 bottom-16 sm:bottom-0 z-[60] border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] shadow-lg">
+            <div className="mx-auto max-w-2xl flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">Total Amount</p>
+                <p className="text-lg font-bold text-[#1B5E20] dark:text-[#8BC34A]">₱{mobileTotal.toFixed(2)}</p>
+              </div>
+              <Button
+                type="submit"
+                disabled={status === "submitting"}
+                className="bg-[#1B5E20] hover:bg-[#2E7D32] text-white dark:bg-[#1B5E20] dark:hover:bg-[#2E7D32] gap-2"
+              >
+                {status === "submitting" && <Loader2 className="size-4 animate-spin" />}
+                {status === "submitting" ? "Submitting…" : "Submit Payment"}
+              </Button>
+            </div>
+          </div>
 
         </form>
       </div>
