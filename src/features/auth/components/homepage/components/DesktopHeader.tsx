@@ -5,7 +5,7 @@ import Link from "next/link";
 export function DesktopHeader() {
   return (
     <div>
-      <header className="absolute m-8 inset-3 top-0 z-1 px-6 sm:px-10 py-0 flex items-center justify-between bg-transparent h-20">
+      <header className="absolute m-8 inset-3 top-0 z-50 px-6 sm:px-10 py-0 flex items-center justify-between bg-transparent h-20">
         <div className="inline-flex items-center gap-4 group">
           <img
             src="/images/main-banner-2.png"
