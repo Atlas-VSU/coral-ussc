@@ -21,18 +21,24 @@ import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheServi
 const currentUserName = await getCurrentUserData() as unknown as Member;
 
 export const checkFeeTitleExist = async (title: string, academicYear: string, semester: string) => {
-    const feeRef = collection(db, "fees");
-    const q = query(
-        feeRef, 
-        where("title", "==", title), 
-        where("academicYear", "==", academicYear), 
-        where("semester", "==", semester), 
-        where("orgId", "==", currentUserName.id), 
-        where("isArchived", "==", false)
+    return cacheService.getOrFetch(
+        CACHE_KEYS.feeCheckTitle(currentUserName.id || '', title, academicYear, semester),
+        async () => {
+            const feeRef = collection(db, "fees");
+            const q = query(
+                feeRef, 
+                where("title", "==", title), 
+                where("academicYear", "==", academicYear), 
+                where("semester", "==", semester), 
+                where("orgId", "==", currentUserName.id), 
+                where("isArchived", "==", false)
+            );
+            
+            const feeSnapshot = await getDocs(q);
+            return feeSnapshot.size > 0;
+        },
+        CACHE_DURATIONS.FEES
     );
-    
-    const feeSnapshot = await getDocs(q);
-    return feeSnapshot.size > 0;
 }
 
 export const checkFeeStatusForClearance = async (userId: string, orgId: string) => {
@@ -275,26 +281,27 @@ export async function fetchPaymentLogs(feeId: string) {
 }
 
 export const getFeeByStudentId = async (studentId: string) => {
-    try {
-        const feeRef = collection(db, "fees");
-        const q = query(
-            feeRef,
-            where("studentId", "==", studentId),
-            where("isArchived", "==", false)
-        );
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-            const feeDoc = snapshot.docs[0];
-            return {
-                id: feeDoc.id,
-                ...feeDoc.data()
-            } as Fee;
-        }
-        return null;
-    } catch (error) {
-        console.error("Error fetching fee by student ID:", error);
-        return null;
-    }
+    return cacheService.getOrFetch(
+        `fees:student:${studentId}`,
+        async () => {
+            const feeRef = collection(db, "fees");
+            const q = query(
+                feeRef,
+                where("studentId", "==", studentId),
+                where("isArchived", "==", false)
+            );
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                const feeDoc = snapshot.docs[0];
+                return {
+                    id: feeDoc.id,
+                    ...feeDoc.data()
+                } as Fee;
+            }
+            return null;
+        },
+        CACHE_DURATIONS.FEES
+    );
 }
 
 export const archiveFeeDocuments = async (feeTitle: string, academicYear: string, semester: string) => {
@@ -373,8 +380,10 @@ export const archiveFeeDocuments = async (feeTitle: string, academicYear: string
             }
         }
         cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('clearance:');
         fetchFeesForOrg(currentUserName.id || '').catch(console.error);
         fetchUnpaidFeesForOrg().catch(console.error);
+        fetchClearanceDocuments(currentUserName.id || '').catch(console.error);
     } catch (error) {
         console.error("Error archiving fee:", error);
         throw error;
