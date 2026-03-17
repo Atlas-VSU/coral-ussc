@@ -67,6 +67,9 @@ export default function FinesPaymentFormPage({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitResult, setSubmitResult] = useState<PublicSubmitResult | null>(null);
   const [draftRestored, setDraftRestored] = useState(false);
+  const [restoredFromDraft, setRestoredFromDraft] = useState(false);
+  const [lastDraftSavedAt, setLastDraftSavedAt] = useState<number | null>(null);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   const selectedTypes = useMemo(() => {
     if (!selectedPaymentItems) return [] as Array<"fees" | "fines">;
@@ -202,6 +205,8 @@ export default function FinesPaymentFormPage({
           return;
         }
 
+        setRestoredFromDraft(true);
+
         const draft = JSON.parse(rawDraft) as PaymentDraft;
 
         if (draft.form) {
@@ -273,6 +278,7 @@ export default function FinesPaymentFormPage({
       };
 
       window.sessionStorage.setItem(draftStorageKey, JSON.stringify(draft));
+      setLastDraftSavedAt(Date.now());
     });
 
     return () => subscription.unsubscribe();
@@ -297,7 +303,30 @@ export default function FinesPaymentFormPage({
           : null,
       })
     );
+    setLastDraftSavedAt(Date.now());
   }, [draftRestored, draftStorageKey, image]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!window.visualViewport) return;
+
+    const updateKeyboardOffset = () => {
+      const viewport = window.visualViewport;
+      if (!viewport) return;
+
+      const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      setKeyboardOffset(offset > 120 ? offset : 0);
+    };
+
+    updateKeyboardOffset();
+    window.visualViewport.addEventListener("resize", updateKeyboardOffset);
+    window.visualViewport.addEventListener("scroll", updateKeyboardOffset);
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", updateKeyboardOffset);
+      window.visualViewport?.removeEventListener("scroll", updateKeyboardOffset);
+    };
+  }, []);
 
   const handleSuccessReset = () => {
     setSubmitError(null);
@@ -326,6 +355,9 @@ export default function FinesPaymentFormPage({
         <PaymentBrandHeader />
         <div className="mb-6">
           <PaymentProgressBar currentStep={currentStep} />
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Step 4 of 4: Submit payment details
+          </p>
         </div>
 
         {onBack && (
@@ -340,6 +372,16 @@ export default function FinesPaymentFormPage({
           <p className="text-sm text-muted-foreground mt-1">
             Submit your payment details and receipt for verification.
           </p>
+          {restoredFromDraft && (
+            <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-2">
+              Draft restored from your previous session.
+            </p>
+          )}
+          {lastDraftSavedAt && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Draft saved at {new Date(lastDraftSavedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </p>
+          )}
         </div>
 
         {isContextualFlow && studentData && organizationData && selectedPaymentItems && (
@@ -517,7 +559,10 @@ export default function FinesPaymentFormPage({
             </Alert>
           )}
 
-          <div className="fixed inset-x-0 bottom-0 z-[60] border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] shadow-lg">
+          <div
+            className="fixed inset-x-0 bottom-0 z-[60] border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] shadow-lg"
+            style={{ bottom: keyboardOffset > 0 ? `${keyboardOffset}px` : 0 }}
+          >
             <div className="mx-auto max-w-2xl flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">Total Amount</p>
