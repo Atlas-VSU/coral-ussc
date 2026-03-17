@@ -30,7 +30,7 @@ export function PaymentBrandHeader({ stepLabel }: PaymentBrandHeaderProps) {
             USSC Connect
           </span>
           <span className="mt-1 inline-flex w-fit items-center rounded bg-[#1B5E20]/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#1B5E20]">
-            Student Portal
+            Payment Portal
           </span>
         </div>
       </div>
