@@ -1,5 +1,5 @@
 import { PaymentStatus } from "@/constants/status";
-import { getFineByStudentId } from "@/firebase/fines/read/fines";
+import { getFineByStudentId, getAllFines, getAllUnpaidFinesforOrg } from "@/firebase/fines/read/fines";
 import { db } from "@/firebase/firebase.config";
 import { PaymentFormData } from "@/lib/validators";
 import { addDoc, collection, doc, Timestamp, updateDoc } from "firebase/firestore";
@@ -12,11 +12,13 @@ import { Member } from "@/features/organization/members/types";
 import { createFinesPaymentHistory, createOnlinePaymentHistory } from "./paymentHistory";
 import { UnpaidDue } from "@/features/organization/payments/types";
 import { FineItem, StudentFines } from "@/features/organization/fines/types";
+import { cacheService } from "@/services/cacheService";
+import { getAllProofOfPayments } from "../read/proofOfPayment";
 
 export const createOnlineProofOfPayment = async (
     payment: PaymentFormData, type: string ) => {
 
-    let transaction;
+    let transaction: any;
     const currentUser = await getCurrentUserData() as unknown as Member;
     try{
          if (type === "fines") {
@@ -44,10 +46,18 @@ export const createOnlineProofOfPayment = async (
                 (paymentData as any).paymentHistoryId = payment.paymentHistoryId;
             }
             const docRef = await addDoc(collection(db, "proofOfPayments"), paymentData);
+            
+            cacheService.invalidateByPrefix('payments:');
+            cacheService.invalidateByPrefix('fines:');
+            cacheService.invalidateByPrefix('fees:');
+            cacheService.invalidateByPrefix('clearance:');
+            getAllProofOfPayments(transaction.orgId).catch(console.error);
+
             return docRef.id;
         }
         
-    }catch{
+    }catch(error){
+        console.error("Error creating online proof of payment:", error);
         throw new Error("Failed to submit proof of payment. Please try again.");
     }
 }
@@ -107,6 +117,13 @@ export const createBulkOnlineProofOfPayment = async (
             items: items,
           }
         })
+
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('clearance:');
+        getAllProofOfPayments(tempOrgIdForStudents).catch(console.error);
+
     return [{ success: true, message: "Proof of payment submitted successfully." }];
   }catch(error) {
     console.error("Error creating bulk online proof of payment:", error);
@@ -151,6 +168,13 @@ export const createOfflineFinesProofOfPayment = async (
             }
 
             const docRef = await addDoc(collection(db, "proofOfPayments"), paymentData);
+            
+            cacheService.invalidateByPrefix('payments:');
+            cacheService.invalidateByPrefix('fines:');
+            cacheService.invalidateByPrefix('fees:');
+            cacheService.invalidateByPrefix('clearance:');
+            getAllProofOfPayments(transaction.orgId).catch(console.error);
+
             return docRef.id;
         }
         
@@ -200,4 +224,12 @@ export const createBulkOfflineProofOfPayment = async (
         items: items,
       }
     } )
+
+    cacheService.invalidateByPrefix('payments:');
+    cacheService.invalidateByPrefix('fines:');
+    cacheService.invalidateByPrefix('fees:');
+    cacheService.invalidateByPrefix('clearance:');
+    getAllProofOfPayments(currentUser.id!).catch(console.error);
+    getAllFines().catch(console.error);
+    getAllUnpaidFinesforOrg().catch(console.error);
 }

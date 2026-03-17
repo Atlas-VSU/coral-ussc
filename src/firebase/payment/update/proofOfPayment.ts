@@ -7,6 +7,8 @@ import { collection, doc, Timestamp, updateDoc } from "firebase/firestore";
 import { rejectPaymentHistory, verifyPaymentHistory } from "./paymentHistory";
 import { PaymentStatus } from "@/constants/status";
 import { generateReceiptId } from "@/features/organization/payments/utils";
+import { cacheService } from "@/services/cacheService";
+import { getAllProofOfPayments } from "../read/proofOfPayment";
 
 
 export const updateProofOfPaymentHistoryId = async (proofOfPaymentId: string, paymentHistoryId: string) => {
@@ -16,6 +18,8 @@ export const updateProofOfPaymentHistoryId = async (proofOfPaymentId: string, pa
             paymentHistoryId: paymentHistoryId,
             "updatedAt": Timestamp.now(),
         });
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('clearance:');
     }catch(error){
         console.error("Error updating proof of payment with history ID:", error);
         throw new Error("Failed to update proof of payment. Please try again.");
@@ -33,6 +37,12 @@ export const verifyPaymentProof = async (proofOfPayment: ProofOfPayment, verifie
             status: PaymentStatus.VERIFIED,
             updatedAt: Timestamp.now(),
         });
+
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('clearance:');
+        getAllProofOfPayments(verifier.id!).catch(console.error);
 
         //To Add: email capability
     }catch(error){
@@ -52,6 +62,12 @@ export const rejectPaymentProof = async (proofOfPayment: ProofOfPayment, verifie
             status: PaymentStatus.REJECTED,
             updatedAt: Timestamp.now(),
         });
+
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('clearance:');
+        getAllProofOfPayments(verifier.id!).catch(console.error);
 
         //To Add: email capability
     }catch(error){
@@ -76,6 +92,13 @@ export const updateProofOfPaymentStatus = async (
             verifiedAt: verifiedBy?Timestamp.now():null,
             updatedAt: Timestamp.now(),
         })
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('clearance:');
+        if (verifiedBy) {
+            getAllProofOfPayments(verifiedBy).catch(console.error);
+        }
     } catch (error) {
         console.error("Error updating proof of payment status:", error);
         throw new Error("Failed to update proof of payment status. Please try again.");
