@@ -435,18 +435,16 @@ export default function FinesPaymentFormPage({
             <SectionHeading number={1} title="Student Info" />
             <Card className="border-border">
               <CardContent className="pt-4 flex flex-col gap-4">
+                <input type="hidden" {...register("userName")} />
+                <input type="hidden" {...register("studentId")} />
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="userName">Full Name <span className="text-[#1B5E20]">*</span></Label>
-                    <Input id="userName" placeholder="e.g. Juan dela Cruz" {...register("userName")} readOnly={isContextualFlow}
-                      className={errors.userName ? "border-destructive focus-visible:ring-destructive" : ""} />
-                    {errors.userName && <FieldError message={errors.userName.message!} />}
+                  <div className="rounded-md border bg-muted/30 px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Full Name</p>
+                    <p className="text-sm font-medium text-foreground break-words">{watch("userName") || "—"}</p>
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="studentId">Student ID <span className="text-[#1B5E20]">*</span></Label>
-                    <Input id="studentId" placeholder="21-1-12345" {...register("studentId")} readOnly={isContextualFlow}
-                      className={errors.studentId ? "border-destructive focus-visible:ring-destructive" : ""} />
-                    {errors.studentId ? <FieldError message={errors.studentId.message!} /> : <p className="text-xs text-muted-foreground">Format: XX-X-XXXXX</p>}
+                  <div className="rounded-md border bg-muted/30 px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Student ID</p>
+                    <p className="text-sm font-medium text-foreground">{watch("studentId") || "—"}</p>
                   </div>
                 </div>
               </CardContent>
@@ -458,17 +456,12 @@ export default function FinesPaymentFormPage({
             <SectionHeading number={2} title="Payment Details" />
             <Card className="border-border">
               <CardContent className="pt-4 flex flex-col gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="amount">Amount <span className="text-[#1B5E20]">*</span></Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold">₱</span>
-                    <Input id="amount" type="number" step="0.01" min="0" placeholder="0.00"
-                      {...register("amount", { valueAsNumber: true })} readOnly={isContextualFlow}
-                      className={`pl-7 ${errors.amount ? "border-destructive focus-visible:ring-destructive" : ""}`} />
-                  </div>
-                  {errors.amount && <FieldError message={errors.amount.message!} />}
-                  {isContextualFlow && <p className="text-xs text-muted-foreground">Amount is fixed to match the selected dues.</p>}
+                <input type="hidden" {...register("amount", { valueAsNumber: true })} />
+                <div className="rounded-md border bg-muted/30 px-3 py-2">
+                  <p className="text-xs text-muted-foreground">Amount</p>
+                  <p className="text-sm font-semibold text-foreground">₱{(Number(watch("amount") ?? 0)).toFixed(2)}</p>
                 </div>
+                {errors.amount && <FieldError message={errors.amount.message!} />}
                 <Separator />
                 <div className="flex flex-col gap-1.5">
                   <Label>Payment Method <span className="text-[#1B5E20]">*</span></Label>
