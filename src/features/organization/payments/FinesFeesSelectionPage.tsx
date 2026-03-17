@@ -403,51 +403,6 @@ export default function FinesFeesSelectionPage({
           </Card>
         </div>
 
-        {/* Payment Summary */}
-        <Card className="sticky bottom-4 shadow-lg border-2">
-          <CardHeader className="pb-4">
-            <CardTitle>Payment Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              {payFees && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    Membership Fees ({payableFees.length} item{payableFees.length > 1 ? "s" : ""})
-                  </span>
-                  <span className="font-medium">₱{feesPayableTotal.toFixed(2)}</span>
-                </div>
-              )}
-              {payFines && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    Fines & Penalties ({payableFines.length} item{payableFines.length > 1 ? "s" : ""})
-                  </span>
-                  <span className="font-medium">₱{finesPayableTotal.toFixed(2)}</span>
-                </div>
-              )}
-              {!hasSelection && (
-                <div className="text-center py-4 text-sm text-muted-foreground">
-                  No items selected yet. Please select fees, fines, or both to continue.
-                </div>
-              )}
-            </div>
-
-            {hasSelection && (
-              <>
-                <Separator />
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold">Total Amount</span>
-                  <span className="text-2xl font-bold text-[#1B5E20] dark:text-[#8BC34A]">
-                    ₱{grandTotal.toFixed(2)}
-                  </span>
-                </div>
-              </>
-            )}
-
-          </CardContent>
-        </Card>
-
         <div className="fixed inset-x-0 bottom-0 z-[60] border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] shadow-lg">
           <div className="mx-auto max-w-5xl flex items-center justify-between gap-3">
             <div className="min-w-0">
