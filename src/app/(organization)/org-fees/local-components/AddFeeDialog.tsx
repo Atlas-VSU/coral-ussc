@@ -1,8 +1,9 @@
 "use client";
 
 import { format } from "date-fns";
-import { AlertTriangle, CalendarIcon, Clock } from "lucide-react";
+import { AlertTriangle, Clock } from "lucide-react";
 
+import "./styles/feeDialog.css";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -80,7 +81,7 @@ export function FeeGenerationDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={isGenerating ? undefined : onOpenChange}>
-        <DialogContent className="sm:max-w-[500px] h-[calc(100vh-10rem)] pt-12 pb-4 overflow-y-auto" showCloseButton={!isGenerating}>
+        <DialogContent className="sm:max-w-[500px] h-auto pt-8 pb-4 overflow-y-auto" showCloseButton={!isGenerating}>
           <DialogHeader>
             <DialogTitle>Generate Fees for All Students</DialogTitle>
             <DialogDescription>
@@ -95,11 +96,11 @@ export function FeeGenerationDialog({
               <div className="space-y-6 py-8">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium flex items-center gap-2">
+                    <span className="font-medium flex items-center gap-2 text-[#1B5E20]">
                        <Clock className="h-4 w-4 animate-pulse" />
                        Generating Fees...
                     </span>
-                    <span className="text-muted-foreground">
+                    <span className="text-[#2E7D32]/70">
                       {importProgress.toFixed(0)}% complete
                     </span>
                   </div>
@@ -107,14 +108,14 @@ export function FeeGenerationDialog({
                   {/* Progress bar */}
                   <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                     <div
-                      className="bg-primary h-2.5 rounded-full transition-all duration-300"
-                      style={{ width: `${importProgress}%` }}
+                      className="h-2.5 rounded-full transition-all duration-300"
+                      style={{ width: `${importProgress}%`, backgroundColor: '#1B5E20' }}
                     ></div>
                   </div>
 
                   {/* Batch info */}
                   {currentBatch > 0 && totalBatches > 0 && (
-                    <div className="flex justify-between text-xs text-muted-foreground">
+                    <div className="flex justify-between text-xs text-[#2E7D32]/60">
                       <span>
                         Batch {currentBatch} of {totalBatches}
                       </span>
@@ -123,7 +124,7 @@ export function FeeGenerationDialog({
                   )}
                 </div>
                 
-                <div className="p-4 bg-muted/50 rounded-lg border text-sm text-muted-foreground italic">
+                <div className="p-4 bg-[#8BC34A]/10 rounded-lg border border-[#2E7D32]/30 text-sm text-[#1B5E20] italic">
                   Please do not close this window or refresh the page while generation is in progress.
                 </div>
               </div>
@@ -136,12 +137,13 @@ export function FeeGenerationDialog({
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Fee Title</FormLabel>
+                      <FormLabel className="text-[#1B5E20] font-semibold">Title</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="e.g., Membership Fee 2024"
                           {...field}
                           disabled={isGenerating}
+                          className="!bg-white border-[#2E7D32]/30 focus:border-[#1B5E20]"
                         />
                       </FormControl>
                       <FormMessage />
@@ -149,22 +151,21 @@ export function FeeGenerationDialog({
                   )}
                 />
 
-                {/* Amount */}
+                {/* Description */}
                 <FormField
                   control={form.control}
-                  name="amount"
+                  name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Amount</FormLabel>
+                      <FormLabel className="text-[#1B5E20] font-semibold">
+                        Description <span className="text-[#2E7D32]/60">(Optional)</span>
+                      </FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="0.00"
+                          placeholder="Brief description of this fee"
                           {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                           disabled={isGenerating}
+                          className="!bg-white border-[#2E7D32]/30 focus:border-[#1B5E20]"
                         />
                       </FormControl>
                       <FormMessage />
@@ -178,22 +179,20 @@ export function FeeGenerationDialog({
                   name="feeType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Fee Type</FormLabel>
+                      <FormLabel className="text-[#1B5E20] font-semibold">Type of Fee</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                         disabled={isGenerating}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="!bg-white border-[#2E7D32]/30">
                             <SelectValue placeholder="Select fee type" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="semester-membership">Membership</SelectItem>
-                          <SelectItem value="event-fee">Event</SelectItem>
-                          <SelectItem value="charity-fee">Charity</SelectItem>
-                          <SelectItem value="organization-dues">Organization Dues</SelectItem>
+                          <SelectItem value="semester-membership">Semestral Membership</SelectItem>
+                          <SelectItem value="organization-dues">Organization Fee</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -201,130 +200,26 @@ export function FeeGenerationDialog({
                   )}
                 />
 
-                {/* Academic Year */}
+                {/* Amount */}
                 <FormField
                   control={form.control}
-                  name="academicYear"
+                  name="amount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Academic Year</FormLabel>
+                      <FormLabel className="text-[#1B5E20] font-semibold">Amount</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="e.g., 2024-2025"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
                           {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                           disabled={isGenerating}
+                          className="!bg-white border-[#2E7D32]/30 focus:border-[#1B5E20]"
                         />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="semester"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Semester</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        disabled={isGenerating}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select semester" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="1st">1st Semester</SelectItem>
-                          <SelectItem value="2nd">2nd Semester</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Due Date */}
-                <FormField
-                  control={form.control}
-                  name="dueDate"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Due Date</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild disabled={isGenerating}>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !field.value && "text-muted-foreground",
-                                isGenerating && "opacity-50 cursor-not-allowed"
-                              )}
-                              disabled={isGenerating}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>Pick a due date</span>
-                              )}
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={isGenerating}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Optional description"
-                          {...field}
-                          disabled={isGenerating}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Required for Clearance */}
-                <FormField
-                  control={form.control}
-                  name="isRequiredForClearance"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          disabled={isGenerating}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Required for clearance</FormLabel>
-                        <p className="text-sm text-muted-foreground">
-                          If checked, students must pay this fee to be cleared.
-                        </p>
-                      </div>
                     </FormItem>
                   )}
                 />
@@ -335,10 +230,19 @@ export function FeeGenerationDialog({
                     type="button"
                     onClick={handleCancel}
                     disabled={isGenerating}
+                    className="bg-white border-[#2E7D32]/30 text-[#1B5E20] hover:bg-white hover:text-[#1B5E20]"
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isGenerating}>
+                  <Button 
+                    type="submit" 
+                    disabled={isGenerating}
+                    style={{
+                      backgroundColor: '#1B5E20',
+                      color: 'white',
+                    }}
+                    className="hover:bg-[#0d4017]"
+                  >
                     Generate Fees
                   </Button>
                 </DialogFooter>
