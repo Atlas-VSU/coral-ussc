@@ -50,7 +50,7 @@ interface PaymentDraft {
   image?: {
     name: string;
     type: string;
-    preview: string;
+    preview?: string;
   } | null;
 }
 
@@ -89,10 +89,35 @@ export default function FinesPaymentFormPage({
     window.sessionStorage.removeItem(draftStorageKey);
   };
 
-  const dataUrlToFile = async (dataUrl: string, name: string, type: string) => {
-    const response = await fetch(dataUrl);
-    const blob = await response.blob();
-    return new File([blob], name, { type: type || blob.type || "image/jpeg" });
+  const persistDraft = (draft: PaymentDraft) => {
+    if (typeof window === "undefined") return;
+
+    try {
+      window.sessionStorage.setItem(draftStorageKey, JSON.stringify(draft));
+      setLastDraftSavedAt(Date.now());
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "QuotaExceededError") {
+        try {
+          const fallbackDraft: PaymentDraft = {
+            ...draft,
+            image: draft.image
+              ? {
+                  name: draft.image.name,
+                  type: draft.image.type,
+                }
+              : null,
+          };
+
+          window.sessionStorage.setItem(draftStorageKey, JSON.stringify(fallbackDraft));
+          setLastDraftSavedAt(Date.now());
+          return;
+        } catch {
+          window.sessionStorage.removeItem(draftStorageKey);
+        }
+      }
+
+      console.warn("Failed to persist payment draft:", error);
+    }
   };
 
   const handleContextualSubmit = async (data: PaymentFormData, image: ImageData | null) => {
@@ -220,20 +245,6 @@ export default function FinesPaymentFormPage({
           });
         }
 
-        if (draft.image?.preview && !cancelled) {
-          const restoredFile = await dataUrlToFile(
-            draft.image.preview,
-            draft.image.name,
-            draft.image.type
-          );
-
-          if (!cancelled) {
-            setImage({
-              file: restoredFile,
-              preview: draft.image.preview,
-            });
-          }
-        }
       } catch (error) {
         console.error("Failed to restore payment draft:", error);
       } finally {
@@ -272,13 +283,11 @@ export default function FinesPaymentFormPage({
           ? {
               name: image.file.name,
               type: image.file.type,
-              preview: image.preview,
             }
           : null,
       };
 
-      window.sessionStorage.setItem(draftStorageKey, JSON.stringify(draft));
-      setLastDraftSavedAt(Date.now());
+      persistDraft(draft);
     });
 
     return () => subscription.unsubscribe();
@@ -290,20 +299,15 @@ export default function FinesPaymentFormPage({
     const currentDraft = window.sessionStorage.getItem(draftStorageKey);
     const parsedDraft = currentDraft ? (JSON.parse(currentDraft) as PaymentDraft) : { form: {} };
 
-    window.sessionStorage.setItem(
-      draftStorageKey,
-      JSON.stringify({
-        ...parsedDraft,
-        image: image
-          ? {
-              name: image.file.name,
-              type: image.file.type,
-              preview: image.preview,
-            }
-          : null,
-      })
-    );
-    setLastDraftSavedAt(Date.now());
+    persistDraft({
+      ...parsedDraft,
+      image: image
+        ? {
+            name: image.file.name,
+            type: image.file.type,
+          }
+        : null,
+    });
   }, [draftRestored, draftStorageKey, image]);
 
   useEffect(() => {
