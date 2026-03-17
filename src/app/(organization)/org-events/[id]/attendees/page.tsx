@@ -49,6 +49,7 @@ export default function EventAttendeesPage() {
     goToSpecificPage,
     hasNextPage,
     hasPrevPage,
+    refreshData
   } = useEventAttendees(eventId);
 
   const [isBulkIssueFinesOpen, setBulkIssueFinesOpen] = useState(false);
@@ -87,6 +88,7 @@ export default function EventAttendeesPage() {
   const handleClose = () => {
     setBulkIssueFinesOpen(false);
     setIsGenerating(false);
+    refreshData(); 
    }
 
   // REMOVED: The local useState and useEffect for fetching the event
