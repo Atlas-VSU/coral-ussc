@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Receipt, AlertCircle, CheckCircle2, Building2 } from "lucide-react";
 import { FeeItem, Fine, FineItem, OrganizationData, StudentData } from "@/app/(public)/payment/page";
+import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
 
 
 interface FinesFeesSelectionPageProps {
@@ -103,8 +104,9 @@ export default function FinesFeesSelectionPage({
   const hasPayableFines = payableFines.length > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8 px-4">
+    <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background py-8 px-4">
       <div className="max-w-5xl mx-auto space-y-6">
+        <PaymentBrandHeader />
         {/* Back Button */}
         <Button variant="ghost" onClick={onBack} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
@@ -112,12 +114,12 @@ export default function FinesFeesSelectionPage({
         </Button>
 
         {/* Student & Organization Info Banner */}
-        <Card className="border-green-200 dark:border-green-800 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+        <Card className="border-[#1B5E20]/20 dark:border-[#1B5E20]/30 bg-[#1B5E20]/5 dark:bg-[#1B5E20]/10">
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  <Building2 className="h-5 w-5 text-[#1B5E20] dark:text-[#8BC34A]" />
                   <span className="font-semibold text-lg">{organizationData.acronym}</span>
                   <Badge variant="secondary">{organizationData.name}</Badge>
                 </div>
@@ -377,7 +379,7 @@ export default function FinesFeesSelectionPage({
                 <Separator />
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Total Amount</span>
-                  <span className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  <span className="text-2xl font-bold text-[#1B5E20] dark:text-[#8BC34A]">
                     ₱{grandTotal.toFixed(2)}
                   </span>
                 </div>
@@ -387,7 +389,7 @@ export default function FinesFeesSelectionPage({
             <Button
               onClick={handleContinue}
               disabled={!hasSelection}
-              className="w-full"
+              className="w-full bg-[#1B5E20] hover:bg-[#2E7D32] text-white dark:bg-[#1B5E20] dark:hover:bg-[#2E7D32]"
               size="lg"
             >
               Continue to Payment

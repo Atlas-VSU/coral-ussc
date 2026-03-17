@@ -17,6 +17,7 @@ import { usePaymentForm, ImageData } from "./hooks/usePaymentForm";
 import { PaymentMethodSelector } from "./components/PaymentMethodSelector";
 import { ImageUpload } from "./components/ImageUpload";
 import { SelectedPaymentItems } from "@/app/(public)/payment/page";
+import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
 
 interface StudentData {
   studentId: string;
@@ -171,8 +172,10 @@ export default function FinesPaymentFormPage({
   }
 
   return (
-    <div className="min-h-screen bg-green-50/50 dark:bg-background">
+    <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background">
       <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
+
+        <PaymentBrandHeader />
 
         {onBack && (
           <Button variant="ghost" onClick={onBack} className="mb-4 gap-2">
@@ -192,14 +195,14 @@ export default function FinesPaymentFormPage({
           <Card className="mb-5 border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm text-foreground flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-green-600" />
+                <CreditCard className="h-4 w-4 text-[#1B5E20] dark:text-[#8BC34A]" />
                 Payment Summary
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
                 <div className="flex items-center gap-2 text-sm font-medium">
-                  <Building2 className="h-4 w-4 text-green-600" />
+                  <Building2 className="h-4 w-4 text-[#1B5E20] dark:text-[#8BC34A]" />
                   <span>{organizationData.name}</span>
                   <span className="text-muted-foreground">({organizationData.acronym})</span>
                 </div>
@@ -229,7 +232,7 @@ export default function FinesPaymentFormPage({
                 <Separator />
                 <div className="flex items-center justify-between font-semibold">
                   <span>Total Due</span>
-                  <span className="text-green-600 dark:text-green-400">₱{selectedPaymentItems.totalAmount.toFixed(2)}</span>
+                  <span className="text-[#1B5E20] dark:text-[#8BC34A]">₱{selectedPaymentItems.totalAmount.toFixed(2)}</span>
                 </div>
               </div>
             </CardContent>
@@ -246,13 +249,13 @@ export default function FinesPaymentFormPage({
             <CardContent className="flex flex-col gap-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="userName">Full Name <span className="text-green-600">*</span></Label>
+                  <Label htmlFor="userName">Full Name <span className="text-[#1B5E20]">*</span></Label>
                   <Input id="userName" placeholder="e.g. Juan dela Cruz" {...register("userName")} readOnly={isContextualFlow}
                     className={errors.userName ? "border-destructive focus-visible:ring-destructive" : ""} />
                   {errors.userName && <FieldError message={errors.userName.message!} />}
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="studentId">Student ID <span className="text-green-600">*</span></Label>
+                  <Label htmlFor="studentId">Student ID <span className="text-[#1B5E20]">*</span></Label>
                   <Input id="studentId" placeholder="21-1-12345" {...register("studentId")} readOnly={isContextualFlow}
                     className={errors.studentId ? "border-destructive focus-visible:ring-destructive" : ""} />
                   {errors.studentId ? <FieldError message={errors.studentId.message!} /> : <p className="text-xs text-muted-foreground">Format: XX-X-XXXXX</p>}
@@ -268,7 +271,7 @@ export default function FinesPaymentFormPage({
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="amount">Amount <span className="text-green-600">*</span></Label>
+                <Label htmlFor="amount">Amount <span className="text-[#1B5E20]">*</span></Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold">₱</span>
                   <Input id="amount" type="number" step="0.01" min="0" placeholder="0.00"
@@ -280,20 +283,20 @@ export default function FinesPaymentFormPage({
               </div>
               <Separator />
               <div className="flex flex-col gap-1.5">
-                <Label>Payment Method <span className="text-green-600">*</span></Label>
+                <Label>Payment Method <span className="text-[#1B5E20]">*</span></Label>
                 <PaymentMethodSelector value={watch("paymentMethod") ?? ""} error={errors.paymentMethod?.message} onSelect={handleMethodSelect} />
               </div>
               {needsRef && (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="referenceNumber">Reference Number <span className="text-green-600">*</span></Label>
+                    <Label htmlFor="referenceNumber">Reference Number <span className="text-[#1B5E20]">*</span></Label>
                     <Input id="referenceNumber" placeholder="e.g. 1234567890" {...register("referenceNumber")}
                       className={errors.referenceNumber ? "border-destructive focus-visible:ring-destructive" : ""} />
                     {errors.referenceNumber && <FieldError message={errors.referenceNumber.message!} />}
                   </div>
                   {isGcash && (
                     <div className="flex flex-col gap-1.5">
-                      <Label htmlFor="senderNumber">Sender Number <span className="text-green-600">*</span></Label>
+                      <Label htmlFor="senderNumber">Sender Number <span className="text-[#1B5E20]">*</span></Label>
                       <Input id="senderNumber" placeholder="09XXXXXXXXX" {...register("senderNumber")}
                         className={errors.senderNumber ? "border-destructive focus-visible:ring-destructive" : ""} />
                       {errors.senderNumber ? <FieldError message={errors.senderNumber.message!} /> : <p className="text-xs text-muted-foreground">Must be a valid PH number</p>}
@@ -327,7 +330,7 @@ export default function FinesPaymentFormPage({
                   <p className="font-medium">1. Open GCash app</p>
                   <p>2. Tap "Scan QR" and scan the code above</p>
                   <p>3. Complete your payment</p>
-                  <p className="font-medium text-green-600 dark:text-green-400 mt-2">Save your reference number for verification</p>
+                  <p className="font-medium text-[#1B5E20] dark:text-[#8BC34A] mt-2">Save your reference number for verification</p>
                 </div>
               </CardContent>
             </Card>
@@ -364,7 +367,7 @@ export default function FinesPaymentFormPage({
           )}
 
           <Button type="submit" disabled={status === "submitting"}
-            className="w-full bg-green-600 hover:bg-green-700 text-white dark:bg-green-600 dark:hover:bg-green-700 gap-2">
+            className="w-full bg-[#1B5E20] hover:bg-[#2E7D32] text-white dark:bg-[#1B5E20] dark:hover:bg-[#2E7D32] gap-2">
             {status === "submitting" && <Loader2 className="size-4 animate-spin" />}
             {status === "submitting" ? "Submitting…" : "Submit Payment"}
           </Button>

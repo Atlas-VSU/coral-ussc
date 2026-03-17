@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Building2, ChevronRight, Loader2 } from "lucide-react";
+import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
 
 interface StudentData {
   studentId: string;
@@ -50,8 +51,9 @@ export default function OrganizationSelectionPage({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8 px-4">
+    <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background py-8 px-4">
       <div className="max-w-4xl mx-auto space-y-6">
+        <PaymentBrandHeader />
         {/* Back Button */}
         <Button
           variant="ghost"
@@ -110,16 +112,16 @@ export default function OrganizationSelectionPage({
                   <button
                     key={org.id}
                     onClick={() => handleOrgSelect(org.id)}
-                    className={`w-full text-left p-4 rounded-lg border-2 transition-all hover:border-primary/50 hover:bg-accent/50 ${
+                    className={`w-full text-left p-4 rounded-lg border-2 transition-all hover:border-[#1B5E20]/50 hover:bg-[#1B5E20]/5 ${
                       selectedOrg === org.id
-                        ? "border-primary bg-accent"
+                        ? "border-[#1B5E20] bg-[#1B5E20]/5"
                         : "border-border bg-card"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-3 flex-1">
-                        <div className="p-2 rounded-lg bg-primary/10 mt-1">
-                          <Building2 className="h-5 w-5 text-primary" />
+                        <div className="p-2 rounded-lg bg-[#1B5E20]/10 mt-1">
+                          <Building2 className="h-5 w-5 text-[#1B5E20] dark:text-[#8BC34A]" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
@@ -143,7 +145,7 @@ export default function OrganizationSelectionPage({
                               className={`font-semibold ${
                                 org.outstandingAmount > 0
                                   ? "text-destructive"
-                                  : "text-green-600 dark:text-green-400"
+                                  : "text-[#1B5E20] dark:text-[#8BC34A]"
                               }`}
                             >
                               ₱{org.outstandingAmount.toFixed(2)}
@@ -153,7 +155,7 @@ export default function OrganizationSelectionPage({
                       </div>
                       <ChevronRight
                         className={`h-5 w-5 mt-1 transition-transform ${
-                          selectedOrg === org.id ? "text-primary" : "text-muted-foreground"
+                          selectedOrg === org.id ? "text-[#1B5E20] dark:text-[#8BC34A]" : "text-muted-foreground"
                         }`}
                       />
                     </div>
@@ -170,7 +172,7 @@ export default function OrganizationSelectionPage({
             onClick={handleContinue}
             disabled={!selectedOrg || isLoading || organizations.length === 0}
             size="lg"
-            className="gap-2"
+            className="gap-2 bg-[#1B5E20] hover:bg-[#2E7D32] text-white dark:bg-[#1B5E20] dark:hover:bg-[#2E7D32]"
           >
             Continue to Fees Selection
             <ChevronRight className="h-4 w-4" />
