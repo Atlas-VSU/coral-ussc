@@ -69,14 +69,19 @@ export default function FeeListPage() {
                 onFilterChange={setFilterStatus as any}
               />
               <ViewToggle viewMode={viewMode} onViewChange={() => setViewMode(viewMode === "card" ? "table" : "card")} />
-              <Button variant="outline" onClick={() => setGenerateOpen(true)}>
+              <Button variant="outline" style={
+                {
+                    background : "rgb(8, 97, 23)",
+                    color : "white",
+                }
+              }onClick={() => setGenerateOpen(true)}>
                 <Zap className="size-4 mr-1" /> Generate Fee
               </Button>
             </div>
           </div>
         </CardHeader>
         {paginated.length === 0 && (
-                  <div className="flex min-h-[400px] flex-col items-center justify-center rounded-md border border-dashed p-8 mx-8 text-center animate-in fade-in-50">
+                  <div className="flex min-h-[400px]  flex-col items-center justify-center rounded-md border border-dashed p-8 mx-8 text-center animate-in fade-in-50">
                     <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
                       <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
                         <Plus className="h-10 w-10" />

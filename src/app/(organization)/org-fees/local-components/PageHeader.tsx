@@ -35,14 +35,14 @@ export function PageHeader({ title, context, description, action, className, var
           <p className={cn(
             "text-xs font-medium uppercase tracking-wide",
             variant === "portal" || variant === "admin" ? "text-[#1B5E20]/60"
-              : "text-muted-foreground text-[#8BC34A]",
+              : "text-muted-foreground text-[#1B5E20]/60",
           )}>{context}</p>
         )}
         {description && (
           <p className={cn(
             "text-sm",
             variant === "portal" || variant === "admin" ? "text-[#1B5E20]/50"
-              : "text-muted-foregroun text-[#8BC34A]",
+              : "text-muted-foreground text-[#1B5E20]/50",
           )}>{description}</p>
         )}
       </div>
