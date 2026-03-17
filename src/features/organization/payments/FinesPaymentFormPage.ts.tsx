@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -428,125 +428,118 @@ export default function FinesPaymentFormPage({
           </Card>
         )}
 
-        <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+        <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
 
-          <Card className="border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-foreground">Student Information</CardTitle>
-              <CardDescription>Enter the details of the student making the payment.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="userName">Full Name <span className="text-[#1B5E20]">*</span></Label>
-                  <Input id="userName" placeholder="e.g. Juan dela Cruz" {...register("userName")} readOnly={isContextualFlow}
-                    className={errors.userName ? "border-destructive focus-visible:ring-destructive" : ""} />
-                  {errors.userName && <FieldError message={errors.userName.message!} />}
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="studentId">Student ID <span className="text-[#1B5E20]">*</span></Label>
-                  <Input id="studentId" placeholder="21-1-12345" {...register("studentId")} readOnly={isContextualFlow}
-                    className={errors.studentId ? "border-destructive focus-visible:ring-destructive" : ""} />
-                  {errors.studentId ? <FieldError message={errors.studentId.message!} /> : <p className="text-xs text-muted-foreground">Format: XX-X-XXXXX</p>}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-foreground">Payment Details</CardTitle>
-              <CardDescription>Select your payment method and enter the amount.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="amount">Amount <span className="text-[#1B5E20]">*</span></Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold">₱</span>
-                  <Input id="amount" type="number" step="0.01" min="0" placeholder="0.00"
-                    {...register("amount", { valueAsNumber: true })} readOnly={isContextualFlow}
-                    className={`pl-7 ${errors.amount ? "border-destructive focus-visible:ring-destructive" : ""}`} />
-                </div>
-                {errors.amount && <FieldError message={errors.amount.message!} />}
-                {isContextualFlow && <p className="text-xs text-muted-foreground">Amount is fixed to match the selected dues.</p>}
-              </div>
-              <Separator />
-              <div className="flex flex-col gap-1.5">
-                <Label>Payment Method <span className="text-[#1B5E20]">*</span></Label>
-                <PaymentMethodSelector value={watch("paymentMethod") ?? ""} error={errors.paymentMethod?.message} onSelect={handleMethodSelect} />
-              </div>
-              {needsRef && (
+          {/* Section 1 — Student Info */}
+          <div>
+            <SectionHeading number={1} title="Student Info" />
+            <Card className="border-border">
+              <CardContent className="pt-4 flex flex-col gap-4">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="referenceNumber">Reference Number <span className="text-[#1B5E20]">*</span></Label>
-                    <Input id="referenceNumber" placeholder="e.g. 1234567890" {...register("referenceNumber")}
-                      className={errors.referenceNumber ? "border-destructive focus-visible:ring-destructive" : ""} />
-                    {errors.referenceNumber && <FieldError message={errors.referenceNumber.message!} />}
+                    <Label htmlFor="userName">Full Name <span className="text-[#1B5E20]">*</span></Label>
+                    <Input id="userName" placeholder="e.g. Juan dela Cruz" {...register("userName")} readOnly={isContextualFlow}
+                      className={errors.userName ? "border-destructive focus-visible:ring-destructive" : ""} />
+                    {errors.userName && <FieldError message={errors.userName.message!} />}
                   </div>
-                  {isGcash && (
-                    <div className="flex flex-col gap-1.5">
-                      <Label htmlFor="senderNumber">Sender Number <span className="text-[#1B5E20]">*</span></Label>
-                      <Input id="senderNumber" placeholder="09XXXXXXXXX" {...register("senderNumber")}
-                        className={errors.senderNumber ? "border-destructive focus-visible:ring-destructive" : ""} />
-                      {errors.senderNumber ? <FieldError message={errors.senderNumber.message!} /> : <p className="text-xs text-muted-foreground">Must be a valid PH number</p>}
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {isGcash && (
-            <Card className="border-border bg-gradient-to-br from-blue-50 to-blue-50/50 dark:from-blue-950/30 dark:to-blue-950/20">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-foreground flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-blue-600" />
-                  GCash Payment Instructions
-                </CardTitle>
-                <CardDescription>Scan the QR code below using your GCash app to pay</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center gap-4">
-                <div className="relative w-48 h-48 bg-white rounded-lg p-2 border-2 border-blue-200 dark:border-blue-800">
-                  <Image
-                    src="/images/public-student-payment/mock-qr-student-payment1.jpeg"
-                    alt="GCash Payment QR Code"
-                    fill
-                    className="object-contain"
-                    priority
-                  />
-                </div>
-                <div className="text-center text-sm text-muted-foreground space-y-1">
-                  <p className="font-medium">1. Open GCash app</p>
-                  <p>2. Tap "Scan QR" and scan the code above</p>
-                  <p>3. Complete your payment</p>
-                  <p className="font-medium text-[#1B5E20] dark:text-[#8BC34A] mt-2">Save your reference number for verification</p>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="studentId">Student ID <span className="text-[#1B5E20]">*</span></Label>
+                    <Input id="studentId" placeholder="21-1-12345" {...register("studentId")} readOnly={isContextualFlow}
+                      className={errors.studentId ? "border-destructive focus-visible:ring-destructive" : ""} />
+                    {errors.studentId ? <FieldError message={errors.studentId.message!} /> : <p className="text-xs text-muted-foreground">Format: XX-X-XXXXX</p>}
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          )}
+          </div>
 
-          <Card className="border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-foreground">Receipt / Proof of Payment</CardTitle>
-              <CardDescription>Upload a screenshot or photo of your payment receipt.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ImageUpload value={image} onChange={setImage} />
-            </CardContent>
-          </Card>
+          {/* Section 2 — Payment Details */}
+          <div>
+            <SectionHeading number={2} title="Payment Details" />
+            <Card className="border-border">
+              <CardContent className="pt-4 flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="amount">Amount <span className="text-[#1B5E20]">*</span></Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold">₱</span>
+                    <Input id="amount" type="number" step="0.01" min="0" placeholder="0.00"
+                      {...register("amount", { valueAsNumber: true })} readOnly={isContextualFlow}
+                      className={`pl-7 ${errors.amount ? "border-destructive focus-visible:ring-destructive" : ""}`} />
+                  </div>
+                  {errors.amount && <FieldError message={errors.amount.message!} />}
+                  {isContextualFlow && <p className="text-xs text-muted-foreground">Amount is fixed to match the selected dues.</p>}
+                </div>
+                <Separator />
+                <div className="flex flex-col gap-1.5">
+                  <Label>Payment Method <span className="text-[#1B5E20]">*</span></Label>
+                  <PaymentMethodSelector value={watch("paymentMethod") ?? ""} error={errors.paymentMethod?.message} onSelect={handleMethodSelect} />
+                </div>
+                {needsRef && (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="referenceNumber">Reference Number <span className="text-[#1B5E20]">*</span></Label>
+                      <Input id="referenceNumber" placeholder="e.g. 1234567890" {...register("referenceNumber")}
+                        className={errors.referenceNumber ? "border-destructive focus-visible:ring-destructive" : ""} />
+                      {errors.referenceNumber && <FieldError message={errors.referenceNumber.message!} />}
+                    </div>
+                    {isGcash && (
+                      <div className="flex flex-col gap-1.5">
+                        <Label htmlFor="senderNumber">Sender Number <span className="text-[#1B5E20]">*</span></Label>
+                        <Input id="senderNumber" placeholder="09XXXXXXXXX" {...register("senderNumber")}
+                          className={errors.senderNumber ? "border-destructive focus-visible:ring-destructive" : ""} />
+                        {errors.senderNumber ? <FieldError message={errors.senderNumber.message!} /> : <p className="text-xs text-muted-foreground">Must be a valid PH number</p>}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            {isGcash && (
+              <Card className="mt-2 border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-blue-50/50 dark:from-blue-950/30 dark:to-blue-950/20">
+                <CardContent className="pt-4 flex flex-col items-center gap-4">
+                  <p className="text-xs text-muted-foreground self-start flex items-center gap-1.5">
+                    <CreditCard className="h-3.5 w-3.5 text-blue-600" />
+                    Scan the QR code below using your GCash app to pay
+                  </p>
+                  <div className="relative w-48 h-48 bg-white rounded-lg p-2 border-2 border-blue-200 dark:border-blue-800">
+                    <Image
+                      src="/images/public-student-payment/mock-qr-student-payment1.jpeg"
+                      alt="GCash Payment QR Code"
+                      fill
+                      className="object-contain"
+                      priority
+                    />
+                  </div>
+                  <div className="text-center text-sm text-muted-foreground space-y-1">
+                    <p className="font-medium">1. Open GCash app</p>
+                    <p>2. Tap "Scan QR" and scan the code above</p>
+                    <p>3. Complete your payment</p>
+                    <p className="font-medium text-[#1B5E20] dark:text-[#8BC34A] mt-2">Save your reference number for verification</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
 
-          <Card className="border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-foreground">Additional Information</CardTitle>
-              <CardDescription>Optional notes or remarks about this payment.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="notes">Notes</Label>
+          {/* Section 3 — Upload Receipt */}
+          <div>
+            <SectionHeading number={3} title="Upload Receipt" />
+            <Card className="border-border">
+              <CardContent className="pt-4">
+                <ImageUpload value={image} onChange={setImage} />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Section 4 — Notes */}
+          <div>
+            <SectionHeading number={4} title="Notes" optional />
+            <Card className="border-border">
+              <CardContent className="pt-4">
                 <Textarea id="notes" placeholder="Any additional notes or remarks..." {...register("notes")} rows={3} />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
 
           {submitError && (
             <Alert variant="destructive">
@@ -587,5 +580,27 @@ function FieldError({ message }: { message: string }) {
       <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-white">!</span>
       {message}
     </p>
+  );
+}
+
+function SectionHeading({
+  number,
+  title,
+  optional = false,
+}: {
+  number: number;
+  title: string;
+  optional?: boolean;
+}) {
+  return (
+    <div className="mb-2 flex items-center gap-2.5">
+      <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1B5E20] text-[11px] font-semibold text-white dark:bg-[#2E7D32]">
+        {number}
+      </span>
+      <p className="text-sm font-semibold text-foreground">
+        {title}
+        {optional && <span className="ml-1 text-xs font-normal text-muted-foreground">(optional)</span>}
+      </p>
+    </div>
   );
 }
