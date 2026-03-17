@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { AlertCircle, ArrowLeft, Building2, CreditCard, Loader2, Receipt, ShieldAlert } from "lucide-react";
 
@@ -46,6 +46,15 @@ interface PublicSubmitResult {
   submissionIds: string[];
 }
 
+interface PaymentDraft {
+  form: Partial<PaymentFormData>;
+  image?: {
+    name: string;
+    type: string;
+    preview: string;
+  } | null;
+}
+
 export default function FinesPaymentFormPage({
   studentData,
   organizationData,
@@ -57,6 +66,7 @@ export default function FinesPaymentFormPage({
   const isContextualFlow = Boolean(studentData && organizationData && selectedPaymentItems);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitResult, setSubmitResult] = useState<PublicSubmitResult | null>(null);
+  const [draftRestored, setDraftRestored] = useState(false);
 
   const selectedTypes = useMemo(() => {
     if (!selectedPaymentItems) return [] as Array<"fees" | "fines">;
@@ -65,6 +75,23 @@ export default function FinesPaymentFormPage({
       ...(selectedPaymentItems.fines.length > 0 ? (["fines"] as const) : []),
     ];
   }, [selectedPaymentItems]);
+
+  const draftStorageKey = useMemo(() => {
+    const studentKey = studentData?.studentId ?? "anonymous";
+    const orgKey = organizationData?.id ?? "general";
+    return `public-payment-draft:${studentKey}:${orgKey}`;
+  }, [organizationData?.id, studentData?.studentId]);
+
+  const clearDraft = () => {
+    if (typeof window === "undefined") return;
+    window.sessionStorage.removeItem(draftStorageKey);
+  };
+
+  const dataUrlToFile = async (dataUrl: string, name: string, type: string) => {
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    return new File([blob], name, { type: type || blob.type || "image/jpeg" });
+  };
 
   const handleContextualSubmit = async (data: PaymentFormData, image: ImageData | null) => {
     setSubmitError(null);
@@ -134,6 +161,8 @@ export default function FinesPaymentFormPage({
       setSubmitError(msg);
       throw new Error(msg);
     }
+
+    clearDraft();
   };
 
   const {
@@ -160,9 +189,120 @@ export default function FinesPaymentFormPage({
     ? Number(selectedPaymentItems?.totalAmount ?? 0)
     : (Number.isFinite(watchedAmount) ? watchedAmount : 0);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const restoreDraft = async () => {
+      if (typeof window === "undefined") return;
+
+      try {
+        const rawDraft = window.sessionStorage.getItem(draftStorageKey);
+        if (!rawDraft) {
+          setDraftRestored(true);
+          return;
+        }
+
+        const draft = JSON.parse(rawDraft) as PaymentDraft;
+
+        if (draft.form) {
+          form.reset({
+            ...form.getValues(),
+            ...draft.form,
+            userName: studentData?.name ?? draft.form.userName ?? form.getValues("userName"),
+            studentId: studentData?.studentId ?? draft.form.studentId ?? form.getValues("studentId"),
+            amount: selectedPaymentItems?.totalAmount ?? draft.form.amount ?? form.getValues("amount"),
+            type: selectedTypes.length === 1 ? selectedTypes[0] : draft.form.type,
+          });
+        }
+
+        if (draft.image?.preview && !cancelled) {
+          const restoredFile = await dataUrlToFile(
+            draft.image.preview,
+            draft.image.name,
+            draft.image.type
+          );
+
+          if (!cancelled) {
+            setImage({
+              file: restoredFile,
+              preview: draft.image.preview,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to restore payment draft:", error);
+      } finally {
+        if (!cancelled) {
+          setDraftRestored(true);
+        }
+      }
+    };
+
+    void restoreDraft();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [draftStorageKey, form, selectedPaymentItems?.totalAmount, selectedTypes, setImage, studentData?.name, studentData?.studentId]);
+
+  useEffect(() => {
+    if (!draftRestored || typeof window === "undefined") return;
+
+    const subscription = form.watch((value) => {
+      const draft: PaymentDraft = {
+        form: {
+          ...value,
+          userName: value.userName ?? "",
+          studentId: value.studentId ?? "",
+          amount: value.amount ?? 0,
+          paymentMethod: value.paymentMethod,
+          referenceNumber: value.referenceNumber ?? "",
+          senderNumber: value.senderNumber ?? "",
+          notes: value.notes ?? "",
+          type: value.type,
+          paymentHistoryId: value.paymentHistoryId,
+          referenceId: value.referenceId,
+        },
+        image: image
+          ? {
+              name: image.file.name,
+              type: image.file.type,
+              preview: image.preview,
+            }
+          : null,
+      };
+
+      window.sessionStorage.setItem(draftStorageKey, JSON.stringify(draft));
+    });
+
+    return () => subscription.unsubscribe();
+  }, [draftRestored, draftStorageKey, form, image]);
+
+  useEffect(() => {
+    if (!draftRestored || typeof window === "undefined") return;
+
+    const currentDraft = window.sessionStorage.getItem(draftStorageKey);
+    const parsedDraft = currentDraft ? (JSON.parse(currentDraft) as PaymentDraft) : { form: {} };
+
+    window.sessionStorage.setItem(
+      draftStorageKey,
+      JSON.stringify({
+        ...parsedDraft,
+        image: image
+          ? {
+              name: image.file.name,
+              type: image.file.type,
+              preview: image.preview,
+            }
+          : null,
+      })
+    );
+  }, [draftRestored, draftStorageKey, image]);
+
   const handleSuccessReset = () => {
     setSubmitError(null);
     setSubmitResult(null);
+    clearDraft();
     handleReset();
     onRestart?.();
   };
