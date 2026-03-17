@@ -16,7 +16,6 @@ import { recalculateFines } from "@/firebase/fines/update/recalculate"
 import { recalculateFees } from "@/firebase/fees/update/recalculate"
 
 export const usePaymentApproval = () => {
-    const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
 
     const _approvePayment = async (payment: ProofOfPayment) => {
         try {
@@ -53,20 +52,20 @@ export const usePaymentApproval = () => {
                 }
                 await recalculateClearanceStatus(paymentOwner.id!);
                 
-                    setReceiptData({
-                        receiptId: receipt,
-                        studentName: payment.userName,
-                        studentId: payment.studentId,
-                        items: items.map(d => ({ name: d.title, type: d.paymentType as "fees" | "fines", amount: d.amount })),
-                        total: payment.amount,
-                        date: Timestamp.now().toDate().toLocaleDateString(),
-                        verifiedByName: verifier.firstName + " " + verifier.lastName,
-                        paymentMethod: "Cash (Manual)",
-                    })
-                
+                const newReceiptData: ReceiptData = {
+                    receiptId: receipt,
+                    studentName: payment.userName,
+                    studentId: payment.studentId,
+                    items: items.map(d => ({ name: d.title, type: d.paymentType as "fees" | "fines", amount: d.amount })),
+                    total: payment.amount,
+                    date: Timestamp.now().toDate().toLocaleDateString(),
+                    verifiedByName: verifier.firstName + " " + verifier.lastName,
+                    paymentMethod: payment.paymentMethod,
+                };
+
                 return {
                     success: true,
-                    receipt: receiptData,
+                    receipt: newReceiptData,
                 }
             }
         } catch (error) {
@@ -75,8 +74,6 @@ export const usePaymentApproval = () => {
             
         }
     }
-
-
 
     const _rejectPayment = async (payment: ProofOfPayment, reason: string) => {
         try {

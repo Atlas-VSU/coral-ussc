@@ -73,8 +73,8 @@ interface PaymentReviewDialogProps {
    * Provide both callbacks to enable Approve + Reject actions.
    * Omit both to render a read-only dialog with a Close button.
    */
-  onApprove?: () => void
-  onReject?: (reason: string) => void
+  onApprove?: () => Promise<void>
+  onReject?: (reason: string) => Promise<void>
   isProcessing?: boolean
 }
 
@@ -93,21 +93,26 @@ export function PaymentReviewDialog({
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false)
   const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectReason, setRejectReason] = useState("")
-
+  const [isSubmitting, setIsSubmitting] = useState(false)
+ 
   const isPending = Boolean(onApprove && onReject)
 
-  function handleApproveConfirmed() {
-    onApprove?.()
+  async function handleApproveConfirmed() {
+    setIsSubmitting(true)
+    await onApprove?.()
     setApproveConfirmOpen(false)
     onOpenChange(false)
+    setIsSubmitting(false)
   }
 
-  function handleRejectConfirmed() {
+  async function handleRejectConfirmed() {
     if (!rejectReason.trim()) return
+    setIsSubmitting(true)
     onReject?.(rejectReason)
     setRejectOpen(false)
     setRejectReason("")
     onOpenChange(false)
+    setIsSubmitting(false)
   }
 
   function renderLineItems() {
@@ -311,8 +316,8 @@ export function PaymentReviewDialog({
             <Button variant="outline" onClick={() => setApproveConfirmOpen(false)} disabled={isProcessing}>
               Cancel
             </Button>
-            <Button onClick={handleApproveConfirmed} disabled={isProcessing} className="gap-2">
-              {isProcessing && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+            <Button onClick={handleApproveConfirmed} disabled={isSubmitting} className="gap-2">
+              {isSubmitting && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
               Yes, Approve
             </Button>
           </DialogFooter>
@@ -345,17 +350,17 @@ export function PaymentReviewDialog({
             <Button
               variant="outline"
               onClick={() => { setRejectOpen(false); setRejectReason("") }}
-              disabled={isProcessing}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
-              disabled={!rejectReason.trim() || isProcessing}
+              disabled={!rejectReason.trim() || isSubmitting}
               onClick={handleRejectConfirmed}
               className="gap-2"
             >
-              {isProcessing && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+              {isSubmitting && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
               Reject
             </Button>
           </DialogFooter>
