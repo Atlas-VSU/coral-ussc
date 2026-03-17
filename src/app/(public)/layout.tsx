@@ -28,6 +28,7 @@ export default function PublicLayout({
   const [isSigningOut, setIsSigningOut] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const isPublicPaymentPage = pathname.startsWith("/payment");
 
   // Check for logout URL parameter on mount
   useEffect(() => {
@@ -123,9 +124,11 @@ export default function PublicLayout({
   return (
     <div className="flex min-h-screen w-full">
       <div className="flex-1 flex flex-col min-w-0">
-        <SiteHeader user={null} isAuthenticated={isAuthenticated} />
-        <main className="flex-1 p-2 sm:p-4 pb-16 md:pb-4">{children}</main>
-        <MobileBottomNav links={navLinks} iconMap={mobileIconMap} />
+        {!isPublicPaymentPage && <SiteHeader user={null} isAuthenticated={isAuthenticated} />}
+        <main className={`flex-1 p-2 sm:p-4 ${isPublicPaymentPage ? "pb-4" : "pb-16 md:pb-4"}`}>
+          {children}
+        </main>
+        {!isPublicPaymentPage && <MobileBottomNav links={navLinks} iconMap={mobileIconMap} />}
       </div>
     </div>
   );
