@@ -8,6 +8,8 @@ import { auth } from "@/firebase/firebase.config";
 import { usePathname, useRouter } from "next/navigation";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { cacheUtils } from "@/utils/cacheUtils";
+import { useTheme } from "next-themes";
+import { useRef } from "react";
 
 // Define mobile icon map
 const mobileIconMap = {
@@ -29,6 +31,33 @@ export default function PublicLayout({
   const router = useRouter();
   const pathname = usePathname();
   const isPublicPaymentPage = pathname.startsWith("/payment");
+  const { setTheme } = useTheme();
+  const previousThemeRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (isPublicPaymentPage) {
+      if (previousThemeRef.current === null) {
+        previousThemeRef.current = window.localStorage.getItem("theme");
+      }
+      setTheme("light");
+      return;
+    }
+
+    if (previousThemeRef.current !== null) {
+      const previous = previousThemeRef.current;
+
+      if (previous === "light" || previous === "dark" || previous === "system") {
+        setTheme(previous);
+      } else {
+        window.localStorage.removeItem("theme");
+        setTheme("system");
+      }
+
+      previousThemeRef.current = null;
+    }
+  }, [isPublicPaymentPage, setTheme]);
 
   // Check for logout URL parameter on mount
   useEffect(() => {
