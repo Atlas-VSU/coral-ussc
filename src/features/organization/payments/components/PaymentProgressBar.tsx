@@ -1,5 +1,6 @@
 interface PaymentProgressBarProps {
   currentStep: 1 | 2 | 3 | 4;
+  subtitle?: string;
 }
 
 const steps = [
@@ -9,7 +10,7 @@ const steps = [
   { id: 4, label: "Payment" },
 ] as const;
 
-export function PaymentProgressBar({ currentStep }: PaymentProgressBarProps) {
+export function PaymentProgressBar({ currentStep, subtitle }: PaymentProgressBarProps) {
   return (
     <div className="w-full max-w-2xl mx-auto px-2">
       <div className="grid grid-cols-4 items-start">
@@ -49,6 +50,11 @@ export function PaymentProgressBar({ currentStep }: PaymentProgressBarProps) {
           );
         })}
       </div>
+      {subtitle && (
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          {subtitle}
+        </p>
+      )}
     </div>
   );
 }

@@ -354,10 +354,10 @@ export default function FinesPaymentFormPage({
 
         <PaymentBrandHeader />
         <div className="mb-6">
-          <PaymentProgressBar currentStep={currentStep} />
-          <p className="mt-2 text-center text-xs text-muted-foreground">
-            Step 4 of 4: Submit payment details
-          </p>
+          <PaymentProgressBar
+            currentStep={currentStep}
+            subtitle="Review payment details and submit proof of payment"
+          />
         </div>
 
         {onBack && (
@@ -368,10 +368,6 @@ export default function FinesPaymentFormPage({
         )}
 
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">Payment Submission</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Submit your payment details and receipt for verification.
-          </p>
           {restoredFromDraft && (
             <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-2">
               Draft restored from your previous session.

@@ -57,7 +57,10 @@ export default function OrganizationSelectionPage({
     <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background py-8 px-4">
       <div className="max-w-4xl mx-auto space-y-6">
         <PaymentBrandHeader />
-        <PaymentProgressBar currentStep={currentStep} />
+        <PaymentProgressBar
+          currentStep={currentStep}
+          subtitle="Choose the organization you want to settle dues with"
+        />
         {/* Back Button */}
         <Button
           variant="ghost"

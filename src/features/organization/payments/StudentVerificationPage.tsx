@@ -190,7 +190,10 @@ export default function StudentVerificationPage({ onVerified, currentStep }: Stu
     <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background flex flex-col items-center justify-center p-4">
       <PaymentBrandHeader stepLabel="Enter your student information to continue" />
       <div className="mb-6">
-        <PaymentProgressBar currentStep={currentStep} />
+        <PaymentProgressBar
+          currentStep={currentStep}
+          subtitle="Verify your student details to continue"
+        />
       </div>
       <Card className="w-full max-w-md shadow-sm">
         <CardContent className="pt-6">

@@ -139,7 +139,10 @@ export default function FinesFeesSelectionPage({
     <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background py-8 pb-36 px-4">
       <div className="max-w-5xl mx-auto space-y-6">
         <PaymentBrandHeader />
-        <PaymentProgressBar currentStep={currentStep} />
+        <PaymentProgressBar
+          currentStep={currentStep}
+          subtitle="Select the fees and fines you want to pay"
+        />
         {/* Back Button */}
         <Button variant="ghost" onClick={onBack} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
@@ -167,14 +170,6 @@ export default function FinesFeesSelectionPage({
             </div>
           </CardContent>
         </Card>
-
-        {/* Page Header */}
-        <div>
-          <h1 className="text-3xl font-bold">Select Fees & Fines to Pay</h1>
-          <p className="text-muted-foreground mt-2">
-            Choose the items you want to pay. You can select fees, fines, or both.
-          </p>
-        </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Fees Section */}
