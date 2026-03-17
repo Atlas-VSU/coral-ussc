@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Receipt, AlertCircle, CheckCircle2, Building2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Building2, Receipt, AlertCircle, CheckCircle2, UserCircle } from "lucide-react";
 import { FeeItem, Fine, FineItem, OrganizationData, StudentData } from "@/app/(public)/payment/page";
 import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
 import { PaymentProgressBar } from "./components/PaymentProgressBar";
@@ -151,21 +151,33 @@ export default function FinesFeesSelectionPage({
 
         {/* Student & Organization Info Banner */}
         <Card className="border-[#1B5E20]/20 dark:border-[#1B5E20]/30 bg-[#1B5E20]/5 dark:bg-[#1B5E20]/10">
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-[#1B5E20] dark:text-[#8BC34A]" />
-                  <span className="font-semibold text-lg">{organizationData.acronym}</span>
-                  <Badge variant="secondary">{organizationData.name}</Badge>
+          <CardContent className="py-4 space-y-3">
+            {/* Student row */}
+            <div className="flex items-center gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1B5E20]/15 dark:bg-[#1B5E20]/25">
+                <UserCircle className="h-6 w-6 text-[#1B5E20] dark:text-[#8BC34A]" />
+              </div>
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <p className="font-semibold text-base leading-tight truncate">{studentData.name}</p>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-muted-foreground">
+                  <span className="font-mono font-medium text-foreground/80">{studentData.studentId}</span>
+                  <span className="text-muted-foreground/50">•</span>
+                  <span className="flex items-center gap-1">
+                    <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                    {studentData.program}
+                  </span>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  <span className="font-medium">{studentData.name}</span>
-                  <span className="mx-2">•</span>
-                  <span>{studentData.studentId}</span>
-                  <span className="mx-2">•</span>
-                  <span>{studentData.program}</span>
-                </div>
+              </div>
+            </div>
+            <Separator className="bg-[#1B5E20]/10" />
+            {/* Organization row */}
+            <div className="flex items-center gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1B5E20]/15 dark:bg-[#1B5E20]/25">
+                <Building2 className="h-6 w-6 text-[#1B5E20] dark:text-[#8BC34A]" />
+              </div>
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <p className="font-semibold text-base leading-tight">{organizationData.acronym}</p>
+                <p className="text-sm text-muted-foreground truncate">{organizationData.name}</p>
               </div>
             </div>
           </CardContent>

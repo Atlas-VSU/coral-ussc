@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Building2, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Building2, ChevronRight, Loader2, UserCircle } from "lucide-react";
 import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
 import { PaymentProgressBar } from "./components/PaymentProgressBar";
 
@@ -72,23 +72,22 @@ export default function OrganizationSelectionPage({
         </Button>
 
         {/* Student Info Banner */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Student Information</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-3">
-            <div className="flex flex-wrap gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Name:</span>{" "}
-                <span className="font-medium">{studentData.name}</span>
+        <Card className="border-[#1B5E20]/20 dark:border-[#1B5E20]/30 bg-[#1B5E20]/5 dark:bg-[#1B5E20]/10">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1B5E20]/15 dark:bg-[#1B5E20]/25">
+                <UserCircle className="h-6 w-6 text-[#1B5E20] dark:text-[#8BC34A]" />
               </div>
-              <div>
-                <span className="text-muted-foreground">Student ID:</span>{" "}
-                <span className="font-medium">{studentData.studentId}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Program:</span>{" "}
-                <span className="font-medium">{studentData.program}</span>
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <p className="font-semibold text-base leading-tight truncate">{studentData.name}</p>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-muted-foreground">
+                  <span className="font-mono font-medium text-foreground/80">{studentData.studentId}</span>
+                  <span className="text-muted-foreground/50">•</span>
+                  <span className="flex items-center gap-1">
+                    <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                    {studentData.program}
+                  </span>
+                </div>
               </div>
             </div>
           </CardContent>
