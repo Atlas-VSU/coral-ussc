@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { AlertCircle, ArrowLeft, Building2, CreditCard, Loader2, Receipt, ShieldAlert } from "lucide-react";
+import { AlertCircle, ArrowLeft, BookOpen, Building2, CreditCard, Loader2, Receipt, ShieldAlert, UserCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -387,14 +387,15 @@ export default function FinesPaymentFormPage({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <Building2 className="h-4 w-4 text-[#1B5E20] dark:text-[#8BC34A]" />
-                  <span>{organizationData.name}</span>
-                  <span className="text-muted-foreground">({organizationData.acronym})</span>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {studentData.name} • {studentData.studentId} • {studentData.program}
+              <div className="rounded-lg border bg-muted/30 p-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B5E20]/15 dark:bg-[#1B5E20]/25">
+                    <Building2 className="h-5 w-5 text-[#1B5E20] dark:text-[#8BC34A]" />
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <p className="text-sm font-semibold text-foreground leading-tight">{organizationData.acronym}</p>
+                    <p className="text-xs text-muted-foreground truncate">{organizationData.name}</p>
+                  </div>
                 </div>
               </div>
               <div className="space-y-2 rounded-lg border bg-card p-4">
