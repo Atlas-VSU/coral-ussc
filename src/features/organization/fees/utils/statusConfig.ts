@@ -1,7 +1,8 @@
 import { Clock, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 export const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive"; icon: any }> = {
-  "pending_verification": {
+  "pending": {
     label: "Pending",
     variant: "secondary",
     icon: Clock,

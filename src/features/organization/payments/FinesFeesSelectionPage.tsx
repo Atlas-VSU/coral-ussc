@@ -7,49 +7,20 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Receipt, AlertCircle, CheckCircle2, Building2 } from "lucide-react";
+import { FeeItem, Fine, FineItem, OrganizationData, StudentData } from "@/app/(public)/payment/page";
 
-interface StudentData {
-  studentId: string;
-  program: string;
-  name: string;
-}
-
-interface OrganizationData {
-  id: string;
-  name: string;
-  acronym: string;
-}
-
-interface FeeItem {
-  id: string;
-  description: string;
-  amount: number;
-  dueDate?: unknown;
-  latestRejectionReason?: string;
-  isPayable?: boolean;
-  paymentState?: "unpaid" | "pending" | "rejected";
-}
-
-interface FineItem {
-  id: string;
-  description: string;
-  amount: number;
-  date?: unknown;
-  reason: string;
-  latestRejectionReason?: string;
-  isPayable?: boolean;
-  paymentState?: "unpaid" | "pending" | "rejected";
-}
 
 interface FinesFeesSelectionPageProps {
   studentData: StudentData;
   organizationData: OrganizationData;
   fees: FeeItem[];
-  fines: FineItem[];
+  fines: Fine[];
+  fineItems: FineItem[];
   onBack: () => void;
   onNext: (selectedItems: {
-    fees: string[];
-    fines: string[];
+    fees: FeeItem[];
+    fines: Fine[];
+    fineItems: FineItem[];
     feeAmount: number;
     fineAmount: number;
     totalAmount: number;
@@ -61,6 +32,7 @@ export default function FinesFeesSelectionPage({
   organizationData,
   fees,
   fines,
+  fineItems,
   onBack,
   onNext,
 }: FinesFeesSelectionPageProps) {
@@ -116,8 +88,9 @@ export default function FinesFeesSelectionPage({
   const handleContinue = () => {
     if (payFees || payFines) {
       onNext({
-        fees: payFees ? payableFees.map((fee) => fee.id) : [],
-        fines: payFines ? payableFines.map((fine) => fine.id) : [],
+        fees: payFees ? payableFees : [],
+        fines: payFines ? payableFines : [],
+        fineItems: payFines ? fineItems : [],
         feeAmount: payFees ? feesPayableTotal : 0,
         fineAmount: payFines ? finesPayableTotal : 0,
         totalAmount: grandTotal,
@@ -328,27 +301,27 @@ export default function FinesFeesSelectionPage({
 
               {/* Fine Items Breakdown (Read-only) */}
               <div className="space-y-2">
-                {fines.map((fine) => (
+                {fineItems.map((fine) => (
                   <div
-                    key={fine.id}
+                    key={fine.refId}
                     className={`flex items-start justify-between p-3 rounded-lg border ${
-                      fine.isPayable === false ? "bg-amber-50/60 dark:bg-amber-950/20" : "bg-card"
+                      !fine.isPaid ? "bg-amber-50/60 dark:bg-amber-950/20" : "bg-card"
                     }`}
                   >
                     <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">{fine.description}</p>
+                      <p className="text-sm font-medium">{fine.title}</p>
                       {formatDisplayDate(fine.date) && (
                         <p className="text-xs text-muted-foreground">Date: {formatDisplayDate(fine.date)}</p>
                       )}
-                      <p className="text-xs text-muted-foreground italic">{fine.reason}</p>
-                      {fine.paymentState === "pending" && (
+                      <p className="text-xs text-muted-foreground italic">{fines[0].reason}</p>
+                      {fines[0].paymentState === "pending" && (
                         <p className="text-xs text-amber-600 dark:text-amber-400">
                           Status: Pending verification (not selectable)
                         </p>
                       )}
-                      {fine.latestRejectionReason && (
+                      {fines[0].latestRejectionReason && (
                         <p className="text-xs text-red-600 dark:text-red-400">
-                          Last rejected reason: {fine.latestRejectionReason}
+                          Last rejected reason: {fines[0].latestRejectionReason}
                         </p>
                       )}
                     </div>

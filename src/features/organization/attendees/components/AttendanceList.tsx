@@ -42,7 +42,7 @@ function ProgramBadge({ programId }: { programId: string }) {
       const programsMap = await batchGetPrograms([programId]);
       const program = programsMap[programId];
 
-      const name = program?.name || "Unknown Program";
+      const name = program?.shortName || "Unknown Program";
 
       // Update both the component state and global cache
       setProgramName(name);

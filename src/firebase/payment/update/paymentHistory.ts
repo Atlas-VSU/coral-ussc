@@ -1,89 +1,126 @@
-import { ProofOfPayment } from "@/features/organization/fines/types";
-import { markFineItemsAsPaid } from "@/firebase/fines/update/fineItemsStatus";
+
 import { db } from "@/firebase/firebase.config";
 import { doc, getDoc, Timestamp, updateDoc } from "firebase/firestore";
 import { recalculateFines } from "@/firebase/fines/update/recalculate";
 import { recalculateFees } from "@/firebase/fees/update/recalculate";
+import { Member } from "@/features/organization/members/types";
+import { PaymentStatus } from "@/constants/status";
+import { cacheService } from "@/services/cacheService";
+import { getAllProofOfPayments } from "../read/proofOfPayment";
+import { fetchFeesForOrg, fetchUnpaidFeesForOrg } from "@/firebase/fees";
+import { getAllFines, getAllUnpaidFinesforOrg } from "@/firebase/fines/read/fines";
+import { recalculateClearanceStatus } from "@/firebase/clearance";
 
 
-export const verifyPaymentHistory = async (paymentHistoryId: string, proofOfPayment: ProofOfPayment) => {
-    const docRef = doc(db, proofOfPayment.paymentType, proofOfPayment.referenceId, "paymentHistory", paymentHistoryId);
+export const verifyPaymentHistory = async (
+    paymentHistoryId: string,
+    verifier: Member,
+    type: string,
+    refId: string,
+    amount: number,
+    note?: string | null,
+    itemIds?: string[],
+) => {
+    const docRef = doc(db, type, refId, "paymentHistory", paymentHistoryId);
         try { 
             await updateDoc(docRef, {
-                verifiedBy: proofOfPayment.verifiedBy,
-                verifiedByName: proofOfPayment.verifiedByName,
-                verifiedAt: proofOfPayment.verifiedAt,
-                notes: proofOfPayment.notes,
-                status: proofOfPayment.status,
+                verifiedBy: verifier.id,
+                verifiedByName: `${verifier.firstName} ${verifier.lastName}`,
+                verifiedAt: Timestamp.now(),
+                notes: note? note: "Payment Verified",
+                status: PaymentStatus.VERIFIED,
                 "metadata.updatedAt": Timestamp.now(),
             });
-            if(proofOfPayment.paymentType === "fines"){
-                await markFineItemsAsPaid(proofOfPayment.referenceId);
-                await recalculateFines(proofOfPayment.referenceId, null, proofOfPayment.amount);
 
-                const fineRef = doc(db, "fines", proofOfPayment.referenceId);
+            if(type === "fines"){
+                await recalculateFines(refId, null, amount);
+
+                const fineRef = doc(db, "fines", refId);
                 const fineSnap = await getDoc(fineRef);
                 if (fineSnap.exists()) {
                     const fineData = fineSnap.data();
                     const clearanceRef = doc(db, 'clearanceStatus', fineData.userId);
+                    for (const itemId of itemIds ?? []) {
+                        await updateDoc(clearanceRef, {
+                            [`blockingItems.${itemId}.balance`]: fineData.balance,
+                            [`blockingItems.${itemId}.status`]: fineData.status === "paid" ? "paid" : "unpaid",
+                            [`blockingItems.${itemId}.pendingReview`]: false,
+                        });
+                     }
+                }
+            }
+
+            if(type === "fees"){
+                const result = await recalculateFees(refId, amount);
+                if (result.success && result.userId) {
+                    const clearanceRef = doc(db, 'clearanceStatus', result.userId);
                     await updateDoc(clearanceRef, {
-                        [`blockingItems.${proofOfPayment.referenceId}.balance`]: fineData.balance,
-                        [`blockingItems.${proofOfPayment.referenceId}.status`]: fineData.status === "paid" ? "paid" : "unpaid",
-                        [`blockingItems.${proofOfPayment.referenceId}.pendingReview`]: false,
+                        [`blockingItems.${refId}.balance`]: result.balance,
+                        [`blockingItems.${refId}.status`]: result.status === "paid" ? "paid" : "unpaid",
+                        [`blockingItems.${refId}.pendingReview`]: false,
                     });
                 }
             }
 
-            if(proofOfPayment.paymentType === "fees"){
-                const result = await recalculateFees(proofOfPayment.referenceId, proofOfPayment.amount);
-                if (result.success && result.userId) {
-                    const clearanceRef = doc(db, 'clearanceStatus', result.userId);
-                    await updateDoc(clearanceRef, {
-                        [`blockingItems.${proofOfPayment.referenceId}.balance`]: result.balance,
-                        [`blockingItems.${proofOfPayment.referenceId}.status`]: result.status === "paid" ? "paid" : "unpaid",
-                        [`blockingItems.${proofOfPayment.referenceId}.pendingReview`]: false,
-                    });
-                }
-            }
-            
         }catch(error){
             console.error("Error verifying payment history:", error);
             throw new Error("Failed to verify payment history. Please try again.");
         }
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('clearance:');
+        // Pre-emptive warming
+        getAllProofOfPayments(verifier.id!).catch(console.error);
+        fetchFeesForOrg(verifier.id!).catch(console.error);
+        fetchUnpaidFeesForOrg().catch(console.error);
+        getAllFines().catch(console.error);
+        getAllUnpaidFinesforOrg().catch(console.error);
 }
 
-export const rejectPaymentHistory = async (paymentHistoryId: string, proofOfPayment: ProofOfPayment) => {
-    const docRef = doc(db, proofOfPayment.paymentType, proofOfPayment.referenceId, "paymentHistory", paymentHistoryId);
+export const rejectPaymentHistory = async (
+    paymentHistoryId: string,
+    verifier: Member,
+    type: string,
+    refId: string,
+    reason?: string,
+) => {
+    const docRef = doc(db, type, refId, "paymentHistory", paymentHistoryId);
         try { 
             await updateDoc(docRef, {
-                verifiedBy: proofOfPayment.verifiedBy,
-                verifiedByName: proofOfPayment.verifiedByName,
-                verifiedAt: proofOfPayment.verifiedAt,
-                rejectionReason: proofOfPayment.rejectionReason,
-                status: proofOfPayment.status,
+                verifiedBy: verifier.id,
+                verifiedByName: `${verifier.firstName} ${verifier.lastName}`,
+                verifiedAt: Timestamp.now(),
+                rejectionReason: reason? reason: "Payment Rejected, please contact the organization for more details.",
+                status: PaymentStatus.REJECTED,
                 "metadata.updatedAt": Timestamp.now(),
             });
 
-            if(proofOfPayment.paymentType === "fines"){
-                const fineRef = doc(db, "fines", proofOfPayment.referenceId);
+            if(type === "fines"){
+                const fineRef = doc(db, "fines", refId);
                 const fineSnap = await getDoc(fineRef);
                 if (fineSnap.exists()) {
                     const fineData = fineSnap.data();
+                    if (fineData.balance > 0 && fineData.paidAmount > 0) {
+                        await updateDoc(fineRef, {status: "partial"});
+                    } else {
+                        await updateDoc(fineRef, {status: "unpaid"});
+                     }
                     const clearanceRef = doc(db, 'clearanceStatus', fineData.userId);
                     await updateDoc(clearanceRef, {
-                        [`blockingItems.${proofOfPayment.referenceId}.pendingReview`]: false,
+                        [`blockingItems.${refId}.pendingReview`]: false,
                     });
                 }
             }
 
-            if(proofOfPayment.paymentType === "fees"){
-                const feeRef = doc(db, "fees", proofOfPayment.referenceId);
+            if(type === "fees"){
+                const feeRef = doc(db, "fees", refId);
                 const feeSnap = await getDoc(feeRef);
                 if (feeSnap.exists()) {
                     const feeData = feeSnap.data();
                     const clearanceRef = doc(db, 'clearanceStatus', feeData.userId);
                     await updateDoc(clearanceRef, {
-                        [`blockingItems.${proofOfPayment.referenceId}.pendingReview`]: false,
+                        [`blockingItems.${refId}.pendingReview`]: false,
                     });
                 }
             }
@@ -91,4 +128,14 @@ export const rejectPaymentHistory = async (paymentHistoryId: string, proofOfPaym
             console.error("Error rejecting payment history:", error);
             throw new Error("Failed to reject payment history. Please try again.");
         }
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('clearance:');
+        // Pre-emptive warming
+        getAllProofOfPayments(verifier.id!).catch(console.error);
+        fetchFeesForOrg(verifier.id!).catch(console.error);
+        fetchUnpaidFeesForOrg().catch(console.error);
+        getAllFines().catch(console.error);
+        getAllUnpaidFinesforOrg().catch(console.error);
 }

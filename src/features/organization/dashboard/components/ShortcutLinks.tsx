@@ -51,7 +51,7 @@ export function ShortcutLinks({
   // Format time range
   const formatTimeRange = (
     timeStart: string | null,
-    timeOutStart: string | null
+    timeOutStart: string | null,
   ) => {
     if (!timeStart || !timeOutStart) return null;
     return `${formatTime(timeStart)} - ${formatTime(timeOutStart)}`;
@@ -62,7 +62,7 @@ export function ShortcutLinks({
     timeInStart: string | null,
     timeInEnd: string | null,
     timeOutStart: string | null,
-    timeOutEnd: string | null
+    timeOutEnd: string | null,
   ) => {
     if (timeInStart && timeInEnd && timeOutStart && timeOutEnd) {
       return (
@@ -201,42 +201,46 @@ export function ShortcutLinks({
                 >
                   <div className="p-4">
                     {/* Compact Header */}
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300 group-hover:scale-110">
-                          <CalendarRange className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors truncate leading-tight">
-                            {event.name}
-                          </h3>
-                          <p className="text-xs text-muted-foreground font-medium mt-0.5">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300 group-hover:scale-110 shrink-0 mt-0.5">
+                        <CalendarRange className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-base text-foreground group-hover:text-primary transition-colors leading-tight break-words line-clamp-2">
+                          {event.name}
+                        </h3>
+                        <div className="flex items-center justify-between gap-2 mt-1.5 flex-wrap">
+                          <p className="text-xs text-muted-foreground font-medium shrink-0">
                             {formatDate(event.date)}
                           </p>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {event.majorEvent && (
+                              <Badge
+                                variant="outline"
+                                className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800 text-xs px-2 py-0.5"
+                              >
+                                <StarIcon className="h-3 w-3 fill-amber-500 mr-1" />
+                                Major
+                              </Badge>
+                            )}
+                            <Badge
+                              variant={
+                                event.status === "ongoing"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                              className={`text-xs px-2 py-0.5 transition-colors ${
+                                event.status === "ongoing"
+                                  ? "bg-green-500 hover:bg-green-600 text-white"
+                                  : "bg-muted hover:bg-muted/80"
+                              }`}
+                            >
+                              {event.status === "ongoing"
+                                ? "Ongoing"
+                                : "Upcoming"}
+                            </Badge>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {event.majorEvent && (
-                          <Badge
-                            variant="outline"
-                            className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800 text-xs px-2 py-0.5"
-                          >
-                            <StarIcon className="h-3 w-3 fill-amber-500 mr-1" />
-                            Major
-                          </Badge>
-                        )}
-                        <Badge
-                          variant={
-                            event.status === "ongoing" ? "default" : "secondary"
-                          }
-                          className={`text-xs px-2 py-0.5 transition-colors ${
-                            event.status === "ongoing"
-                              ? "bg-green-500 hover:bg-green-600 text-white"
-                              : "bg-muted hover:bg-muted/80"
-                          }`}
-                        >
-                          {event.status === "ongoing" ? "Ongoing" : "Upcoming"}
-                        </Badge>
                       </div>
                     </div>
 
@@ -290,7 +294,7 @@ export function ShortcutLinks({
                               event.timeInStart ?? null,
                               event.timeInEnd ?? null,
                               event.timeOutStart ?? null,
-                              event.timeOutEnd ?? null
+                              event.timeOutEnd ?? null,
                             )}
                           </div>
                         </div>

@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { FeesRosterContent } from "./FeesRosterContent";
 import { useFeeAction } from "../hooks/useFeeAction";
+import PaymentReceiptDialog from "@/components/organization/PaymentReceiptDialog";
 
 interface FeesRosterPageProps {
   title: string;
@@ -17,7 +18,7 @@ export default function FeesRosterPage({
   academicYear,
 }: FeesRosterPageProps) {
   const { fee, studentRows, isLoading, error, refetchStudentRow } = useFeesRoster(title, academicYear);
-  const { approvePayment, rejectPayment, addManualPayment } = useFeeAction(refetchStudentRow);
+  const { approvePayment, rejectPayment, addManualPayment, receiptData, receiptOpen, setReceiptOpen, archiveFee, isSubmitting } = useFeeAction(refetchStudentRow);
 
   if (isLoading) {
     return (
@@ -46,5 +47,25 @@ export default function FeesRosterPage({
     );
   }
 
-  return <FeesRosterContent fee={fee as any} studentRows={studentRows} onApprovePayment={approvePayment} onManualPaymentAdded={addManualPayment} onRejectPayment={rejectPayment} />;
+  return (
+    <>
+    { receiptOpen && (
+      <PaymentReceiptDialog
+        open={receiptOpen}
+        onOpenChange={setReceiptOpen}
+        data={receiptData}
+      />
+    )}
+     
+    <FeesRosterContent 
+      fee={fee as any} 
+      studentRows={studentRows} 
+      onApprovePayment={approvePayment} 
+      onManualPaymentAdded={addManualPayment} 
+      onRejectPayment={rejectPayment} 
+      onArchiveFee={archiveFee}
+      isSubmitting={isSubmitting}
+    />
+    </>
+  );
 }

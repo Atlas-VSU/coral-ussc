@@ -11,6 +11,8 @@ interface StudentIdInputProps {
   className?: string;
   autoFocus?: boolean;
   onKeyDown?: (e: React.KeyboardEvent) => void;
+  /** "lg" renders fixed large cells suitable for a modal/sheet on mobile */
+  size?: "default" | "lg";
 }
 
 export function StudentIdInput({
@@ -21,6 +23,7 @@ export function StudentIdInput({
   className,
   autoFocus = false,
   onKeyDown,
+  size = "default",
 }: StudentIdInputProps) {
   const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
   const [focusedIndex, setFocusedIndex] = React.useState<number | null>(null);
@@ -39,7 +42,7 @@ export function StudentIdInput({
       return `${digitString.slice(0, 2)}-${digitString.slice(2)}`;
     return `${digitString.slice(0, 2)}-${digitString.slice(
       2,
-      3
+      3,
     )}-${digitString.slice(3)}`;
   };
 
@@ -76,7 +79,7 @@ export function StudentIdInput({
 
   const handleKeyDown = (
     index: number,
-    e: React.KeyboardEvent<HTMLInputElement>
+    e: React.KeyboardEvent<HTMLInputElement>,
   ) => {
     if (disabled) return;
 
@@ -172,7 +175,7 @@ export function StudentIdInput({
     if (cleaned.length >= 8) {
       const formattedValue = `${cleaned.slice(0, 2)}-${cleaned.slice(
         2,
-        3
+        3,
       )}-${cleaned.slice(3, 8)}`;
       onChange(formattedValue);
 
@@ -215,22 +218,28 @@ export function StudentIdInput({
 
   const cellClasses = (index: number) =>
     cn(
-      //For responsive sizing
-      "w-6 h-8",
-      "min-[480px]:w-[100%] min-[480px]:h-9",
-      "sm:w-[100%] sm:h-11",
-      "md:w-[100%] md:h-12",
-      "min-[790px]:w-[100%] min-[790px]:h-11",
-      "min-[860px]:w-12 min-[861px]:h-12",
+      size === "lg"
+        ? [
+            // Flex cells — grow proportionally within their group
+            "flex-1 min-w-0 h-14 text-2xl rounded-xl",
+          ]
+        : [
+            // Existing responsive sizing for inline desktop use
+            "w-6 h-8",
+            "min-[480px]:w-[100%] min-[480px]:h-9",
+            "sm:w-[100%] sm:h-11",
+            "md:w-[100%] md:h-12",
+            "min-[790px]:w-[100%] min-[790px]:h-11",
+            "min-[860px]:w-12 min-[861px]:h-12",
+            "lg:w-13 lg:h-13",
+            "min-[1178px]:w-14 min-[1178px]:h-14",
+            "text-xs min-[480px]:text-sm sm:text-base md:text-lg lg:text-xl min-[1178px]:text-xl",
+          ],
 
-      // Large (1024px+): 52px × 52px, optimal for larger screens when button below
-      "lg:w-13 lg:h-13",
-      "min-[1178px]:w-14 min-[1178px]:h-14",
-      // Typography scaling
-      "text-center text-xs min-[480px]:text-sm sm:text-base md:text-lg lg:text-xl min-[1178px]:text-xl font-nunito-sans font-bold",
-
-      // Border and styling
-      "border-2 rounded-md sm:rounded-lg bg-white dark:bg-input transition-all outline-none",
+      // Common
+      "text-center font-nunito-sans font-bold",
+      "border-2 bg-white dark:bg-input transition-all outline-none",
+      size === "default" && "rounded-md sm:rounded-lg",
       "focus:ring-2 focus:ring-primary/30 focus:border-primary focus:scale-105",
       "disabled:opacity-50 disabled:cursor-not-allowed",
       "hover:border-gray-400 dark:hover:border-gray-500",
@@ -239,21 +248,35 @@ export function StudentIdInput({
         : "border-gray-300 dark:border-gray-600",
       disabled && "bg-gray-50 dark:bg-gray-800 hover:border-gray-300",
       digits[index] &&
-        "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600"
+        "bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600",
     );
 
-  const separatorClasses =
-    "text-sm min-[480px]:text-base sm:text-lg md:text-xl lg:text-2xl min-[1178px]:text-2xl font-bold text-gray-400 dark:text-gray-500 select-none";
+  const separatorClasses = cn(
+    "font-bold text-gray-400 dark:text-gray-500 select-none flex-shrink-0",
+    size === "lg"
+      ? "text-2xl px-0.5"
+      : "text-sm min-[480px]:text-base sm:text-lg md:text-xl lg:text-2xl min-[1178px]:text-2xl",
+  );
 
   const containerClasses = cn(
-    "relative flex items-center justify-center gap-0.5 min-[480px]:gap-1 sm:gap-2 min-[790px]:gap-1.5 min-[861px]:gap-2 lg:gap-3 min-[1178px]:gap-3 select-none pb-10",
-    className
+    "relative flex items-center select-none",
+    size === "lg"
+      ? "w-full gap-1"
+      : "justify-center gap-0.5 min-[480px]:gap-1 sm:gap-2 min-[790px]:gap-1.5 min-[861px]:gap-2 lg:gap-3 min-[1178px]:gap-3 pb-10",
+    className,
   );
 
   return (
     <div className={containerClasses} onPaste={handlePaste}>
       {/* Year digits: XX */}
-      <div className="flex items-center gap-0.5 min-[480px]:gap-1 sm:gap-2 min-[790px]:gap-1.5 min-[861px]:gap-2 lg:gap-3 min-[1178px]:gap-3">
+      <div
+        className={cn(
+          "flex items-center",
+          size === "lg"
+            ? "gap-1 flex-[2] min-w-0"
+            : "gap-0.5 min-[480px]:gap-1 sm:gap-2 min-[790px]:gap-1.5 min-[861px]:gap-2 lg:gap-3 min-[1178px]:gap-3",
+        )}
+      >
         <input
           ref={(el) => {
             inputRefs.current[0] = el;
@@ -294,7 +317,7 @@ export function StudentIdInput({
       <div className={separatorClasses}>-</div>
 
       {/* Semester digit: X */}
-      <div className="flex items-center">
+      <div className={cn("flex items-center", size === "lg" && "flex-[1] min-w-0")}>
         <input
           ref={(el) => {
             inputRefs.current[2] = el;
@@ -318,7 +341,14 @@ export function StudentIdInput({
       <div className={separatorClasses}>-</div>
 
       {/* ID number digits: XXXXX */}
-      <div className="flex items-center gap-0.5 min-[480px]:gap-1 sm:gap-2 min-[790px]:gap-1.5 min-[861px]:gap-2 lg:gap-3 min-[1178px]:gap-3">
+      <div
+        className={cn(
+          "flex items-center",
+          size === "lg"
+            ? "gap-1 flex-[5] min-w-0"
+            : "gap-0.5 min-[480px]:gap-1 sm:gap-2 min-[790px]:gap-1.5 min-[861px]:gap-2 lg:gap-3 min-[1178px]:gap-3",
+        )}
+      >
         {[3, 4, 5, 6, 7].map((index) => (
           <input
             key={index}

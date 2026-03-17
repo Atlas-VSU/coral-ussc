@@ -3,7 +3,7 @@ import { Banknote, AlertTriangle, XIcon, CalendarIcon, ClockIcon, UserIcon, Shie
 import { appealStatusConfig } from "../config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FineItem, FinesPaymentLog, StudentFines } from "../types";
+import { FineItem, FinesPaymentLog, ProofOfPayment, StudentFines } from "../types";
 import { useEffect, useState } from "react";
 import { getFineItemsByFineId } from "@/firebase/fines/read/fines";
 import { FineItemDetailDialog } from "./FineItemDetailDialog";
@@ -11,6 +11,11 @@ import { getFinesPaymentHistoriesByReferenceId} from "@/firebase/payment/read/pa
 import { computeTotalPaid } from "../utils/fineComputations";
 import { ManualPaymentDialog } from "./ManualPaymentDialog";
 import { PaymentType } from "@/constants/types";
+import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog";
+import { useFineItems } from "../hooks/useFineItems";
+import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval";
+import PaymentReceiptDialog, { ReceiptData } from "@/components/organization/PaymentReceiptDialog";
+import { toast } from "sonner";
 
 
 interface FineBreakdownDialogProps { 
@@ -32,11 +37,23 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
     const [rejectedPayments, setRejectedPayments] = useState<FinesPaymentLog[]>([]);
     const [manualPayOpen, setManualPayOpen] = useState(false);
     const [totalPaid, setTotalPaid] = useState(0);
+    const [receiptOpen, setReceiptOpen] = useState(false)
+    const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
     
+    const {
+      pendingPayment,
+      paymentCoveredFineItems,
+      totalPending,
+  } = useFineItems(fines!);
   
+  const {
+      _approvePayment, _rejectPayment
+  } = usePaymentApproval();
+    
   const fetchFineItems = async (fineId: string) => {
+
   const fineItems = await getFineItemsByFineId(fineId);
-  const allPaymentLogs = await getFinesPaymentHistoriesByReferenceId(fineId, PaymentType.FINES);
+  const allPaymentLogs = await getFinesPaymentHistoriesByReferenceId(fineId);
 
   const pendingAppeals = fineItems.filter(item => item.appealStatus === "pending");
   const verified = allPaymentLogs.filter(pl => pl.status === "verified");
@@ -82,10 +99,39 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
         }
     }, [open, fines?.id]);
   
-  const handlePaymentSucceed = () => {
+  const handlePaymentSucceed = async () => {
     onSuccess && onSuccess(fines!);
     onOpenChange(false);
   }
+
+  const handleApprovalSucceed = async (payment: ProofOfPayment) => {
+    try {
+      
+      const result = await _approvePayment(payment);
+      const receipt = result?.receipt as ReceiptData;
+      setReceiptData(receipt);
+      setReceiptOpen(true);
+      // onSuccess && onSuccess(fines!);
+      // onOpenChange(false);
+      toast.success("A payment was logged successfully.");
+    } catch (error) { 
+      console.error("Payment approval failed:", error);
+      toast.error("Failed to approve payment. Please try again or contact the developer.");
+    }
+
+  }
+
+  const handleRejectSucceed = async (payment: ProofOfPayment, reason: string) => {
+    try {
+      await _rejectPayment(payment, reason);
+      onSuccess && onSuccess(fines!);
+      onOpenChange(false);
+      toast.success("The payment was rejected.");
+      }catch(error){
+        console.error("Payment rejection failed:", error);
+        toast.error("Failed to reject payment. Please try again or contact the developer.");
+      }
+   }
 
     return (
         <div>
@@ -115,7 +161,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                 </Button>
                 )}
             </div>
-                {fineItems.length > 0 && paymentLogs.length > 0 && (
+                {fineItems.length > 0 && paymentLogs.length > 0 && fines?.status !== "pending" &&(
                   <p className="text-xs text-muted-foreground">
                     The submission covers{" "}
                     <span className="font-medium text-foreground">
@@ -130,6 +176,24 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                     ))}
                     {" — totalling "}
                     <span className="font-medium text-foreground">₱{totalPaid.toLocaleString()}</span>.
+                  </p>
+              )}
+              
+              {fines?.status === "pending" &&(
+                  <p className="text-xs text-muted-foreground">
+                    The submission covers{" "}
+                    <span className="font-medium text-foreground">
+                      {paymentCoveredFineItems.length} fine item{paymentCoveredFineItems.length !== 1 ? "s" : ""}
+                    </span>
+                    {" — "}
+                    {(paymentCoveredFineItems.filter(item => item.isPaid)).map((i, idx) => (
+                      <span key={i.id}>
+                        {i.fineTypeName}{i.eventName ? ` (${i.eventName})` : ""}
+                        {idx < fineItems.length - 1 ? ", " : ""}
+                      </span>
+                    ))}
+                    {" — totalling "}
+                    <span className="font-medium text-foreground">₱{totalPending.toLocaleString()}</span>.
                   </p>
                 )}
 
@@ -443,6 +507,18 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
               onOpenChange={(open) => setItemOpen(open)} 
               fineItem={selectedItem!}
             />)}
+
+            <PaymentReceiptDialog
+              open={receiptOpen}
+              onOpenChange={(v) => {
+                    setReceiptOpen(v);
+                    if (!v) {
+                        onSuccess && onSuccess(fines!);
+                        onOpenChange(false);
+                    }
+                }}
+              data={receiptData}
+            />
             
             <ManualPaymentDialog
               open={manualPayOpen}
@@ -451,7 +527,27 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
               fineItems={fineItems}
               onSuccess={() => handlePaymentSucceed()}
             />
-        
+            <PaymentReviewDialog
+              open={paymentOpen}
+              onOpenChange={(open) => setPaymentOpen(open)}
+              data={pendingPayment? {
+                studentName: fines?.userName!,
+                studentId: fines?.studentId!,
+                typeLabel: "fines",
+                lineItems: paymentCoveredFineItems.map(i => ({ label: i.eventName, sublabel: i.fineTypeName, amount: i.amount, group:"fines" }))?? [],
+                showLineItemsTotal: !!(paymentCoveredFineItems.length),
+                amountPaid: fines?.balance || 0,
+                referenceNo:  pendingPayment?.referenceNumber,
+                submittedAt:  pendingPayment.submittedAt.toDate().toLocaleDateString(),
+                receiptContent: pendingPayment.imageUrl,
+                declineRemarks: pendingPayment.rejectionReason,
+                reviewedBy:   pendingPayment.verifiedByName,
+                reviewedAt: pendingPayment.verifiedAt?.toDate().toLocaleDateString(),
+                paymentMethod:pendingPayment.paymentMethod,
+              } : null}
+              onApprove={() => handleApprovalSucceed(pendingPayment!)}
+              onReject={(reason)=> handleRejectSucceed(pendingPayment!, reason)}
+            />
             
         </DialogContent>
         </Dialog>

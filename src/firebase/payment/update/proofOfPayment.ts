@@ -7,6 +7,8 @@ import { collection, doc, Timestamp, updateDoc } from "firebase/firestore";
 import { rejectPaymentHistory, verifyPaymentHistory } from "./paymentHistory";
 import { PaymentStatus } from "@/constants/status";
 import { generateReceiptId } from "@/features/organization/payments/utils";
+import { cacheService } from "@/services/cacheService";
+import { getAllProofOfPayments } from "../read/proofOfPayment";
 
 
 export const updateProofOfPaymentHistoryId = async (proofOfPaymentId: string, paymentHistoryId: string) => {
@@ -16,26 +18,32 @@ export const updateProofOfPaymentHistoryId = async (proofOfPaymentId: string, pa
             paymentHistoryId: paymentHistoryId,
             "updatedAt": Timestamp.now(),
         });
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('clearance:');
     }catch(error){
         console.error("Error updating proof of payment with history ID:", error);
         throw new Error("Failed to update proof of payment. Please try again.");
     }
 }
 
-export const verifyPaymentProof = async (proofOfPayment: ProofOfPayment, note: string) => { 
+export const verifyPaymentProof = async (proofOfPayment: ProofOfPayment, verifier: Member, receipt?: string) => { 
     try { 
-        const verifier = await getCurrentUserData() as unknown as Member;
         const docRef = doc(db, "proofOfPayments", proofOfPayment.id!);
         await updateDoc(docRef, {
-            verifiedBy: verifier.studentId,
+            verifiedBy: verifier.id,
             verifiedByName: verifier.firstName + " " + verifier.lastName,
             verifiedAt: Timestamp.now(),
-            notes: note,
-            receiptCode: generateReceiptId(),
+            receiptCode: receipt,
             status: PaymentStatus.VERIFIED,
-            "updatedAt": Timestamp.now(),
+            updatedAt: Timestamp.now(),
         });
-        await verifyPaymentHistory(proofOfPayment.paymentHistoryId!, proofOfPayment);
+
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('clearance:');
+        getAllProofOfPayments(verifier.id!).catch(console.error);
+
         //To Add: email capability
     }catch(error){
         console.error("Error verifying payment proof:", error);
@@ -43,19 +51,24 @@ export const verifyPaymentProof = async (proofOfPayment: ProofOfPayment, note: s
     }
 }
 
-export const rejectPaymentProof = async (proofOfPayment: ProofOfPayment, reason: string) => {
+export const rejectPaymentProof = async (proofOfPayment: ProofOfPayment, verifier: Member,  reason?: string) => {
     try { 
-        const verifier = await getCurrentUserData() as unknown as Member;
         const docRef = doc(db, "proofOfPayments", proofOfPayment.id!);
         await updateDoc(docRef, {
-            verifiedBy: verifier.studentId,
+            verifiedBy: verifier.id,
             verifiedByName: verifier.firstName + " " + verifier.lastName,
             verifiedAt: Timestamp.now(),
-            rejectionReason: reason,
+            rejectionReason: reason || "Payment proof rejected, please contact the organization for more details.",
             status: PaymentStatus.REJECTED,
-            "updatedAt": Timestamp.now(),
+            updatedAt: Timestamp.now(),
         });
-        await rejectPaymentHistory(proofOfPayment.paymentHistoryId!, proofOfPayment);
+
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('clearance:');
+        getAllProofOfPayments(verifier.id!).catch(console.error);
+
         //To Add: email capability
     }catch(error){
         console.error("Error rejecting payment proof:", error);
@@ -79,6 +92,13 @@ export const updateProofOfPaymentStatus = async (
             verifiedAt: verifiedBy?Timestamp.now():null,
             updatedAt: Timestamp.now(),
         })
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('clearance:');
+        if (verifiedBy) {
+            getAllProofOfPayments(verifiedBy).catch(console.error);
+        }
     } catch (error) {
         console.error("Error updating proof of payment status:", error);
         throw new Error("Failed to update proof of payment status. Please try again.");

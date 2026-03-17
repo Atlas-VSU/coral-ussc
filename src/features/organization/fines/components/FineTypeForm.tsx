@@ -24,25 +24,36 @@ import { useFineTypeForm } from "../hooks/useFineTypeForm";
 import { FineTypeFormData } from "@/lib/validators";
 
 interface FineTypeFormProps {
-  open: boolean;
+  initialData?: FineType;
+  open: boolean;  
   onOpenChange: (open: boolean) => void;
   onSubmit: (fineType: FineType) => void;
-  fineType: FineType | null;
+  onCancel: () => void;
   isSubmitting?: boolean;
+  fetchFineTypes: () => Promise<void>;
 }
 
 export function FineTypeForm({
   open,
   onOpenChange,
   onSubmit,
-  fineType,
+  initialData,
+  onCancel,
   isSubmitting = false,
+  fetchFineTypes,
 }: FineTypeFormProps) {
   const form = useFineTypeForm();
 
   useEffect(() => {
-    if (open && fineType) {
-      // for updating logic
+    if (open && initialData) {
+      form.reset({
+        name: initialData.name,
+        description: initialData.description,
+        defaultAmount: initialData.defaultAmount,
+        requiresTimeIn: initialData.requiresTimeIn,
+        requiresTimeOut: initialData.requiresTimeOut,
+        majorEventsOnly: initialData.majorEventsOnly,
+      });
     } else if (open) {
       form.reset({
         name: "",
@@ -53,7 +64,7 @@ export function FineTypeForm({
         majorEventsOnly: false,
       });
     }
-  }, [open, fineType, form]);
+  }, [open, initialData, form]);
 
   const handleFormSubmit = async (data: FineTypeFormData) => {
     if (isSubmitting) return;
@@ -63,13 +74,14 @@ export function FineTypeForm({
     };
 
     onSubmit(fineTypeToSubmit);
+    fetchFineTypes();
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-[90vw] max-h-[80vh] overflow-y-auto py-8">
         <DialogHeader className="pb-2">
-          <DialogTitle>{fineType ? "Edit a Type of Fine" : "Add a Type of Fines"}</DialogTitle>
+          <DialogTitle>{initialData ? "Edit a Type of Fine" : "Add a Type of Fines"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
@@ -160,14 +172,17 @@ export function FineTypeForm({
             </div>
 
             <DialogFooter>
+              <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
+                Cancel
+              </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                    {fineType ? "Saving..." : "Adding..."}
+                    {initialData ? "Saving..." : "Adding..."}
                   </>
                 ) : (
-                  fineType ? "Save Changes" : "Add Fine Type"
+                  initialData ? "Save Changes" : "Add Fine Type"
                 )}
               </Button>
             </DialogFooter>

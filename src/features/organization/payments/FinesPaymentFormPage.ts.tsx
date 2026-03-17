@@ -15,6 +15,7 @@ import { PaymentFormData } from "@/lib/validators";
 import { usePaymentForm, ImageData } from "./hooks/usePaymentForm";
 import { PaymentMethodSelector } from "./components/PaymentMethodSelector";
 import { ImageUpload } from "./components/ImageUpload";
+import { SelectedPaymentItems } from "@/app/(public)/payment/page";
 
 interface StudentData {
   studentId: string;
@@ -26,14 +27,6 @@ interface OrganizationData {
   id: string;
   name: string;
   acronym: string;
-}
-
-interface SelectedPaymentItems {
-  fees: string[];
-  fines: string[];
-  feeAmount: number;
-  fineAmount: number;
-  totalAmount: number;
 }
 
 interface FinesPaymentFormPageProps {
@@ -62,7 +55,6 @@ export default function FinesPaymentFormPage({
 
   const selectedTypes = useMemo(() => {
     if (!selectedPaymentItems) return [] as Array<"fees" | "fines">;
-
     return [
       ...(selectedPaymentItems.fees.length > 0 ? (["fees"] as const) : []),
       ...(selectedPaymentItems.fines.length > 0 ? (["fines"] as const) : []),
@@ -73,8 +65,7 @@ export default function FinesPaymentFormPage({
     setSubmitError(null);
     setSubmitResult(null);
 
-    // 1. Upload receipt image if provided
-    let imageUrl: string | undefined;
+    let imageUrl = "";
     if (image?.file) {
       const fd = new FormData();
       fd.append("file", image.file);
@@ -89,37 +80,55 @@ export default function FinesPaymentFormPage({
       imageUrl = uploadResult.url as string;
     }
 
-    // 2. Submit payment records
-    const payload = {
-      userName: data.userName,
-      studentId: data.studentId,
-      orgId: organizationData!.id,
-      paymentMethod: data.paymentMethod,
-      referenceNumber: data.referenceNumber,
-      senderNumber: data.senderNumber,
-      imageUrl,
-      notes: data.notes,
-      fees: selectedPaymentItems!.fees,
-      fines: selectedPaymentItems!.fines,
-    };
+    const unpaidDues = [
+      ...(selectedPaymentItems?.fees ?? []).map(fee => ({
+        refId:        fee.id,
+        title:        fee.description,
+        amount:       fee.amount,
+        paymentType:  "fees",
+        parentFineId: "",
+      })),
+      ...(selectedPaymentItems?.fineItems ?? []).map(fine => ({
+        refId:        fine.refId,
+        title:        fine.title,
+        amount:       fine.amount,
+        paymentType:  "fines",
+        parentFineId: fine.parentFineId,
+      })),
+    ];
+
+    let referenceId = "bulk_transaction";
+    if (selectedPaymentItems?.fees.length === 1 && selectedPaymentItems?.fineItems.length === 0) {
+      referenceId = selectedPaymentItems.fees[0].id;
+    } else if (selectedPaymentItems?.fineItems.length === 1 && selectedPaymentItems?.fees.length === 0) {
+      referenceId = selectedPaymentItems.fines[0].id;
+    }
 
     const res = await fetch("/api/public/submit-payment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        userName:        data.userName,
+        studentId:       data.studentId,
+        orgId:           organizationData!.id,
+        amount:          data.amount,
+        paymentMethod:   data.paymentMethod,
+        referenceNumber: data.referenceNumber,
+        senderNumber:    data.senderNumber,
+        imageUrl,
+        notes:           data.notes,
+        type:            selectedTypes.length === 1 ? selectedTypes[0] : "bulk",
+        referenceId,
+        dues:            unpaidDues,
+      }),
     });
-    const result = await res.json();
 
+    const result = await res.json();
     if (!res.ok || !result.success) {
       const msg = result.error ?? "Payment submission failed. Please try again.";
       setSubmitError(msg);
       throw new Error(msg);
     }
-
-    setSubmitResult({
-      paymentHistoryId: result.paymentHistoryId ?? "",
-      submissionIds: Array.isArray(result.submissionIds) ? result.submissionIds : [],
-    });
   };
 
   const {
@@ -132,10 +141,10 @@ export default function FinesPaymentFormPage({
     onSubmit,
   } = usePaymentForm({
     initialValues: {
-      userName: studentData?.name ?? "",
+      userName:  studentData?.name ?? "",
       studentId: studentData?.studentId ?? "",
-      amount: selectedPaymentItems?.totalAmount ?? 0,
-      type: selectedTypes.length === 1 ? selectedTypes[0] : undefined,
+      amount:    selectedPaymentItems?.totalAmount ?? 0,
+      type:      selectedTypes.length === 1 ? selectedTypes[0] : undefined,
     },
     onSubmitPayment: isContextualFlow ? handleContextualSubmit : undefined,
   });
@@ -167,11 +176,10 @@ export default function FinesPaymentFormPage({
         {onBack && (
           <Button variant="ghost" onClick={onBack} className="mb-4 gap-2">
             <ArrowLeft className="h-4 w-4" />
-            Back to Fees & Fines
+            Back to Fees &amp; Fines
           </Button>
         )}
 
-        {/* ── Page Header ── */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Payment Submission</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -186,9 +194,6 @@ export default function FinesPaymentFormPage({
                 <CreditCard className="h-4 w-4 text-green-600" />
                 Payment Summary
               </CardTitle>
-              <CardDescription>
-                This flow now mirrors the accepted backend structure for fees and fines.
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
@@ -201,7 +206,6 @@ export default function FinesPaymentFormPage({
                   {studentData.name} • {studentData.studentId} • {studentData.program}
                 </div>
               </div>
-
               <div className="space-y-2 rounded-lg border bg-card p-4">
                 {selectedPaymentItems.feeAmount > 0 && (
                   <div className="flex items-center justify-between text-sm">
@@ -216,7 +220,7 @@ export default function FinesPaymentFormPage({
                   <div className="flex items-center justify-between text-sm">
                     <span className="flex items-center gap-2">
                       <ShieldAlert className="h-4 w-4 text-red-600" />
-                      Fines ({selectedPaymentItems.fines.length} item{selectedPaymentItems.fines.length > 1 ? "s" : ""})
+                      Fines ({selectedPaymentItems.fineItems.length} item{selectedPaymentItems.fineItems.length > 1 ? "s" : ""})
                     </span>
                     <span className="font-semibold">₱{selectedPaymentItems.fineAmount.toFixed(2)}</span>
                   </div>
@@ -227,19 +231,12 @@ export default function FinesPaymentFormPage({
                   <span className="text-green-600 dark:text-green-400">₱{selectedPaymentItems.totalAmount.toFixed(2)}</span>
                 </div>
               </div>
-
-              {selectedTypes.length > 1 && (
-                <p className="text-xs text-muted-foreground">
-                  Combined fee and fine payments will map to separate backend payment records during full integration.
-                </p>
-              )}
             </CardContent>
           </Card>
         )}
 
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
 
-          {/* ── Student Information ── */}
           <Card className="border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm text-foreground">Student Information</CardTitle>
@@ -247,123 +244,65 @@ export default function FinesPaymentFormPage({
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="userName">
-                    Full Name <span className="text-green-600">*</span>
-                  </Label>
-                  <Input
-                    id="userName"
-                    placeholder="e.g. Juan dela Cruz"
-                    {...register("userName")}
-                    readOnly={isContextualFlow}
-                    className={errors.userName ? "border-destructive focus-visible:ring-destructive" : ""}
-                  />
+                  <Label htmlFor="userName">Full Name <span className="text-green-600">*</span></Label>
+                  <Input id="userName" placeholder="e.g. Juan dela Cruz" {...register("userName")} readOnly={isContextualFlow}
+                    className={errors.userName ? "border-destructive focus-visible:ring-destructive" : ""} />
                   {errors.userName && <FieldError message={errors.userName.message!} />}
                 </div>
-
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="studentId">
-                    Student ID <span className="text-green-600">*</span>
-                  </Label>
-                  <Input
-                    id="studentId"
-                    placeholder="21-1-12345"
-                    {...register("studentId")}
-                    readOnly={isContextualFlow}
-                    className={errors.studentId ? "border-destructive focus-visible:ring-destructive" : ""}
-                  />
-                  {errors.studentId
-                    ? <FieldError message={errors.studentId.message!} />
-                    : <p className="text-xs text-muted-foreground">Format: XX-X-XXXXX</p>}
+                  <Label htmlFor="studentId">Student ID <span className="text-green-600">*</span></Label>
+                  <Input id="studentId" placeholder="21-1-12345" {...register("studentId")} readOnly={isContextualFlow}
+                    className={errors.studentId ? "border-destructive focus-visible:ring-destructive" : ""} />
+                  {errors.studentId ? <FieldError message={errors.studentId.message!} /> : <p className="text-xs text-muted-foreground">Format: XX-X-XXXXX</p>}
                 </div>
-
               </div>
             </CardContent>
           </Card>
 
-          {/* ── Payment Details ── */}
           <Card className="border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm text-foreground">Payment Details</CardTitle>
               <CardDescription>Select your payment method and enter the amount.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="amount">
-                  Amount <span className="text-green-600">*</span>
-                </Label>
+                <Label htmlFor="amount">Amount <span className="text-green-600">*</span></Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold">₱</span>
-                  <Input
-                    id="amount"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    {...register("amount", { valueAsNumber: true })}
-                    readOnly={isContextualFlow}
-                    className={`pl-7 ${errors.amount ? "border-destructive focus-visible:ring-destructive" : ""}`}
-                  />
+                  <Input id="amount" type="number" step="0.01" min="0" placeholder="0.00"
+                    {...register("amount", { valueAsNumber: true })} readOnly={isContextualFlow}
+                    className={`pl-7 ${errors.amount ? "border-destructive focus-visible:ring-destructive" : ""}`} />
                 </div>
                 {errors.amount && <FieldError message={errors.amount.message!} />}
-                {isContextualFlow && (
-                  <p className="text-xs text-muted-foreground">
-                    Amount is fixed to match the selected dues and backend-compatible record breakdown.
-                  </p>
-                )}
+                {isContextualFlow && <p className="text-xs text-muted-foreground">Amount is fixed to match the selected dues.</p>}
               </div>
-
               <Separator />
-
               <div className="flex flex-col gap-1.5">
                 <Label>Payment Method <span className="text-green-600">*</span></Label>
-                <PaymentMethodSelector
-                  value={watch("paymentMethod") ?? ""}
-                  error={errors.paymentMethod?.message}
-                  onSelect={handleMethodSelect}
-                />
+                <PaymentMethodSelector value={watch("paymentMethod") ?? ""} error={errors.paymentMethod?.message} onSelect={handleMethodSelect} />
               </div>
-
               {needsRef && (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="referenceNumber">
-                      Reference Number <span className="text-green-600">*</span>
-                    </Label>
-                    <Input
-                      id="referenceNumber"
-                      placeholder="e.g. 1234567890"
-                      {...register("referenceNumber")}
-                      className={errors.referenceNumber ? "border-destructive focus-visible:ring-destructive" : ""}
-                    />
+                    <Label htmlFor="referenceNumber">Reference Number <span className="text-green-600">*</span></Label>
+                    <Input id="referenceNumber" placeholder="e.g. 1234567890" {...register("referenceNumber")}
+                      className={errors.referenceNumber ? "border-destructive focus-visible:ring-destructive" : ""} />
                     {errors.referenceNumber && <FieldError message={errors.referenceNumber.message!} />}
                   </div>
-
                   {isGcash && (
                     <div className="flex flex-col gap-1.5">
-                      <Label htmlFor="senderNumber">
-                        Sender Number <span className="text-green-600">*</span>
-                      </Label>
-                      <Input
-                        id="senderNumber"
-                        placeholder="09XXXXXXXXX"
-                        {...register("senderNumber")}
-                        className={errors.senderNumber ? "border-destructive focus-visible:ring-destructive" : ""}
-                      />
-                      {errors.senderNumber
-                        ? <FieldError message={errors.senderNumber.message!} />
-                        : <p className="text-xs text-muted-foreground">Must be a valid PH number</p>}
+                      <Label htmlFor="senderNumber">Sender Number <span className="text-green-600">*</span></Label>
+                      <Input id="senderNumber" placeholder="09XXXXXXXXX" {...register("senderNumber")}
+                        className={errors.senderNumber ? "border-destructive focus-visible:ring-destructive" : ""} />
+                      {errors.senderNumber ? <FieldError message={errors.senderNumber.message!} /> : <p className="text-xs text-muted-foreground">Must be a valid PH number</p>}
                     </div>
                   )}
                 </div>
               )}
-
             </CardContent>
           </Card>
 
-          {/* ── Receipt Image ── */}
           <Card className="border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm text-foreground">Receipt / Proof of Payment</CardTitle>
@@ -374,7 +313,6 @@ export default function FinesPaymentFormPage({
             </CardContent>
           </Card>
 
-          {/* ── Notes ── */}
           <Card className="border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm text-foreground">Additional Information</CardTitle>
@@ -383,17 +321,11 @@ export default function FinesPaymentFormPage({
             <CardContent>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Any additional notes or remarks..."
-                  {...register("notes")}
-                  rows={3}
-                />
+                <Textarea id="notes" placeholder="Any additional notes or remarks..." {...register("notes")} rows={3} />
               </div>
             </CardContent>
           </Card>
 
-          {/* ── Submit Error ── */}
           {submitError && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -401,12 +333,8 @@ export default function FinesPaymentFormPage({
             </Alert>
           )}
 
-          {/* ── Submit ── */}
-          <Button
-            type="submit"
-            disabled={status === "submitting"}
-            className="w-full bg-green-600 hover:bg-green-700 text-white dark:bg-green-600 dark:hover:bg-green-700 gap-2"
-          >
+          <Button type="submit" disabled={status === "submitting"}
+            className="w-full bg-green-600 hover:bg-green-700 text-white dark:bg-green-600 dark:hover:bg-green-700 gap-2">
             {status === "submitting" && <Loader2 className="size-4 animate-spin" />}
             {status === "submitting" ? "Submitting…" : "Submit Payment"}
           </Button>
@@ -417,7 +345,6 @@ export default function FinesPaymentFormPage({
   );
 }
 
-// ─── Small helper ─────────────────────────────────────────────────────────────
 function FieldError({ message }: { message: string }) {
   return (
     <p className="text-xs text-destructive flex items-center gap-1.5">

@@ -35,6 +35,7 @@ export type ProofOfPayment = {
     receiptCode?: string;
     notes?: string;
     metadata: {items?: {amount: number, title:string, parentFineId: string, paymentType:string, refId:string}[]};
+    isArchived: boolean;
 }
 
 export type FinesPaymentLog = {

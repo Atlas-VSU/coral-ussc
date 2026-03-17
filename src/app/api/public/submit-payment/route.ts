@@ -1,96 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { adminDb } from "@/firebase/firebase-admin.config";
+import { FieldValue } from "firebase-admin/firestore";
 
-const submitPaymentSchema = z
-  .object({
-    userName: z.string().min(2, "Name is required"),
-    studentId: z
-      .string()
-      .min(1, "Student ID is required")
-      .regex(/^\d{2}-\d-\d{5}$/, "Student ID must follow format XX-X-XXXXX"),
-    orgId: z.string().min(1, "Organization is required"),
-    paymentMethod: z.literal("gcash"),
-    referenceNumber: z.string().optional(),
-    senderNumber: z.string().optional(),
-    imageUrl: z.string().optional(),
-    notes: z.string().optional(),
-    fees: z.array(z.string()).default([]),
-    fines: z.array(z.string()).default([]),
-  })
-  .superRefine((values, ctx) => {
-    if (values.fees.length === 0 && values.fines.length === 0) {
+
+const unpaidDueSchema = z.object({
+  refId:        z.string().min(1),
+  title:        z.string(),
+  amount:       z.number().positive(),
+  paymentType:  z.enum(["fees", "fines"]),
+  parentFineId: z.string().default(""),
+});
+
+const submitPaymentSchema = z.object({
+  userName:        z.string().min(2, "Name is required"),
+  studentId:       z.string().min(1).regex(/^\d{2}-\d-\d{5}$/, "Invalid student ID format"),
+  orgId:           z.string().min(1, "Organization is required"),
+  amount:          z.number().positive("Amount must be greater than zero"),
+  paymentMethod:   z.enum(["gcash", "bank_transfer", "cash"]),
+  referenceNumber: z.string().optional(),
+  senderNumber:    z.string().optional(),
+  imageUrl:        z.string().optional(),
+  notes:           z.string().optional(),
+  dues:            z.array(unpaidDueSchema).min(1, "Select at least one due"),
+  type:            z.string().default("bulk"),
+  referenceId:     z.string().default("bulk_transaction"),
+}).superRefine((values, ctx) => {
+  if (values.paymentMethod === "gcash") {
+    if (!values.senderNumber || !/^([+]?63|0)9\d{9}$/.test(values.senderNumber)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ["fees"],
-        message: "Select at least one fee or fine.",
+        path: ["senderNumber"],
+        message: "A valid sender number is required for GCash payments.",
       });
     }
-
-    if (values.paymentMethod === "gcash") {
-      const phoneRegex = /^([+]?63|0)9\d{9}$/;
-      if (!values.senderNumber || !phoneRegex.test(values.senderNumber)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["senderNumber"],
-          message: "A valid sender number is required for GCash payments.",
-        });
-      }
-    }
-
     if (!values.referenceNumber || values.referenceNumber.trim().length < 10) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["referenceNumber"],
-        message: "Reference number is required for online payments.",
+        message: "Reference number is required for GCash payments.",
       });
     }
-  });
+  }
+});
 
-type FeeRecord = {
-  id: string;
-  orgId?: string;
-  userId?: string;
-  studentId?: string;
-  amount?: number;
-  balance?: number;
-  isArchived?: boolean;
-  status?: string;
-};
-
-type FineRecord = {
-  id: string;
-  orgId?: string;
-  userId?: string;
-  studentId?: string;
-  accumulatedAmount?: number;
-  balance?: number;
-  status?: string;
-  metadata?: {
-    isArchived?: boolean;
-  };
-};
-
-const asNumber = (value: unknown): number => {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  return 0;
-};
-
-const resolveOutstanding = (balance: unknown, fallbackAmount: unknown): number => {
-  const balanceValue = asNumber(balance);
-  if (balanceValue > 0) return balanceValue;
-  return asNumber(fallbackAmount);
-};
-
-const isPendingSubmissionStatus = (status: unknown): boolean => {
-  if (typeof status !== "string") return false;
-  return status === "pending" || status === "pending_verification";
-};
-
-const isBlockedByPaymentHistoryStatus = (status: unknown): boolean => {
-  if (typeof status !== "string") return false;
-  return status === "pending_verification" || status === "verified";
-};
 
 export async function POST(request: NextRequest) {
   try {
@@ -101,7 +54,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: parsed.error.issues[0]?.message || "Invalid request payload.",
+          error: parsed.error.issues[0]?.message ?? "Invalid request payload.",
           issues: parsed.error.flatten(),
         },
         { status: 400 }
@@ -109,6 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = parsed.data;
+    const now = FieldValue.serverTimestamp();
 
     const userSnapshot = await adminDb
       .collection("users")
@@ -119,406 +73,154 @@ export async function POST(request: NextRequest) {
 
     if (userSnapshot.empty) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Student record not found.",
-        },
+        { success: false, error: "Student record not found." },
         { status: 404 }
       );
     }
 
-    const studentDoc = userSnapshot.docs[0];
-    const studentData = studentDoc.data();
+    const userId = userSnapshot.docs[0].id;
 
-    if (studentData.role && studentData.role !== "user") {
+    const feeIds  = payload.dues.filter(d => d.paymentType === "fees").map(d => d.refId);
+    const fineIds = payload.dues.filter(d => d.paymentType === "fines").map(d =>
+      d.parentFineId || d.refId
+    );
+
+    const blockedIds = await checkForBlockedDues(feeIds, fineIds);
+    if (blockedIds.fees.length > 0 || blockedIds.fines.length > 0) {
       return NextResponse.json(
         {
           success: false,
-          error: "Student record not found.",
-        },
-        { status: 404 }
-      );
-    }
-
-    const feeDocs = await Promise.all(payload.fees.map((feeId) => adminDb.collection("fees").doc(feeId).get()));
-    const fineDocs = await Promise.all(payload.fines.map((fineId) => adminDb.collection("fines").doc(fineId).get()));
-
-    const pendingFeeIds = feeDocs
-      .filter((doc) => doc.exists)
-      .map((doc) => ({ id: doc.id, ...doc.data() }) as FeeRecord)
-      .filter(
-        (fee) =>
-          fee.orgId === payload.orgId &&
-          fee.studentId === payload.studentId &&
-          isPendingSubmissionStatus(fee.status)
-      )
-      .map((fee) => fee.id);
-
-    const pendingFineIds = fineDocs
-      .filter((doc) => doc.exists)
-      .map((doc) => ({ id: doc.id, ...doc.data() }) as FineRecord)
-      .filter(
-        (fine) =>
-          fine.orgId === payload.orgId &&
-          fine.studentId === payload.studentId &&
-          isPendingSubmissionStatus(fine.status)
-      )
-      .map((fine) => fine.id);
-
-    const [lockedFeeIdsFromHistory, lockedFineIdsFromHistory] = await Promise.all([
-      Promise.all(
-        payload.fees.map(async (feeId) => {
-          const paymentHistorySnapshot = await adminDb
-            .collection("fees")
-            .doc(feeId)
-            .collection("paymentHistory")
-            .get();
-
-          const hasBlockingHistory = paymentHistorySnapshot.docs.some((paymentDoc) =>
-            isBlockedByPaymentHistoryStatus(paymentDoc.data()?.status)
-          );
-
-          return hasBlockingHistory ? feeId : null;
-        })
-      ),
-      Promise.all(
-        payload.fines.map(async (fineId) => {
-          const paymentHistorySnapshot = await adminDb
-            .collection("fines")
-            .doc(fineId)
-            .collection("paymentHistory")
-            .get();
-
-          const hasBlockingHistory = paymentHistorySnapshot.docs.some((paymentDoc) =>
-            isBlockedByPaymentHistoryStatus(paymentDoc.data()?.status)
-          );
-
-          return hasBlockingHistory ? fineId : null;
-        })
-      ),
-    ]);
-
-    const blockedFeeIds = Array.from(
-      new Set([...pendingFeeIds, ...lockedFeeIdsFromHistory.filter((id): id is string => Boolean(id))])
-    );
-    const blockedFineIds = Array.from(
-      new Set([...pendingFineIds, ...lockedFineIdsFromHistory.filter((id): id is string => Boolean(id))])
-    );
-
-    if (blockedFeeIds.length > 0 || blockedFineIds.length > 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Some selected dues already have a pending/verified payment submission and cannot be paid again.",
-          blocked: {
-            fees: blockedFeeIds,
-            fines: blockedFineIds,
-          },
+          error: "Some selected dues already have a pending or verified payment submission.",
+          blocked: blockedIds,
         },
         { status: 409 }
       );
     }
 
-    const fees = feeDocs
-      .filter((doc) => doc.exists)
-      .map((doc) => ({ id: doc.id, ...doc.data() }) as FeeRecord)
-      .filter(
-        (fee) =>
-          fee.orgId === payload.orgId &&
-          fee.studentId === payload.studentId &&
-          !fee.isArchived &&
-            !blockedFeeIds.includes(fee.id) &&
-          !isPendingSubmissionStatus(fee.status) &&
-          resolveOutstanding(fee.balance, fee.amount) > 0
-      );
-
-    const fines = fineDocs
-      .filter((doc) => doc.exists)
-      .map((doc) => ({ id: doc.id, ...doc.data() }) as FineRecord)
-      .filter(
-        (fine) =>
-          fine.orgId === payload.orgId &&
-          fine.studentId === payload.studentId &&
-          !fine.metadata?.isArchived &&
-            !blockedFineIds.includes(fine.id) &&
-          !isPendingSubmissionStatus(fine.status) &&
-          resolveOutstanding(fine.balance, fine.accumulatedAmount) > 0
-      );
-
-    if (fees.length !== payload.fees.length || fines.length !== payload.fines.length) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Some selected dues are invalid or no longer payable.",
-        },
-        { status: 400 }
-      );
-    }
-
-    const now = new Date();
-    const batchId = `${payload.studentId.replace(/[^0-9]/g, "")}-${now.getTime()}`;
-    const paymentHistoryRef = adminDb.collection("paymentHistory").doc();
-    const paymentHistoryItemsRef = paymentHistoryRef.collection("items");
-    const proofCollection = adminDb.collection("proofOfPayments");
-    const clearanceRef = adminDb.collection("clearanceStatus").doc(studentDoc.id);
-    const clearanceSnapshot = await clearanceRef.get();
     const batch = adminDb.batch();
-    const submissionIds: string[] = [];
-    const clearanceUpdates: Record<string, boolean> = {};
+    const proofRef = adminDb.collection("proofOfPayments").doc();
+    const items: object[] = [];
 
-    const feeTotal = fees.reduce((sum, fee) => sum + resolveOutstanding(fee.balance, fee.amount), 0);
-    const fineTotal = fines.reduce(
-      (sum, fine) => sum + resolveOutstanding(fine.balance, fine.accumulatedAmount),
-      0
-    );
-    const totalAmount = feeTotal + fineTotal;
+    for (const due of payload.dues) {
+      const parentId = due.paymentType === "fines"
+        ? (due.parentFineId || due.refId)
+        : due.refId;
 
-    batch.set(paymentHistoryRef, {
-      id: paymentHistoryRef.id,
-      orgId: payload.orgId,
-      userId: studentDoc.id,
-      userName: payload.userName,
-      studentId: payload.studentId,
-      paymentType: "bulk",
-      paymentMethod: payload.paymentMethod,
-      amount: totalAmount,
-      status: "pending",
-      paymentProofId: null,
-      paymentNumber: now.getTime(),
-      gcashReference: payload.referenceNumber ?? null,
-      paidAt: now,
-      verifiedBy: null,
-      verifiedByName: null,
-      verifiedAt: null,
-      rejectionReason: null,
-      notes: payload.notes ?? "Public payment portal submission.",
-      metadata: {
-        source: "public_payment_portal",
-        batchId,
-        submittedBy: "student",
-        feeCount: fees.length,
-        fineCount: fines.length,
-      },
-      createdAt: now,
-    });
+      const historyRef = adminDb
+        .collection(due.paymentType).doc(parentId)
+        .collection("paymentHistory").doc();
 
-    for (const fee of fees) {
-      const amount = resolveOutstanding(fee.balance, fee.amount);
-      const paymentItemRef = paymentHistoryItemsRef.doc();
-      // Per-fee subcollection log — required by verifyPaymentHistory / rejectPaymentHistory
-      const feeLogRef = adminDb.collection("fees").doc(fee.id).collection("paymentHistory").doc();
-      const docRef = proofCollection.doc();
-      submissionIds.push(docRef.id);
-
-      batch.set(paymentItemRef, {
-        id: paymentItemRef.id,
-        parentPaymentHistoryId: paymentHistoryRef.id,
-        orgId: payload.orgId,
-        userId: fee.userId ?? studentDoc.id,
-        userName: payload.userName,
-        studentId: payload.studentId,
-        paymentType: "fees",
-        referenceId: fee.id,
-        amount,
-        status: "pending",
-        paidAt: now,
-        verifiedBy: null,
-        verifiedByName: null,
-        verifiedAt: null,
+      // Per-due payment history entry
+      batch.set(historyRef, {
+        paymentNumber:   now,
+        amount:          due.amount,
+        paymentMethod:   payload.paymentMethod,
+        paymentProofId:  proofRef.id,
+        paymentType:     due.paymentType,
+        gcashReference:  payload.referenceNumber ?? null,
+        senderNumber:    payload.senderNumber    ?? "",
+        imageUrl:        payload.imageUrl        ?? "",
+        status:          "pending",
+        paidAt:          now,
+        verifiedBy:      null,
+        verifiedByName:  null,
+        verifiedAt:      null,
         rejectionReason: null,
-        notes: payload.notes ?? "",
-        createdAt: now,
-        metadata: {
-          source: "public_payment_portal",
-          batchId,
-          submittedBy: "student",
-        },
+        notes:           payload.notes ?? `Online payment of ${due.amount} recorded for ${due.paymentType}`,
+        metadata:        { source: "public_payment_portal", submittedBy: "student" },
+        createdAt:       now,
       });
 
-      // Write the per-fee payment log so approval/rejection flows can find it
-      batch.set(feeLogRef, {
-        paymentNumber: now.getTime(),
-        amount,
-        paymentMethod: payload.paymentMethod,
-        paymentProofId: docRef.id,
-        gcashReference: payload.referenceNumber ?? null,
-        senderNumber: payload.senderNumber ?? "",
-        imageUrl: payload.imageUrl ?? "",
-        status: "pending_verification",
-        paidAt: now,
-        verifiedBy: null,
-        verifiedByName: null,
-        verifiedAt: null,
-        rejectionReason: null,
-        notes: payload.notes ?? "",
-        metaData: {
-          source: "public_payment_portal",
-          batchId,
-          submittedBy: "student",
-          parentPaymentHistoryId: paymentHistoryRef.id,
-          paymentHistoryItemId: paymentItemRef.id,
-        },
-        createdAt: now,
-      });
-
-      batch.set(docRef, {
-        orgId: payload.orgId,
-        userId: fee.userId ?? studentDoc.id,
-        userName: payload.userName,
-        studentId: payload.studentId,
-        paymentType: "fees",
-        paymentMethod: payload.paymentMethod,
-        referenceId: fee.id,
-        referenceNumber: payload.referenceNumber ?? "",
-        senderNumber: payload.senderNumber ?? "",
-        amount,
-        imageUrl: payload.imageUrl ?? "",
-        status: "pending",
-        submittedAt: now,
-        rejectionReason: "",
-        notes: payload.notes ?? "",
-        paymentHistoryId: feeLogRef.id,
-        metaData: {
-          source: "public_payment_portal",
-          batchId,
-          submittedBy: "student",
-          parentPaymentHistoryId: paymentHistoryRef.id,
-          paymentHistoryItemId: paymentItemRef.id,
-          createdAt: now,
-        },
-      });
-
-      batch.update(adminDb.collection("fees").doc(fee.id), {
-        status: "pending",
+      batch.update(adminDb.collection(due.paymentType).doc(parentId), {
+        status:    "pending",
         updatedAt: now,
       });
 
-      clearanceUpdates[`blockingItems.${fee.id}.pendingReview`] = true;
+      // Mark clearance item as pending review
+      batch.update(adminDb.collection("clearanceStatus").doc(userId), {
+        [`blockingItems.${due.refId}.pendingReview`]: true,
+      });
+
+      items.push({
+        refId:        due.refId,
+        title:        due.title,
+        amount:       due.amount,
+        paymentType:  due.paymentType,
+        parentFineId: due.paymentType === "fines" ? due.parentFineId : "",
+        historyId:    historyRef.id,
+      });
     }
 
-    for (const fine of fines) {
-      const amount = resolveOutstanding(fine.balance, fine.accumulatedAmount);
-      const paymentItemRef = paymentHistoryItemsRef.doc();
-      // Per-fine subcollection log — required by verifyPaymentHistory / rejectPaymentHistory
-      const fineLogRef = adminDb.collection("fines").doc(fine.id).collection("paymentHistory").doc();
-      const docRef = proofCollection.doc();
-      submissionIds.push(docRef.id);
+    // Single proof-of-payment doc covering all dues
+    batch.set(proofRef, {
+      orgId:           payload.orgId,
+      userId,                          
+      userName:        payload.userName,
+      studentId:       payload.studentId,
+      paymentType:     payload.type,
+      paymentMethod:   payload.paymentMethod,
+      referenceId:     payload.referenceId,
+      referenceNumber: payload.referenceNumber ?? "",
+      senderNumber:    payload.senderNumber    ?? "",
+      amount: payload.amount,
+      isArchived:      false,
+      imageUrl:        payload.imageUrl        ?? "",
+      status:          "pending",
+      submittedAt:     now,
+      rejectionReason: "",
+      notes:           payload.notes ?? "Public payment portal submission.",
+      verifiedBy:      null,
+      verifiedByName:  null,
+      verifiedAt:      null,
+      metadata: {
+        source:      "public_payment_portal",
+        submittedBy: "student",
+        items,
+      },
+    });
 
-      batch.set(paymentItemRef, {
-        id: paymentItemRef.id,
-        parentPaymentHistoryId: paymentHistoryRef.id,
-        orgId: payload.orgId,
-        userId: fine.userId ?? studentDoc.id,
-        userName: payload.userName,
-        studentId: payload.studentId,
-        paymentType: "fines",
-        referenceId: fine.id,
-        amount,
-        status: "pending",
-        paidAt: now,
-        verifiedBy: null,
-        verifiedByName: null,
-        verifiedAt: null,
-        rejectionReason: null,
-        notes: payload.notes ?? "",
-        createdAt: now,
-        metadata: {
-          source: "public_payment_portal",
-          batchId,
-          submittedBy: "student",
-        },
-      });
-
-      // Write the per-fine payment log so approval/rejection flows can find it
-      batch.set(fineLogRef, {
-        paymentNumber: now.getTime(),
-        amount,
-        paymentMethod: payload.paymentMethod,
-        paymentProofId: docRef.id,
-        gcashReference: payload.referenceNumber ?? null,
-        senderNumber: payload.senderNumber ?? "",
-        imageUrl: payload.imageUrl ?? "",
-        status: "pending_verification",
-        paidAt: now,
-        verifiedBy: null,
-        verifiedByName: null,
-        verifiedAt: null,
-        rejectionReason: null,
-        notes: payload.notes ?? "",
-        metaData: {
-          source: "public_payment_portal",
-          batchId,
-          submittedBy: "student",
-          parentPaymentHistoryId: paymentHistoryRef.id,
-          paymentHistoryItemId: paymentItemRef.id,
-        },
-        createdAt: now,
-      });
-
-      batch.set(docRef, {
-        orgId: payload.orgId,
-        userId: fine.userId ?? studentDoc.id,
-        userName: payload.userName,
-        studentId: payload.studentId,
-        paymentType: "fines",
-        paymentMethod: payload.paymentMethod,
-        referenceId: fine.id,
-        referenceNumber: payload.referenceNumber ?? "",
-        senderNumber: payload.senderNumber ?? "",
-        amount,
-        imageUrl: payload.imageUrl ?? "",
-        status: "pending",
-        submittedAt: now,
-        rejectionReason: "",
-        notes: payload.notes ?? "",
-        paymentHistoryId: fineLogRef.id,
-        metaData: {
-          source: "public_payment_portal",
-          batchId,
-          submittedBy: "student",
-          parentPaymentHistoryId: paymentHistoryRef.id,
-          paymentHistoryItemId: paymentItemRef.id,
-          createdAt: now,
-        },
-      });
-
-      batch.update(adminDb.collection("fines").doc(fine.id), {
-        status: "pending",
-        "metadata.updatedAt": now,
-      });
-
-      clearanceUpdates[`blockingItems.${fine.id}.pendingReview`] = true;
-    }
-
-    if (Object.keys(clearanceUpdates).length > 0 && clearanceSnapshot.exists) {
-      batch.update(clearanceRef, clearanceUpdates);
-    }
+    batch.update(adminDb.collection("clearanceStatus").doc(userId), {
+      status: "pending",
+    });
 
     await batch.commit();
 
     return NextResponse.json({
       success: true,
-      message: "Payment submissions created successfully.",
-      paymentHistoryId: paymentHistoryRef.id,
-      submissionIds,
-      summary: {
-        feeCount: fees.length,
-        fineCount: fines.length,
-        feeAmount: feeTotal,
-        fineAmount: fineTotal,
-        totalAmount,
-      },
+      message: "Payment submitted successfully.",
+      proofId: proofRef.id,
     });
+
   } catch (error) {
     console.error("Error submitting public payment:", error);
-
     return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to submit payment.",
-      },
+      { success: false, error: "Failed to submit payment. Please try again." },
       { status: 500 }
     );
   }
+}
+
+
+async function checkForBlockedDues(feeIds: string[], fineIds: string[]) {
+  const BLOCKING_STATUSES = ["pending", "verified"];
+
+  const isBlocked = async (col: string, docId: string) => {
+    const snap = await adminDb
+      .collection(col).doc(docId)
+      .collection("paymentHistory")
+      .where("status", "in", BLOCKING_STATUSES)
+      .limit(1)
+      .get();
+    return snap.empty ? null : docId;
+  };
+
+  const [blockedFees, blockedFines] = await Promise.all([
+    Promise.all(feeIds.map(id => isBlocked("fees",  id))),
+    Promise.all(fineIds.map(id => isBlocked("fines", id))),
+  ]);
+
+  return {
+    fees:  blockedFees.filter(Boolean)  as string[],
+    fines: blockedFines.filter(Boolean) as string[],
+  };
 }

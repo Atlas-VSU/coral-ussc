@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { collection, query, where, onSnapshot } from "firebase/firestore"
 import { db } from "@/firebase/firebase.config"
+import { fetchClearanceDocuments } from "@/firebase"
 import type { ClearanceStatus } from "../types"
 
 export function useClearances(orgId: string | undefined) {
@@ -16,7 +17,24 @@ export function useClearances(orgId: string | undefined) {
       return
     }
 
-    setLoading(true)
+    let isMounted = true;
+    
+    // Initial fetch from cache/API
+    const loadInitialData = async () => {
+      try {
+        const data = await fetchClearanceDocuments(orgId);
+        if (isMounted) {
+          setClearances(data);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Initial clearance fetch failed:", err);
+        // Fallback: loading will remain true until snapshot arrives or error handled
+      }
+    };
+
+    loadInitialData();
+
     const clearanceRef = collection(db, "clearanceStatus")
     const q = query(
       clearanceRef,
@@ -31,18 +49,26 @@ export function useClearances(orgId: string | undefined) {
           id: doc.id,
           ...doc.data(),
         })) as ClearanceStatus[]
-        setClearances(docs)
-        setLoading(false)
-        setError(null)
+        
+        if (isMounted) {
+          setClearances(docs)
+          setLoading(false)
+          setError(null)
+        }
       },
       (err) => {
         console.error("Error fetching clearances:", err)
-        setError(err instanceof Error ? err : new Error("Failed to fetch clearances"))
-        setLoading(false)
+        if (isMounted) {
+          setError(err instanceof Error ? err : new Error("Failed to fetch clearances"))
+          setLoading(false)
+        }
       }
     )
 
-    return () => unsubscribe()
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    }
   }, [orgId])
 
   return { clearances, loading, error, setClearances }

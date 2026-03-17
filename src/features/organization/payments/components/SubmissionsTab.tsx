@@ -40,7 +40,7 @@ export function SubmissionsTab({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <SearchInput
-              placeholder="Search student or reference..."
+              placeholder="Search student..."
               value={search}
               onChange={v => { onSearchChange(v); onPageChange(1) }}
               className="w-full sm:w-64"

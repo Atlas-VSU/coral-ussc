@@ -1,25 +1,24 @@
 import { PaymentStatus } from "@/constants/status";
-import { getFineByStudentId } from "@/firebase/fines/read/fines";
+import { getFineByStudentId, getAllFines, getAllUnpaidFinesforOrg } from "@/firebase/fines/read/fines";
 import { db } from "@/firebase/firebase.config";
 import { PaymentFormData } from "@/lib/validators";
-import { addDoc, collection, doc, Timestamp, updateDoc, writeBatch } from "firebase/firestore";
+import { addDoc, collection, doc, Timestamp, updateDoc } from "firebase/firestore";
 
-import { updateProofOfPaymentHistoryId } from "../update/proofOfPayment";
-import { nanoid } from 'nanoid';
-import { Fee } from "@/features/organization/fees/types";
+
 import { generateReceiptId } from "@/features/organization/payments/utils";
-import { getFeeByStudentId, recordManualPaymentAndUpdateClearance } from "@/firebase/fees";
-import { useAuth } from "@/hooks/useAuth";
+import { getFeeByStudentId } from "@/firebase/fees";
 import { getCurrentUserData } from "@/firebase/users";
 import { Member } from "@/features/organization/members/types";
-import { createFinesPaymentHistory } from "./paymentHistory";
+import { createFinesPaymentHistory, createOnlinePaymentHistory } from "./paymentHistory";
 import { UnpaidDue } from "@/features/organization/payments/types";
 import { FineItem, StudentFines } from "@/features/organization/fines/types";
+import { cacheService } from "@/services/cacheService";
+import { getAllProofOfPayments } from "../read/proofOfPayment";
 
 export const createOnlineProofOfPayment = async (
     payment: PaymentFormData, type: string ) => {
 
-    let transaction;
+    let transaction: any;
     const currentUser = await getCurrentUserData() as unknown as Member;
     try{
          if (type === "fines") {
@@ -41,17 +40,95 @@ export const createOnlineProofOfPayment = async (
                 verifiedBy: currentUser.id!,
                 verifiedByName: currentUser.firstName + " " + currentUser.lastName,
                 verifiedAt: Timestamp.now(),
+                isArchived: false,
             }
             if (payment.paymentHistoryId) {
                 (paymentData as any).paymentHistoryId = payment.paymentHistoryId;
             }
             const docRef = await addDoc(collection(db, "proofOfPayments"), paymentData);
+            
+            cacheService.invalidateByPrefix('payments:');
+            cacheService.invalidateByPrefix('fines:');
+            cacheService.invalidateByPrefix('fees:');
+            cacheService.invalidateByPrefix('clearance:');
+            getAllProofOfPayments(transaction.orgId).catch(console.error);
+
             return docRef.id;
         }
         
-    }catch{
+    }catch(error){
+        console.error("Error creating online proof of payment:", error);
         throw new Error("Failed to submit proof of payment. Please try again.");
     }
+}
+
+
+export const createBulkOnlineProofOfPayment = async (
+  payment: PaymentFormData,
+  dues: {refId: string, title: string, amount: number, paymentType: string, parentFineId: string}[],
+  userId: string,
+) => {
+
+  const tempOrgIdForStudents = "5nii7NKwaiTM0ZigxVBcUzQTyTu2"; //hardcoded for now since wala paman sila portal, necessary man ang ordId sa queries
+  
+  try {
+      const paymentData = {
+        ...payment,
+        orgId: tempOrgIdForStudents,
+        userId: userId,
+        paymentType: payment.type,
+        status: PaymentStatus.PENDING,
+        submittedAt: Timestamp.now(),
+        metadata: {},
+        verifiedBy:"",
+        verifiedByName: "",
+        verifiedAt: null,
+        isArchived: false,
+      }
+      const ref = collection(db, "proofOfPayments");
+      const docRef = await addDoc(ref, paymentData);
+      const items = [];
+      
+    for (const due of dues) {
+      let referenceId = "";
+      if (due.paymentType === "fines") {
+        referenceId = due.parentFineId;
+      }
+      else if (due.paymentType === "fees") {
+        referenceId = due.refId;
+       }
+        await createOnlinePaymentHistory(payment, referenceId, docRef.id, userId, due);
+        const clearanceRef = doc(db, 'clearanceStatus', userId);
+        await updateDoc(clearanceRef, {
+          [`blockingItems.${due.refId}.pendingReview`]: true,
+        })
+        items.push({
+          refId: due.refId || null,
+          title: due.title || null,
+          amount: due.amount || null,
+          paymentType: due.paymentType || null,
+          parentFineId: due.paymentType === "fines" ? due.parentFineId : "",
+        })
+    }
+        await updateDoc(doc(db, "clearanceStatus", userId), { status: "pending" });
+    
+        await updateDoc(doc(db, "proofOfPayments", docRef.id), {
+          metadata: {
+            items: items,
+          }
+        })
+
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('clearance:');
+        getAllProofOfPayments(tempOrgIdForStudents).catch(console.error);
+
+    return [{ success: true, message: "Proof of payment submitted successfully." }];
+  }catch(error) {
+    console.error("Error creating bulk online proof of payment:", error);
+    return [{ success: false, message: "Failed to submit proof of payment. Please try again." }, {status: 500}];
+  }
 }
 
 
@@ -87,9 +164,17 @@ export const createOfflineFinesProofOfPayment = async (
                 verifiedByName: currentUser.firstName + " " + currentUser.lastName,
                 verifiedAt: Timestamp.now(),
                 receiptCode: generateReceiptId(),
+                isArchived: false,
             }
 
             const docRef = await addDoc(collection(db, "proofOfPayments"), paymentData);
+            
+            cacheService.invalidateByPrefix('payments:');
+            cacheService.invalidateByPrefix('fines:');
+            cacheService.invalidateByPrefix('fees:');
+            cacheService.invalidateByPrefix('clearance:');
+            getAllProofOfPayments(transaction.orgId).catch(console.error);
+
             return docRef.id;
         }
         
@@ -119,6 +204,7 @@ export const createBulkOfflineProofOfPayment = async (
     verifiedByName: verifierName,
     verifiedAt: Timestamp.now(),
     receiptCode: receipt,
+    isArchived: false,
   }
   const ref = collection(db, "proofOfPayments");
   const docRef = await addDoc(ref, paymentData);
@@ -138,4 +224,12 @@ export const createBulkOfflineProofOfPayment = async (
         items: items,
       }
     } )
+
+    cacheService.invalidateByPrefix('payments:');
+    cacheService.invalidateByPrefix('fines:');
+    cacheService.invalidateByPrefix('fees:');
+    cacheService.invalidateByPrefix('clearance:');
+    getAllProofOfPayments(currentUser.id!).catch(console.error);
+    getAllFines().catch(console.error);
+    getAllUnpaidFinesforOrg().catch(console.error);
 }
