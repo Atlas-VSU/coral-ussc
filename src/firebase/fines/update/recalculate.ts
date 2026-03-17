@@ -1,6 +1,8 @@
 import { FineStatus } from "@/constants/status";
 import { db } from "@/firebase/firebase.config";
-import { doc, getDocs, query, collection, where, updateDoc, Timestamp, getDoc } from "firebase/firestore";
+import { doc, updateDoc, Timestamp, getDoc } from "firebase/firestore";
+import { cacheService } from "@/services/cacheService";
+import { getAllFines, getAllUnpaidFinesforOrg } from "../read/fines";
 
 
   // Centralized error handler
@@ -20,6 +22,8 @@ export const recalculateFines = async (fineId: string, addedAmount?: number | nu
         }
 
         const fineData = fineDoc.data();
+        if (!fineData) return { success: false };
+
         let newStatus =  fineData.status;
         let newBalance = fineData.balance;
 
@@ -39,6 +43,9 @@ export const recalculateFines = async (fineId: string, addedAmount?: number | nu
             if(newBalance <= 0){
                 newStatus = FineStatus.PAID;
             }
+            else if (payment > 0 && fineData.accumulatedAmount > 0) {
+                newStatus = FineStatus.PARTIAL;
+            }
         }
         if (waived && waivedAmount) {
             newAccumulatedAmount -= waivedAmount;
@@ -57,6 +64,12 @@ export const recalculateFines = async (fineId: string, addedAmount?: number | nu
             status: newStatus,
             "metadata.updatedAt": Timestamp.now(),
         });
+        
+        cacheService.invalidateByPrefix('fines:');
+        // Pre-emptive warming
+        getAllFines().catch(console.error);
+        getAllUnpaidFinesforOrg().catch(console.error);
+
         return { 
             success: true, 
             balance: newBalance, 

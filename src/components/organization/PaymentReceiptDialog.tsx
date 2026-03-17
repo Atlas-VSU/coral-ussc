@@ -8,7 +8,7 @@ import Image from "next/image"
 
 export interface ReceiptItem {
   name: string
-  type: "fee" | "fine"
+  type: "fees" | "fines"
   amount: number
 }
 
@@ -31,6 +31,7 @@ type Props = {
 
 export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props) {
   function handlePrint() {
+
     if (!data) return
 
     const itemRows = data.items
@@ -111,7 +112,6 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
   }
 
   if (!data) return null
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">

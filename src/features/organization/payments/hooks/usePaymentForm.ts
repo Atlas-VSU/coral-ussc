@@ -13,32 +13,43 @@ export interface ImageData {
 
 export type FormStatus = "idle" | "submitting" | "success";
 
-export function usePaymentForm() {
+interface UsePaymentFormOptions {
+  initialValues?: Partial<PaymentFormData>;
+  onSubmitPayment?: (data: PaymentFormData, image: ImageData | null) => Promise<void>;
+}
+
+export function usePaymentForm(options?: UsePaymentFormOptions) {
   const [image, setImage] = useState<ImageData | null>(null);
   const [status, setStatus] = useState<FormStatus>("idle");
 
+  const defaultValues: PaymentFormData = {
+    userName: "",
+    studentId: "",
+    amount: 0,
+    paymentMethod: PaymentMethods.GCASH,
+    referenceNumber: "",
+    senderNumber: "",
+    notes: "",
+    rejectionReason: "",
+    imageUrl: "",
+    type: undefined,
+    paymentHistoryId: undefined,
+    referenceId: undefined,
+    ...options?.initialValues,
+  };
+
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
-    defaultValues: {
-      userName: "",
-      studentId: "",
-      amount: 0,
-      paymentMethod: PaymentMethods.GCASH,
-      referenceNumber: "",
-      senderNumber: "",
-      notes: "",
-      rejectionReason: "",
-      imageUrl: "",
-    },
+    defaultValues,
   });
 
   const paymentMethod = form.watch("paymentMethod");
-  const needsRef = ["gcash", "bank_transfer"].includes(paymentMethod ?? "");
+  const needsRef = paymentMethod === "gcash";
   const isGcash  = paymentMethod === "gcash";
 
 
   const handleMethodSelect = (value: OnlinePaymentMethod) => {
-    form.setValue("paymentMethod", value, { shouldValidate: true });
+    form.setValue("paymentMethod", PaymentMethods.GCASH, { shouldValidate: true });
     form.setValue("referenceNumber", "");
     form.setValue("senderNumber", "");
     form.clearErrors(["referenceNumber", "senderNumber"]);
@@ -47,6 +58,9 @@ export function usePaymentForm() {
   const onSubmit = async (data: PaymentFormData) => {
     setStatus("submitting");
     try {
+      if (options?.onSubmitPayment) {
+        await options.onSubmitPayment(data, image);
+      } else {
       // ── TODO: Upload image to Firebase/Supabase storage ──────────────
       // Firebase:
       //   const storageRef = ref(storage, `payment-receipts/${Date.now()}-${image?.file.name}`);
@@ -59,8 +73,8 @@ export function usePaymentForm() {
       //   data.imageUrl = supabase.storage.from('receipts').getPublicUrl(uploaded!.path).data.publicUrl;
       // ─────────────────────────────────────────────────────────────────
 
-      console.log("Submitting:", data);
       await new Promise(r => setTimeout(r, 1800)); // remove when wiring real upload
+      }
       setStatus("success");
     } catch (error) {
       console.error("Submission failed:", error);
@@ -69,7 +83,7 @@ export function usePaymentForm() {
   };
 
   const handleReset = () => {
-    form.reset();
+    form.reset(defaultValues);
     setImage(null);
     setStatus("idle");
   };

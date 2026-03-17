@@ -101,7 +101,7 @@ const CustomTooltip = ({
                   attendanceRate: string;
                 };
               },
-              index: number
+              index: number,
             ) => (
               <div
                 key={`item-${index}`}
@@ -120,7 +120,7 @@ const CustomTooltip = ({
                   </span>
                 </div>
               </div>
-            )
+            ),
           )}
           {event && event.attendanceRate && (
             <div className="pt-3 mt-3 border-t border-border/50">
@@ -421,7 +421,7 @@ export function MobileMembersStats({
                         <div className="gap-2 text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">
                           <span className="font-medium">
                             {new Date(
-                              internalSelectedEvent.date
+                              internalSelectedEvent.date,
                             ).toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
@@ -435,7 +435,9 @@ export function MobileMembersStats({
                 </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-white/98 dark:bg-gray-900/98 backdrop-blur-md border-2 border-slate-200/80 dark:border-slate-700/80 shadow-xl rounded-lg max-h-80">
-                {eventAttendance.map((event, index) => (
+                {Array.from(
+                  new Map(eventAttendance.map((e) => [e.id, e])).values(),
+                ).map((event, index) => (
                   <SelectItem
                     key={event.id}
                     value={event.id}

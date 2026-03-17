@@ -2,44 +2,65 @@ import { PaymentStatus } from "@/constants/status";
 import { PaymentType } from "@/constants/types";
 import { FinesPaymentLog } from "@/features/organization/fines/types";
 import { db } from "@/firebase/firebase.config";
-import { collection, doc, getDoc, getDocs } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 
 
 export const getPaymentHistoryById = async (paymentHistoryId: string, paymentType: PaymentType, paymentReferenceId: string) => { 
-    try {
-        const docRef = doc(db, paymentType, paymentReferenceId, "paymentHistory", paymentHistoryId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() } as FinesPaymentLog;
-        } else {
-            return null;
-        }
-    } catch (error) {
-        console.error("Error fetching payment history:", error);
-        throw new Error("Failed to fetch payment history. Please try again.");
-    }
+    return cacheService.getOrFetch(
+        `payments:historyDoc:${paymentReferenceId}:${paymentHistoryId}`,
+        async () => {
+            const docRef = doc(db, paymentType, paymentReferenceId, "paymentHistory", paymentHistoryId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                return { id: docSnap.id, ...docSnap.data() } as FinesPaymentLog;
+            } else {
+                return null;
+            }
+        },
+        CACHE_DURATIONS.PAYMENT_HISTORY
+    );
 }
 
-export const getFinesPaymentHistoriesByReferenceId = async (paymentReferenceId: string, paymentType: PaymentType) => {
-    try {
-        const subColRef = collection(db, paymentType, paymentReferenceId, "paymentHistory");
-        const querySnapshot = await getDocs(subColRef);
-        const paymentHistories = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        return paymentHistories as FinesPaymentLog[];
-    } catch (error) {
-        console.error("Error fetching payment histories:", error);
-        throw new Error("Failed to fetch payment histories. Please try again.");
-    }
+export const getFinesPaymentHistoriesByReferenceId = async (paymentReferenceId: string) => {
+    return cacheService.getOrFetch(
+        CACHE_KEYS.paymentHistory(paymentReferenceId),
+        async () => {
+            const subColRef = collection(db, "fines", paymentReferenceId, "paymentHistory");
+            const querySnapshot = await getDocs(subColRef);
+            return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as FinesPaymentLog[];
+        },
+        CACHE_DURATIONS.PAYMENT_HISTORY
+    );
 }
 
 export const getFinesVerifiedPaymentHistoriesByReferenceId = async (paymentReferenceId: string, paymentType: PaymentType) => {
-    try {
-        const subColRef = collection(db, paymentType, paymentReferenceId, "paymentHistory");
-        const querySnapshot = await getDocs(subColRef);
-        const paymentHistories = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        return (paymentHistories as FinesPaymentLog[]).filter(ph => ph.status === PaymentStatus.VERIFIED);
-    } catch (error) {
-        console.error("Error fetching approved payment histories:", error);
-        throw new Error("Failed to fetch approved payment histories. Please try again.");
-    }
+    return cacheService.getOrFetch(
+        CACHE_KEYS.verifiedHistory(paymentType, paymentReferenceId),
+        async () => {
+            const subColRef = collection(db, paymentType, paymentReferenceId, "paymentHistory");
+            const querySnapshot = await getDocs(subColRef);
+            const paymentHistories = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as FinesPaymentLog[];
+            return paymentHistories.filter(ph => ph.status === PaymentStatus.VERIFIED);
+        },
+        CACHE_DURATIONS.PAYMENT_HISTORY
+    );
+}
+
+export const getPendingPaymentHistory = async (paymentTypeRefId: string, paymentType: string) => {
+    return cacheService.getOrFetch(
+        `payments:pending:${paymentType}:${paymentTypeRefId}`,
+        async () => {
+            console.log("Fetching pending payment history for", paymentType, paymentTypeRefId);
+            const subColRef = collection(db, paymentType, paymentTypeRefId, "paymentHistory");
+            const querySnapshot = await getDocs(query(subColRef, where("status", "==", "pending")));
+            if (querySnapshot.empty) return null;
+            const firstDoc = querySnapshot.docs[0] 
+            return {
+                id: firstDoc.id,
+                ...firstDoc.data()
+            } as FinesPaymentLog;
+        },
+        CACHE_DURATIONS.PAYMENT_HISTORY
+    );
 }

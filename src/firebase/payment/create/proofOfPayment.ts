@@ -1,23 +1,24 @@
 import { PaymentStatus } from "@/constants/status";
-import { getFineByStudentId } from "@/firebase/fines/read/fines";
+import { getFineByStudentId, getAllFines, getAllUnpaidFinesforOrg } from "@/firebase/fines/read/fines";
 import { db } from "@/firebase/firebase.config";
 import { PaymentFormData } from "@/lib/validators";
-import { addDoc, collection, doc, Timestamp, updateDoc, writeBatch } from "firebase/firestore";
+import { addDoc, collection, doc, Timestamp, updateDoc } from "firebase/firestore";
 
-import { updateProofOfPaymentHistoryId } from "../update/proofOfPayment";
-import { nanoid } from 'nanoid';
-import { Fee } from "@/features/organization/fees/types";
+
 import { generateReceiptId } from "@/features/organization/payments/utils";
-import { getFeeByStudentId, recordManualPaymentAndUpdateClearance } from "@/firebase/fees";
-import { useAuth } from "@/hooks/useAuth";
+import { getFeeByStudentId } from "@/firebase/fees";
 import { getCurrentUserData } from "@/firebase/users";
 import { Member } from "@/features/organization/members/types";
-import { createFinesPaymentHistory } from "./paymentHistory";
+import { createFinesPaymentHistory, createOnlinePaymentHistory } from "./paymentHistory";
+import { UnpaidDue } from "@/features/organization/payments/types";
+import { FineItem, StudentFines } from "@/features/organization/fines/types";
+import { cacheService } from "@/services/cacheService";
+import { getAllProofOfPayments } from "../read/proofOfPayment";
 
 export const createOnlineProofOfPayment = async (
     payment: PaymentFormData, type: string ) => {
 
-    let transaction;
+    let transaction: any;
     const currentUser = await getCurrentUserData() as unknown as Member;
     try{
          if (type === "fines") {
@@ -35,35 +36,117 @@ export const createOnlineProofOfPayment = async (
                 paymentType:payment.type,
                 status: PaymentStatus.PENDING,
                 submittedAt: Timestamp.now(),
-                metaData: {},
+                metadata: {},
                 verifiedBy: currentUser.id!,
                 verifiedByName: currentUser.firstName + " " + currentUser.lastName,
                 verifiedAt: Timestamp.now(),
+                isArchived: false,
             }
             if (payment.paymentHistoryId) {
                 (paymentData as any).paymentHistoryId = payment.paymentHistoryId;
             }
             const docRef = await addDoc(collection(db, "proofOfPayments"), paymentData);
+            
+            cacheService.invalidateByPrefix('payments:');
+            cacheService.invalidateByPrefix('fines:');
+            cacheService.invalidateByPrefix('fees:');
+            cacheService.invalidateByPrefix('clearance:');
+            getAllProofOfPayments(transaction.orgId).catch(console.error);
+
             return docRef.id;
         }
         
-    }catch{
+    }catch(error){
+        console.error("Error creating online proof of payment:", error);
         throw new Error("Failed to submit proof of payment. Please try again.");
     }
 }
 
 
-export const createOfflineProofOfPayment = async (
-    payment: PaymentFormData, type: string) => {
-    let transaction
+export const createBulkOnlineProofOfPayment = async (
+  payment: PaymentFormData,
+  dues: {refId: string, title: string, amount: number, paymentType: string, parentFineId: string}[],
+  userId: string,
+) => {
+
+  const tempOrgIdForStudents = "5nii7NKwaiTM0ZigxVBcUzQTyTu2"; //hardcoded for now since wala paman sila portal, necessary man ang ordId sa queries
+  
+  try {
+      const paymentData = {
+        ...payment,
+        orgId: tempOrgIdForStudents,
+        userId: userId,
+        paymentType: payment.type,
+        status: PaymentStatus.PENDING,
+        submittedAt: Timestamp.now(),
+        metadata: {},
+        verifiedBy:"",
+        verifiedByName: "",
+        verifiedAt: null,
+        isArchived: false,
+      }
+      const ref = collection(db, "proofOfPayments");
+      const docRef = await addDoc(ref, paymentData);
+      const items = [];
+      
+    for (const due of dues) {
+      let referenceId = "";
+      if (due.paymentType === "fines") {
+        referenceId = due.parentFineId;
+      }
+      else if (due.paymentType === "fees") {
+        referenceId = due.refId;
+       }
+        await createOnlinePaymentHistory(payment, referenceId, docRef.id, userId, due);
+        const clearanceRef = doc(db, 'clearanceStatus', userId);
+        await updateDoc(clearanceRef, {
+          [`blockingItems.${due.refId}.pendingReview`]: true,
+        })
+        items.push({
+          refId: due.refId || null,
+          title: due.title || null,
+          amount: due.amount || null,
+          paymentType: due.paymentType || null,
+          parentFineId: due.paymentType === "fines" ? due.parentFineId : "",
+        })
+    }
+        await updateDoc(doc(db, "clearanceStatus", userId), { status: "pending" });
+    
+        await updateDoc(doc(db, "proofOfPayments", docRef.id), {
+          metadata: {
+            items: items,
+          }
+        })
+
+        cacheService.invalidateByPrefix('payments:');
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('fees:');
+        cacheService.invalidateByPrefix('clearance:');
+        getAllProofOfPayments(tempOrgIdForStudents).catch(console.error);
+
+    return [{ success: true, message: "Proof of payment submitted successfully." }];
+  }catch(error) {
+    console.error("Error creating bulk online proof of payment:", error);
+    return [{ success: false, message: "Failed to submit proof of payment. Please try again." }, {status: 500}];
+  }
+}
+
+
+export const createOfflineFinesProofOfPayment = async (
+  payment: PaymentFormData, type: string, fine: StudentFines, fineItems?: FineItem[]) => {
+  const items = [];
     const currentUser = await getCurrentUserData() as unknown as Member;
     try {
-        console.log("Creating offline proof of payment for", payment, "of type", type);
-        if (type === "fines") {
-            transaction = await getFineByStudentId(payment.studentId);
-        } else if (type === "fees") {
-            transaction = await getFeeByStudentId(payment.studentId);
-        }
+      const transaction = await getFineByStudentId(payment.studentId);
+      for (const item of fineItems ?? []) { 
+        items.push({
+          refId: item.id,
+          title: item.eventName,
+          amount: item.amount,
+          paymentType: type,
+          parentFineId: fine.id!,
+          })
+      }
         if (transaction)
         {
             const paymentData = {
@@ -74,15 +157,24 @@ export const createOfflineProofOfPayment = async (
                 paymentType:type,
                 status: PaymentStatus.VERIFIED,
                 submittedAt: Timestamp.now(),
-                metaData: {},
+                metadata: {
+                  items: items,
+                },
                 verifiedBy: currentUser.id!,
                 verifiedByName: currentUser.firstName + " " + currentUser.lastName,
                 verifiedAt: Timestamp.now(),
                 receiptCode: generateReceiptId(),
+                isArchived: false,
             }
-            console.log("Constructed payment data for offline proof:", paymentData);
+
             const docRef = await addDoc(collection(db, "proofOfPayments"), paymentData);
-            console.log("Offline proof of payment created with ID:", docRef.id);
+            
+            cacheService.invalidateByPrefix('payments:');
+            cacheService.invalidateByPrefix('fines:');
+            cacheService.invalidateByPrefix('fees:');
+            cacheService.invalidateByPrefix('clearance:');
+            getAllProofOfPayments(transaction.orgId).catch(console.error);
+
             return docRef.id;
         }
         
@@ -93,150 +185,51 @@ export const createOfflineProofOfPayment = async (
 }
 
 export const createBulkOfflineProofOfPayment = async (
-  payments: PaymentFormData[],
+  payment: PaymentFormData,
   receipt: string,
-  fees: Fee[]
+  dues: UnpaidDue[],
+  userId: string,
 ) => {
   const currentUser = await getCurrentUserData() as unknown as Member;
-  const bulkId = `BULK-${nanoid(10)}`;
   const verifierName = `${currentUser.firstName} ${currentUser.lastName}`;
-  const now = Timestamp.now();
-
-
-  const finePayments = payments.filter(p => p.type === "fines");
-  const feePayments  = payments.filter(p => p.type === "fees");
-
-  const fineTransactions = await Promise.all(
-    finePayments.map(p => getFineByStudentId(p.studentId))
-  );
-
-  const feesPool = [...fees]; 
-  const feeTransactions = feePayments.map(payment => {
-    const index = feesPool.findIndex(f => f.id === payment.referenceId);
-    if (index === -1) return null;
-    return feesPool.splice(index, 1)[0]; 
-  });
-
-  const batch = writeBatch(db);
-  const docRefs: string[] = [];
-
-  // used to link proof and history after batch
-  const fineHistoryLinks: Record<string, string> = {};
-
-  const feeTasks: Array<() => Promise<void>> = [];
-
-  // Process fines
-  for (let i = 0; i < finePayments.length; i++) {
-    const payment     = finePayments[i];
-    const transaction = fineTransactions[i];
-    if (!transaction) continue;
-
-    const docRef = doc(collection(db, "proofOfPayments"));
-    docRefs.push(docRef.id);
-
-    batch.set(docRef, buildPaymentData(payment, transaction, currentUser.id!, verifierName, bulkId, receipt, now));
-
-    const historyId = await createFinesPaymentHistory(payment, transaction.id!, docRef.id);
-    fineHistoryLinks[docRef.id] = historyId;
-  }
-
-  // Process fees
-  for (let i = 0; i < feePayments.length; i++) {
-    const payment     = feePayments[i];
-    const transaction = feeTransactions[i];
-    if (!transaction) continue;
-
-    feeTasks.push(() =>
-      recordManualPaymentAndUpdateClearance(
-        transaction.id!,
-        payment.amount.toLocaleString(),
-        payment.paymentMethod as "gcash" | "cash" | "bank_transfer" | "waiver",
-        currentUser.id!,
-        transaction.userId,
-        verifierName,
-      ).then(() => {})
-    );
-  }
-
-
-  for (const [proofId, historyId] of Object.entries(fineHistoryLinks)) {
-    batch.update(doc(db, "proofOfPayments", proofId), {
-      paymentHistoryId: historyId,
-      updatedAt: now,
-    });
-  }
-
-  await batch.commit();
-
-  await Promise.all(feeTasks.map(task => task()));
-
-  return docRefs;
-};
-
-//  Helper
-function buildPaymentData(
-  payment: PaymentFormData,
-  transaction: { orgId: string; userId: string; id?: string },
-  verifiedBy: string,
-  verifiedByName: string,
-  bulkId: string,
-  receipt: string,
-  now: Timestamp,
-) {
-  return {
+  const paymentData = {
     ...payment,
-    orgId:          transaction.orgId,
-    userId:         transaction.userId,
-    referenceId:    transaction.id,
-    paymentType:    payment.type,
-    status:         PaymentStatus.VERIFIED,
-    submittedAt:    now,
-    metaData:       {},
-    verifiedBy,
-    verifiedByName,
-    verifiedAt:     now,
-    bulkPaymentId:  bulkId,
-    receiptCode:    receipt,
-  };
+    orgId: currentUser.id!,
+    userId: userId,
+    paymentType: payment.type,
+    status: PaymentStatus.VERIFIED,
+    submittedAt: Timestamp.now(),
+    metadata: {},
+    verifiedBy: currentUser.id!,
+    verifiedByName: verifierName,
+    verifiedAt: Timestamp.now(),
+    receiptCode: receipt,
+    isArchived: false,
+  }
+  const ref = collection(db, "proofOfPayments");
+  const docRef = await addDoc(ref, paymentData);
+  const items = [];
+  for (const due of dues) {
+    await createFinesPaymentHistory(payment, due.parentId!, docRef.id, userId, due);
+    items.push({
+      refId: due.id,
+      title: due.name,
+      amount: due.balance,
+      paymentType: due.type,
+      parentFineId: due.type === "fines" ? due.parentId : "",
+    })
+  }
+  await updateDoc(doc(db, "proofOfPayments", docRef.id), {
+      metadata: {
+        items: items,
+      }
+    } )
+
+    cacheService.invalidateByPrefix('payments:');
+    cacheService.invalidateByPrefix('fines:');
+    cacheService.invalidateByPrefix('fees:');
+    cacheService.invalidateByPrefix('clearance:');
+    getAllProofOfPayments(currentUser.id!).catch(console.error);
+    getAllFines().catch(console.error);
+    getAllUnpaidFinesforOrg().catch(console.error);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

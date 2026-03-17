@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useRef, useEffect } from "react"
+import { useCallback, useRef, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Timestamp } from "firebase/firestore"
 import { useAuth } from "@/hooks/useAuth"
@@ -9,12 +9,17 @@ import { PaymentMethod } from "../../fees/types"
 import { approvePaymentClearanceUpdate, logManualPaymentClearanceUpdate, rejectPaymentClearanceUpdate } from "@/firebase"
 import { recalculateClearanceStatus } from "@/firebase/clearance"
 import { PaymentType } from "@/constants/types"
+import { generateReceiptId } from "../../payments/utils"
+import { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
+import { set } from "zod"
 
 export function useClearanceActions(
   clearances: ClearanceStatus[], 
   setClearances: React.Dispatch<React.SetStateAction<ClearanceStatus[]>>
 ) {
   const { user: currentUser } = useAuth()
+  const [receiptOpen, setReceiptOpen] = useState(false)
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
   
   // Use a ref to store the latest clearances to avoid dependency churn in callbacks
   const clearancesRef = useRef(clearances)
@@ -28,15 +33,16 @@ export function useClearanceActions(
     newStatus: "paid" | "unpaid",
     options?: { 
       addPaymentLog?: { 
-        items: { refId: string; amount: number; paymentType: PaymentType }[]; 
+        items: { refId: string; title: string; amount: number; paymentType: PaymentType }[]; 
         total: number; 
         date: string; 
         method: PaymentMethod; 
         refNo?: string;
         overallPaymentType?: string | PaymentType; 
       },
-      rejectionReason?: string 
-    }
+      rejectionReason?: string, 
+    },
+    receiptCode?: string,
   ) => {
     if (!currentUser) {
       toast.error("You must be logged in to perform this action")
@@ -64,13 +70,16 @@ export function useClearanceActions(
 
       // 2. Perform Single Batched Backend Update
       if (newStatus === "paid" && !options?.addPaymentLog) {
-        await approvePaymentClearanceUpdate(
+        const result = await approvePaymentClearanceUpdate(
           clearanceId, 
           itemsToUpdate, 
           currentUser.uid, 
           `${currentUser.firstName} ${currentUser.lastName}`, 
-          studentData
+          studentData,
+          receiptCode
         )
+        setReceiptData(result?.receipt!);
+        setReceiptOpen(true);
       } else if (newStatus === "unpaid" && options?.rejectionReason) {
         await rejectPaymentClearanceUpdate(
           clearanceId, 
@@ -90,7 +99,8 @@ export function useClearanceActions(
           options.addPaymentLog.method,
           currentUser.uid,
           `${currentUser.firstName} ${currentUser.lastName}`,
-          options.addPaymentLog.overallPaymentType 
+          options.addPaymentLog.overallPaymentType,  
+          receiptCode 
         )
       }
 
@@ -115,7 +125,7 @@ export function useClearanceActions(
           
           if (newStatus === "unpaid" && options?.rejectionReason) {
             newItem.paymentHistory = newItem.paymentHistory.map(p => 
-              p.status === "pending_verification" 
+              p.status === "pending" 
                 ? {
                     ...p,
                     status: "rejected",
@@ -129,7 +139,7 @@ export function useClearanceActions(
           
           if (newStatus === "paid" && !options?.addPaymentLog) {
              newItem.paymentHistory = newItem.paymentHistory.map(p => 
-               p.status === "pending_verification" 
+               p.status === "pending" 
                  ? {
                      ...p,
                      status: "verified",
@@ -171,13 +181,15 @@ export function useClearanceActions(
     clearanceId: string,
     referenceIds: string[],
     totalAmount: number,
-    paymentDate: string
+    paymentDate: string,
+    receiptCode?: string,
   ) => {
     const clearance = clearancesRef.current.find(c => c.id === clearanceId)
     if (!clearance) return
 
     const items = referenceIds.map(id => ({
       refId: id,
+      title: clearance.blockingItems[id]?.title,
       amount: clearance.blockingItems[id]?.balance || 0,
       paymentType: clearance.blockingItems[id]?.type === PaymentType.FEES ? PaymentType.FEES : PaymentType.FINES,
       parentFineId: clearance.blockingItems[id]?.parentFineId || ""
@@ -202,10 +214,12 @@ export function useClearanceActions(
         total: totalAmount,
         date: paymentDate,
         method: "cash",
-        overallPaymentType
-      }
-    })
+        overallPaymentType,
+      },
+    }, receiptCode,
+      
+    )
   }, [updateItemStatus]) // clearances removed from dependencies
 
-  return { approvePayment, rejectPayment, logManualPayment }
+  return { approvePayment, rejectPayment, logManualPayment, receiptOpen, setReceiptOpen, receiptData, setReceiptData }
 }

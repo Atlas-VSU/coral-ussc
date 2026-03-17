@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PaymentLog } from "../types";
-import { approvePaymentTransaction, fetchFee, recordManualPaymentAndUpdateClearance, rejectPaymentTransaction } from "@/firebase/fees";
+import { approvePaymentTransaction, archiveFeeDocuments, fetchFee, recordManualPaymentAndUpdateClearance, rejectPaymentTransaction } from "@/firebase/fees";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { collection, doc, getDoc, query, where, getDocs } from "firebase/firestore";
@@ -8,16 +8,26 @@ import { db } from "@/firebase/firebase.config";
 import { verifyPaymentHistory, rejectPaymentHistory } from "@/firebase/payment/update/paymentHistory";
 import { ProofOfPayment } from "@/features/organization/fines/types";
 import { PaymentStatus } from "@/constants/status";
+import { ReceiptData } from "@/components/organization/PaymentReceiptDialog";
+import { generateReceiptId } from "../../payments/utils";
+import { getUserById } from "@/firebase";
+import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval";
+import { se } from "date-fns/locale";
+import { getProofOfPaymentById } from "@/firebase/payment/read/proofOfPayment";
 
 export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const [receiptOpen, setReceiptOpen] = useState(false)
+    const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
+
+    const { _approvePayment, _rejectPayment } = usePaymentApproval();
 
     const { user } = useAuth();
     const userId = user?.uid;
 
-    const addManualPayment = async (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", ref?: string) => {
+    const addManualPayment = async (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", ref?: string, senderNumber?: string) => {
         setIsSubmitting(true);
         setError(null);
         setSuccess(false);
@@ -28,9 +38,31 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
         }
 
         try {
-            await recordManualPaymentAndUpdateClearance(feeId, amount, method, userId || "", feeData.userId, user?.firstName + " " + user?.lastName || "",ref)
+            const receipt = generateReceiptId();
+            await recordManualPaymentAndUpdateClearance(feeId, amount, method, userId || "", feeData.userId, user?.firstName + " " + user?.lastName || "",ref, receipt, senderNumber)
             setSuccess(true);
             toast.success("Payment recorded successfully!");
+            const fee = await fetchFee(feeId);
+            if (fee) {
+                const user = await getUserById(fee.userId || "");
+                const currentUser = await getUserById(userId || "");
+                    setReceiptData({
+                        receiptId: receipt,
+                        studentName: user?.firstName + " " + user?.lastName || "",
+                        studentId: user?.studentId || "",
+                        items: [{
+                            name: fee.title,
+                            type: "fees",
+                            amount: fee.amount,
+                            }],
+                        total: parseFloat(amount),
+                        date:  new Date().toISOString().slice(0, 10),
+                        verifiedByName: currentUser?.firstName + " " + currentUser?.lastName || "",
+                        paymentMethod: method,
+                    }); 
+                setReceiptOpen(true);
+            }
+            
             onSuccess?.(feeId);
         } catch (err) {
             setError("Failed to perform action");
@@ -40,39 +72,26 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
         }
     };
 
-    const approvePayment = async (feeId: string, logId: string) => {
+    const approvePayment = async (proofId: string) => {
         setIsSubmitting(true);
         setError(null);
         setSuccess(false);
 
         try {
-            // Fetch the payment log and its associated proof of payment to construct the ProofOfPayment object
-            const feeRef = doc(db, "fees", feeId);
-            const logRef = doc(feeRef, "paymentHistory", logId);
-            const logSnap = await getDoc(logRef);
-            
-            if (!logSnap.exists()) throw new Error("Payment log not found");
-            const logData = logSnap.data();
-            console.log(logData);
-            if (!logData.paymentProofId) {
-                // FALLBACK: If no proof ID, use the old direct transaction method or handle as manual
-                await approvePaymentTransaction(feeId, logId, userId || "");
-            } else {
-                const proofRef = doc(db, "proofOfPayments", logData.paymentProofId);
-                const proofSnap = await getDoc(proofRef);
-                if (!proofSnap.exists()) throw new Error("Proof of payment not found");
-                
-                const proofData = proofSnap.data() as ProofOfPayment;
-                proofData.status = PaymentStatus.VERIFIED;
-                proofData.verifiedBy = userId || "";
-                proofData.verifiedByName = user?.firstName + " " + user?.lastName || "";
-                
-                await verifyPaymentHistory(logId, proofData);
+            const proof = await getProofOfPaymentById(proofId);
+            if (proof) {
+                const result = await _approvePayment(proof);
+                console.log("Approval result:", result?.receipt);
+                setSuccess(true);
+                toast.success("Payment approved successfully!");
+                setReceiptData(result?.receipt! as ReceiptData);
+                setReceiptOpen(true);
+                onSuccess?.(proof.referenceId);
+            }else{
+                toast.error("Proof of payment not found, please try again or contact the developer");
+                throw new Error("Proof of payment not found");
             }
 
-            setSuccess(true);
-            toast.success("Payment approved successfully!");
-            onSuccess?.(feeId);
         } catch (err) {
             console.error(err);
             setError("Failed to perform action");
@@ -82,42 +101,44 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
         }
     };
 
-    const rejectPayment = async (feeId: string, logId: string, reason: string) => {
+    const rejectPayment = async (proofId:string, reason: string) => {
         setIsSubmitting(true);
         setError(null);
         setSuccess(false);
 
         try {
-            const feeRef = doc(db, "fees", feeId);
-            const logRef = doc(feeRef, "paymentHistory", logId);
-            const logSnap = await getDoc(logRef);
-            
-            if (!logSnap.exists()) throw new Error("Payment log not found");
-            const logData = logSnap.data();
-            console.log(logData);
-            if (!logData.paymentProofId) {
-                await rejectPaymentTransaction(feeId, logId, userId || "", reason);
+            const proof = await getProofOfPaymentById(proofId);
+            if (proof) {
+                await _rejectPayment(proof, reason);
+                setSuccess(true);
+                toast.success("Payment rejected successfully!");
+                onSuccess?.(proof.referenceId);
             } else {
-                const proofRef = doc(db, "proofOfPayments", logData.paymentProofId);
-                const proofSnap = await getDoc(proofRef);
-                if (!proofSnap.exists()) throw new Error("Proof of payment not found");
-                
-                const proofData = proofSnap.data() as ProofOfPayment;
-                proofData.status = PaymentStatus.REJECTED;
-                proofData.verifiedBy = userId || "";
-                proofData.verifiedByName = user?.firstName + " " + user?.lastName || "";
-                proofData.rejectionReason = reason;
-                
-                await rejectPaymentHistory(logId, proofData);
+                toast.error("Proof of payment not found, please try again or contact the developer");
+                throw new Error("Proof of payment not found");
             }
-
-            setSuccess(true);
-            toast.success("Payment rejected successfully!");
-            onSuccess?.(feeId);
         } catch (err) {
             console.error(err);
             setError("Failed to perform action");
             toast.error("Failed to reject payment");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const archiveFee = async (feeTitle: string, academicYear: string, semester: string) => {
+        setIsSubmitting(true);
+        setError(null);
+        setSuccess(false);
+
+        try {
+            await archiveFeeDocuments(feeTitle, academicYear, semester);
+            setSuccess(true);
+            toast.success("Fee archived successfully!");
+            onSuccess?.(feeTitle);
+        } catch (err) {
+            setError("Failed to perform action");
+            toast.error("Failed to archive fee");
         } finally {
             setIsSubmitting(false);
         }
@@ -130,5 +151,9 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
         addManualPayment,
         approvePayment,
         rejectPayment,
+        archiveFee,
+        setReceiptOpen,
+        receiptData,
+        receiptOpen,
     };
 }

@@ -1,5 +1,5 @@
 // app/admin/fees/roster/components/PaymentDisplay.tsx
-import { Eye } from "lucide-react";
+import { CheckCircle2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -23,8 +23,8 @@ export function PaymentTable({ logs, onViewDetails }: { logs: PaymentLog[]; onVi
         </TableHeader>
         <TableBody>
           {logs.map((log) => {
-            const config = statusConfig[log.status];
-            const Icon = config.icon;
+            const config = statusConfig[log?.status] || { label: log?.status || "Unknown", variant: "default" };
+            const Icon = config?.icon ?? CheckCircle2;
             return (
               <TableRow key={log.id}>
                 <TableCell className="text-xs font-mono text-muted-foreground">{(log as any).studentId}</TableCell>
@@ -63,8 +63,8 @@ export function PaymentCards({ logs, onViewDetails }: { logs: PaymentLog[]; onVi
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {logs.map((log) => {
-        const config = statusConfig[log.status];
-        const Icon = config.icon;
+        const config = statusConfig[log?.status] || { label: log?.status || "Unknown", variant: "default" };
+        const Icon = config?.icon ?? CheckCircle2;
         return (
           <Card key={log.id} className="border-border">
             <CardContent className="pt-4 pb-3">

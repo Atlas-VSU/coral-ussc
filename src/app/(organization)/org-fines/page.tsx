@@ -11,7 +11,7 @@ import { BulkGenerationDialog } from "@/features/organization/fines/components/B
 import { FinesHeader } from "@/features/organization/fines/components/FinesHeader";
 import { FineTypeForm } from "@/features/organization/fines/components/FineTypeForm";
 import { FineType, StudentFines } from "@/features/organization/fines/types";
-import { createFineType } from "@/firebase/fines/create/fineType";
+import { createFineType, deleteFineType, updateFineType } from "@/firebase/fines/create/fineType";
 import { Users, AlertTriangle, Banknote, CircleDollarSign, ChevronRight, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -21,102 +21,54 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { countFinesOfStudents, countStudentsWithFines, countUnsettleFinesOfStudents, getAllFines } from "@/firebase/fines/read/fines";
 import { FineBreakdownDialog } from "@/features/organization/fines/components/FineBreakdownDialog";
+import { usePaymentApproval } from "@/features/organization/payments/hooks/usePaymentApproval";
+import { FineTypeDialog } from "@/features/organization/fines/components/FineTypeDialog";
+import { useFines } from "@/features/organization/fines/hooks/useFines";
+import { useFineTypes } from "@/features/organization/fines/hooks/useFineTypes";
+import { getVariantFineType } from "@/features/organization/fines/utils/getVariantFineType";
 
 export default function FinesPage() {
-
-  const [allFines, setAllFines] = useState<StudentFines[]>([]);
-  const [selectedFine, setSelectedFines] = useState<StudentFines | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
   const ITEMS_PER_PAGE = 10;
-  const [currentPage, setCurrentPage] = useState(1);
-
+  
+  const [selectedFine, setSelectedFine] = useState<StudentFines | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isBulkGenerateOpen, setIsBulkGenerateOpen] = useState(false);
   const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
-  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [selectedFineType, setSelectedFineType] = useState<FineType | null>(null);
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("paid");
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
-  const [totalStudentsWithFines, setTotalStudentsWithFines] = useState(0);
-  const [totalUnsettled, setTotalUnsettled] = useState(0);
-  const [isStatusChanging, setIsStatusChanging] = useState(true);
 
-  // Initialize stats
-  const initialize = async () => {
-    try {
-      let count = await countStudentsWithFines();
-      setTotalStudentsWithFines(count);
-      count = await countUnsettleFinesOfStudents();
-      setTotalUnsettled(count);
-    } catch (error) {
-      console.error("Failed to fetch total count of students with fines:", error);
-    }
-  };
+  const {
+    paginatedFines,
+    filteredCount,
+    isLoading,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    search,
+    setSearch,
+    filterStatus,
+    handleStatusFilterChange,
+    totalStudentsWithFines,
+    totalUnsettled,
+    markStatusChanged,
+  } = useFines({ itemsPerPage: ITEMS_PER_PAGE });
 
-  // Fetch ALL fines once (or when status filter changes)
-  const fetchAll = useCallback(async (status: string) => {
-    setIsLoading(true);
-    try {
-      const docs = await getAllFines(status);
-      setAllFines(docs);
-      setCurrentPage(1); // always reset to page 1 on new fetch
-    } catch (error) {
-      console.error("Failed to fetch fines:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  const {
+    fineTypes,
+    isFormSubmitting,
+    fetchFineTypes,
+    handleAddFineSubmission,
+    handleUpdateFineType,
+    handleDeleteFineType,
+  } = useFineTypes();
+
+  useEffect(() => {
+    fetchFineTypes();
   }, []);
 
-  useEffect(() => {
-
-      if (isStatusChanging) {
-      setIsStatusChanging(false);
-      initialize();
-      }
-        
-      fetchAll(filterStatus);
-    
-   }, [ filterStatus]);
-
-
-  // Reset to page 1 when search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search]);
-
-  // Filter in memory (search + status already filtered at fetch level) 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return allFines;
-    const q = search.toLowerCase();
-    return allFines.filter(f =>
-      f.userName.toLowerCase().includes(q) ||
-      f.studentId.toLowerCase().includes(q)
-    );
-  }, [allFines, search]);
-
-  // Client-side pagination 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginated  = filtered.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
-
-  // Helpers 
-  const getVariant = (status: string) => {
-    switch (status) {
-      case "pending":  return "outline";
-      case "partial":  return "outline";
-      case "paid":     return "secondary";
-      case "waived":   return "outline";
-      case "unpaid":   return "destructive";
-      default:         return "outline";
-    }
-  };
 
   const openBreakdown = (fine: StudentFines) => {
-    setSelectedFines(fine);
+    setSelectedFine(fine);
     setIsBreakdownOpen(true);
   };
 
@@ -126,24 +78,21 @@ export default function FinesPage() {
     setIsFormOpen(true);
   };
 
-  const handleFormSubmit = async (data: FineType) => {
-    setIsFormSubmitting(true);
-    try {
-      await createFineType(data);
-      toast.success("A type of fine was added successfully");
-    } catch (error) {
-      toast.error(selectedFineType ? "Failed to update fine type" : "Failed to add fine type");
-    } finally {
-      setIsFormSubmitting(false);
-      setIsFormOpen(false);
-      setSelectedFineType(null);
-    }
+  const handleCreateSubmit = async (data: FineType) => {
+    await handleAddFineSubmission(data);
   };
 
-  const handleSuccess = () => {
-    setIsStatusChanging(true);
-    setFilterStatus("paid")
-  }
+  const handleUpdateSubmit = async (fineTypeId: string, data: FineType) => {
+    await handleUpdateFineType(fineTypeId, data);
+  };
+
+  const handleDeleteSubmit = async (fineTypeId: string) => {
+    await handleDeleteFineType(fineTypeId);
+  };
+
+  const handleSuccess = async () => {
+    markStatusChanged();
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -167,9 +116,8 @@ export default function FinesPage() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle className="text-base text-foreground">Student Fine Records</CardTitle>
-                {/* filtered.length reflects search results; allFines.length is the unfiltered total */}
                 <CardDescription className="text-muted-foreground">
-                  {filtered.length} student(s) found
+                  {filteredCount} student(s) found
                 </CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -179,10 +127,7 @@ export default function FinesPage() {
                   onChange={v => setSearch(v)}
                   className="w-64"
                 />
-                <Select value={filterStatus} onValueChange={(v: string) => {
-                  setFilterStatus(v);
-                  setSearch("");      // clear search when switching status
-                }}>
+                <Select value={filterStatus} onValueChange={handleStatusFilterChange}>
                   <SelectTrigger className="w-36">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
@@ -212,7 +157,7 @@ export default function FinesPage() {
               </div>
             </div>
             <CardDescription className="text-muted-foreground">
-              Page {currentPage} of {totalPages || 1} · {paginated.length} records shown
+              Page {currentPage} of {totalPages || 1} · {paginatedFines.length} records shown
             </CardDescription>
           </CardHeader>
 
@@ -237,8 +182,8 @@ export default function FinesPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paginated.map((fine) => {        {/* ← paginated, not fines */}
-                        const cfg = getVariant(fine.status);
+                      {paginatedFines.map((fine) => {
+                        const cfg = getVariantFineType(fine.status);
                         return (
                           <TableRow key={fine.id}>
                             <TableCell>
@@ -284,7 +229,7 @@ export default function FinesPage() {
                           </TableRow>
                         );
                       })}
-                      {paginated.length === 0 && (
+                      {paginatedFines.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
                             No records found.
@@ -299,7 +244,7 @@ export default function FinesPage() {
                 <DataPagination
                   currentPage={currentPage}
                   totalPages={totalPages}
-                  totalItems={filtered.length}
+                  totalItems={filteredCount}
                   itemsPerPage={ITEMS_PER_PAGE}
                   onPageChange={setCurrentPage}
                 />
@@ -307,8 +252,8 @@ export default function FinesPage() {
             ) : (
               <>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {paginated.map((fine) => {         {/* ← paginated, not fines */}
-                    const cfg = getVariant(fine.status);
+                  {paginatedFines.map((fine) => {
+                    const cfg = getVariantFineType(fine.status);
                     return (
                       <Card key={fine.studentId} className="border-border">
                         <CardContent className="flex flex-col gap-3 p-4">
@@ -318,22 +263,7 @@ export default function FinesPage() {
                               <p className="text-xs text-muted-foreground">{fine.studentId}</p>
                             </div>
                             <div className="flex flex-wrap justify-end gap-1 shrink-0">
-                              <Badge variant={getVariant(fine.status)} className="capitalize">{fine.status}</Badge>
-                              {/* {badges.waivedCount > 0 && (
-                                <Badge variant="outline" className="text-xs">
-                                  {badges.waivedCount} Waived
-                                </Badge>
-                              )}
-                              {badges.pendingAppeals > 0 && (
-                                <Badge variant="default" className="text-xs">
-                                  {badges.pendingAppeals} Appeal{badges.pendingAppeals !== 1 ? "s" : ""} Pending
-                                </Badge>
-                              )}
-                              {badges.rejectedAppeals > 0 && (
-                                <Badge variant="destructive" className="text-xs">
-                                  {badges.rejectedAppeals} Appeal{badges.rejectedAppeals !== 1 ? "s" : ""} Rejected
-                                </Badge>
-                              )} */}
+                              <Badge variant={getVariantFineType(fine.status)} className="capitalize">{fine.status}</Badge>
                             </div>
                           </div>
                           <Separator />
@@ -367,7 +297,7 @@ export default function FinesPage() {
                       </Card>
                     );
                   })}
-                  {paginated.length === 0 && (
+                  {paginatedFines.length === 0 && (
                     <div className="col-span-full py-8 text-center text-sm text-muted-foreground">
                       No records found.
                     </div>
@@ -378,7 +308,7 @@ export default function FinesPage() {
                 <DataPagination
                   currentPage={currentPage}
                   totalPages={totalPages}
-                  totalItems={filtered.length}
+                  totalItems={filteredCount}
                   itemsPerPage={ITEMS_PER_PAGE}
                   onPageChange={setCurrentPage}
                 />
@@ -386,14 +316,18 @@ export default function FinesPage() {
             )}
           </CardContent>
         </Card>
-
-        <FineTypeForm
+        
+        <FineTypeDialog
           open={isFormOpen}
           onOpenChange={setIsFormOpen}
-          onSubmit={handleFormSubmit}
-          fineType={selectedFineType}
-          isSubmitting={isFormSubmitting}
+          fineTypes={fineTypes}
+          onAddFineType={handleCreateSubmit}
+          onUpdateFineType={handleUpdateSubmit}
+          onDeleteFineType={handleDeleteSubmit}
+          isProcessing={isFormSubmitting}
+          fetchFineTypes={fetchFineTypes}
         />
+
         <BulkGenerationDialog
           open={isBulkGenerateOpen}
           onOpenChange={setIsBulkGenerateOpen}

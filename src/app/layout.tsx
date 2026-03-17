@@ -18,16 +18,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning> 
       <head>
         <title>
-          Coral - Centralized Online Record for Attendance and Logging
+          USSC Connect
         </title>
         <meta
           name="description"
           content="Your platform for modern productivity and collaboration"
         />
-        <link rel="icon" href="/enhanced-logo-final.svg" />
+        <link rel="icon" href="/images/ussc-logo-1.webp" />
         <link rel="apple-touch-icon" href="/images/enhanced-logo-final.png" />
         <meta name="theme-color" content="#3b82f6" />
       </head>

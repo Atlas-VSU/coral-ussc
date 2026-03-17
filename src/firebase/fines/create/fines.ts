@@ -14,6 +14,8 @@ import { Event } from "@/features/organization/events/types";
 import { updateFirstFineIssuedAt, updateLastFineIssuedAt } from "../update/fines";
 import { PaymentType } from "@/constants/types";
 import { recalculateClearanceStatus } from "@/firebase/clearance";
+import { cacheService } from "@/services/cacheService";
+import { getAllFines, getAllUnpaidFinesforOrg } from "../read/fines";
 
 
 const finesCollection: CollectionReference<DocumentData> = collection(
@@ -68,6 +70,10 @@ const handleFirestoreError = (error: any, context: string) => {
       const docRef = await addDoc(finesCollection, fineData);
 
         await recalculateClearanceStatus(userId);
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('clearance:');
+        getAllFines().catch(console.error);
+        getAllUnpaidFinesforOrg().catch(console.error);
     } catch (error) {
       handleFirestoreError(error, `creating fine document on ID ${userId}`);
       return null;
@@ -149,22 +155,6 @@ export const createBulkFines = async (
 
         const fineDocRef = doc(finesCollection);
         batch.set(fineDocRef, fineData);
-
-        // Initialize clearance for this student
-        const clearanceRef = doc(db, 'clearanceStatus', user.id!);
-        batch.set(clearanceRef, {
-            [`blockingItems.${fineDocRef.id}`]: {
-                type: PaymentType.FINES,
-                referenceId: fineDocRef.id,
-                title: "Fines",
-                balance: 0,
-                status: "paid",
-                paymentHistory: [],
-                pendingReview: false,
-                isRequiredForClearance: true
-            },
-            updatedAt: Timestamp.now()
-        }, { merge: true });
       }
 
       // If a batch throws, we know exactly where it stopped
@@ -183,6 +173,11 @@ export const createBulkFines = async (
       // Trigger clearance recalculation for all users in this batch
       await Promise.all(batchSlice.map(user => recalculateClearanceStatus(user.id!)));
     }
+
+    cacheService.invalidateByPrefix('fines:');
+    cacheService.invalidateByPrefix('clearance:');
+    getAllFines().catch(console.error);
+    getAllUnpaidFinesforOrg().catch(console.error);
 
     result.success = true;
     report("done", `All ${result.committed} fine documents created successfully.`);

@@ -193,18 +193,22 @@ export default function OrganizationLayout({
   };
 
   return (
-    <div className="flex min-h-screen w-full">
+    <div className="flex min-h-screen w-full organization-bg">
       <AdminSidebar
         user={userData}
         className="z-50"
       />
       <div className="flex-1 flex flex-col min-w-0">
-        <SiteHeader
+        {/* <SiteHeader
           user={userData}
           isAuthenticated={isAuthenticated}
           showSidebarTrigger={true}
-        />
-        <main className="flex-1 p-4 pb-16 md:pb-4">{children}</main>
+        /> */}
+        <main className="flex-1">
+          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          {children}
+          </div>
+        </main>
         <MobileBottomNav
           links={organizationData.mobileNavLinks}
           iconMap={mobileIconMap}

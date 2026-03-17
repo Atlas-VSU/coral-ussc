@@ -102,8 +102,8 @@ export default function PaymentsPage() {
           studentName:  selectedPayment.userName,
           studentId:    selectedPayment.studentId,
           typeLabel: selectedPayment.paymentType,
-          // lineItems:        selectedPayment.lineItems?.map(i => ({ label: i.name, sublabel: i.type, amount: i.amount })),
-          // showLineItemsTotal: !!(selectedPayment.lineItems?.length),
+          lineItems: selectedPayment.metadata?.items?.map(i => ({ label: i.title, sublabel: i.paymentType, amount: i.amount, group:i.paymentType }))?? [],
+          showLineItemsTotal: !!(selectedPayment.metadata?.items?.length),
           amountPaid:   selectedPayment.amount,
           referenceNo:  selectedPayment.referenceNumber,
           submittedAt:  selectedPayment.submittedAt.toDate().toLocaleDateString(),
@@ -113,8 +113,9 @@ export default function PaymentsPage() {
           reviewedAt: selectedPayment.verifiedAt?.toDate().toLocaleDateString(),
           paymentMethod:selectedPayment.paymentMethod,
         } : null}
-        // onApprove={selectedPayment?.status === "pending" ? () => handleApprove(selectedPayment!.id) : undefined}
-        // onReject={selectedPayment?.status === "pending"  ? reason => handleDecline(selectedPayment!.id, reason) : undefined}
+        onApprove={selectedPayment?.status === "pending" ? (async () => await handleApprove(selectedPayment)) : undefined}
+        onReject={selectedPayment?.status === "pending"  ? (async (reason: string) => await handleDecline(selectedPayment, reason)) : undefined}
+        isProcessing={isLoading}
       />
 
       {/* ── Log Payment Dialog ── */}

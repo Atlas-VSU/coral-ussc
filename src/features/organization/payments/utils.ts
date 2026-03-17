@@ -1,6 +1,11 @@
-import { nanoid } from "nanoid"
+
+import { customAlphabet } from 'nanoid';
+const cleanAlphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+const generateCleanId = customAlphabet(cleanAlphabet, 5);
+
 
 export const generateReceiptId = () => {
-  const receiptId = `RCP-${nanoid(10)}-${Date.now().toLocaleString().replace(/[/,:\s]/g, "")}`;
+  const timestamp = Date.now().toString();
+  const receiptId = `RCP-${generateCleanId()}-${timestamp.slice(-4)}`;
   return receiptId;
 }

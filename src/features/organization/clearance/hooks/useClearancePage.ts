@@ -11,6 +11,7 @@ import { PaymentType } from "@/constants/types"
 import type { ViewMode } from "@/components/organization/ViewToggle"
 import type { ClearanceStatus } from "../types"
 import type { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
+import { generateReceiptId } from "../../payments/utils"
 
 export function useClearancePage(orgId: string | undefined) {
   const { clearances, loading, setClearances } = useClearances(orgId)
@@ -30,13 +31,13 @@ export function useClearancePage(orgId: string | undefined) {
   const [logPaymentTarget, setLogPaymentTarget] = useState<ClearanceStatus | null>(null)
 
   // Receipt state
-  const [receiptOpen, setReceiptOpen] = useState(false)
-  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
+  // const [receiptOpen, setReceiptOpen] = useState(false)
+  // const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
 
   const [isProcessing, setIsProcessing] = useState(false)
   const idCounter = useRef(0)
 
-  const { approvePayment, rejectPayment, logManualPayment } = useClearanceActions(clearances, setClearances)
+  const { approvePayment, rejectPayment, logManualPayment, receiptData,setReceiptData, setReceiptOpen, receiptOpen } = useClearanceActions(clearances, setClearances)
   const selection = useManualPaymentSelection(logPaymentTarget)
 
   // Derived state: Filtered/Paginated data
@@ -93,23 +94,25 @@ export function useClearancePage(orgId: string | undefined) {
     if (!logPaymentTarget || selection.selectedRefIds.size === 0) return
 
     setIsProcessing(true)
+    const receipt = generateReceiptId();
     try {
       await logManualPayment(
         logPaymentTarget.id,
         Array.from(selection.selectedRefIds),
         selection.total,
-        new Date().toISOString().slice(0, 10)
+        new Date().toISOString().slice(0, 10),
+        receipt
       )
 
       idCounter.current += 1
       const currentUser = await getCurrentUserData() as unknown as Member;
       setReceiptData({
-        receiptId: `CLR-${idCounter.current}`,
+        receiptId: receipt,
         studentName: logPaymentTarget.userName,
         studentId: logPaymentTarget.studentId,
         items: selection.selectedItems.map(i => ({
           name: i.label,
-          type: i.type === PaymentType.FEES ? "fee" : "fine",
+          type: i.type === PaymentType.FEES ? "fees" : "fines",
           amount: i.amount,
         })),
         total: selection.total,
