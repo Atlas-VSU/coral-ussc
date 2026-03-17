@@ -9,11 +9,13 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Receipt, AlertCircle, CheckCircle2, Building2 } from "lucide-react";
 import { FeeItem, Fine, FineItem, OrganizationData, StudentData } from "@/app/(public)/payment/page";
 import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
+import { PaymentProgressBar } from "./components/PaymentProgressBar";
 
 
 interface FinesFeesSelectionPageProps {
   studentData: StudentData;
   organizationData: OrganizationData;
+  currentStep: 1 | 2 | 3 | 4;
   fees: FeeItem[];
   fines: Fine[];
   fineItems: FineItem[];
@@ -31,6 +33,7 @@ interface FinesFeesSelectionPageProps {
 export default function FinesFeesSelectionPage({
   studentData,
   organizationData,
+  currentStep,
   fees,
   fines,
   fineItems,
@@ -107,6 +110,7 @@ export default function FinesFeesSelectionPage({
     <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background py-8 px-4">
       <div className="max-w-5xl mx-auto space-y-6">
         <PaymentBrandHeader />
+        <PaymentProgressBar currentStep={currentStep} />
         {/* Back Button */}
         <Button variant="ghost" onClick={onBack} className="gap-2">
           <ArrowLeft className="h-4 w-4" />

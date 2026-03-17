@@ -18,6 +18,7 @@ import { PaymentMethodSelector } from "./components/PaymentMethodSelector";
 import { ImageUpload } from "./components/ImageUpload";
 import { SelectedPaymentItems } from "@/app/(public)/payment/page";
 import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
+import { PaymentProgressBar } from "./components/PaymentProgressBar";
 
 interface StudentData {
   studentId: string;
@@ -35,6 +36,7 @@ interface FinesPaymentFormPageProps {
   studentData?: StudentData;
   organizationData?: OrganizationData;
   selectedPaymentItems?: SelectedPaymentItems;
+  currentStep: 1 | 2 | 3 | 4;
   onBack?: () => void;
   onRestart?: () => void;
 }
@@ -48,6 +50,7 @@ export default function FinesPaymentFormPage({
   studentData,
   organizationData,
   selectedPaymentItems,
+  currentStep,
   onBack,
   onRestart,
 }: FinesPaymentFormPageProps) {
@@ -165,6 +168,7 @@ export default function FinesPaymentFormPage({
       <SuccessScreen
         form={form.getValues()}
         onReset={handleSuccessReset}
+        currentStep={currentStep}
         paymentHistoryId={submitResult?.paymentHistoryId}
         submissionCount={submitResult?.submissionIds.length ?? 0}
       />
@@ -176,6 +180,7 @@ export default function FinesPaymentFormPage({
       <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
 
         <PaymentBrandHeader />
+        <PaymentProgressBar currentStep={currentStep} />
 
         {onBack && (
           <Button variant="ghost" onClick={onBack} className="mb-4 gap-2">

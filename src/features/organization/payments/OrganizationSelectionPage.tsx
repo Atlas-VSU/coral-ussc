@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Building2, ChevronRight, Loader2 } from "lucide-react";
 import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
+import { PaymentProgressBar } from "./components/PaymentProgressBar";
 
 interface StudentData {
   studentId: string;
@@ -24,6 +25,7 @@ interface Organization {
 interface OrganizationSelectionPageProps {
   studentData: StudentData;
   organizations: Organization[];
+  currentStep: 1 | 2 | 3 | 4;
   isLoading?: boolean;
   error?: string | null;
   onBack: () => void;
@@ -33,6 +35,7 @@ interface OrganizationSelectionPageProps {
 export default function OrganizationSelectionPage({
   studentData,
   organizations,
+  currentStep,
   isLoading = false,
   error = null,
   onBack,
@@ -54,6 +57,7 @@ export default function OrganizationSelectionPage({
     <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background py-8 px-4">
       <div className="max-w-4xl mx-auto space-y-6">
         <PaymentBrandHeader />
+        <PaymentProgressBar currentStep={currentStep} />
         {/* Back Button */}
         <Button
           variant="ghost"
