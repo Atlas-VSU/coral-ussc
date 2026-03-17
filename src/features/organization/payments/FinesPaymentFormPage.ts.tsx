@@ -14,7 +14,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SuccessScreen } from "./components/SuccessScreen";
 import { PaymentFormData } from "@/lib/validators";
 import { usePaymentForm, ImageData } from "./hooks/usePaymentForm";
-import { PaymentMethodSelector } from "./components/PaymentMethodSelector";
 import { ImageUpload } from "./components/ImageUpload";
 import { SelectedPaymentItems } from "@/app/(public)/payment/page";
 import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
@@ -173,7 +172,6 @@ export default function FinesPaymentFormPage({
     image, setImage,
     status,
     needsRef, isGcash,
-    handleMethodSelect,
     handleReset,
     onSubmit,
   } = usePaymentForm({
@@ -463,10 +461,12 @@ export default function FinesPaymentFormPage({
                 </div>
                 {errors.amount && <FieldError message={errors.amount.message!} />}
                 <Separator />
-                <div className="flex flex-col gap-1.5">
-                  <Label>Payment Method <span className="text-[#1B5E20]">*</span></Label>
-                  <PaymentMethodSelector value={watch("paymentMethod") ?? ""} error={errors.paymentMethod?.message} onSelect={handleMethodSelect} />
+                <input type="hidden" {...register("paymentMethod")} />
+                <div className="rounded-md border bg-muted/30 px-3 py-2">
+                  <p className="text-xs text-muted-foreground">Payment Method</p>
+                  <p className="text-sm font-medium text-foreground">GCash</p>
                 </div>
+                {errors.paymentMethod && <FieldError message={errors.paymentMethod.message!} />}
                 {needsRef && (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="flex flex-col gap-1.5">
