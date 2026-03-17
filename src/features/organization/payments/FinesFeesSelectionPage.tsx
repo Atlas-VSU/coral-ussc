@@ -43,6 +43,31 @@ export default function FinesFeesSelectionPage({
   const [payFees, setPayFees] = useState(false);
   const [payFines, setPayFines] = useState(false);
 
+  const getPaymentStatus = (item: {
+    isPayable?: boolean;
+    paymentState?: "unpaid" | "pending" | "rejected";
+    latestRejectionReason?: string;
+  }) => {
+    if (item.paymentState === "pending" || item.isPayable === false) {
+      return {
+        label: "Pending",
+        className: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300",
+      };
+    }
+
+    if (item.paymentState === "rejected" || item.latestRejectionReason) {
+      return {
+        label: "Rejected",
+        className: "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300",
+      };
+    }
+
+    return {
+      label: "Payable",
+      className: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300",
+    };
+  };
+
   const formatDisplayDate = (value?: unknown) => {
     if (!value) return null;
 
@@ -86,6 +111,10 @@ export default function FinesFeesSelectionPage({
   const finesPayableTotal = useMemo(() => {
     return payableFines.reduce((sum, fine) => sum + fine.amount, 0);
   }, [payableFines]);
+
+  const fineById = useMemo(() => {
+    return new Map(fines.map((fine) => [fine.id, fine]));
+  }, [fines]);
 
   const grandTotal = (payFees ? feesPayableTotal : 0) + (payFines ? finesPayableTotal : 0);
 
@@ -211,12 +240,22 @@ export default function FinesFeesSelectionPage({
                 {fees.map((fee) => (
                   <div
                     key={fee.id}
-                    className={`flex items-start justify-between p-3 rounded-lg border ${
+                    className={`flex items-start justify-between gap-4 p-3 rounded-lg border ${
                       fee.isPayable === false ? "bg-amber-50/60 dark:bg-amber-950/20" : "bg-card"
                     }`}
                   >
                     <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">{fee.description}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium">{fee.description}</p>
+                        {(() => {
+                          const status = getPaymentStatus(fee);
+                          return (
+                            <Badge variant="outline" className={status.className}>
+                              {status.label}
+                            </Badge>
+                          );
+                        })()}
+                      </div>
                       {formatDisplayDate(fee.dueDate) && (
                         <p className="text-xs text-muted-foreground">Due: {formatDisplayDate(fee.dueDate)}</p>
                       )}
@@ -307,35 +346,51 @@ export default function FinesFeesSelectionPage({
 
               {/* Fine Items Breakdown (Read-only) */}
               <div className="space-y-2">
-                {fineItems.map((fine) => (
-                  <div
-                    key={fine.refId}
-                    className={`flex items-start justify-between p-3 rounded-lg border ${
-                      !fine.isPaid ? "bg-amber-50/60 dark:bg-amber-950/20" : "bg-card"
-                    }`}
-                  >
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">{fine.title}</p>
-                      {formatDisplayDate(fine.date) && (
-                        <p className="text-xs text-muted-foreground">Date: {formatDisplayDate(fine.date)}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground italic">{fines[0].reason}</p>
-                      {fines[0].paymentState === "pending" && (
-                        <p className="text-xs text-amber-600 dark:text-amber-400">
-                          Status: Pending verification (not selectable)
-                        </p>
-                      )}
-                      {fines[0].latestRejectionReason && (
-                        <p className="text-xs text-red-600 dark:text-red-400">
-                          Last rejected reason: {fines[0].latestRejectionReason}
-                        </p>
-                      )}
+                {fineItems.map((fine) => {
+                  const parentFine = fineById.get(fine.parentFineId);
+                  const status = getPaymentStatus({
+                    isPayable: parentFine?.isPayable,
+                    paymentState: parentFine?.paymentState,
+                    latestRejectionReason: parentFine?.latestRejectionReason,
+                  });
+
+                  return (
+                    <div
+                      key={fine.refId}
+                      className={`flex items-start justify-between gap-4 p-3 rounded-lg border ${
+                        parentFine?.isPayable === false ? "bg-amber-50/60 dark:bg-amber-950/20" : "bg-card"
+                      }`}
+                    >
+                      <div className="flex-1 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium">{fine.title}</p>
+                          <Badge variant="outline" className={status.className}>
+                            {status.label}
+                          </Badge>
+                        </div>
+                        {formatDisplayDate(fine.date) && (
+                          <p className="text-xs text-muted-foreground">Date: {formatDisplayDate(fine.date)}</p>
+                        )}
+                        {parentFine?.reason && (
+                          <p className="text-xs text-muted-foreground italic">{parentFine.reason}</p>
+                        )}
+                        {parentFine?.paymentState === "pending" && (
+                          <p className="text-xs text-amber-600 dark:text-amber-400">
+                            Status: Pending verification (not selectable)
+                          </p>
+                        )}
+                        {parentFine?.latestRejectionReason && (
+                          <p className="text-xs text-red-600 dark:text-red-400">
+                            Last rejected reason: {parentFine.latestRejectionReason}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-sm font-semibold text-red-600 dark:text-red-400 ml-4">
+                        ₱{fine.amount.toFixed(2)}
+                      </span>
                     </div>
-                    <span className="text-sm font-semibold text-red-600 dark:text-red-400 ml-4">
-                      ₱{fine.amount.toFixed(2)}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {fines.length === 0 && (
