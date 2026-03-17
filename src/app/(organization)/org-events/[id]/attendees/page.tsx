@@ -24,11 +24,13 @@ import { exportEventAttendance, downloadCsvFile } from "@/features/organization/
 import { useState } from "react";
 import { Event } from "@/features/organization/events/types";
 import { toast } from "sonner";
+import { BulkFinesIssuance } from "@/features/organization/fines/components/BulkFinesIssuance";
 
 export default function EventAttendeesPage() {
   const params = useParams();
   const eventId = params.id as string;
   const [isExporting, setIsExporting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   
   // All logic is now handled by the custom hook
   const {
@@ -48,6 +50,8 @@ export default function EventAttendeesPage() {
     hasNextPage,
     hasPrevPage,
   } = useEventAttendees(eventId);
+
+  const [isBulkIssueFinesOpen, setBulkIssueFinesOpen] = useState(false);
 
   // Handle CSV export
   const handleExportAttendance = async () => {
@@ -74,6 +78,16 @@ export default function EventAttendeesPage() {
       setIsExporting(false);
     }
   };
+
+  const handleGenerateFines = async () => {
+    setIsGenerating(true);
+    setBulkIssueFinesOpen(true);
+  }
+
+  const handleClose = () => {
+    setBulkIssueFinesOpen(false);
+    setIsGenerating(false);
+   }
 
   // REMOVED: The local useState and useEffect for fetching the event
   // have been removed to avoid fetching the same data twice.
@@ -170,11 +184,21 @@ export default function EventAttendeesPage() {
             attendeeCount={totalAttendees}
           />
 
+        {eventData && (
+          <BulkFinesIssuance
+          open={isBulkIssueFinesOpen}
+          onOpenChange={handleClose}
+          event={eventData}
+          />
+        )}
+
           <div className="mb-6">
             <AttendeesHeader
               event={eventData as unknown as Event}
               onExport={handleExportAttendance}
+              onGenerateFines={handleGenerateFines}
               isExporting={isExporting}
+              isGenerating={isGenerating}
             />
           </div>
 

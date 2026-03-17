@@ -1,15 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Event } from "../../events/types";
-import { UserPlus, Upload, Loader2 } from "lucide-react";
+import { UserPlus, Upload, Loader2, Zap } from "lucide-react";
 import Link from "next/link";
 
 interface AttendeesHeaderProps {
   event: Event;
   onExport: () => void;
+  onGenerateFines?: () => void;
   isExporting?: boolean;
+  isGenerating?: boolean;
 }
 
-export function AttendeesHeader({ event, onExport, isExporting = false }: AttendeesHeaderProps) {
+export function AttendeesHeader({ event, onExport, isExporting = false, onGenerateFines, isGenerating = false }: AttendeesHeaderProps) {
   return (
     <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 dark:from-gray-800 dark:via-gray-800 dark:to-gray-700/50 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shadow-lg shadow-blue-100/50 dark:shadow-gray-900/20 px-4 sm:px-6 py-4 sm:py-6">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -34,13 +36,19 @@ export function AttendeesHeader({ event, onExport, isExporting = false }: Attend
           {(event.status === "ongoing" || event.status === "completed") && (
             <Button 
               asChild 
-              className="bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg transition-all duration-200 hover:scale-[1.02] border-0"
+              className=" justify-center gap-1.5 h-10 sm:h-9 text-xs font-bold"
             >
               <Link href={`/org-events/${event.id}/log-attendance`}>
                 <UserPlus className="h-4 w-4 mr-2" />
                 {event.status === "completed" ? "Log Special Attendance" : "Log Attendance"}
               </Link>
             </Button>
+          )}
+
+          {(event.status === "completed" && !event.finesGenerated)  && (
+              <Button variant="outline" onClick={onGenerateFines} disabled={isGenerating}>
+                <Zap className="size-4 mr-1" /> Generate Fines
+              </Button>
           )}
 
           <Button
