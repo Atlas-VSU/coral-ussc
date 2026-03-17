@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getUsers } from "@/firebase/users";
 import { Member } from "@/features/organization/members/types";
-import { FeeGenerationDialog } from "@/features/organization/fees/components/AddFeeDialog";
+// import { FeeGenerationDialog } from "@/features/organization/fees/components/AddFeeDialog";
 // import FeeListPage from "@/features/organization/fees/components//FeeList";
 // import { PageHeader } from "@/components/organization/PageHeader";
 // import { StatCard } from "@/components/organization/StatCard";
@@ -21,6 +21,7 @@ import { useFeeListUI } from "@/features/organization/fees/hooks/useFeeListUI";
 import { PageHeader } from "./PageHeader";
 import { StatCard } from "./StatCard";
 import FeeListPage from "./FeeListPage";
+import { FeeGenerationDialog } from "./AddFeeDialog";
 export function FeesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -34,7 +35,7 @@ export function FeesPage() {
       : 0
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title="Fees"
         context="2nd Semester · A.Y. 2025–2026"
