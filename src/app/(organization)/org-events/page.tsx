@@ -1,49 +1,56 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { Plus, Search } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { PageHeader } from "@/components/shared/PageHeader"
-import { useIsMobile } from "@/hooks/useIsMobile"
-import type { TabValue } from "@/features/organization/events/components/EventsTabNavigation"
-import { useEventsData } from "@/features/organization/events/hooks/useEventsData" 
-import { EventsList } from "@/features/organization/events/components/EventsList"
-import { EventsTabNavigation } from "@/features/organization/events/components/EventsTabNavigation"
-import { EventsFilters } from "@/features/organization/events/components/EventsFilters"
-import { EventsPagination } from "@/features/organization/events/components/EventsPagination"
-import { AddEventDialog } from "@/features/organization/events/components/AddEventDialog"
-import { EventsSearchBar } from "@/features/organization/events/components/EventsSearchBar"
-import { EventsSkeletonLoader } from "@/features/organization/events/components/EventsSkeletonLoader"
-import type { ViewMode } from "@/features/organization/events/components/ViewToggle"
+import { useState, useEffect } from "react";
+import { EventsList } from "@/features/organization/events/components/EventsList";
+import { EventsHeader } from "@/features/organization/events/components/EventsHeader";
+import { EventsFilters } from "@/features/organization/events/components/EventsFilters";
+import { EventsPagination } from "@/features/organization/events/components/EventsPagination";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { EventsSkeletonLoader } from "@/features/organization/events/components/EventsSkeletonLoader";
+import { EventsSearchBar } from "@/features/organization/events/components/EventsSearchBar";
+import { EventsCacheLoader } from "@/features/organization/events/services/eventsCacheLoader";
+import {
+  EventsTabNavigation,
+  EventStatus,
+} from "@/features/organization/events/components/EventsTabNavigation";
+import { useEventsData } from "@/features/organization/events/hooks/useEventsData";
+import { ViewMode } from "@/features/organization/events/components/ViewToggle";
 
 export default function EventsPage() {
-  const [addOpen, setAddOpen] = useState(false)
-  const [currentTab, setCurrentTab] = useState<TabValue>("ongoing")
+  const [currentTab, setCurrentTab] = useState<EventStatus>("ongoing");
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("card");
 
-  const [viewMode, setViewMode] = useState<ViewMode>("card")
-  const isMobile = useIsMobile()
-  const searchInputRef = useRef<HTMLInputElement>(null)
+  // Check if screen is mobile
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
+  // Load saved view mode from localStorage, but force list view on mobile
   useEffect(() => {
-    if (isMobile) {
-      setViewMode("list")
+    if (!isDesktop) {
+      // Force list view on mobile
+      setViewMode("list");
     } else {
-      const savedViewMode = localStorage.getItem("eventsViewMode") as ViewMode
-      if (savedViewMode && (savedViewMode === "card" || savedViewMode === "list")) {
-        setViewMode(savedViewMode)
+      // Load saved view mode on desktop
+      const savedViewMode = localStorage.getItem("eventsViewMode") as ViewMode;
+      if (
+        savedViewMode &&
+        (savedViewMode === "card" || savedViewMode === "list")
+      ) {
+        setViewMode(savedViewMode);
       }
     }
-  }, [isMobile])
+  }, [isDesktop]);
 
+  // Save view mode to localStorage when changed (only on desktop)
   const handleViewModeChange = (mode: ViewMode) => {
-    setViewMode(mode)
-    if (!isMobile) {
-      localStorage.setItem("eventsViewMode", mode)
+    if (isDesktop) {
+      setViewMode(mode);
+      localStorage.setItem("eventsViewMode", mode);
     }
-  }
+  };
 
-  // Real Data Fetching Hook (React Query behind the scenes)
+  // Use the updated hook with server-side pagination
   const {
     events,
     totalEvents,
@@ -56,100 +63,114 @@ export default function EventsPage() {
     handleDateChange,
     searchQuery,
     refresh,
-  } = useEventsData(currentTab)
+  } = useEventsData(currentTab);
 
+  // Handle search activation/deactivation
+  const onSearch = (query: string) => {
+    handleSearch(query);
+    setIsSearchActive(!!query.trim());
+  };
+
+  // Clear search
   const clearSearch = () => {
-    handleSearch("")
-    if (searchInputRef.current) searchInputRef.current.value = ""
-  }
+    handleSearch("");
+    setIsSearchActive(false);
+  };
 
   return (
-    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-8">
-      {/* Page Header */}
-      <PageHeader
-        variant="admin"
-        title="Events Management"
-        context="2nd Semester · A.Y. 2025–2026"
-        description="Manage your organisation's events and track attendance"
-        action={
-          <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
-            <Plus className="size-4" />
-            Add Event
-          </Button>
-        }
-      />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Invisible component that preloads the events cache */}
+      <EventsCacheLoader />
 
-      {/* Search bar */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          ref={searchInputRef}
-          type="search"
-          placeholder="Search events by name or location…"
-          className="pl-9 h-10 bg-background"
-          onChange={(e) => handleSearch(e.target.value)}
-        />
-      </div>
-
-      {/* Active search banner */}
-      {searchQuery && (
-        <EventsSearchBar
-          searchQuery={searchQuery}
-          resultsCount={totalEvents} // Now using the real total from the DB
-          onClear={clearSearch}
-        />
-      )}
-
-      {/* Tab navigation */}
-      <EventsTabNavigation
-        currentTab={currentTab}
-        onTabChange={setCurrentTab}
-        isDesktop={!isMobile}
-      />
-
-      {/* Filters row */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <EventsFilters
-          onSetDate={handleDateChange}
-          onSortBy={handleSort}
-          viewMode={viewMode}
-          onViewChange={setViewMode}
-          isDesktop={!isMobile}
-        />
-      </div>
-
-      {/* Main Events list */}  
-      {loading ? (
-        <EventsSkeletonLoader viewMode={viewMode} />
-      ) : (
-        <EventsList
-          events={events}
-          onEventsUpdate={refresh}
-          viewMode={viewMode}
-        />
-      )}
-
-      {/* Pagination */}
-      
-      {!loading && totalPages > 0 && !searchQuery && (
-        <div className="flex justify-center mt-4">
-          <EventsPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header */}
+        <div className="mb-8 animate-fade-in-up animation-delay-200">
+          <EventsHeader
+            onSearch={onSearch}
+            onEventAdded={() => {
+              // Refresh the events list after adding a new event
+              refresh();
+            }}
           />
         </div>
-      )}
 
-      {/* Add event dialog */}
-      <AddEventDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        onEventAdded={() => {
-          refresh() 
-          setAddOpen(false)
-        }}
-      />
+        {/* Search results indicator */}
+        {isSearchActive && (
+          <div className="mb-6 animate-fade-in-up animation-delay-300">
+            <EventsSearchBar
+              searchQuery={searchQuery}
+              resultsCount={totalEvents}
+              onClear={clearSearch}
+            />
+          </div>
+        )}
+
+        {/* Filters Section */}
+        <div className="mb-6 animate-fade-in-up animation-delay-400">
+          <EventsFilters
+            onSetDate={handleDateChange}
+            onSortBy={handleSort}
+            disabled={loading}
+            viewMode={viewMode}
+            onViewChange={handleViewModeChange}
+          />
+        </div>
+
+        {/* Main Content */}
+        {isSearchActive ? (
+          // Search results view - no tabs, no pagination
+          <div className="space-y-6 animate-fade-in-up animation-delay-600">
+            {loading ? (
+              <EventsSkeletonLoader viewMode={viewMode} />
+            ) : (
+              <EventsList
+                events={events}
+                onEventsUpdate={refresh}
+                viewMode={viewMode}
+              />
+            )}
+          </div>
+        ) : (
+          // Normal tabbed view with pagination
+          <div className="space-y-6 animate-fade-in-up animation-delay-600">
+            <Tabs
+              value={currentTab}
+              className="w-full"
+              onValueChange={(value) => setCurrentTab(value as EventStatus)}
+            >
+              <EventsTabNavigation
+                currentTab={currentTab}
+                setCurrentTab={setCurrentTab}
+                loading={loading}
+                isDesktop={isDesktop}
+              />
+
+              <TabsContent value={currentTab} className="mt-6">
+                {loading ? (
+                  <EventsSkeletonLoader viewMode={viewMode} />
+                ) : (
+                  <EventsList
+                    events={events}
+                    onEventsUpdate={refresh}
+                    viewMode={viewMode}
+                  />
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!loading && totalEvents > 0 && !isSearchActive && (
+          <div className="mt-8 flex justify-center animate-fade-in-up animation-delay-800">
+            <EventsPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        )}
+      </div>
     </div>
-  )
+  );
 }

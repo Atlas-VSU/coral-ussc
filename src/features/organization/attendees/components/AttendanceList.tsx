@@ -198,7 +198,7 @@ export function AttendanceList({
       <div className="px-4 sm:px-6 py-4 sm:py-6 border-b border-gray-200/60 dark:border-gray-700/60">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-700 to-green-800 flex items-center justify-center shadow-lg">
               <Users className="h-5 w-5 text-white" />
             </div>
             <div>
