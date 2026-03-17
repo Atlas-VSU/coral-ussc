@@ -318,14 +318,21 @@ export const CACHE_KEYS = {
   fineDoc:         (fineId: string) => `fines:doc:${fineId}`,
   fineItems:       (fineId: string) => `fines:items:${fineId}`,
   fineUnpaidItems: (fineId: string) => `fines:unpaiditems:${fineId}`,
+  fineTypesAll:    (orgId: string) => `fines:types:all:${orgId}`,
+  fineTypeDoc:     (id: string)    => `fines:types:doc:${id}`,
+  finesBatch:      (hash: string)  => `fines:batch:${hash}`,
 
   // Payments (proof of payment)
-  proofOfPayments: (orgId: string) => `payments:proofs:${orgId}`,
-  proofOfPayment:  (id: string)    => `payments:proof:${id}`,
+  proofOfPayments:     (orgId: string) => `payments:proofs:${orgId}`,
+  proofOfPayment:      (id: string)    => `payments:proof:${id}`,
+  proofOfPaymentByUser: (userId: string, orgId: string) => `payments:proof:user:${userId}:${orgId}`,
 
   // Payment history
   paymentHistory:  (refId: string)               => `payments:history:${refId}`,
   verifiedHistory: (type: string, refId: string) => `payments:verified:${type}:${refId}`,
+
+  // Fees
+  feeCheckTitle: (orgId: string, title: string, year: string, sem: string) => `fees:checkTitle:${orgId}:${title}:${year}:${sem}`,
 
   // Clearance
   clearanceAll:   (orgId: string) => `clearance:all:${orgId}`,

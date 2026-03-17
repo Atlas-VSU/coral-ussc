@@ -3,6 +3,8 @@ import { db } from "@/firebase/firebase.config";
 import { getCurrentUser, getCurrentUserData } from "@/firebase/users";
 import { FineTypeFormData } from "@/lib/validators";
 import { collection, addDoc, Timestamp, updateDoc, doc } from "firebase/firestore";
+import { cacheService } from "@/services/cacheService";
+import { getAllFineTypes } from "../read/fineType";
 
 
   // Centralized error handler
@@ -35,6 +37,9 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
             }
         });
         console.log("Fine type created with ID: ", fineTypeDoc.id);
+        cacheService.invalidateByPrefix('fines:');
+        cacheService.invalidateByPrefix('clearance:');
+        getAllFineTypes().catch(console.error);
     } catch (error) {
         handleFirestoreError(error, `creating fine type`);
         return null;
@@ -63,6 +68,9 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
                   updatedAt: Timestamp.now(),
               }
           });
+          cacheService.invalidateByPrefix('fines:');
+          cacheService.invalidateByPrefix('clearance:');
+          getAllFineTypes().catch(console.error);
       } catch (error) {
           handleFirestoreError(error, `updating fine type`);
           return null;
@@ -83,6 +91,9 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
                     updatedAt: Timestamp.now(),
                 }
             });
+            cacheService.invalidateByPrefix('fines:');
+            cacheService.invalidateByPrefix('clearance:');
+            getAllFineTypes().catch(console.error);
         } catch (error) {
             handleFirestoreError(error, `deleting fine type`);
             return null;
