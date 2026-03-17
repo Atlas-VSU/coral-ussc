@@ -34,7 +34,20 @@ export const fetchClearanceDocuments = async (orgId: string) => {
     );
 }
 
-
+export const fetchClearanceStatus = async (userId: string) => {
+    return cacheService.getOrFetch(
+        CACHE_KEYS.clearanceDoc(userId),
+        async () => {
+            const docRef = doc(db, 'clearanceStatus', userId);
+            const snapshot = await getDoc(docRef);
+            if (snapshot.exists()) {
+                return { id: snapshot.id, ...snapshot.data() } as ClearanceStatus;
+            }
+            return null;
+        },
+        CACHE_DURATIONS.CLEARANCE
+    );
+}
 
 /**
  * Recalculates and updates the overall status of a clearance document based on its blocking items.

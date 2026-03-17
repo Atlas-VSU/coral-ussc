@@ -4,6 +4,8 @@ import { getCurrentUserData } from "@/firebase/users";
 import { query, collection, where, getDocs, doc, getDoc, writeBatch, orderBy, limit } from "firebase/firestore";
 
 
+import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
+
   // Centralized error handler
 const handleFirestoreError = (error: any, context: string) => {
     console.error(`Error ${context}:`, error);
@@ -13,60 +15,61 @@ const handleFirestoreError = (error: any, context: string) => {
 
 
 export const getFineTypeById = async (fineTypeId : string) => {
-    try {
-      const docRef = doc(db, "fineTypes", fineTypeId);
-      const docSnap = await getDoc(docRef);
+    return cacheService.getOrFetch(
+      CACHE_KEYS.fineTypeDoc(fineTypeId),
+      async () => {
+        const docRef = doc(db, "fineTypes", fineTypeId);
+        const docSnap = await getDoc(docRef);
 
-      if (docSnap.exists()) {
-          const doc = docSnap.data();
-            return {
-                id: fineTypeId,
-                orgId: doc.orgId || null,
-                name: doc.name,
-                description: doc.description,
-                defaultAmount: doc.defaultAmount,
-                requiresTimeIn: doc.requiresTimeIn,
-                requiresTimeOut: doc.requiresTimeOut,
-                majorEventsOnly: doc.majorEventsOnly,
-                isActive: doc.isActive,
-            };
-        } else {
-          console.log("No such document!");
-              return null;
-        }
-       
-      } catch (error) {
-        handleFirestoreError(error, "fetch fine type");
-        return null;
-      }
+        if (docSnap.exists()) {
+            const doc = docSnap.data();
+              return {
+                  id: fineTypeId,
+                  orgId: doc.orgId || null,
+                  name: doc.name,
+                  description: doc.description,
+                  defaultAmount: doc.defaultAmount,
+                  requiresTimeIn: doc.requiresTimeIn,
+                  requiresTimeOut: doc.requiresTimeOut,
+                  majorEventsOnly: doc.majorEventsOnly,
+                  isActive: doc.isActive,
+              } as FineType;
+          } else {
+            console.log("No such document!");
+                return null;
+          }
+      },
+      CACHE_DURATIONS.FINES
+    );
 }
   
 
 export const getAllFineTypes = async () => { 
+  const currentUser = await getCurrentUserData();
+  const orgId = currentUser?.uid || null;
 
-  try {
-    const currentUser = await getCurrentUserData();
-    let fineTypeQuery = query(
-      collection(db, "fineTypes"),
-      where("isActive", "==", true),
-      where("orgId", "==",currentUser?.uid || null)
-    );
-    const querySnapshot = await getDocs(fineTypeQuery);
-    const fineTypes = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      orgId: doc.data().orgId || null,
-      name: doc.data().name,
-      description: doc.data().description,
-      defaultAmount: doc.data().defaultAmount,
-      requiresTimeIn: doc.data().requiresTimeIn,
-      requiresTimeOut: doc.data().requiresTimeOut,
-      majorEventsOnly: doc.data().majorEventsOnly,
-      isActive: doc.data().isActive,
-    })) as FineType[];
-    return fineTypes;
-  } catch (error) {
-    handleFirestoreError(error, "fetch fine types");
-    return [];
-  }
+  return cacheService.getOrFetch(
+    CACHE_KEYS.fineTypesAll(orgId || ''),
+    async () => {
+      let fineTypeQuery = query(
+        collection(db, "fineTypes"),
+        where("isActive", "==", true),
+        where("orgId", "==", orgId)
+      );
+      const querySnapshot = await getDocs(fineTypeQuery);
+      return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        orgId: doc.data().orgId || null,
+        name: doc.data().name,
+        description: doc.data().description,
+        defaultAmount: doc.data().defaultAmount,
+        requiresTimeIn: doc.data().requiresTimeIn,
+        requiresTimeOut: doc.data().requiresTimeOut,
+        majorEventsOnly: doc.data().majorEventsOnly,
+        isActive: doc.data().isActive,
+      })) as FineType[];
+    },
+    CACHE_DURATIONS.FINES
+  );
 }
 
