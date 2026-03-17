@@ -189,6 +189,8 @@ export default function FinesPaymentFormPage({
   const mobileTotal = isContextualFlow
     ? Number(selectedPaymentItems?.totalAmount ?? 0)
     : (Number.isFinite(watchedAmount) ? watchedAmount : 0);
+  const feeCount = selectedPaymentItems?.fees.length ?? 0;
+  const fineCount = selectedPaymentItems?.fineItems.length ?? 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -549,6 +551,9 @@ export default function FinesPaymentFormPage({
             <div className="mx-auto max-w-2xl flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">Total Amount</p>
+                {isContextualFlow && (
+                  <p className="text-[11px] text-muted-foreground">Includes {feeCount} fees + {fineCount} fines</p>
+                )}
                 <p className="text-lg font-bold text-[#1B5E20] dark:text-[#8BC34A]">₱{mobileTotal.toFixed(2)}</p>
               </div>
               <Button
