@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { AlertCircle, ArrowLeft, Building2, CreditCard, Loader2, Receipt, ShieldAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -302,6 +303,35 @@ export default function FinesPaymentFormPage({
               )}
             </CardContent>
           </Card>
+
+          {isGcash && (
+            <Card className="border-border bg-gradient-to-br from-blue-50 to-blue-50/50 dark:from-blue-950/30 dark:to-blue-950/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm text-foreground flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-blue-600" />
+                  GCash Payment Instructions
+                </CardTitle>
+                <CardDescription>Scan the QR code below using your GCash app to pay</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center gap-4">
+                <div className="relative w-48 h-48 bg-white rounded-lg p-2 border-2 border-blue-200 dark:border-blue-800">
+                  <Image
+                    src="/images/public-student-payment/mock-qr-student-payment1.jpeg"
+                    alt="GCash Payment QR Code"
+                    fill
+                    className="object-contain"
+                    priority
+                  />
+                </div>
+                <div className="text-center text-sm text-muted-foreground space-y-1">
+                  <p className="font-medium">1. Open GCash app</p>
+                  <p>2. Tap "Scan QR" and scan the code above</p>
+                  <p>3. Complete your payment</p>
+                  <p className="font-medium text-green-600 dark:text-green-400 mt-2">Save your reference number for verification</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="border-border">
             <CardHeader className="pb-3">
