@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PaymentFormData, paymentSchema } from "@/lib/validators";
@@ -21,6 +21,7 @@ interface UsePaymentFormOptions {
 export function usePaymentForm(options?: UsePaymentFormOptions) {
   const [image, setImage] = useState<ImageData | null>(null);
   const [status, setStatus] = useState<FormStatus>("idle");
+  const submitLockRef = useRef(false);
 
   const defaultValues: PaymentFormData = {
     userName: "",
@@ -56,6 +57,8 @@ export function usePaymentForm(options?: UsePaymentFormOptions) {
   };
 
   const onSubmit = async (data: PaymentFormData) => {
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
     setStatus("submitting");
     try {
       if (options?.onSubmitPayment) {
@@ -79,6 +82,7 @@ export function usePaymentForm(options?: UsePaymentFormOptions) {
     } catch (error) {
       console.error("Submission failed:", error);
       setStatus("idle");
+      submitLockRef.current = false;
     }
   };
 
@@ -86,6 +90,7 @@ export function usePaymentForm(options?: UsePaymentFormOptions) {
     form.reset(defaultValues);
     setImage(null);
     setStatus("idle");
+    submitLockRef.current = false;
   };
 
   return {
