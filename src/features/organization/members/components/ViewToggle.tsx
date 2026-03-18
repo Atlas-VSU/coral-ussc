@@ -17,8 +17,8 @@ export function ViewToggle({ viewMode, onViewChange }: ViewToggleProps) {
         onClick={() => onViewChange("card")}
         className={`h-8 px-3 transition-all ${
           viewMode === "card"
-            ? "bg-white shadow-sm text-gray-900"
-            : "hover:bg-gray-200 text-gray-600"
+            ? "bg-gray-200 shadow-sm text-black"
+            : "text-black hover:bg-green-100 hover:text-black"
         }`}
       >
         <LayoutGridIcon className="h-4 w-4 mr-2" />
@@ -30,8 +30,8 @@ export function ViewToggle({ viewMode, onViewChange }: ViewToggleProps) {
         onClick={() => onViewChange("table")}
         className={`h-8 px-3 transition-all ${
           viewMode === "table"
-            ? "bg-white shadow-sm text-gray-900"
-            : "hover:bg-gray-200 text-gray-600"
+            ? "bg-gray-200 shadow-sm text-black"
+            : "text-black hover:bg-green-100 hover:text-black"
         }`}
       >
         <ListIcon className="h-4 w-4 mr-2" />

@@ -40,9 +40,7 @@ export function MembersHeader({
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">
-          Members
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">Members</h1>
         <p className="text-sm text-gray-500">
           {formattedMemberCount} {totalMembers === 1 ? "member" : "members"} in
           your organization
@@ -67,7 +65,7 @@ export function MembersHeader({
             type="submit"
             variant="ghost"
             size="sm"
-            className="absolute right-0 top-0 h-full px-3"
+            className="absolute right-0 top-0 h-full px-3 text-black hover:bg-green-100 hover:text-black"
             disabled
           >
             <Search className="h-4 w-4" />
@@ -80,7 +78,7 @@ export function MembersHeader({
             size="sm"
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="relative"
+            className="relative text-black border-gray-300 hover:bg-green-100 hover:text-black"
           >
             <RefreshCw
               className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
@@ -92,13 +90,17 @@ export function MembersHeader({
             variant="outline"
             size="sm"
             onClick={onBulkImport}
-            className="hidden md:flex"
+            className="hidden md:flex text-black border-gray-300 hover:bg-green-100 hover:text-black"
           >
             <Upload className="h-4 w-4 mr-2" />
             Import
           </Button>
 
-          <Button size="sm" onClick={onAddMember}>
+          <Button
+            size="sm"
+            onClick={onAddMember}
+            className="bg-white border border-gray-300 text-black hover:bg-green-100 hover:text-black"
+          >
             <UserPlus className="h-4 w-4 mr-2" />
             Add Member
           </Button>

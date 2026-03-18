@@ -38,6 +38,10 @@ export function MembersFilters({
 }: MembersFiltersProps) {
   const [sortBy, setSortBy] = useState<string>("name-asc");
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
+  const lightSelectTriggerClass =
+    "bg-white text-black border-gray-200 hover:bg-green-50 focus:ring-green-200";
+  const lightSelectContentClass = "bg-white text-black border-gray-200";
+  const lightSelectItemClass = "text-black focus:bg-green-50 focus:text-black";
 
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
@@ -111,13 +115,19 @@ export function MembersFilters({
             onValueChange={onProgramFilter}
             disabled={disabled}
           >
-            <SelectTrigger className="w-full h-10 border-gray-200">
+            <SelectTrigger className={`w-full h-10 ${lightSelectTriggerClass}`}>
               <SelectValue placeholder="Filter by program" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Programs</SelectItem>
+            <SelectContent className={lightSelectContentClass}>
+              <SelectItem value="all" className={lightSelectItemClass}>
+                All Programs
+              </SelectItem>
               {programs.map((program) => (
-                <SelectItem key={program.id} value={program.id}>
+                <SelectItem
+                  key={program.id}
+                  value={program.id}
+                  className={lightSelectItemClass}
+                >
                   {program.name}
                 </SelectItem>
               ))}
@@ -130,16 +140,28 @@ export function MembersFilters({
             onValueChange={handleSortByChange}
             disabled={disabled}
           >
-            <SelectTrigger className="w-full h-10 border-gray-200">
+            <SelectTrigger className={`w-full h-10 ${lightSelectTriggerClass}`}>
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-              <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-              <SelectItem value="id-asc">Student ID (Low to High)</SelectItem>
-              <SelectItem value="id-desc">Student ID (High to Low)</SelectItem>
-              <SelectItem value="date-asc">Date (Newest First)</SelectItem>
-              <SelectItem value="date-desc">Date (Oldest First)</SelectItem>
+            <SelectContent className={lightSelectContentClass}>
+              <SelectItem value="name-asc" className={lightSelectItemClass}>
+                Name (A-Z)
+              </SelectItem>
+              <SelectItem value="name-desc" className={lightSelectItemClass}>
+                Name (Z-A)
+              </SelectItem>
+              <SelectItem value="id-asc" className={lightSelectItemClass}>
+                Student ID (Low to High)
+              </SelectItem>
+              <SelectItem value="id-desc" className={lightSelectItemClass}>
+                Student ID (High to Low)
+              </SelectItem>
+              <SelectItem value="date-asc" className={lightSelectItemClass}>
+                Date (Newest First)
+              </SelectItem>
+              <SelectItem value="date-desc" className={lightSelectItemClass}>
+                Date (Oldest First)
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -167,13 +189,21 @@ export function MembersFilters({
               onValueChange={onProgramFilter}
               disabled={disabled}
             >
-              <SelectTrigger className="w-[160px] h-9 border-gray-200">
+              <SelectTrigger
+                className={`w-[160px] h-9 ${lightSelectTriggerClass}`}
+              >
                 <SelectValue placeholder="All Programs" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Programs</SelectItem>
+              <SelectContent className={lightSelectContentClass}>
+                <SelectItem value="all" className={lightSelectItemClass}>
+                  All Programs
+                </SelectItem>
                 {programs.map((program) => (
-                  <SelectItem key={program.id} value={program.id}>
+                  <SelectItem
+                    key={program.id}
+                    value={program.id}
+                    className={lightSelectItemClass}
+                  >
                     {program.name}
                   </SelectItem>
                 ))}
@@ -186,16 +216,30 @@ export function MembersFilters({
               onValueChange={handleSortByChange}
               disabled={disabled}
             >
-              <SelectTrigger className="w-[150px] h-9 border-gray-200">
+              <SelectTrigger
+                className={`w-[150px] h-9 ${lightSelectTriggerClass}`}
+              >
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-                <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-                <SelectItem value="id-asc">ID (Low-High)</SelectItem>
-                <SelectItem value="id-desc">ID (High-Low)</SelectItem>
-                <SelectItem value="date-asc">Date (Newest First)</SelectItem>
-                <SelectItem value="date-desc">Date (Oldest First)</SelectItem>
+              <SelectContent className={lightSelectContentClass}>
+                <SelectItem value="name-asc" className={lightSelectItemClass}>
+                  Name (A-Z)
+                </SelectItem>
+                <SelectItem value="name-desc" className={lightSelectItemClass}>
+                  Name (Z-A)
+                </SelectItem>
+                <SelectItem value="id-asc" className={lightSelectItemClass}>
+                  ID (Low-High)
+                </SelectItem>
+                <SelectItem value="id-desc" className={lightSelectItemClass}>
+                  ID (High-Low)
+                </SelectItem>
+                <SelectItem value="date-asc" className={lightSelectItemClass}>
+                  Date (Newest First)
+                </SelectItem>
+                <SelectItem value="date-desc" className={lightSelectItemClass}>
+                  Date (Oldest First)
+                </SelectItem>
               </SelectContent>
             </Select>
 
@@ -212,7 +256,7 @@ export function MembersFilters({
                   handleSortByChange("name-asc");
                 }}
                 disabled={disabled}
-                className="text-xs h-9 px-3 text-gray-500 hover:text-gray-700"
+                className="text-xs h-9 px-3 text-black hover:bg-green-100 hover:text-black"
               >
                 Clear all
               </Button>
@@ -232,7 +276,7 @@ export function MembersFilters({
                 handleSortByChange("name-asc");
               }}
               disabled={disabled}
-              className="w-full text-xs h-9 text-gray-500 hover:text-gray-700 justify-center"
+              className="w-full text-xs h-9 text-black hover:bg-green-100 hover:text-black justify-center"
             >
               Clear all filters
             </Button>
