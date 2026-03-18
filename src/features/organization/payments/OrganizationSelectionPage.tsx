@@ -7,11 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, BookOpen, Building2, ChevronRight, Loader2, UserCircle } from "lucide-react";
 import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
 import { PaymentProgressBar } from "./components/PaymentProgressBar";
+import { ResponsiveProgramText } from "./components/ResponsiveProgramText";
 
 interface StudentData {
   studentId: string;
   program: string;
   name: string;
+  programShortName?: string;
+  programAcronym?: string;
 }
 
 interface Organization {
@@ -85,7 +88,11 @@ export default function OrganizationSelectionPage({
                   <span className="text-muted-foreground/50">•</span>
                   <span className="flex items-center gap-1">
                     <BookOpen className="h-3.5 w-3.5 shrink-0" />
-                    {studentData.program}
+                    <ResponsiveProgramText
+                      fullName={studentData.program}
+                      shortName={studentData.programShortName}
+                      acronym={studentData.programAcronym}
+                    />
                   </span>
                 </div>
               </div>
