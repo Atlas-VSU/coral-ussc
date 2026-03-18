@@ -88,20 +88,22 @@ export const usePaymentApproval = () => {
 
                 const items = payment.metadata.items;
                 let parentFine = "";
+                let fineItemIds: string[] = [];
 
                 for (const item of items) {
                     if (item.paymentType === "fees") {
                         const paymentHistory = await getPendingPaymentHistory(item.refId, "fees");
-                        await rejectPaymentHistory(paymentHistory!.id, verifier, "fees", item.refId, reason);
+                        await rejectPaymentHistory(paymentHistory!.id, verifier, "fees", item.refId, [], reason);
                         await recalculateFees(item.refId,0);
                     }
                     if (item.paymentType === "fines") {
                         parentFine = item.parentFineId;
+                        fineItemIds.push(item.refId);
                     }
                 }
                 if (parentFine !== "") {
                     const paymentHistory = await getPendingPaymentHistory(parentFine, "fines");
-                    await rejectPaymentHistory(paymentHistory!.id, verifier, "fines", parentFine, reason);
+                    await rejectPaymentHistory(paymentHistory!.id, verifier, "fines", parentFine,fineItemIds, reason);
                 }
                 await recalculateFines(parentFine,0);
                 await recalculateClearanceStatus(paymentOwner.id!);
