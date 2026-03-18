@@ -120,6 +120,7 @@ export const rejectPaymentHistory = async (
                 const feeRef = doc(db, "fees", refId);
                 const feeSnap = await getDoc(feeRef);
                 if (feeSnap.exists()) {
+                    await updateDoc(feeRef, {status: "unpaid"});
                     const feeData = feeSnap.data();
                     const clearanceRef = doc(db, 'clearanceStatus', feeData.userId);
                     await updateDoc(clearanceRef, {
