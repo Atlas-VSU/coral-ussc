@@ -39,7 +39,7 @@ export function PaymentProgressBar({ currentStep, subtitle }: PaymentProgressBar
                   {step.id}
                 </div>
                 <span
-                  className={`text-[11px] sm:text-xs text-center ${
+                  className={`hidden min-[360px]:block text-[11px] sm:text-xs text-center ${
                     isCompleted || isActive ? "text-foreground font-medium" : "text-muted-foreground"
                   }`}
                 >
