@@ -123,6 +123,7 @@ export default function PaymentsPage() {
           amountPaid:   selectedPayment.amount,
           referenceNo:  selectedPayment.referenceNumber,
           submittedAt:  selectedPayment.submittedAt.toDate().toLocaleDateString(),
+          notes: selectedPayment.notes,
           receiptContent: selectedPayment.imageUrl,
           declineRemarks: selectedPayment.rejectionReason,
           reviewedBy:   selectedPayment.verifiedByName,
