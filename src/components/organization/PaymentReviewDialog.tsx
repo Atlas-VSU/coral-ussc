@@ -99,7 +99,6 @@ export function PaymentReviewDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
  
   const isPending = Boolean(onApprove && onReject)
-
   async function handleApproveConfirmed() {
     setIsSubmitting(true)
     await onApprove?.()
