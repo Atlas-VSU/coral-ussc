@@ -41,7 +41,7 @@ export const getProofOfPaymentByUserId = async (userId: string, orgId?:string) =
         CACHE_KEYS.proofOfPaymentByUser(userId, orgId || 'unknown'),
         async () => {
             try {
-                const constraints = [where("userId", "==", userId), where("isArchived", "==", false)];
+                const constraints = [where("isArchived", "==", false), where("userId", "==", userId)];
                 if (orgId) {
                     constraints.push(where("orgId", "==", orgId));
                 }
@@ -53,6 +53,34 @@ export const getProofOfPaymentByUserId = async (userId: string, orgId?:string) =
                 }
                 const doc = docSnap.docs[0];
                 return { id: doc.id, ...doc.data() } as ProofOfPayment;
+            } catch (error) {
+                console.error("Error fetching proof of payment:", error);
+                throw new Error("Failed to fetch proof of payment. Please try again.");
+            }
+        },
+        CACHE_DURATIONS.PAYMENTS
+    );
+}
+
+
+
+export const getPendingProofOfPaymentsByUserId = async (userId: string, orgId?:string) => {
+    return cacheService.getOrFetch(
+        CACHE_KEYS.proofOfPaymentByUser(userId, orgId || 'unknown'),
+        async () => {
+            try {
+                const constraints = [where("isArchived", "==", false), where("userId", "==", userId), where("status", "==", "pending")];
+                if (orgId) {
+                    constraints.push(where("orgId", "==", orgId));
+                }
+                const docSnap = await getDocs(query(collection(db, "proofOfPayments"),
+                    ...constraints));
+                
+                if (docSnap.empty) {
+                    return null;
+                }
+                const docs = docSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProofOfPayment));
+                return docs;
             } catch (error) {
                 console.error("Error fetching proof of payment:", error);
                 throw new Error("Failed to fetch proof of payment. Please try again.");

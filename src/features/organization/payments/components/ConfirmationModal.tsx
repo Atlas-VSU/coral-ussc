@@ -9,11 +9,14 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, User, GraduationCap, IdCard } from "lucide-react";
+import { ResponsiveProgramText } from "./ResponsiveProgramText";
 
 interface StudentData {
   name: string;
   studentId: string;
   program: string;
+  programShortName?: string;
+  programAcronym?: string;
 }
 
 interface ConfirmationModalProps {
@@ -77,7 +80,11 @@ export function ConfirmationModal({
             <div className="flex-1 min-w-0">
               <p className="text-xs text-muted-foreground mb-0.5">Program</p>
               <p className="text-sm font-medium text-foreground">
-                {studentData.program}
+                <ResponsiveProgramText
+                  fullName={studentData.program}
+                  shortName={studentData.programShortName}
+                  acronym={studentData.programAcronym}
+                />
               </p>
             </div>
           </div>

@@ -83,6 +83,7 @@ export const rejectPaymentHistory = async (
     verifier: Member,
     type: string,
     refId: string,
+    itemRefId?: string[],
     reason?: string,
 ) => {
     const docRef = doc(db, type, refId, "paymentHistory", paymentHistoryId);
@@ -107,9 +108,11 @@ export const rejectPaymentHistory = async (
                         await updateDoc(fineRef, {status: "unpaid"});
                      }
                     const clearanceRef = doc(db, 'clearanceStatus', fineData.userId);
-                    await updateDoc(clearanceRef, {
-                        [`blockingItems.${refId}.pendingReview`]: false,
+                    for (const itemId of itemRefId ?? []) {
+                        await updateDoc(clearanceRef, {
+                        [`blockingItems.${itemId}.pendingReview`]: false,
                     });
+                    }
                 }
             }
 

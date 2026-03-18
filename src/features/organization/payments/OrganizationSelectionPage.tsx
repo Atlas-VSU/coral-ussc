@@ -4,12 +4,17 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Building2, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Building2, ChevronRight, Loader2, UserCircle } from "lucide-react";
+import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
+import { PaymentProgressBar } from "./components/PaymentProgressBar";
+import { ResponsiveProgramText } from "./components/ResponsiveProgramText";
 
 interface StudentData {
   studentId: string;
   program: string;
   name: string;
+  programShortName?: string;
+  programAcronym?: string;
 }
 
 interface Organization {
@@ -23,6 +28,7 @@ interface Organization {
 interface OrganizationSelectionPageProps {
   studentData: StudentData;
   organizations: Organization[];
+  currentStep: 1 | 2 | 3 | 4;
   isLoading?: boolean;
   error?: string | null;
   onBack: () => void;
@@ -32,6 +38,7 @@ interface OrganizationSelectionPageProps {
 export default function OrganizationSelectionPage({
   studentData,
   organizations,
+  currentStep,
   isLoading = false,
   error = null,
   onBack,
@@ -50,8 +57,13 @@ export default function OrganizationSelectionPage({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8 px-4">
+    <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background py-8 px-3 sm:px-4">
       <div className="max-w-4xl mx-auto space-y-6">
+        <PaymentBrandHeader />
+        <PaymentProgressBar
+          currentStep={currentStep}
+          subtitle="Choose the organization you want to settle dues with"
+        />
         {/* Back Button */}
         <Button
           variant="ghost"
@@ -59,27 +71,31 @@ export default function OrganizationSelectionPage({
           className="gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Student Verification
+          <span className="min-[400px]:hidden">Back</span>
+          <span className="hidden min-[400px]:inline">Back to Student Verification</span>
         </Button>
 
         {/* Student Info Banner */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Student Information</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-3">
-            <div className="flex flex-wrap gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Name:</span>{" "}
-                <span className="font-medium">{studentData.name}</span>
+        <Card className="border-[#1B5E20]/20 dark:border-[#1B5E20]/30 bg-[#1B5E20]/5 dark:bg-[#1B5E20]/10">
+          <CardContent className="px-3 py-3 sm:px-6 sm:py-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1B5E20]/15 dark:bg-[#1B5E20]/25">
+                <UserCircle className="h-6 w-6 text-[#1B5E20] dark:text-[#8BC34A]" />
               </div>
-              <div>
-                <span className="text-muted-foreground">Student ID:</span>{" "}
-                <span className="font-medium">{studentData.studentId}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Program:</span>{" "}
-                <span className="font-medium">{studentData.program}</span>
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <p className="font-semibold text-base leading-tight truncate">{studentData.name}</p>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-muted-foreground">
+                  <span className="font-mono font-medium text-foreground/80">{studentData.studentId}</span>
+                  <span className="text-muted-foreground/50">•</span>
+                  <span className="flex items-center gap-1">
+                    <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                    <ResponsiveProgramText
+                      fullName={studentData.program}
+                      shortName={studentData.programShortName}
+                      acronym={studentData.programAcronym}
+                    />
+                  </span>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -93,7 +109,7 @@ export default function OrganizationSelectionPage({
               Choose the organization you want to pay fees or fines for
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-4">
+          <CardContent className="px-3 pt-3 sm:px-6 sm:pt-4">
             {isLoading ? (
               <div className="py-10 text-center text-muted-foreground text-sm flex items-center justify-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -110,40 +126,40 @@ export default function OrganizationSelectionPage({
                   <button
                     key={org.id}
                     onClick={() => handleOrgSelect(org.id)}
-                    className={`w-full text-left p-4 rounded-lg border-2 transition-all hover:border-primary/50 hover:bg-accent/50 ${
+                    className={`w-full text-left p-3 sm:p-4 rounded-lg border-2 transition-all hover:border-[#1B5E20]/50 hover:bg-[#1B5E20]/5 ${
                       selectedOrg === org.id
-                        ? "border-primary bg-accent"
+                        ? "border-[#1B5E20] bg-[#1B5E20]/5"
                         : "border-border bg-card"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-3 flex-1">
-                        <div className="p-2 rounded-lg bg-primary/10 mt-1">
-                          <Building2 className="h-5 w-5 text-primary" />
+                    <div className="flex items-start justify-between gap-2 sm:gap-4">
+                      <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
+                        <div className="p-1.5 sm:p-2 rounded-lg bg-[#1B5E20]/10 mt-1 shrink-0">
+                          <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-[#1B5E20] dark:text-[#8BC34A]" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-base">
+                          <div className="mb-1 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                            <h3 className="font-semibold text-sm leading-tight sm:text-base break-words">
                               {org.name}
                             </h3>
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="secondary" className="text-[10px] sm:text-xs shrink-0">
                               {org.acronym}
                             </Badge>
                           </div>
                           {org.description && (
-                            <p className="text-sm text-muted-foreground mb-2">
+                            <p className="mb-2 text-xs sm:text-sm text-muted-foreground leading-relaxed break-words">
                               {org.description}
                             </p>
                           )}
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">
+                          <div className="flex flex-col gap-0.5 min-[380px]:flex-row min-[380px]:items-center min-[380px]:gap-2">
+                            <span className="text-xs sm:text-sm text-muted-foreground">
                               Outstanding Balance:
                             </span>
                             <span
-                              className={`font-semibold ${
+                              className={`text-base font-semibold ${
                                 org.outstandingAmount > 0
                                   ? "text-destructive"
-                                  : "text-green-600 dark:text-green-400"
+                                  : "text-[#1B5E20] dark:text-[#8BC34A]"
                               }`}
                             >
                               ₱{org.outstandingAmount.toFixed(2)}
@@ -152,8 +168,8 @@ export default function OrganizationSelectionPage({
                         </div>
                       </div>
                       <ChevronRight
-                        className={`h-5 w-5 mt-1 transition-transform ${
-                          selectedOrg === org.id ? "text-primary" : "text-muted-foreground"
+                        className={`mt-1 hidden h-5 w-5 shrink-0 min-[400px]:block transition-transform ${
+                          selectedOrg === org.id ? "text-[#1B5E20] dark:text-[#8BC34A]" : "text-muted-foreground"
                         }`}
                       />
                     </div>
@@ -170,7 +186,7 @@ export default function OrganizationSelectionPage({
             onClick={handleContinue}
             disabled={!selectedOrg || isLoading || organizations.length === 0}
             size="lg"
-            className="gap-2"
+            className="w-full min-[400px]:w-auto gap-2 bg-[#1B5E20] hover:bg-[#2E7D32] text-white dark:bg-[#1B5E20] dark:hover:bg-[#2E7D32]"
           >
             Continue to Fees Selection
             <ChevronRight className="h-4 w-4" />
