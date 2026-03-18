@@ -22,6 +22,8 @@ import Link from "next/link";
 import { Event } from "../types";
 import { formatDate } from "@/utils/useGeneralUtils";
 import { useState } from "react";
+import { getTime } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface EventCardProps {
   event: Event;
@@ -32,18 +34,16 @@ interface EventCardProps {
   onDelete: (event: Event) => void;
 }
 
-export function EventCard({
-  event,
-  onEdit,
-  onArchive,
-  onIssueFine,
-  onUnarchive,
-  onDelete,
-}: EventCardProps) {
+
+export function EventCard({ event, onEdit, onArchive, onIssueFine, onUnarchive, onDelete }: EventCardProps) {
   const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [isViewAttendeesLoading, setIsViewAttendeesLoading] = useState(false);
   const [isLogAttendanceLoading, setIsLogAttendanceLoading] = useState(false);
-  // Format time to 12-hour format
+
+  const { timeInStart, timeInEnd, timeOutStart, timeOutEnd } = event;
+  const hasTimeIn = timeInStart && timeInEnd;
+  const hasTimeOut = timeOutStart && timeOutEnd;
+
   const formatTime = (time: string | null) => {
     if (!time) return null;
 
@@ -87,36 +87,36 @@ export function EventCard({
     }
   };
 
-  // Get the appropriate badge color and style based on event status
+
   const getStatusBadge = () => {
     switch (event.status) {
       case "ongoing":
         return (
-          <Badge className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-300 dark:from-green-900/30 dark:to-emerald-900/30 dark:text-green-400 dark:border-green-600 px-3 py-1.5 font-bold text-xs shadow-sm">
-            <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-            Ongoing
-          </Badge>
-        );
-      case "upcoming":
-        return (
-          <Badge variant="secondary" className="bg-gradient-to-r from-blue-100 to-sky-100 text-blue-800 border-blue-300 dark:from-blue-900/30 dark:to-sky-900/30 dark:text-blue-400 dark:border-blue-600 px-3 py-1.5 font-bold text-xs shadow-sm">
-            <CalendarIcon className="w-3 h-3 mr-1" />
-            Upcoming
-          </Badge>
-        );
-      case "completed":
-        return (
-          <Badge variant="outline" className="bg-gradient-to-r from-gray-100 to-slate-100 text-gray-800 border-gray-300 dark:from-gray-800/50 dark:to-slate-800/50 dark:text-gray-300 dark:border-gray-600 px-3 py-1.5 font-bold text-xs shadow-sm">
-            Completed
-          </Badge>
-        );
-      case "archived":
-        return (
-          <Badge variant="outline" className="text-gray-500 dark:text-gray-400 border-gray-300 dark:border-gray-600 px-3 py-1.5 font-bold text-xs">
-            Archived
-          </Badge>
-        );
-      default:
+          <Badge className="bg-[#C8E6C9] text-[#1B5E20] border-[#A5D6A7] font-semibold text-xs px-2.5 py-1">
+          <span className="w-1.5 h-1.5 bg-[#1B5E20] rounded-full mr-1.5 animate-pulse inline-block" />
+          Ongoing
+        </Badge>
+          )
+        case "upcoming":
+          return (
+            <Badge className="bg-blue-100 text-blue-800 border-blue-300 font-semibold text-xs px-2.5 py-1">
+              <CalendarIcon className="w-3 h-3 mr-1" />
+              Upcoming
+            </Badge>
+          )
+        case "completed":
+          return (
+            <Badge variant="outline" className="bg-muted text-muted-foreground font-semibold text-xs px-2.5 py-1">
+              Completed
+            </Badge>
+          )
+        case "archived":
+          return (
+            <Badge variant="outline" className="text-muted-foreground font-semibold text-xs px-2.5 py-1">
+              Archived
+            </Badge>
+          )
+          default:
         return (
           <Badge variant="secondary" className="px-3 py-1.5 font-bold text-xs">
             {((event.status as string).charAt(0).toUpperCase() + (event.status as string).slice(1))}
@@ -127,54 +127,52 @@ export function EventCard({
 
   const handleEditEvent = () => {
     onEdit(event);
-  };
+  }
+
+  const handleIssueFine = () => {
+    onIssueFine(event);
+  }
 
   const handleArchiveEvent = async () => {
     setIsOperationLoading(true);
-    try {
+    try { 
       await onArchive(event);
-    } finally {
+    } finally { 
       setIsOperationLoading(false);
     }
-  };
-
-    const handleIssueFine = () => { 
-    onIssueFine(event);
   }
 
   const handleUnarchiveEvent = async () => {
     setIsOperationLoading(true);
-    try {
+    try { 
       await onUnarchive(event);
-    } finally {
+    } finally { 
       setIsOperationLoading(false);
     }
-  };
+  }
 
   const handleDeleteEvent = async () => {
     setIsOperationLoading(true);
-    try {
-      await onDelete(event);
-    } finally {
-      setIsOperationLoading(false);
+    try { 
+      await onDelete(event); 
+    } finally { 
+      setIsOperationLoading(false); 
     }
-  };
+  }
 
   const handleViewAttendees = () => {
     setIsViewAttendeesLoading(true);
-    // Simulate brief loading for user feedback
     setTimeout(() => {
       setIsViewAttendeesLoading(false);
     }, 500);
-  };
+  }
 
   const handleLogAttendance = () => {
     setIsLogAttendanceLoading(true);
-    // Simulate brief loading for user feedback
     setTimeout(() => {
       setIsLogAttendanceLoading(false);
     }, 500);
-  };
+  }
 
   return (
     <Card className="group hover:shadow-lg transition-all duration-300 border-border bg-card overflow-hidden h-full flex flex-col">
@@ -208,11 +206,8 @@ export function EventCard({
             <div className="flex flex-wrap items-center gap-2 mb-3">
               {getStatusBadge()}
               {event.majorEvent && (
-                <Badge
-                  variant="outline"
-                  className="bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-800 border-amber-300 dark:from-amber-900/30 dark:to-yellow-900/30 dark:text-amber-400 dark:border-amber-600 px-3 py-1.5 w-fit font-bold text-xs shadow-sm"
-                >
-                  <StarIcon className="h-3 w-3 mr-1 fill-amber-600 dark:fill-amber-400" />
+                <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-300 font-semibold text-xs px-2.5 py-1">
+                  <StarIcon className="h-3 w-3 mr-1 fill-amber-600" />
                   Major Event
                 </Badge>
               )}
@@ -224,76 +219,70 @@ export function EventCard({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  className="h-10 w-10 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 flex-shrink-0 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
-                >
-                  <MoreHorizontalIcon className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 shadow-lg">
-                {event.status === "archived" ? (
-                  <>
-                    <DropdownMenuItem 
-                      onClick={handleUnarchiveEvent} 
-                      className="font-medium"
-                      disabled={isOperationLoading}
-                    >
-                      {isOperationLoading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Unarchiving...
+          {/* Actions */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <MoreHorizontalIcon className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              {event.status === "archived" ? (
+                <>
+                  <DropdownMenuItem
+                    onClick={handleUnarchiveEvent} 
+                    disabled={isOperationLoading}
+                  >
+                    {isOperationLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Unarchiving…
+                      </>
+                    ) : ( 
+                      "Unarchive" 
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleDeleteEvent}
+                    className="text-destructive"
+                    disabled={isOperationLoading}
+                  >
+                    {isOperationLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Deleting…
                         </>
-                      ) : (
-                        "Unarchive"
-                      )}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={handleDeleteEvent}
-                      className="text-red-600 dark:text-red-400 font-medium"
-                      disabled={isOperationLoading}
-                    >
-                      {isOperationLoading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Deleting...
-                        </>
-                      ) : (
-                        "Delete"
-                      )}
-                    </DropdownMenuItem>
-                  </>
-                ) : (
-                  <>
-                    {(!event.finesGenerated && event.status === "completed") && (<DropdownMenuItem onClick={handleIssueFine} className="font-medium" disabled={isOperationLoading}>
+                    ) : (
+                      "Delete"
+                    )}
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  {(!event.finesGenerated && event.status === "completed") && (<DropdownMenuItem onClick={handleIssueFine} className="font-medium" disabled={isOperationLoading}>
                       Issue Fines
-                    </DropdownMenuItem>)}
-                    <DropdownMenuItem onClick={handleEditEvent} className="font-medium" disabled={isOperationLoading}>
-                      Edit Event
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={handleArchiveEvent}
-                      className="text-red-600 dark:text-red-400 font-medium"
-                      disabled={isOperationLoading}
-                    >
-                      {isOperationLoading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Archiving...
-                        </>
-                      ) : (
-                        "Archive"
-                      )}
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                  </DropdownMenuItem>)}
+                  <DropdownMenuItem onClick={handleEditEvent} disabled={isOperationLoading}>
+                    Edit Event
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleArchiveEvent}
+                    className="text-destructive"
+                    disabled={isOperationLoading}
+                  >
+                    {isOperationLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Archiving…
+                      </>
+                    ) : (
+                      "Archive"
+                    )}
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardHeader>
 
@@ -386,10 +375,61 @@ export function EventCard({
           )}
         </div>
 
-        {/* Action Buttons */}
-        {event.status !== "upcoming" && (
-          <div className="pt-5 border-t border-gray-100 dark:border-gray-700 mt-auto">
-            <div className="flex flex-col gap-3">
+        {/* Schedule */}
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+            <ClockIcon className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Schedule</p>
+            <div className="text-sm font-medium text-foreground">{getTimeDisplay()}</div>
+          </div>
+        </div>
+
+        {/* Attendees */}
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+            <UsersIcon className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Attendance</p>
+            <p className="text-sm font-medium text-foreground">
+              {event.status === "upcoming" ? "Not started" : `${event.attendees} attendees`}
+            </p>
+          </div>
+        </div>
+
+        {/* Note */}
+        {event.note && (
+          <div className="mt-auto pt-3 border-t border-border">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Notes</p>
+            <p className={cn("text-xs text-muted-foreground leading-relaxed", event.note.length > 80 && "line-clamp-3")}>
+              {event.note}
+            </p>
+          </div>
+        )}
+
+        {/* Action Buttons — Log Attendance & View Attendees */}
+        {event.status !== "upcoming" && event.status !== "archived" && (
+          <div className="mt-auto pt-3 border-t border-border flex flex-col gap-2">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="w-full justify-center gap-1.5 h-10 sm:h-9 text-xs font-semibold"
+              onClick={handleViewAttendees}
+              disabled={isViewAttendeesLoading}
+            >
+              <Link href={`/org-events/${event.id}/attendees`}>
+                {isViewAttendeesLoading ? (
+                  <><Loader2 className="h-3.5 w-3.5 animate-spin" />Loading…</>
+                ) : (
+                  <><UsersIcon className="h-3.5 w-3.5" />View Attendees</>
+                )}
+              </Link>
+            </Button>
+
+            {(event.status === "ongoing" || event.status === "completed") && (
               <Button
                 asChild
                 variant="outline"
@@ -402,21 +442,21 @@ export function EventCard({
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Loading...
-                    </>
-                  ) : (
-                    <>
-                      <UsersIcon className="mr-2 h-4 w-4" />
-                      View Attendees
-                    </>
-                  )}
-                </Link>
-              </Button>
+                    </>  ) : (
+                      <>
+                        <UsersIcon className="mr-2 h-4 w-4" />
+                        View Attendees
+                      </>
+                    )}
+                  </Link>
+                
+              </Button>)}
 
               {(event.status === "ongoing" || event.status === "completed") && (
                 <Button
                   asChild
                   size="sm"
-                className="w-full justify-center gap-1.5 h-10 sm:h-9 text-xs font-bold"
+                  className="w-full justify-center gap-1.5 h-10 sm:h-9 text-xs font-bold"
                   disabled={isLogAttendanceLoading}
                   onClick={handleLogAttendance}
                 >
@@ -436,8 +476,7 @@ export function EventCard({
                 </Button>
               )}
             </div>
-          </div>
-        )}
+          )}
       </CardContent>
     </Card>
   );
