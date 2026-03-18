@@ -56,7 +56,8 @@ export const markFineItemsAsNotPending = async (fineId: string, fineItemIds: str
             const batch = writeBatch(db);
         for (const item of fineItemIds) {
             batch.update(doc(db, "fines", fineId, "fineItems", item), {
-                isPaid: true,
+                isPaid: false,
+                isPending: false,
             });
         }
 
