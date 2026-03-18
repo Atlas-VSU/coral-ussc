@@ -1,11 +1,12 @@
 "use client"
 
-import { Eye } from "lucide-react"
+import { Eye, Calendar, Hash } from "lucide-react"
 import { statusConfig } from "../config"
 import { ProofOfPayment } from "../../fines/types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 
 interface SubmissionsCardViewProps {
   paginated: ProofOfPayment[]
@@ -22,27 +23,50 @@ export function SubmissionsCardView({ paginated, onOpenReview }: SubmissionsCard
         const cfg = statusConfig[payment.status]
         const StatusIcon = cfg.icon
         return (
-          <Card key={payment.id} className="border-border bg-card flex flex-col">
-            <CardHeader className="pb-2">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <CardTitle className="text-sm font-semibold">{payment.userName}</CardTitle>
-                  <CardDescription className="text-xs">{payment.studentId}</CardDescription>
+          <Card key={payment.id} className="border-border bg-card flex flex-col hover:shadow-md transition-shadow">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between gap-3 max-[420px]:flex-col max-[420px]:items-start">
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-base font-semibold truncate">{payment.userName}</CardTitle>
+                  <CardDescription className="text-xs mt-0.5">{payment.studentId}</CardDescription>
                 </div>
-                <Badge variant={cfg.variant} className="flex items-center gap-1 text-xs shrink-0">
+                <Badge variant={cfg.variant} className="flex items-center gap-1 text-xs shrink-0 whitespace-nowrap max-[420px]:self-start">
                   <StatusIcon className="size-3" />{cfg.label}
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="flex flex-col gap-2 pt-0 flex-1">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">{payment.paymentType}</span>
-                <span className="font-semibold">₱{payment.amount.toLocaleString()}</span>
+            
+            <Separator className="mx-0" />
+            
+            <CardContent className="flex flex-col gap-3 pt-3 flex-1">
+              {/* Amount */}
+              <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2.5">
+                <p className="text-xs text-muted-foreground">Amount Paid</p>
+                <p className="text-lg font-semibold text-foreground">₱{payment.amount.toLocaleString()}</p>
               </div>
-              <div className="text-xs text-muted-foreground font-mono">{payment.referenceNumber}</div>
-              <div className="text-xs text-muted-foreground">{(payment.submittedAt).toDate().toLocaleDateString()}</div>
-              <div className="mt-auto pt-2">
-                <Button size="sm" variant="outline" className="w-full gap-1.5" onClick={() => onOpenReview(payment)}>
+
+              {/* Details */}
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <span className="text-[9px] font-medium uppercase tracking-wider text-foreground bg-muted rounded px-1.5 py-0.5">
+                    {payment.paymentType}
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Hash className="size-3.5 text-muted-foreground shrink-0" />
+                  <span className="font-mono text-muted-foreground truncate">{payment.referenceNumber}</span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Calendar className="size-3.5 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">{(payment.submittedAt).toDate().toLocaleDateString()}</span>
+                </div>
+              </div>
+
+              {/* Action */}
+              <div className="mt-auto pt-2 pb-1">
+                <Button size="sm" variant="outline" className="w-full gap-1.5 text-xs" onClick={() => onOpenReview(payment)}>
                   <Eye className="size-3.5" /> View Details
                 </Button>
               </div>

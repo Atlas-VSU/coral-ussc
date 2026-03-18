@@ -3,13 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { PaymentFormData } from "@/lib/validators";
-import { PaymentBrandHeader } from "./PaymentBrandHeader";
-import { PaymentProgressBar } from "./PaymentProgressBar";
 
 interface SuccessScreenProps {
   form: PaymentFormData;
   onReset: () => void;
-  currentStep: 1 | 2 | 3 | 4;
   paymentHistoryId?: string;
   submissionCount?: number;
 }
@@ -17,7 +14,6 @@ interface SuccessScreenProps {
 export function SuccessScreen({
   form,
   onReset,
-  currentStep,
   paymentHistoryId,
   submissionCount = 0,
 }: SuccessScreenProps) {
@@ -33,8 +29,6 @@ export function SuccessScreen({
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#1B5E20]/5 dark:bg-background px-4 py-8">
-      <PaymentBrandHeader />
-      <PaymentProgressBar currentStep={currentStep} />
       <Card className="w-full max-w-md border-border">
         <CardContent className="flex flex-col items-center gap-5 p-8 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#1B5E20]/10 dark:bg-[#1B5E20]/20 text-[#1B5E20] dark:text-[#8BC34A]">

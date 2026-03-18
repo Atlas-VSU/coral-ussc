@@ -142,7 +142,7 @@ export default function PublicLayout({
 
   // Always show loading screen while loading
   if (loading) {
-    return <LoadingScreen message="Getting things ready..." />;
+    return <LoadingScreen message="Loading your student payment portal... Welcome! We're getting everything ready for you." />;
   }
 
   if (isRedirecting) {
