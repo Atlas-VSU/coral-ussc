@@ -35,6 +35,7 @@ interface EventCardProps {
   onEdit: (event: Event) => void
   onArchive: (event: Event) => void
   onUnarchive: (event: Event) => void
+  onIssueFine: (event: Event) => void
   onDelete: (event: Event) => void
 }
 
@@ -91,16 +92,16 @@ function StatusBadge({ status }: { status: Event["status"] }) {
   }
 }
 
-export function EventCard({ event, onEdit, onArchive, onUnarchive, onDelete }: EventCardProps) {
-  const [opLoading, setOpLoading] = useState(false)
-  const [viewAttendeesLoading, setViewAttendeesLoading] = useState(false)
-  const [logAttendanceLoading, setLogAttendanceLoading] = useState(false)
+export function EventCard({ event, onEdit, onArchive, onIssueFine, onUnarchive, onDelete }: EventCardProps) {
+  const [isOperationLoading, setIsOperationLoading] = useState(false);
+  const [isViewAttendeesLoading, setIsViewAttendeesLoading] = useState(false);
+  const [isLogAttendanceLoading, setIsLogAttendanceLoading] = useState(false);
 
-  const { timeInStart, timeInEnd, timeOutStart, timeOutEnd } = event
-  const hasTimeIn = timeInStart && timeInEnd
-  const hasTimeOut = timeOutStart && timeOutEnd
+  const { timeInStart, timeInEnd, timeOutStart, timeOutEnd } = event;
+  const hasTimeIn = timeInStart && timeInEnd;
+  const hasTimeOut = timeOutStart && timeOutEnd;
 
-  const timeDisplay = hasTimeIn || hasTimeOut ? (
+  const getTimeDisplay = hasTimeIn || hasTimeOut ? (
     <div className="space-y-0.5">
       {hasTimeIn && (
         <div className="text-xs font-semibold uppercase tracking-wide">
@@ -115,31 +116,90 @@ export function EventCard({ event, onEdit, onArchive, onUnarchive, onDelete }: E
     </div>
   ) : (
     <span className="text-xs text-muted-foreground">No time set</span>
-  )
+  );
 
-  const handleArchive = async () => {
-    setOpLoading(true)
-    try { await onArchive(event) } finally { setOpLoading(false) }
+  const getStatusBadge = () => {
+    switch (event.status) {
+      case "ongoing":
+        return (
+          <Badge className="bg-[#C8E6C9] text-[#1B5E20] border-[#A5D6A7] font-semibold text-xs px-2.5 py-1">
+            <span className="w-1.5 h-1.5 bg-[#1B5E20] rounded-full mr-1.5 animate-pulse inline-block" />
+            Ongoing
+          </Badge>
+        )
+      case "upcoming":
+        return (
+          <Badge className="bg-blue-100 text-blue-800 border-blue-300 font-semibold text-xs px-2.5 py-1">
+            <CalendarIcon className="w-3 h-3 mr-1" />
+            Upcoming
+          </Badge>
+        )
+      case "completed":
+        return (
+          <Badge variant="outline" className="bg-muted text-muted-foreground font-semibold text-xs px-2.5 py-1">
+            Completed
+          </Badge>
+        )
+      case "archived":
+        return (
+          <Badge variant="outline" className="text-muted-foreground font-semibold text-xs px-2.5 py-1">
+            Archived
+          </Badge>
+        )
+      default:
+        <Badge variant="secondary" className="font-semibold text-xs px-2.5 py-1">
+          {((event.status as string).charAt(0).toUpperCase() + (event.status as string).slice(1))}
+        </Badge>
+    }
   }
 
-  const handleUnarchive = async () => {
-    setOpLoading(true)
-    try { await onUnarchive(event) } finally { setOpLoading(false) }
+  const handleEditEvent = () => {
+    onEdit(event);
   }
 
-  const handleDelete = async () => {
-    setOpLoading(true)
-    try { await onDelete(event) } finally { setOpLoading(false) }
+  const handleIssueFine = () => {
+    onIssueFine(event);
+  }
+
+  const handleArchiveEvent = async () => {
+    setIsOperationLoading(true);
+    try { 
+      await onArchive(event);
+    } finally { 
+      setIsOperationLoading(false);
+    }
+  }
+
+  const handleUnarchiveEvent = async () => {
+    setIsOperationLoading(true);
+    try { 
+      await onUnarchive(event);
+    } finally { 
+      setIsOperationLoading(false);
+    }
+  }
+
+  const handleDeleteEvent = async () => {
+    setIsOperationLoading(true);
+    try { 
+      await onDelete(event); 
+    } finally { 
+      setIsOperationLoading(false); 
+    }
   }
 
   const handleViewAttendees = () => {
-    setViewAttendeesLoading(true)
-    setTimeout(() => setViewAttendeesLoading(false), 500)
+    setIsViewAttendeesLoading(true);
+    setTimeout(() => {
+      setIsViewAttendeesLoading(false);
+    }, 500);
   }
 
   const handleLogAttendance = () => {
-    setLogAttendanceLoading(true)
-    setTimeout(() => setLogAttendanceLoading(false), 500)
+    setIsLogAttendanceLoading(true);
+    setTimeout(() => {
+      setIsLogAttendanceLoading(false);
+    }, 500);
   }
 
   return (
@@ -153,7 +213,7 @@ export function EventCard({ event, onEdit, onArchive, onUnarchive, onDelete }: E
               {event.majorEvent && (
                 <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-300 font-semibold text-xs px-2.5 py-1">
                   <StarIcon className="h-3 w-3 mr-1 fill-amber-600" />
-                  Major
+                  Major Event
                 </Badge>
               )}
             </div>
@@ -193,28 +253,55 @@ export function EventCard({ event, onEdit, onArchive, onUnarchive, onDelete }: E
             <DropdownMenuContent align="end" className="w-44">
               {event.status === "archived" ? (
                 <>
-                  <DropdownMenuItem onClick={handleUnarchive} disabled={opLoading}>
-                    {opLoading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Unarchiving…</> : "Unarchive"}
+                  <DropdownMenuItem
+                    onClick={handleUnarchiveEvent} 
+                    disabled={isOperationLoading}
+                  >
+                    {isOperationLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Unarchiving…
+                      </>
+                    ) : ( 
+                      "Unarchive" 
+                    )}
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={handleDelete}
+                    onClick={handleDeleteEvent}
                     className="text-destructive"
-                    disabled={opLoading}
+                    disabled={isOperationLoading}
                   >
-                    {opLoading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Deleting…</> : "Delete"}
+                    {isOperationLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Deleting…
+                        </>
+                    ) : (
+                      "Delete"
+                    )}
                   </DropdownMenuItem>
                 </>
               ) : (
                 <>
-                  <DropdownMenuItem onClick={() => onEdit(event)} disabled={opLoading}>
+                  {(!event.finesGenerated && event.status === "completed") && (<DropdownMenuItem onClick={handleIssueFine} className="font-medium" disabled={isOperationLoading}>
+                      Issue Fines
+                  </DropdownMenuItem>)}
+                  <DropdownMenuItem onClick={handleEditEvent} disabled={isOperationLoading}>
                     Edit Event
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={handleArchive}
+                    onClick={handleArchiveEvent}
                     className="text-destructive"
-                    disabled={opLoading}
+                    disabled={isOperationLoading}
                   >
-                    {opLoading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Archiving…</> : "Archive"}
+                    {isOperationLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Archiving…
+                      </>
+                    ) : (
+                      "Archive"
+                    )}
                   </DropdownMenuItem>
                 </>
               )}
@@ -244,7 +331,7 @@ export function EventCard({ event, onEdit, onArchive, onUnarchive, onDelete }: E
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Schedule</p>
-            <div className="text-sm font-medium text-foreground">{timeDisplay}</div>
+            <div className="text-sm font-medium text-foreground">{getTimeDisplay}</div>
           </div>
         </div>
 
@@ -280,10 +367,10 @@ export function EventCard({ event, onEdit, onArchive, onUnarchive, onDelete }: E
               size="sm"
               className="w-full justify-center gap-1.5 h-10 sm:h-9 text-xs font-semibold"
               onClick={handleViewAttendees}
-              disabled={viewAttendeesLoading}
+              disabled={isViewAttendeesLoading}
             >
               <Link href={`/org-events/${event.id}/attendees`}>
-                {viewAttendeesLoading ? (
+                {isViewAttendeesLoading ? (
                   <><Loader2 className="h-3.5 w-3.5 animate-spin" />Loading…</>
                 ) : (
                   <><UsersIcon className="h-3.5 w-3.5" />View Attendees</>
@@ -297,10 +384,10 @@ export function EventCard({ event, onEdit, onArchive, onUnarchive, onDelete }: E
                 size="sm"
                 className="w-full justify-center gap-1.5 h-10 sm:h-9 text-xs font-bold"
                 onClick={handleLogAttendance}
-                disabled={logAttendanceLoading}
+                disabled={isLogAttendanceLoading}
               >
                 <Link href={`/admin-events/${event.id}/log-attendance`}>
-                  {logAttendanceLoading ? (
+                  {isLogAttendanceLoading ? (
                     <><Loader2 className="h-3.5 w-3.5 animate-spin" />Loading…</>
                   ) : (
                     <><UserPlusIcon className="h-3.5 w-3.5" />{event.status === "completed" ? "Log Special Attendance" : "Log Attendance"}</>
