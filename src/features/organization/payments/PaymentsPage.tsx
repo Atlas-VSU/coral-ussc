@@ -72,9 +72,13 @@ export default function PaymentsPage() {
       <Card className="border-border bg-card">
         <div className="px-6 pt-6">
           <Tabs value={dataView} onValueChange={v => handleTabChange(v as "submissions" | "unpaid")}>
-            <TabsList className="w-full flex-1">
-              <TabsTrigger value="submissions">Payment Submissions</TabsTrigger>
-              <TabsTrigger value="unpaid">Log Payments Manually</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 max-[510px]:h-auto max-[510px]:grid-cols-1">
+              <TabsTrigger value="submissions" className="w-full max-[510px]:justify-center">
+                Payment Submissions
+              </TabsTrigger>
+              <TabsTrigger value="unpaid" className="w-full max-[510px]:justify-center">
+                Log Payments Manually
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
