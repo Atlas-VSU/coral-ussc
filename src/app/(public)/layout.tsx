@@ -8,6 +8,8 @@ import { auth } from "@/firebase/firebase.config";
 import { usePathname, useRouter } from "next/navigation";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { cacheUtils } from "@/utils/cacheUtils";
+import { useTheme } from "next-themes";
+import { useRef } from "react";
 
 // Define mobile icon map
 const mobileIconMap = {
@@ -28,6 +30,34 @@ export default function PublicLayout({
   const [isSigningOut, setIsSigningOut] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const isPublicPaymentPage = pathname.startsWith("/payment");
+  const { setTheme } = useTheme();
+  const previousThemeRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (isPublicPaymentPage) {
+      if (previousThemeRef.current === null) {
+        previousThemeRef.current = window.localStorage.getItem("theme");
+      }
+      setTheme("light");
+      return;
+    }
+
+    if (previousThemeRef.current !== null) {
+      const previous = previousThemeRef.current;
+
+      if (previous === "light" || previous === "dark" || previous === "system") {
+        setTheme(previous);
+      } else {
+        window.localStorage.removeItem("theme");
+        setTheme("system");
+      }
+
+      previousThemeRef.current = null;
+    }
+  }, [isPublicPaymentPage, setTheme]);
 
   // Check for logout URL parameter on mount
   useEffect(() => {
@@ -123,9 +153,11 @@ export default function PublicLayout({
   return (
     <div className="flex min-h-screen w-full">
       <div className="flex-1 flex flex-col min-w-0">
-        {/* <SiteHeader user={null} isAuthenticated={isAuthenticated} /> */}
-        <main className="flex-1 h-full overflow-y-auto lg:overflow-hidden">{children}</main>
-        {/* <MobileBottomNav links={navLinks} iconMap={mobileIconMap} /> */}
+        {!isPublicPaymentPage && <SiteHeader user={null} isAuthenticated={isAuthenticated} />}
+        <main className={`flex-1 p-2 sm:p-4 ${isPublicPaymentPage ? "pb-4" : "pb-16 md:pb-4"}`}>
+          {children}
+        </main>
+        {!isPublicPaymentPage && <MobileBottomNav links={navLinks} iconMap={mobileIconMap} />}
       </div>
     </div>
   );
