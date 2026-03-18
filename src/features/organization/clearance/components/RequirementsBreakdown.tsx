@@ -28,6 +28,8 @@ export function RequirementsBreakdown({
   
   const {pendingPayments, loading} = useOnlinePaymentReview(clearance)
 
+  const hasPendingPayments = groups.some(g => g.status === "pending");
+
   return (
     <div className="flex flex-col gap-3 py-4">
       {groups.map(group => {
@@ -83,7 +85,7 @@ export function RequirementsBreakdown({
           </div>
         )
       })}
-      {pendingReviews.length > 0 && pendingPayments.map((p, index) => (
+      {hasPendingPayments && pendingPayments.map((p, index) => (
           <Button
           key={p.id}
           size="sm"
