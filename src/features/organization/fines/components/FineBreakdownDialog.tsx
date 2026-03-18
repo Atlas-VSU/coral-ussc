@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../local-components/dialog";
 import { Banknote, AlertTriangle, XIcon, CalendarIcon, UserIcon, ShieldCheckIcon, MessageSquareIcon, Eye, PenLine } from "lucide-react";
 import { appealStatusConfig } from "../config";
 import { Badge } from "@/components/ui/badge";
