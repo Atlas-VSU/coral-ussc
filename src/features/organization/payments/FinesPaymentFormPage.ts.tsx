@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { AlertCircle, ArrowLeft, BookOpen, Building2, CreditCard, Loader2, Receipt, ShieldAlert, UserCircle } from "lucide-react";
+import { AlertCircle, ArrowLeft, BookOpen, Building2, CheckCircle, Copy, CreditCard, Info, Loader2, Phone, Receipt, ShieldAlert, User, UserCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -467,8 +467,10 @@ export default function FinesPaymentFormPage({
                 <CardContent className="pt-4 flex flex-col items-center gap-4">
                   <p className="text-xs text-muted-foreground self-start flex items-center gap-1.5">
                     <CreditCard className="h-3.5 w-3.5 text-blue-600" />
-                    Scan the QR code below using your GCash app to pay
+                    Pay via GCash using either QR code or manual send money
                   </p>
+                  
+                  {/* QR Code Section */}
                   <div className="relative w-48 h-48 bg-white rounded-lg p-2 border-2 border-blue-200 dark:border-blue-800">
                     <Image
                       src="/images/public-student-payment/mock-qr-student-payment1.jpeg"
@@ -478,12 +480,87 @@ export default function FinesPaymentFormPage({
                       priority
                     />
                   </div>
-                  <div className="text-center text-sm text-muted-foreground space-y-1">
-                    <p className="font-medium">1. Open GCash app</p>
-                    <p>2. Tap "Scan QR" and scan the code above</p>
-                    <p>3. Complete your payment</p>
-                    <p className="font-medium text-[#1B5E20] dark:text-[#8BC34A] mt-2">Save your reference number for verification</p>
+
+                  {/* GCash Account Details */}
+                  <div className="w-full bg-white/80 dark:bg-gray-900/80 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                    <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-blue-600 hidden md:block" />
+                      GCash Account Details
+                    </h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-blue-600 hidden md:block " />
+                          <span className="text-xs md:text-sm text-muted-foreground">Account Name:</span>
+                        </div>
+                        <span className="font-medium text-sm md:text-base">JUAN DELA CRUZ</span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-blue-600 hidden md:block" />
+                          <span className="text-xs md:text-sm text-muted-foreground">GCash Number:</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm md:text-base">0917 123 4567</span>
+                          <button onClick={() => navigator.clipboard.writeText("0917 123 4567")} className="p-1 hover:bg-blue-200 dark:hover:bg-blue-800 rounded transition-colors">
+                            <Copy className="h-3.5 w-3.5 text-blue-600" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Payment Steps */}
+                  <div className="w-full space-y-3">
+                    <h4 className="text-sm font-semibold flex items-center gap-2">
+                      <Info className="h-4 w-4 text-blue-600" />
+                      How to pay via GCash:
+                    </h4>
+                    
+                    {/* Option 1: QR Code */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-blue-600">Option 1: Scan QR Code</p>
+                      <ol className="space-y-1.5 pl-5 list-decimal text-xs text-muted-foreground">
+                        <li>Open GCash app and tap "Scan QR"</li>
+                        <li>Scan the QR code above</li>
+                        <li>Verify the account name: <span className="font-medium text-foreground">JUAN DELA CRUZ</span></li>
+                        <li>Enter the amount: <span className="font-medium text-foreground">₱{mobileTotal}</span></li>
+                        <li>Add your Student ID as a note (Optional)</li>
+                        <li>Complete payment and save reference number</li>
+                      </ol>
+                    </div>
+
+                    {/* Option 2: Send Money */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-blue-600">Option 2: Send Money</p>
+                      <ol className="space-y-1.5 pl-5 list-decimal text-xs text-muted-foreground">
+                        <li>Open GCash app and tap "Send Money"</li>
+                        <li>Enter GCash number: <span className="font-medium text-foreground">0917 123 4567</span></li>
+                        <li>Verify account name: <span className="font-medium text-foreground">JUAN DELA CRUZ</span></li>
+                        <li>Enter amount: <span className="font-medium text-foreground">₱{mobileTotal}</span></li>
+                        <li>Add your Student ID in the message/notes (Optional)</li>
+                        <li>Review and confirm payment</li>
+                        <li>Save the reference number shown after payment</li>
+                      </ol>
+                    </div>
+                  </div>
+
+                  {/* Important Reminder */}
+                  <div className="w-full bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                    <p className="text-xs flex items-start gap-2">
+                      <span className="text-yellow-600 dark:text-yellow-500">📱</span>
+                      <span className="text-muted-foreground">
+                        <span className="font-medium text-yellow-700 dark:text-yellow-400">Important:</span>{' '}
+                        Save your GCash reference number. Take a screenshot of the confirmation page and send it to our support for faster verification.
+                      </span>
+                    </p>
+                  </div>
+
+                  {/* Reference Number Reminder */}
+                  <p className="font-medium text-[#1B5E20] dark:text-[#8BC34A] mt-2 flex items-center justify-center gap-1.5 text-sm md:text-base text-center">
+                    <CheckCircle className="h-4 w-4 hidden md:block" />
+                    Save your reference number for verification
+                  </p>
                 </CardContent>
               </Card>
             )}
