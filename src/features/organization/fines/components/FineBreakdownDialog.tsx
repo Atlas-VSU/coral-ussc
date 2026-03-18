@@ -169,24 +169,6 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                             </p>
                         )}
               
-                        {fines?.status === "pending" && (
-                            <p className="text-xs text-muted-foreground">
-                                The submission covers{" "}
-                                <span className="font-medium text-foreground">
-                                    {paymentCoveredFineItems.length.toLocaleString()} fine item{paymentCoveredFineItems.length !== 1 ? "s" : ""}
-                                </span>
-                                {" — "}
-                                {paymentCoveredFineItems.map((i, idx) => (
-                                    <span key={i.id}>
-                                        {i.fineTypeName}{i.eventName ? ` (${i.eventName})` : ""}
-                          
-                                        {idx < paymentCoveredFineItems.length - 1 ? ", " : ""}
-                                    </span>
-                                ))}
-                                {" — totalling "}
-                                <span className="font-medium text-foreground">₱{totalPending.toLocaleString()}</span>.
-                            </p>
-                        )}
 
                         {/* Soft advisory when pending appeals exist alongside a pending payment */}
                         {fines?.status === "pending" && pendingAppealItems.length > 0 && (
