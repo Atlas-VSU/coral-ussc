@@ -9,10 +9,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { RequirementsBreakdown } from "./RequirementsBreakdown"
 import { buildRequirementGroups } from "../utils/clearanceUtils"
 import type { ClearanceStatus } from "../types"
+import { ProofOfPayment } from "../../fines/types"
 
 interface ClearanceCardProps {
   clearance: ClearanceStatus
-  onReviewPayment: (clearanceId: string, referenceId: string) => void
+  onReviewPayment: (payment: ProofOfPayment) => void
   onLogPayment: (clearanceId: string) => void
 }
 

@@ -12,6 +12,8 @@ import type { ViewMode } from "@/components/organization/ViewToggle"
 import type { ClearanceStatus } from "../types"
 import type { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
 import { generateReceiptId } from "../../payments/utils"
+import { ProofOfPayment } from "../../fines/types"
+import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval"
 
 export function useClearancePage(orgId: string | undefined) {
   const { clearances, loading, setClearances } = useClearances(orgId)
@@ -24,7 +26,6 @@ export function useClearancePage(orgId: string | undefined) {
 
   // Payment Review state
   const [paymentReviewOpen, setPaymentReviewOpen] = useState(false)
-  const [reviewTarget, setReviewTarget] = useState<{ clearanceId: string; referenceId: string } | null>(null)
 
   // Log Payment state
   const [logPaymentOpen, setLogPaymentOpen] = useState(false)
@@ -35,9 +36,13 @@ export function useClearancePage(orgId: string | undefined) {
   // const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
 
   const [isProcessing, setIsProcessing] = useState(false)
+  const [payment, setPayment] = useState<ProofOfPayment | null>(null)
+
+  const { _approvePayment, _rejectPayment } = usePaymentApproval();
+  
   const idCounter = useRef(0)
 
-  const { approvePayment, rejectPayment, logManualPayment, receiptData,setReceiptData, setReceiptOpen, receiptOpen } = useClearanceActions(clearances, setClearances)
+  const { /*approvePayment, rejectPayment,*/ logManualPayment, receiptData,setReceiptData, setReceiptOpen, receiptOpen } = useClearanceActions(clearances, setClearances)
   const selection = useManualPaymentSelection(logPaymentTarget)
 
   // Derived state: Filtered/Paginated data
@@ -54,17 +59,18 @@ export function useClearancePage(orgId: string | undefined) {
   const paginated = filtered.slice((currentPage - 1) * 10, currentPage * 10)
 
   // Handlers: Payment Review
-  const openPaymentReview = (clearanceId: string, referenceId: string) => {
-    setReviewTarget({ clearanceId, referenceId })
+  const openPaymentReview = (payment: ProofOfPayment) => {
+    setPayment(payment)
     setPaymentReviewOpen(true)
   }
 
   const handleApprovePayment = async () => {
-    if (!reviewTarget) return
+    if (!payment) return
     setIsProcessing(true)
     try {
-      await approvePayment(reviewTarget.clearanceId, [reviewTarget.referenceId])
-      setReviewTarget(null)
+      // await approvePayment(reviewTarget.clearanceId, [reviewTarget.referenceId])
+      const result = await _approvePayment(payment);
+      setReceiptData(result?.receipt!);
       setPaymentReviewOpen(false)
     } finally {
       setIsProcessing(false)
@@ -72,11 +78,11 @@ export function useClearancePage(orgId: string | undefined) {
   }
 
   const handleRejectPayment = async (reason: string) => {
-    if (!reviewTarget) return
+    if (!payment) return
     setIsProcessing(true)
     try {
-      await rejectPayment(reviewTarget.clearanceId, [reviewTarget.referenceId], reason)
-      setReviewTarget(null)
+      // await rejectPayment(reviewTarget.clearanceId, [reviewTarget.referenceId], reason)
+      await _rejectPayment(payment, reason);
       setPaymentReviewOpen(false)
     } finally {
       setIsProcessing(false)
@@ -132,21 +138,16 @@ export function useClearancePage(orgId: string | undefined) {
   }
 
   const reviewData = useMemo(() => {
-    if (!reviewTarget) return null
-    const clearance = clearances.find(c => c.id === reviewTarget.clearanceId)
-    if (!clearance) return null
-    const item = clearance.blockingItems[reviewTarget.referenceId]
-    if (!item) return null
-    
+    if (!payment) return null
     return {
-      lineItems: [{ label: item.title, amount: item.balance }],
-      amountPaid: item.balance,
-      paymentMethod: item.paymentHistory[0]?.paymentMethod || "cash",
-      referenceNo: item.paymentHistory[0]?.gcashReference || "",
-      submittedAt: item.paymentHistory[0]?.createdAt.toDate().toISOString(),
+      lineItems: payment?.metadata.items?.map((p)=>({ label: p.title, amount: p.amount })) || [],
+      amountPaid: payment?.amount || 0,
+      paymentMethod: payment?.paymentMethod,
+      referenceNo: payment?.referenceNumber || "",
+      submittedAt: payment?.submittedAt.toDate().toISOString(),
       approveConfirmMessage: "This item will be marked as cleared.",
     }
-  }, [reviewTarget, clearances])
+  }, [payment, clearances])
 
   const setPage = (page: number) => setCurrentPage(page)
   const updateSearch = (v: string) => { setSearch(v); setPage(1) }

@@ -81,11 +81,11 @@ export async function POST(request: NextRequest) {
     const userId = userSnapshot.docs[0].id;
 
     const feeIds  = payload.dues.filter(d => d.paymentType === "fees").map(d => d.refId);
-    const fineIds = payload.dues.filter(d => d.paymentType === "fines").map(d =>
-      d.parentFineId || d.refId
+    const fineItemIds = payload.dues.filter(d => d.paymentType === "fines").map(d =>
+       d.refId
     );
 
-    const blockedIds = await checkForBlockedDues(feeIds, fineIds);
+    const blockedIds = await checkForBlockedDues(feeIds, fineItemIds);
     if (blockedIds.fees.length > 0 || blockedIds.fines.length > 0) {
       return NextResponse.json(
         {
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     for (const due of payload.dues) {
       const parentId = due.paymentType === "fines"
-        ? (due.parentFineId || due.refId)
+        ? due.parentFineId
         : due.refId;
 
       const historyRef = adminDb
@@ -140,6 +140,13 @@ export async function POST(request: NextRequest) {
       batch.update(adminDb.collection("clearanceStatus").doc(userId), {
         [`blockingItems.${due.refId}.pendingReview`]: true,
       });
+
+      if (due.paymentType === "fines") { 
+        batch.update(adminDb.collection("fines").doc(due.parentFineId).collection("fineItems").doc(due.refId), {
+          isPending: true
+        });
+      }
+
 
       items.push({
         refId:        due.refId,

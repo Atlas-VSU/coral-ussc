@@ -304,7 +304,7 @@ export function usePaymentsPage() {
     toggleDue, toggleAllDues, openUnpaidDetail, handleLogPayment,
     studentProgram,
     // receipt
-    receiptOpen, setReceiptOpen, receiptData,
+    receiptOpen, setReceiptOpen, receiptData, setReceiptData,
     stats,
   }
 }

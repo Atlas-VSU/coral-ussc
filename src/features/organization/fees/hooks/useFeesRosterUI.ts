@@ -78,7 +78,7 @@ export function useFeesRosterUI({
   );
 
   const paginatedLogs = useMemo(
-    () => filteredLogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage),
+    () => filteredLogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()),
     [filteredLogs, currentPage, itemsPerPage]
   );
 

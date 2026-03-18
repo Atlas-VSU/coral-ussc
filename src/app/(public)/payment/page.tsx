@@ -39,6 +39,7 @@ export interface FineItem {
   amount: number,
   parentFineId: string,
   isPaid: boolean,
+  isPending: boolean,
   date: Timestamp
 }
 

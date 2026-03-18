@@ -10,6 +10,7 @@ export const markFineItemsAsPaid = async (fineId: string, fineItemId?: string) =
             const fineItemsRef = doc(db, "fines", fineId, "fineItems", fineItemId);
             await updateDoc(fineItemsRef, {
                 isPaid: true,
+                isPending: false,
             });
             cacheService.invalidateByPrefix('fines:');
             getAllFines().catch(console.error);
@@ -32,6 +33,7 @@ export const markFineItemsAsPaid = async (fineId: string, fineItemId?: string) =
             querySnapshot.forEach((itemDoc) => {
                 batch.update(itemDoc.ref, {
                     isPaid: true,
+                    isPending: false,
                 });
             });
 
@@ -42,6 +44,28 @@ export const markFineItemsAsPaid = async (fineId: string, fineItemId?: string) =
             console.log(`Marked ${querySnapshot.size} items as paid for fine: ${fineId}`);
         }
 
+    } catch (error) {
+        console.error("Error marking fine items as paid:", error);
+        throw error;
+    }
+}
+
+
+export const markFineItemsAsNotPending = async (fineId: string, fineItemIds: string[]) => {
+    try {
+            const batch = writeBatch(db);
+        for (const item of fineItemIds) {
+            batch.update(doc(db, "fines", fineId, "fineItems", item), {
+                isPaid: true,
+            });
+        }
+
+            await batch.commit();
+            cacheService.invalidateByPrefix('fines:');
+            getAllFines().catch(console.error);
+            getAllUnpaidFinesforOrg().catch(console.error);
+            console.log(`Marked ${fineItemIds.length} items as paid for fine: ${fineId}`);
+            
     } catch (error) {
         console.error("Error marking fine items as paid:", error);
         throw error;

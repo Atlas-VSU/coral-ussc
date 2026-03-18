@@ -318,6 +318,7 @@ export async function GET(request: NextRequest) {
               amount: fineItem.amount,
               parentFineId: fine.id,
               isPaid: fineItem.isPaid,
+              isPending: fineItem.isPending,
               date: fineItem.eventDate,
             });
           }

@@ -70,11 +70,13 @@ export default function FinesPaymentFormPage({
   const [lastDraftSavedAt, setLastDraftSavedAt] = useState<number | null>(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
 
+  const selectedFineItems = selectedPaymentItems?.fineItems.filter(f => !f.isPending) ?? [];
+
   const selectedTypes = useMemo(() => {
     if (!selectedPaymentItems) return [] as Array<"fees" | "fines">;
     return [
       ...(selectedPaymentItems.fees.length > 0 ? (["fees"] as const) : []),
-      ...(selectedPaymentItems.fines.length > 0 ? (["fines"] as const) : []),
+      ...(selectedFineItems.length > 0 ? (["fines"] as const) : []),
     ];
   }, [selectedPaymentItems]);
 
@@ -147,7 +149,7 @@ export default function FinesPaymentFormPage({
         paymentType:  "fees",
         parentFineId: "",
       })),
-      ...(selectedPaymentItems?.fineItems ?? []).map(fine => ({
+      ...(selectedFineItems.filter(f => !f.isPaid && !f.isPending) ?? []).map(fine => ({
         refId:        fine.refId,
         title:        fine.title,
         amount:       fine.amount,
@@ -157,11 +159,12 @@ export default function FinesPaymentFormPage({
     ];
 
     let referenceId = "bulk_transaction";
-    if (selectedPaymentItems?.fees.length === 1 && selectedPaymentItems?.fineItems.length === 0) {
+    if (selectedPaymentItems?.fees.length === 1 && selectedFineItems.length === 0) {
       referenceId = selectedPaymentItems.fees[0].id;
-    } else if (selectedPaymentItems?.fineItems.length === 1 && selectedPaymentItems?.fees.length === 0) {
+    } else if (selectedFineItems.length === 1 && selectedPaymentItems?.fees.length === 0) {
       referenceId = selectedPaymentItems.fines[0].id;
     }
+
 
     const res = await fetch("/api/public/submit-payment", {
       method: "POST",
@@ -215,7 +218,7 @@ export default function FinesPaymentFormPage({
     ? Number(selectedPaymentItems?.totalAmount ?? 0)
     : (Number.isFinite(watchedAmount) ? watchedAmount : 0);
   const feeCount = selectedPaymentItems?.fees.length ?? 0;
-  const fineCount = selectedPaymentItems?.fineItems.length ?? 0;
+  const fineCount = selectedFineItems.length ?? 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -418,7 +421,7 @@ export default function FinesPaymentFormPage({
                   <div className="flex items-center justify-between text-sm">
                     <span className="flex items-center gap-2">
                       <ShieldAlert className="h-4 w-4 text-red-600" />
-                      Fines ({selectedPaymentItems.fineItems.length} item{selectedPaymentItems.fineItems.length > 1 ? "s" : ""})
+                      Fines ({selectedFineItems.length} item{selectedFineItems.length > 1 ? "s" : ""})
                     </span>
                     <span className="font-semibold">₱{selectedPaymentItems.fineAmount.toFixed(2)}</span>
                   </div>

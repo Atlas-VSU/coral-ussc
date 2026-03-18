@@ -9,7 +9,8 @@ import { SubmissionsTab } from "./components/SubmissionsTab"
 import { UnpaidTab } from "./components/UnpaidTab"
 import { LogPaymentDialog } from "./components/LogPaymentDialog"
 import { usePaymentsPage } from "./hooks/usePaymentsPage"
-import PaymentReceiptDialog from "@/components/organization/PaymentReceiptDialog"
+import PaymentReceiptDialog, { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
+import { set } from "zod"
 
 export default function PaymentsPage() {
   const {
@@ -36,9 +37,24 @@ export default function PaymentsPage() {
     toggleDue, toggleAllDues, openUnpaidDetail, handleLogPayment,
     studentProgram,
     // receipt
-    receiptOpen, setReceiptOpen, receiptData,
+    receiptOpen, setReceiptOpen, receiptData, setReceiptData,
     stats,
   } = usePaymentsPage()
+
+  const handleViewReceipt = () => {
+    setReceiptData({
+      receiptId: selectedPayment?.receiptCode || "N/A",
+      studentName: selectedPayment?.userName || "N/A",
+      studentId: selectedPayment?.studentId || "N/A",
+      items: selectedPayment?.metadata.items?.map(d => ({ name: d.title, type: d.paymentType as "fees" | "fines", amount: d.amount }))?? [],
+      total: selectedPayment?.amount || 0,
+      date: selectedPayment?.submittedAt.toDate().toLocaleDateString() || "N/A",
+      verifiedByName: selectedPayment?.verifiedByName || "N/A",
+      paymentMethod: selectedPayment?.paymentMethod || "N/A",
+    });
+    setReceiptOpen(true)
+    
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -114,7 +130,8 @@ export default function PaymentsPage() {
           paymentMethod:selectedPayment.paymentMethod,
         } : null}
         onApprove={selectedPayment?.status === "pending" ? (async () => await handleApprove(selectedPayment)) : undefined}
-        onReject={selectedPayment?.status === "pending"  ? (async (reason: string) => await handleDecline(selectedPayment, reason)) : undefined}
+        onReject={selectedPayment?.status === "pending" ? (async (reason: string) => await handleDecline(selectedPayment, reason)) : undefined}
+        onViewReceipt={handleViewReceipt}
         isProcessing={isLoading}
       />
 
