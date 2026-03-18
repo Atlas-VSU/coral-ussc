@@ -50,6 +50,7 @@ export interface PaymentReviewData {
   paymentMethod?: string
   referenceNo?: string
   submittedAt: string
+  notes?: string
   /** Text shown inside the receipt placeholder box */
   receiptContent?: string
 
@@ -260,6 +261,15 @@ export function PaymentReviewDialog({
                   <p className="mt-0.5 text-sm">{data.submittedAt}</p>
                 </div>
               </div>
+
+              {data.notes && (
+                <div>
+                  <Label className="text-muted-foreground">Student Notes</Label>
+                  <p className="mt-1 rounded-md border border-border bg-muted/30 p-3 text-sm text-foreground">
+                    {data.notes}
+                  </p>
+                </div>
+              )}
 
               {/* Decline remarks (read-only, shown for declined payments) */}
               {data.declineRemarks && (

@@ -71,7 +71,7 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
         <body>
           <div class="receipt">
             <div class="header">
-              <img src="/ussc-logo-1.webp" alt="Org Logo" />
+              <img src="/images/ussc-logo-1.webp" alt="Org Logo" />
               <p class="org-name">University Supreme Student Council</p>
               <p class="university">Visayas State University Main Campus</p>
               <p class="subtitle">Official Payment Receipt</p>
