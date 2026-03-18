@@ -66,13 +66,13 @@ export function MembersFilters({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm p-3 sm:p-4">
+    <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-4">
       {/* Header Section - Only show on mobile/tablet */}
       <div className="mb-3 lg:hidden">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+        <h3 className="text-sm font-medium text-gray-900 mb-1">
           Search & Filter Members
         </h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
+        <p className="text-xs text-gray-500 hidden sm:block">
           Find members by name, ID, or filter by program
         </p>
       </div>
@@ -82,10 +82,10 @@ export function MembersFilters({
         {/* Mobile/Tablet: Stack filters vertically */}
         <div className="flex flex-col gap-3 lg:hidden">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
             <Input
               placeholder="Search by name, ID or email..."
-              className="pl-10 pr-10 h-10 border-gray-200 dark:border-gray-700"
+              className="pl-10 pr-10 h-10 border-gray-200"
               value={localSearchTerm} // Use local state for the value
               onChange={handleSearchChange}
               onKeyDown={handleKeyDown} // Add the key down handler
@@ -111,7 +111,7 @@ export function MembersFilters({
             onValueChange={onProgramFilter}
             disabled={disabled}
           >
-            <SelectTrigger className="w-full h-10 border-gray-200 dark:border-gray-700">
+            <SelectTrigger className="w-full h-10 border-gray-200">
               <SelectValue placeholder="Filter by program" />
             </SelectTrigger>
             <SelectContent>
@@ -130,7 +130,7 @@ export function MembersFilters({
             onValueChange={handleSortByChange}
             disabled={disabled}
           >
-            <SelectTrigger className="w-full h-10 border-gray-200 dark:border-gray-700">
+            <SelectTrigger className="w-full h-10 border-gray-200">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
@@ -147,10 +147,10 @@ export function MembersFilters({
         {/* Desktop: Horizontal layout */}
         <div className="hidden lg:flex lg:flex-col lg:gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
-            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+            <h3 className="text-sm font-medium text-gray-900 mb-1">
               Search & Filter Members
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-gray-500">
               Find members by name, ID, or filter by program
             </p>
           </div>
@@ -167,7 +167,7 @@ export function MembersFilters({
               onValueChange={onProgramFilter}
               disabled={disabled}
             >
-              <SelectTrigger className="w-[160px] h-9 border-gray-200 dark:border-gray-700">
+              <SelectTrigger className="w-[160px] h-9 border-gray-200">
                 <SelectValue placeholder="All Programs" />
               </SelectTrigger>
               <SelectContent>
@@ -186,7 +186,7 @@ export function MembersFilters({
               onValueChange={handleSortByChange}
               disabled={disabled}
             >
-              <SelectTrigger className="w-[150px] h-9 border-gray-200 dark:border-gray-700">
+              <SelectTrigger className="w-[150px] h-9 border-gray-200">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -212,7 +212,7 @@ export function MembersFilters({
                   handleSortByChange("name-asc");
                 }}
                 disabled={disabled}
-                className="text-xs h-9 px-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className="text-xs h-9 px-3 text-gray-500 hover:text-gray-700"
               >
                 Clear all
               </Button>
@@ -222,7 +222,7 @@ export function MembersFilters({
 
         {/* Mobile/Tablet: Clear filters button - separate row */}
         {(searchTerm || programFilter !== "all" || sortBy !== "name-asc") && (
-          <div className="lg:hidden pt-2 border-t border-gray-200 dark:border-gray-700">
+          <div className="lg:hidden pt-2 border-t border-gray-200">
             <Button
               variant="ghost"
               size="sm"
@@ -232,7 +232,7 @@ export function MembersFilters({
                 handleSortByChange("name-asc");
               }}
               disabled={disabled}
-              className="w-full text-xs h-9 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 justify-center"
+              className="w-full text-xs h-9 text-gray-500 hover:text-gray-700 justify-center"
             >
               Clear all filters
             </Button>

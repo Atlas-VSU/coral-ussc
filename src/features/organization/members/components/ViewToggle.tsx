@@ -10,15 +10,15 @@ interface ViewToggleProps {
 
 export function ViewToggle({ viewMode, onViewChange }: ViewToggleProps) {
   return (
-    <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+    <div className="flex items-center bg-gray-100 rounded-lg p-1">
       <Button
         variant="ghost"
         size="sm"
         onClick={() => onViewChange("card")}
         className={`h-8 px-3 transition-all ${
           viewMode === "card"
-            ? "bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100"
-            : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
+            ? "bg-white shadow-sm text-gray-900"
+            : "hover:bg-gray-200 text-gray-600"
         }`}
       >
         <LayoutGridIcon className="h-4 w-4 mr-2" />
@@ -30,8 +30,8 @@ export function ViewToggle({ viewMode, onViewChange }: ViewToggleProps) {
         onClick={() => onViewChange("table")}
         className={`h-8 px-3 transition-all ${
           viewMode === "table"
-            ? "bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100"
-            : "hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
+            ? "bg-white shadow-sm text-gray-900"
+            : "hover:bg-gray-200 text-gray-600"
         }`}
       >
         <ListIcon className="h-4 w-4 mr-2" />

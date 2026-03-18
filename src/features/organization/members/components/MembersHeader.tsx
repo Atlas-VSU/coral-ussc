@@ -40,10 +40,10 @@ export function MembersHeader({
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">
           Members
         </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-gray-500">
           {formattedMemberCount} {totalMembers === 1 ? "member" : "members"} in
           your organization
         </p>

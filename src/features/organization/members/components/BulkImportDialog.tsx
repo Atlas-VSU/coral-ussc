@@ -175,7 +175,7 @@ export function BulkImportDialog({
                 </div>
 
                 {/* Progress bar */}
-                <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
                   <div
                     className="bg-primary h-2.5 rounded-full transition-all duration-300"
                     style={{ width: `${importProgress}%` }}
@@ -348,7 +348,7 @@ export function BulkImportDialog({
                 dragActive
                   ? "border-primary bg-primary/5"
                   : file
-                  ? "border-green-500 bg-green-50 dark:bg-green-900/30"
+                  ? "border-green-500 bg-green-50"
                   : "border-border"
               }`}
               onDragOver={handleDragOver}
@@ -374,7 +374,7 @@ export function BulkImportDialog({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="mt-2 bg-gray-200 hover:bg-gray-300 text-dark dark:text-blue-400 dark:hover:text-white-300"
+                    className="mt-2 bg-gray-200 hover:bg-gray-300 text-dark"
                     onClick={() => setFile(null)}
                   >
                     Change File

@@ -63,13 +63,13 @@ export function MemberCard({
   };
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-200 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden h-full flex flex-col hover:border-gray-300 dark:hover:border-gray-600">
+    <Card className="group hover:shadow-lg transition-all duration-200 border border-gray-200 bg-white overflow-hidden h-full flex flex-col hover:border-gray-300">
       <CardContent className="p-0 flex flex-col flex-grow">
         {/* Member Header */}
         <div className="p-5 space-y-4">
           <div className="flex items-start gap-4">
-            <Avatar className="h-12 w-12 border border-gray-200 dark:border-gray-700">
-              <AvatarFallback className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold text-sm">
+            <Avatar className="h-12 w-12 border border-gray-200">
+              <AvatarFallback className="bg-gray-100 text-gray-700 font-semibold text-sm">
                 {getInitials(
                   memberData.member.firstName,
                   memberData.member.lastName
@@ -78,13 +78,13 @@ export function MemberCard({
             </Avatar>
             <div className="flex-1 min-w-0 space-y-2">
               <div>
-                <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100 break-words leading-tight tracking-tight">
+                <h3 className="font-semibold text-lg text-gray-900 break-words leading-tight tracking-tight">
                   {memberData.member.firstName} {memberData.member.lastName}
                 </h3>
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <Badge
                     variant="secondary"
-                    className="bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 font-medium text-xs px-2 py-1 tracking-wide"
+                    className="bg-gray-100 text-gray-700 border-gray-200 font-medium text-xs px-2 py-1 tracking-wide"
                   >
                     {getProgramName(memberData.member.programId)}
                   </Badge>
@@ -92,14 +92,14 @@ export function MemberCard({
                   memberData.member.yearLevel !== 0 ? (
                     <Badge
                       variant="outline"
-                      className="text-xs font-medium border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 tracking-wide"
+                      className="text-xs font-medium border-gray-300 text-gray-600 tracking-wide"
                     >
                       {getYearLevelText(memberData.member.yearLevel)}
                     </Badge>
                   ) : (
                     <Badge
                       variant="outline"
-                      className="text-xs font-medium border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 tracking-wide"
+                      className="text-xs font-medium border-gray-300 text-gray-600 tracking-wide"
                     >
                       N/A
                     </Badge>
@@ -110,47 +110,47 @@ export function MemberCard({
           </div>
 
           {/* Divider */}
-          <div className="border-t border-gray-200 dark:border-gray-700"></div>
+          <div className="border-t border-gray-200"></div>
 
           {/* Member Details */}
           <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <div className="w-7 h-7 bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Mail className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
+              <div className="w-7 h-7 bg-gray-100 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Mail className="h-3.5 w-3.5 text-gray-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
+                <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">
                   Email
                 </p>
-                <p className="text-sm text-gray-700 dark:text-gray-300 break-all leading-relaxed">
+                <p className="text-sm text-gray-700 break-all leading-relaxed">
                   {memberData.member.email || "No email provided"}
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="w-7 h-7 bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Building2 className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
+              <div className="w-7 h-7 bg-gray-100 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Building2 className="h-3.5 w-3.5 text-gray-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
+                <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">
                   Faculty
                 </p>
-                <p className="text-sm text-gray-700 dark:text-gray-300 break-words leading-relaxed">
+                <p className="text-sm text-gray-700 break-words leading-relaxed">
                   {getFacultyName(memberData.member.facultyId as string)}
                 </p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="w-7 h-7 bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Hash className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
+              <div className="w-7 h-7 bg-gray-100 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Hash className="h-3.5 w-3.5 text-gray-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
+                <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">
                   Student ID
                 </p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 font-mono tracking-wide leading-relaxed break-all">
+                <p className="text-sm font-semibold text-gray-900 font-mono tracking-wide leading-relaxed break-all">
                   {memberData.member.studentId}
                 </p>
               </div>
@@ -162,21 +162,21 @@ export function MemberCard({
         <div className="flex-grow min-h-[10px]"></div>
 
         {/* Action Buttons */}
-        <div className="flex border-t border-gray-200 dark:border-gray-700 mt-auto bg-gray-50/50 dark:bg-gray-800/50">
+        <div className="flex border-t border-gray-200 mt-auto bg-gray-50/50">
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 rounded-none h-11 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+            className="flex-1 rounded-none h-11 text-sm font-medium hover:bg-gray-100 transition-colors duration-150"
             onClick={() => onEdit(memberData)}
           >
             <Pencil className="h-4 w-4 mr-2" />
             Edit
           </Button>
-          <div className="border-r border-gray-200 dark:border-gray-700 h-11" />
+          <div className="border-r border-gray-200 h-11" />
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 rounded-none h-11 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/10 transition-colors duration-150"
+            className="flex-1 rounded-none h-11 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors duration-150"
             onClick={() => onDelete(memberData)}
           >
             <Trash2 className="h-4 w-4 mr-2" />
