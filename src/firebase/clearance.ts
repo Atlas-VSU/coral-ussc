@@ -177,7 +177,7 @@ export const addStudentWithClearance = async (studentId: string,studentData: any
         };
 
         // 3. Set both documents in the batch
-        batch.set(studentRef, studentData); // Create the user
+      batch.set(studentRef, { ...studentData, createdAt: now, isDeleted:false }); // Create the user
         batch.set(clearanceRef, clearanceData); // Create their clearance profile
 
         // 4. Commit to Firestore

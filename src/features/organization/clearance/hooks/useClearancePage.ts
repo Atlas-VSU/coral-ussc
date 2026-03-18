@@ -71,6 +71,7 @@ export function useClearancePage(orgId: string | undefined) {
       // await approvePayment(reviewTarget.clearanceId, [reviewTarget.referenceId])
       const result = await _approvePayment(payment);
       setReceiptData(result?.receipt!);
+      setReceiptOpen(true);
       setPaymentReviewOpen(false)
     } finally {
       setIsProcessing(false)
