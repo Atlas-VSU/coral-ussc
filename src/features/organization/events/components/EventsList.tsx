@@ -2,11 +2,13 @@ import { useState } from "react";
 import { EventCard } from "./EventCard";
 import { EventListItem } from "./EventListItem";
 import { EditEventDialog } from "./EditEventDialog";
+import { CalendarIcon } from "lucide-react";
 import { Event } from "../types";
 import { archiveEvent, deleteEvent } from "@/firebase";
 import { ViewMode } from "./ViewToggle";
 import { useEventFineTypes } from "../hooks/useEventFineTypes";
 import { BulkFinesIssuance } from "../../fines/components/BulkFinesIssuance";
+import { toast } from "sonner";
 
 interface EventsListProps {
   events: Event[];
@@ -17,7 +19,7 @@ interface EventsListProps {
 export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const { fineTypes, fetchFineTypes } = useEventFineTypes();
+  const {fineTypes, fetchFineTypes } = useEventFineTypes();
   const [isBulkIssueFinesOpen, setBulkIssueFinesOpen] = useState(false);
 
   const handleEditClick = async (event: Event) => {
@@ -29,6 +31,7 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
   const handleArchiveClick = async (event: Event) => {
     if (window.confirm(`Are you sure you want to archive "${event.name}"?`)) {
       await archiveEvent(event.id.toString());
+      toast.success(`"${event.name}" has been archived.`);
       onEventsUpdate();
     }
   };
@@ -36,6 +39,7 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
     const handleIssueClick = async (event: Event) => {
     setSelectedEvent(event);
     setBulkIssueFinesOpen(true);
+    toast.success(`Fines issued for "${event.name}".`);
   };
 
   const handleDeleteClick = async (event: Event) => {
@@ -45,14 +49,18 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
       )
     ) {
       await deleteEvent(event.id.toString());
+      toast.success(`"${event.name}" has been deleted.`);
       onEventsUpdate();
     }
   };
+
+  const eventName = selectedEvent ? selectedEvent.name : "Event";
 
   const handleEventEdited = () => {
     onEventsUpdate();
     setIsEditDialogOpen(false);
     setSelectedEvent(null);
+    toast.success(`"${eventName}" has been updated.`);
   };
 
   const handleUnarchiveClick = async (event: Event) => {
@@ -64,26 +72,22 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
 
   if (!events || events.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm">
-        <div className="flex flex-col items-center justify-center p-16 text-center">
-          <div className="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-6">
-            <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">No events found</h3>
-          <p className="text-gray-600 dark:text-gray-400 text-base max-w-md leading-relaxed">
-            Try adjusting your filters or search keywords to find the events you&apos;re looking for
-          </p>
+      <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-border rounded-xl bg-muted/30">
+        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+          <CalendarIcon className="w-8 h-8 text-muted-foreground" />
         </div>
+        <h3 className="text-base font-semibold text-foreground mb-1">No events found</h3>
+        <p className="text-sm text-muted-foreground max-w-xs">
+          Try adjusting your filters or search to find what you&apos;re looking for.
+        </p>
       </div>
-    );
+    )
   }
 
   return (
     <>
       {viewMode === "card" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {events.map((event, index) => (
             <div
               key={event.id}
@@ -101,7 +105,7 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
           ))}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="flex flex-col gap-2">
           {events.map((event, index) => (
             <div
               key={event.id}
