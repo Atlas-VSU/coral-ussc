@@ -21,8 +21,9 @@ import { Member } from "@/features/organization/members/types"
 import { useFeeListUI } from "@/features/organization/fees/hooks/useFeeListUI"
 import { feeTypeLabels, feeTypeVariant } from "@/features/organization/fees/constants"
 import { SearchFilterBar } from "@/features/organization/fees/components/SearchFilterBar"
-import { SearchFilterFee } from "@/features/organization/fees/components/SearchFilterFee"
+// import { SearchFilterFee } from "@/features/organization/fees/components/SearchFilterFee"
 import { FeeGenerationDialog } from "./AddFeeDialog"
+import { SearchFilterFee } from "./SearchFilterFee"
 const ITEMS_PER_PAGE = 10
 
 export default function FeeListPage() {
