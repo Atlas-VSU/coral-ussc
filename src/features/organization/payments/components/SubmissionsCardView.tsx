@@ -25,12 +25,12 @@ export function SubmissionsCardView({ paginated, onOpenReview }: SubmissionsCard
         return (
           <Card key={payment.id} className="border-border bg-card flex flex-col hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start justify-between gap-3 max-[420px]:flex-col max-[420px]:items-start">
                 <div className="flex-1 min-w-0">
                   <CardTitle className="text-base font-semibold truncate">{payment.userName}</CardTitle>
                   <CardDescription className="text-xs mt-0.5">{payment.studentId}</CardDescription>
                 </div>
-                <Badge variant={cfg.variant} className="flex items-center gap-1 text-xs shrink-0 whitespace-nowrap">
+                <Badge variant={cfg.variant} className="flex items-center gap-1 text-xs shrink-0 whitespace-nowrap max-[420px]:self-start">
                   <StatusIcon className="size-3" />{cfg.label}
                 </Badge>
               </div>
