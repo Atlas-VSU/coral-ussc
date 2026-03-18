@@ -21,12 +21,12 @@ export function PageHeader({ title, context, description, action, className, var
       )}
     >
       <div className="flex flex-col gap-1">
-        <h1
+       <h1
           className={cn(
             "text-2xl font-bold uppercase tracking-tight",
             variant === "portal" || variant === "admin"
               ? "bg-linear-to-r from-[#8BC34A] via-[#2E7D32] to-[#1B5E20] bg-clip-text text-transparent"
-              : "text-[#8BC34A]",
+              : "bg-linear-to-r from-[#8BC34A] via-[#2E7D32] to-[#1B5E20] bg-clip-text text-transparent",
           )}
         >
           {title}

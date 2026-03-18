@@ -40,7 +40,8 @@ import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { cn } from "@/lib/utils";
 
 // import { ConfirmDialog } from "./ConfirmDialog";
-import { ConfirmDialog } from "@/features/organization/fees/components/ConfirmDialog";
+//import { ConfirmDialog } from "@/features/organization/fees/components/ConfirmDialog";
+import { ConfirmDialog } from "./ConfirmDialog";
 // import { useFeeGeneration } from "../hooks/useFeeGeneration";
 import { useFeeGeneration } from "@/features/organization/fees/hooks/useFeeGeneration";
 import { Member } from "@/features/organization/members/types";
@@ -374,8 +375,8 @@ export function FeeGenerationDialog({
         onCancel={handleCancelConfirmation}
         title="Confirm Fee Generation"
         description={confirmationDescription}
-        confirmText="Yes, Generate Fees"
-        cancelText="No, Go Back"
+        confirmText="Confirm & Create"
+        cancelText="Cancel"
         variant="warning"
         icon={<AlertTriangle className="h-6 w-6" />}
         notice={confirmationNotice}
