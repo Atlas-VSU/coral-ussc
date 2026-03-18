@@ -22,7 +22,7 @@ export function FinesHeader({
       />
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 text-black">
+      <div className="flex flex-col sm:flex-row gap-3 text-[#303030]">
         <div className="flex gap-2">
 
           {/* NOTE: THIS IS THE BUTTON TO TRIGGER BULK GENERATION OF FINES CONTAINER FOR ALL STUDENTS OR MEMBERS THAT ARE ALREADY ADDED IN THE DATABASE */}
