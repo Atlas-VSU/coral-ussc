@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { ReceiptData } from "./PaymentReceiptDialog"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -75,10 +76,11 @@ interface PaymentReviewDialogProps {
    */
   onApprove?: () => Promise<void>
   onReject?: (reason: string) => Promise<void>
+  onViewReceipt?: (bool: boolean) => void
   isProcessing?: boolean
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
+// ─── Component ──────────────────────────────────────────────────────────────
 
 export function PaymentReviewDialog({
   open,
@@ -89,6 +91,7 @@ export function PaymentReviewDialog({
   onApprove,
   onReject,
   isProcessing = false,
+  onViewReceipt,
 }: PaymentReviewDialogProps) {
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false)
   const [rejectOpen, setRejectOpen] = useState(false)
@@ -166,6 +169,10 @@ export function PaymentReviewDialog({
       </div>
     )
   }
+
+  const handleViewReceipt = (bool: boolean) => {
+    onViewReceipt?.(bool);
+   }
 
   return (
     <>
@@ -293,9 +300,16 @@ export function PaymentReviewDialog({
                     </Button>
                   </>
                 ) : (
-                  <Button variant="outline" onClick={() => onOpenChange(false)}>
+                    <>
+                  {!data.declineRemarks && (
+                    <Button variant="outline" className="gap-1.5" onClick={()=>handleViewReceipt(true)}>
+                      View Receipt
+                    </Button>
+                  )}
+                  <Button variant="outline" className="gap-1.5" onClick={() => onOpenChange(false)}>
                     Close
                   </Button>
+                    </>
                 )}
               </DialogFooter>
             </div>
