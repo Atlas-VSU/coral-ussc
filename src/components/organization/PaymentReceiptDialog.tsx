@@ -124,7 +124,7 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
           {/* Header */}
           <div className="text-center mb-4">
             <Image
-              src="/ussc-logo-1.webp"
+              src="/icon-ussc-logo-2.svg"
               alt="Org Logo"
               width={40}
               height={40}
