@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { buildRequirementGroups } from "../utils/clearanceUtils"
 import type { ClearanceStatus } from "../types"
+import { useClearanceActions } from "../hooks/useClearanceAction"
+import { useOnlinePaymentReview } from "../hooks/useOnlinePaymentReview"
+import { ProofOfPayment } from "../../fines/types"
 
 interface RequirementsBreakdownProps {
   clearance: ClearanceStatus
-  onReviewPayment: (clearanceId: string, referenceId: string) => void
+  onReviewPayment: (payment: ProofOfPayment) => void
   onLogPayment: (clearanceId: string) => void
 }
 
@@ -22,6 +25,8 @@ export function RequirementsBreakdown({
   const pendingReviews = Object.entries(clearance.blockingItems)
     .filter(([_, item]) => item.pendingReview)
     .map(([refId, item]) => ({ refId, label: item.title }))
+  
+  const {pendingPayments, loading} = useOnlinePaymentReview(clearance)
 
   return (
     <div className="flex flex-col gap-3 py-4">
@@ -78,18 +83,18 @@ export function RequirementsBreakdown({
           </div>
         )
       })}
-      {pendingReviews.length > 0 && pendingReviews.map(({ refId, label }) => (
-        <Button
-          key={refId}
+      {pendingReviews.length > 0 && pendingPayments.map((p, index) => (
+          <Button
+          key={p.id}
           size="sm"
           variant="outline"
           className="w-full gap-1.5 border-warning/40 text-warning-foreground hover:bg-warning/10"
-          onClick={() => onReviewPayment(clearance.id, refId)}
+          onClick={() => onReviewPayment(p)}
         >
-          <Eye className="size-3.5" /> Review Payment: {label}
+          <Eye className="size-3.5" /> Review Payment{pendingPayments.length > 1 ? ` (${index+1})` : ""}
         </Button>
       ))}
-      {Object.values(clearance.blockingItems).some(i => i.status === "unpaid" && !i.pendingReview) && (
+      {Object.values(clearance.blockingItems).some(i => i.status === "unpaid") && (pendingPayments.length === 0) && (
         <Button
           size="sm"
           variant="outline"
