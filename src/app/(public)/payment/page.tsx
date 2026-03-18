@@ -158,7 +158,7 @@ export default function PaymentPage() {
   return (
     <>
       {currentStep === "verification" && (
-        <StudentVerificationPage onVerified={handleStudentVerified} />
+        <StudentVerificationPage onVerified={handleStudentVerified} currentStep={1} />
       )}
       {currentStep === "organization" && studentData && (
         <OrganizationSelectionPage
@@ -169,6 +169,7 @@ export default function PaymentPage() {
             acronym: org.acronym,
             outstandingAmount: org.outstandingAmount,
           }))}
+          currentStep={2}
           isLoading={isLoadingDues}
           error={duesError}
           onBack={handleBackToVerification}
@@ -179,6 +180,7 @@ export default function PaymentPage() {
         <FinesFeesSelectionPage
           studentData={studentData}
           organizationData={selectedOrganization}
+          currentStep={3}
           fees={selectedOrganization.fees}
           fines={selectedOrganization.fines}
           fineItems = {selectedOrganization.fineItems}
@@ -191,6 +193,7 @@ export default function PaymentPage() {
           studentData={studentData}
           organizationData={selectedOrganization}
           selectedPaymentItems={selectedPaymentItems}
+          currentStep={4}
           onBack={handleBackToFees}
           onRestart={handleBackToVerification}
         />

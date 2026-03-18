@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -16,6 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ConfirmationModal } from "./components/ConfirmationModal";
+import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
+import { PaymentProgressBar } from "./components/PaymentProgressBar";
 
 // Validation schema
 const verificationSchema = z.object({
@@ -59,9 +61,10 @@ const PROGRAM_NAMES: Record<string, string> = {
 
 interface StudentVerificationPageProps {
   onVerified: (data: StudentData) => void;
+  currentStep: 1 | 2 | 3 | 4;
 }
 
-export default function StudentVerificationPage({ onVerified }: StudentVerificationPageProps) {
+export default function StudentVerificationPage({ onVerified, currentStep }: StudentVerificationPageProps) {
   const [showModal, setShowModal] = useState(false);
   const [studentData, setStudentData] = useState<StudentData | null>(null);
   const [programOptions, setProgramOptions] = useState<ProgramOption[]>(FALLBACK_PROGRAM_OPTIONS);
@@ -184,13 +187,16 @@ export default function StudentVerificationPage({ onVerified }: StudentVerificat
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="pb-4">
-          <CardTitle>Student Payment Portal</CardTitle>
-          <CardDescription>Enter your student information to continue</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-4">
+    <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background flex flex-col items-center justify-center p-4">
+      <PaymentBrandHeader stepLabel="Enter your student information to continue" />
+      <div className="mb-6">
+        <PaymentProgressBar
+          currentStep={currentStep}
+          subtitle="Verify your student details to continue"
+        />
+      </div>
+      <Card className="w-full max-w-md shadow-sm">
+        <CardContent className="pt-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Student ID Input */}
             <div className="space-y-2">
@@ -257,7 +263,7 @@ export default function StudentVerificationPage({ onVerified }: StudentVerificat
             )}
 
             {/* Submit Button */}
-            <Button type="submit" className="w-full mb-6" disabled={isVerifying}>
+            <Button type="submit" className="w-full mb-6 bg-[#1B5E20] hover:bg-[#2E7D32] text-white dark:bg-[#1B5E20] dark:hover:bg-[#2E7D32]" disabled={isVerifying}>
               {isVerifying ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

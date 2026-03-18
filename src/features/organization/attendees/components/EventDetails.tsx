@@ -53,7 +53,7 @@ export function EventDetails({ event, attendeeCount }: EventDetailsProps) {
             <h1 className="font-nunito text-2xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
               Event Attendees
             </h1>
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
           </div>
           <p className="font-nunito-sans text-base text-gray-600/90 dark:text-gray-400/90 leading-relaxed">
             Manage and view attendees for this event
@@ -75,7 +75,7 @@ export function EventDetails({ event, attendeeCount }: EventDetailsProps) {
                   <h2 className="font-nunito text-xl font-bold text-gray-900 dark:text-gray-100 break-words leading-tight mb-1">
                     {event.name}
                   </h2>
-                  <div className="w-10 h-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"></div>
+                  <div className="w-10 h-0.5 bg-gradient-to-r from-blue-700 to-green-800 rounded-full"></div>
                 </div>
                 
                 {/* Event badges positioned near event name */}
