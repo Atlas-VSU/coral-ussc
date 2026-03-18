@@ -318,6 +318,7 @@ export const generateFinesOnEvent = async (
             },
             isPaid:     false,
             isArchived: false,
+            isPending: false,
           };
 
           // 2. Use the generated reference to save the item

@@ -101,7 +101,7 @@ export type FineItem = {
   appealResolvedBy?: string;
   appealResolvedAt?: Timestamp;
   isPaid: boolean;
-  
+  isPending?: boolean;
 }
 
 export type FineGenerationPhase =

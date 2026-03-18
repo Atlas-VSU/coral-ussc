@@ -1,6 +1,6 @@
 import { FineStatus } from "@/constants/status";
 import { db } from "@/firebase/firebase.config";
-import { doc, updateDoc, Timestamp, getDoc } from "firebase/firestore";
+import { doc, updateDoc, Timestamp, getDoc, collection, getDocs, query, where } from "firebase/firestore";
 import { cacheService } from "@/services/cacheService";
 import { getAllFines, getAllUnpaidFinesforOrg } from "../read/fines";
 
@@ -57,6 +57,15 @@ export const recalculateFines = async (fineId: string, addedAmount?: number | nu
                 newStatus = FineStatus.PARTIAL;
             }
         }
+
+        const fineItemsRef = collection(db, "fines", fineId, "fineItems");
+        const q = query(fineItemsRef, where("isPending", "==", true));
+        const fineItemsSnapShot = await getDocs(q);
+        
+        if (!fineItemsSnapShot.empty && newBalance > 0) {
+            newStatus = FineStatus.PENDING;
+         }
+
         await updateDoc(fineRef, {
             accumulatedAmount: newAccumulatedAmount,
             paidAmount: newPaidAmount,
