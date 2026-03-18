@@ -18,6 +18,8 @@ import { ImageUpload } from "./components/ImageUpload";
 import { SelectedPaymentItems } from "@/app/(public)/payment/page";
 import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
 import { PaymentProgressBar } from "./components/PaymentProgressBar";
+import { PaymentStats } from "./components/PaymentStats";
+import { PaymentStatus } from "@/constants/status";
 
 interface StudentData {
   studentId: string;
@@ -348,7 +350,6 @@ export default function FinesPaymentFormPage({
       <SuccessScreen
         form={form.getValues()}
         onReset={handleSuccessReset}
-        currentStep={currentStep}
         paymentHistoryId={submitResult?.paymentHistoryId}
         submissionCount={submitResult?.submissionIds.length ?? 0}
       />
@@ -358,7 +359,6 @@ export default function FinesPaymentFormPage({
   return (
     <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background">
       <div className="mx-auto max-w-2xl px-4 py-8 pb-36 sm:px-6 lg:px-8">
-
         <PaymentBrandHeader />
         <div className="mb-6">
           <PaymentProgressBar
@@ -460,9 +460,34 @@ export default function FinesPaymentFormPage({
           </div>
 
           {/* Section 2 — Payment Details */}
-          <div>
+          <div className="flex flex-col">
             <SectionHeading number={2} title="Payment Details" />
-            <Card className="border-border">
+            {isGcash && (
+              <Card className="mt-2 border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-blue-50/50 dark:from-blue-950/30 dark:to-blue-950/20">
+                <CardContent className="pt-4 flex flex-col items-center gap-4">
+                  <p className="text-xs text-muted-foreground self-start flex items-center gap-1.5">
+                    <CreditCard className="h-3.5 w-3.5 text-blue-600" />
+                    Scan the QR code below using your GCash app to pay
+                  </p>
+                  <div className="relative w-48 h-48 bg-white rounded-lg p-2 border-2 border-blue-200 dark:border-blue-800">
+                    <Image
+                      src="/images/public-student-payment/mock-qr-student-payment1.jpeg"
+                      alt="GCash Payment QR Code"
+                      fill
+                      className="object-contain"
+                      priority
+                    />
+                  </div>
+                  <div className="text-center text-sm text-muted-foreground space-y-1">
+                    <p className="font-medium">1. Open GCash app</p>
+                    <p>2. Tap "Scan QR" and scan the code above</p>
+                    <p>3. Complete your payment</p>
+                    <p className="font-medium text-[#1B5E20] dark:text-[#8BC34A] mt-2">Save your reference number for verification</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            <Card className="border-border mt-2">
               <CardContent className="pt-4 flex flex-col gap-4">
                 <input type="hidden" {...register("amount", { valueAsNumber: true })} />
                 <div className="rounded-md border bg-muted/30 px-3 py-2">
@@ -497,31 +522,7 @@ export default function FinesPaymentFormPage({
                 )}
               </CardContent>
             </Card>
-            {isGcash && (
-              <Card className="mt-2 border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-blue-50/50 dark:from-blue-950/30 dark:to-blue-950/20">
-                <CardContent className="pt-4 flex flex-col items-center gap-4">
-                  <p className="text-xs text-muted-foreground self-start flex items-center gap-1.5">
-                    <CreditCard className="h-3.5 w-3.5 text-blue-600" />
-                    Scan the QR code below using your GCash app to pay
-                  </p>
-                  <div className="relative w-48 h-48 bg-white rounded-lg p-2 border-2 border-blue-200 dark:border-blue-800">
-                    <Image
-                      src="/images/public-student-payment/mock-qr-student-payment1.jpeg"
-                      alt="GCash Payment QR Code"
-                      fill
-                      className="object-contain"
-                      priority
-                    />
-                  </div>
-                  <div className="text-center text-sm text-muted-foreground space-y-1">
-                    <p className="font-medium">1. Open GCash app</p>
-                    <p>2. Tap "Scan QR" and scan the code above</p>
-                    <p>3. Complete your payment</p>
-                    <p className="font-medium text-[#1B5E20] dark:text-[#8BC34A] mt-2">Save your reference number for verification</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            
           </div>
 
           {/* Section 3 — Upload Receipt */}

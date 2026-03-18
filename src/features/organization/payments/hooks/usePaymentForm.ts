@@ -11,7 +11,7 @@ export interface ImageData {
   preview: string;
 }
 
-export type FormStatus = "idle" | "submitting" | "success";
+export type FormStatus = "success" | "submitting" | "idle" | "error";
 
 interface UsePaymentFormOptions {
   initialValues?: Partial<PaymentFormData>;
