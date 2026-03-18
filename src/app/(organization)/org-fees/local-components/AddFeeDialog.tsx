@@ -5,8 +5,8 @@ import { AlertTriangle, Clock, CalendarIcon } from "lucide-react";
 
 import "./styles/feeDialog.css";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "./calendar";
+import { Checkbox } from "./checkbox";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +35,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "./Select";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { cn } from "@/lib/utils";
 
@@ -144,7 +144,7 @@ export function FeeGenerationDialog({
                           placeholder="e.g., Membership Fee 2024"
                           {...field}
                           disabled={isGenerating}
-                          className="!bg-white text-black placeholder:text-gray-600 border-[#2E7D32]/30 focus:border-[#1B5E20]"
+                          className="!bg-white text-black placeholder:text-gray-600 !focus:border-[#1B5E20] !border-[#2E7D32]/50"
                         />
                       </FormControl>
                       <FormMessage />
@@ -166,7 +166,7 @@ export function FeeGenerationDialog({
                           placeholder="Brief description of this fee"
                           {...field}
                           disabled={isGenerating}
-                          className="!bg-white text-black placeholder:text-gray-600 border-[#2E7D32]/30 focus:border-[#1B5E20]"
+                          className="!bg-white text-black placeholder:text-gray-600 !border-[#2E7D32]/50 focus:border-[#1B5E20]"
                         />
                       </FormControl>
                       <FormMessage />
@@ -187,7 +187,7 @@ export function FeeGenerationDialog({
                         disabled={isGenerating}
                       >
                         <FormControl>
-                          <SelectTrigger className="!bg-white text-black placeholder:text-gray-600 border-[#2E7D32]/30">
+                          <SelectTrigger className="!bg-white text-black placeholder:text-gray-600 !border-[#2E7D32]/30">
                             <SelectValue placeholder="Select fee type" />
                           </SelectTrigger>
                         </FormControl>
@@ -217,7 +217,7 @@ export function FeeGenerationDialog({
                           {...field}
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                           disabled={isGenerating}
-                          className="!bg-white text-black placeholder:text-gray-600 border-[#2E7D32]/30 focus:border-[#1B5E20]"
+                          className="!bg-white text-black placeholder:text-gray-600 !border-[#2E7D32]/30 focus:border-[#1B5E20]"
                         />
                       </FormControl>
                       <FormMessage />
@@ -237,7 +237,7 @@ export function FeeGenerationDialog({
                           placeholder="e.g., 2024-2025"
                           {...field}
                           disabled={isGenerating}
-                          className="!bg-white text-black placeholder:text-gray-600 border-[#2E7D32]/30 focus:border-[#1B5E20]"
+                          className="!bg-white text-black placeholder:text-gray-600 !border-[#2E7D32]/30 focus:border-[#1B5E20]"
                         />
                       </FormControl>
                       <FormMessage />
@@ -258,7 +258,7 @@ export function FeeGenerationDialog({
                         disabled={isGenerating}
                       >
                         <FormControl>
-                          <SelectTrigger className="!bg-white text-black placeholder:text-gray-600 border-[#2E7D32]/30">
+                          <SelectTrigger className="!bg-white text-black !placeholder:text-gray-600 !border-[#2E7D32]/30">
                             <SelectValue placeholder="Select semester" />
                           </SelectTrigger>
                         </FormControl>
@@ -285,7 +285,7 @@ export function FeeGenerationDialog({
                             <Button
                               variant="outline"
                               className={cn(
-                                "w-full justify-start text-left font-normal !bg-white text-black placeholder:text-gray-600 border-[#2E7D32]/30 hover:!bg-white hover:text-black",
+                                "w-full justify-start text-left font-normal !bg-white text-black placeholder:text-gray-600 !border-[#2E7D32]/30 hover:!bg-white hover:text-black",
                                 !field.value && "text-gray-600",
                                 isGenerating && "opacity-50 cursor-not-allowed"
                               )}
@@ -319,7 +319,7 @@ export function FeeGenerationDialog({
                   control={form.control}
                   name="isRequiredForClearance"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border border-[#2E7D32]/30 p-4 bg-[#8BC34A]/5">
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border !border-[#2E7D32]/30 p-4 bg-[#8BC34A]/5">
                       <FormControl>
                         <Checkbox
                           checked={field.value}
