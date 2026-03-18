@@ -13,6 +13,8 @@ export interface StudentData {
   studentId: string;
   program: string;
   name: string;
+  programShortName?: string;
+  programAcronym?: string;
 }
 
 export interface OrganizationData {

@@ -37,6 +37,8 @@ interface StudentData {
   name: string;
   studentId: string;
   program: string;
+  programShortName?: string;
+  programAcronym?: string;
 }
 
 interface ProgramOption {
@@ -152,6 +154,8 @@ export default function StudentVerificationPage({ onVerified, currentStep }: Stu
       name: result.student.name,
       studentId: result.student.studentId,
       program: result.student.program?.name || PROGRAM_NAMES[data.program] || data.program,
+      programShortName: result.student.program?.shortName || null,
+      programAcronym: result.student.program?.acronym || null,
     };
   };
 
