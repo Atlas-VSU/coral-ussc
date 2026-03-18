@@ -268,7 +268,7 @@ export function AdminSidebar({ user, className }: { user?: User; className?: str
 
         {/* Logo + current page */}
         <div className="flex items-center gap-2 min-w-0">
-          <Image src="/ussc-logo-1.webp" alt="USSC Logo" width={24} height={24} className="size-6 object-contain shrink-0" />
+          <Image src="/images/ussc-logo-1.webp" alt="USSC Logo" width={24} height={24} className="size-6 object-contain shrink-0" />
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="text-sm font-bold bg-linear-to-r from-[#1B5E20] via-[#0D3B12] to-[#0A2E0F] bg-clip-text text-transparent shrink-0">USSC</span>
             <span className="inline-flex items-center rounded bg-[#1B5E20]/10 px-1 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#1B5E20] shrink-0">Admin</span>
