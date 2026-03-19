@@ -6,7 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { FeesRosterContent } from "./FeesRosterContent";
 import { useFeeAction } from "../hooks/useFeeAction";
-import PaymentReceiptDialog from "@/components/organization/PaymentReceiptDialog";
+import PaymentReceiptDialog from "../local-components/PaymentReceiptDialog";
 
 interface FeesRosterPageProps {
   title: string;
