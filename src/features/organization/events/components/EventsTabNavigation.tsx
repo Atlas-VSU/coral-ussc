@@ -6,14 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-// Event status type
-export type EventStatus =
-  | "ongoing"
-  | "upcoming"
-  | "completed"
-  | "archived"
-  | "all";
+import type { EventStatus } from "../types";
 
 interface EventsTabNavigationProps {
   currentTab: EventStatus;
@@ -59,11 +52,11 @@ export function EventsTabNavigation({
           <SelectValue placeholder="Filter by status" />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="all">All Events</SelectItem>
           <SelectItem value="ongoing">Ongoing</SelectItem>
           <SelectItem value="upcoming">Upcoming</SelectItem>
           <SelectItem value="completed">Completed</SelectItem>
           <SelectItem value="archived">Archived</SelectItem>
-          <SelectItem value="all">All Events</SelectItem>
         </SelectContent>
       </Select>
     </div>

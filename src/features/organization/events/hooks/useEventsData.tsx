@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Event } from "../types";
 import { getPaginatedEvents, getEvents } from "@/firebase";
-import { EventStatus } from "../components/EventsTabNavigation";
+import { EventStatus } from "../types";
 import { cacheService, CACHE_DURATIONS } from "@/services/cacheService";
 
 interface SortOptions {
@@ -22,94 +22,84 @@ export function useEventsData(currentTab: EventStatus) {
     direction: "desc",
   });
 
-  // Use a ref to track whether we've already loaded the search cache
   const searchCacheLoadedRef = useRef(false);
-  const [cachedAllEvents, setCachedAllEvents] = useState<Event[]>([]);
+  // Keep a ref copy so fetchEvents can always read the latest value
+  // without causing stale-closure bugs
+  const cachedAllEventsRef = useRef<Event[]>([]);
+  const [, setCachedAllEvents] = useState<Event[]>([]);
 
-  // Convert sort option string to field and direction
   const convertSortOption = (sortOption: string): SortOptions => {
     switch (sortOption) {
-      case "date-asc":
-        return { field: "date", direction: "asc" };
-      case "date-desc":
-        return { field: "date", direction: "desc" };
-      case "name-asc":
-        return { field: "name", direction: "asc" };
-      case "name-desc":
-        return { field: "name", direction: "desc" };
-      case "attendees-asc":
-        return { field: "attendees", direction: "asc" };
-      case "attendees-desc":
-        return { field: "attendees", direction: "desc" };
-      default:
-        return { field: "date", direction: "desc" };
+      case "date-asc":   return { field: "date",      direction: "asc"  };
+      case "date-desc":  return { field: "date",      direction: "desc" };
+      case "name-asc":   return { field: "name",      direction: "asc"  };
+      case "name-desc":  return { field: "name",      direction: "desc" };
+      case "attendees-asc":  return { field: "attendees", direction: "asc"  };
+      case "attendees-desc": return { field: "attendees", direction: "desc" };
+      default:           return { field: "date",      direction: "desc" };
     }
   };
 
-  // Load search cache only when search is actually used
-  const ensureSearchCache = useCallback(async () => {
-    if (!searchCacheLoadedRef.current) {
-      // Check if we already have events in the client-side cache
-      const cacheKey = "events:client-cache:all";
-      const cachedEvents = cacheService.get<Event[]>(cacheKey);
-
-      if (cachedEvents?.data) {
-        setCachedAllEvents(cachedEvents.data);
-      } else {
-        try {
-          // Fetch all events and cache them for future searches
-          const allEvents = await getEvents();
-          setCachedAllEvents(allEvents);
-
-          // Store in cache for future use
-          cacheService.set(cacheKey, allEvents, CACHE_DURATIONS.EVENTS);
-        } catch (error) {
-          console.error("Error fetching events for search:", error);
-        }
-      }
-
-      searchCacheLoadedRef.current = true;
+  // Returns the full event list (from cache or network) directly instead of
+  // relying on a state update that would only be visible next render.
+  const ensureSearchCache = useCallback(async (): Promise<Event[]> => {
+    if (searchCacheLoadedRef.current) {
+      return cachedAllEventsRef.current;
     }
+
+    const cacheKey = "events:client-cache:all";
+    const cachedEvents = cacheService.get<Event[]>(cacheKey);
+
+    let allEvents: Event[];
+    if (cachedEvents?.data) {
+      allEvents = cachedEvents.data;
+    } else {
+      try {
+        allEvents = await getEvents();
+        cacheService.set(cacheKey, allEvents, CACHE_DURATIONS.EVENTS);
+      } catch (error) {
+        console.error("Error fetching events for search:", error);
+        allEvents = [];
+      }
+    }
+
+    cachedAllEventsRef.current = allEvents;
+    setCachedAllEvents(allEvents); // keep state in sync for anything that reads it
+    searchCacheLoadedRef.current = true;
+    return allEvents;
   }, []);
 
-  // Create a cache key for the current view
   const createViewCacheKey = useCallback(() => {
     const dateStr = filterDate
       ? filterDate.toISOString().split("T")[0]
       : "no-date";
+    const searchKey = searchQuery
+      ? `q:${searchQuery.toLowerCase().trim()}`
+      : "no-search";
     return `ui:events:view:${currentTab}:${sortOptions.field}-${
       sortOptions.direction
-    }:page${currentPage}:date${dateStr}:search${
-      searchQuery ? "true" : "false"
-    }`;
+    }:page${currentPage}:date${dateStr}:${searchKey}`;
   }, [currentTab, sortOptions, currentPage, filterDate, searchQuery]);
 
-  // Fetch events - separate logic for search vs. normal tab view
   const fetchEvents = useCallback(async () => {
     setLoading(true);
 
     try {
-      // If this is a search query, ensure we have the search cache loaded
-      if (searchQuery) {
-        await ensureSearchCache();
-      }
-
-      // Use a client-side caching approach for the current view
       const viewCacheKey = createViewCacheKey();
 
-      // Check if we have a fresh client-side UI cache for the current view
       const cachedViewData = await cacheService.getOrFetch(
         viewCacheKey,
         async () => {
           if (searchQuery) {
-            // For search, filter the cached all events array client-side
-            let filteredEvents = cachedAllEvents.filter(
+            // Await the result directly — no stale-state problem
+            const allEvents = await ensureSearchCache();
+
+            let filteredEvents = allEvents.filter(
               (event) =>
                 event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 event.location.toLowerCase().includes(searchQuery.toLowerCase())
             );
 
-            // Apply date filter if set
             if (filterDate) {
               const dateString = filterDate.toISOString().split("T")[0];
               filteredEvents = filteredEvents.filter((event) => {
@@ -118,14 +108,12 @@ export function useEventsData(currentTab: EventStatus) {
               });
             }
 
-            // Apply status filter based on currentTab
             if (currentTab !== "all") {
               filteredEvents = filteredEvents.filter(
                 (event) => event.status === currentTab
               );
             }
 
-            // Sort events client-side
             filteredEvents.sort((a, b) => {
               if (sortOptions.field === "date") {
                 const dateA = new Date(a.date).getTime();
@@ -150,30 +138,26 @@ export function useEventsData(currentTab: EventStatus) {
               totalCount: filteredEvents.length,
             };
           } else {
-            // For normal tab view, use server-side pagination with our cached API
             const skip = (currentPage - 1) * itemsPerPage;
-
             const result = await getPaginatedEvents(
               currentTab,
               sortOptions.field,
               sortOptions.direction,
               itemsPerPage,
-              null, // No cursor-based pagination
-              undefined, // No search
+              null,
+              undefined,
               skip,
               filterDate
             );
-
             return {
               events: result.events,
               totalCount: result.totalCount,
             };
           }
         },
-        CACHE_DURATIONS.UI_STATE // Use consistent TTL from cache durations
+        CACHE_DURATIONS.UI_STATE
       );
 
-      // Now we can safely access properties of the resolved Promise
       setEvents(cachedViewData.events);
       setTotalEvents(cachedViewData.totalCount);
     } catch (error) {
@@ -190,36 +174,33 @@ export function useEventsData(currentTab: EventStatus) {
     itemsPerPage,
     currentPage,
     filterDate,
-    cachedAllEvents,
     createViewCacheKey,
     ensureSearchCache,
   ]);
 
-  // Handle page change - only for tab view, not search
   const handlePageChange = useCallback((page: number) => {
-    // Update the current page
     setCurrentPage(page);
   }, []);
 
-  // Handle date filter change
   const handleDateChange = useCallback((date: Date | undefined) => {
     setFilterDate(date);
-    setCurrentPage(1); // Reset to first page when filter changes
+    setCurrentPage(1);
   }, []);
 
-  // Handle search
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
-    setCurrentPage(1); // Reset to first page when search changes
+    setCurrentPage(1);
+    // Bust all stale view-cache entries (old keys used "searchtrue/false")
+    cacheService.invalidateByPrefix("ui:events:view:");
+    // Force re-fetch of the full events list for search
+    searchCacheLoadedRef.current = false;
   }, []);
 
-  // Handle sorting
   const handleSort = useCallback((sortOption: string) => {
     setSortOptions(convertSortOption(sortOption));
-    setCurrentPage(1); // Reset to first page when sort changes
+    setCurrentPage(1);
   }, []);
 
-  // Fetch events when dependencies change
   useEffect(() => {
     fetchEvents();
   }, [
@@ -232,7 +213,6 @@ export function useEventsData(currentTab: EventStatus) {
     filterDate,
   ]);
 
-  // Reset page when tab changes
   useEffect(() => {
     setCurrentPage(1);
   }, [currentTab]);
@@ -248,6 +228,6 @@ export function useEventsData(currentTab: EventStatus) {
     handleSort,
     handleDateChange,
     searchQuery,
-    refresh: fetchEvents, // Expose refresh function
+    refresh: fetchEvents,
   };
 }
