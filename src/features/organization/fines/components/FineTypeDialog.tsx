@@ -192,7 +192,7 @@ export function FineTypeDialog({
                   <FineTypeForm
                     open={showAddForm}
                     onSubmit={handleAddSubmit}
-                    onOpenChange={() => setShowAddForm(true)}
+                    onOpenChange={(isOpen) => setShowAddForm(isOpen)}
                     onCancel={() => setShowAddForm(false)}
                     isSubmitting={isSubmitting}
                     fetchFineTypes={fetchFineTypes}
