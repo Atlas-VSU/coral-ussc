@@ -15,7 +15,7 @@ export function StatCard({ title, value, description, icon: Icon, trend, classNa
   return (
     <Card className={cn("border-border", className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground uppercase font-bold">{title}</CardTitle>
+        <CardTitle className="text-sm text-muted-foreground uppercase font-bold">{title}</CardTitle>
         <Icon className="size-6 text-muted-foreground" />
       </CardHeader>
       <CardContent>
