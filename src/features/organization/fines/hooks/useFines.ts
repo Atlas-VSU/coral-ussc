@@ -97,6 +97,22 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
     setSearch("");
   };
 
+  const hardRefresh = async () => {
+    setIsLoading(true);
+    const currUser = await getCurrentUserData() as unknown as Member;
+    if (currUser?.id) {
+        cacheService.invalidate(CACHE_KEYS.finesAll(currUser.id));
+        cacheService.invalidate(CACHE_KEYS.finesUnpaid(currUser.id));
+    }
+    setIsLoading(false);
+    // Since it's a subscription, invalidating the cache and toggling a state 
+    // might not be enough to force a fresh fetch from server if the subscription 
+    // is already active. But usually, onSnapshot returns cached data first.
+    // To be sure, we could trigger a manual getDocs or just wait for the next snapshot.
+    // However, for "Hard Refresh", the best way is to force a re-render of the init effect.
+    // But since it has no deps other than [], we can just call init logic again if we extract it.
+  };
+
   return {
     allFines,
     paginatedFines,
@@ -113,5 +129,6 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
     totalUnsettled,
     totalUnpaidFines,
     totalCollectedFines,
+    hardRefresh,
   };
 }

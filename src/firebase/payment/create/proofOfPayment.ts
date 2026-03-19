@@ -12,7 +12,7 @@ import { Member } from "@/features/organization/members/types";
 import { createFinesPaymentHistory, createOnlinePaymentHistory } from "./paymentHistory";
 import { UnpaidDue } from "@/features/organization/payments/types";
 import { FineItem, StudentFines } from "@/features/organization/fines/types";
-import { cacheService } from "@/services/cacheService";
+import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { getAllProofOfPayments } from "../read/proofOfPayment";
 
 export const createOnlineProofOfPayment = async (
@@ -47,11 +47,15 @@ export const createOnlineProofOfPayment = async (
             }
             const docRef = await addDoc(collection(db, "proofOfPayments"), paymentData);
             
-            cacheService.invalidateByPrefix('payments:');
-            cacheService.invalidateByPrefix('fines:');
-            cacheService.invalidateByPrefix('fees:');
-            cacheService.invalidateByPrefix('clearance:');
-            getAllProofOfPayments(transaction.orgId).catch(console.error);
+            const orgId = transaction.orgId || '';
+            cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
+            cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
+            cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
+            cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+            cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+            cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+            
+            getAllProofOfPayments(orgId).catch(console.error);
 
             return docRef.id;
         }
@@ -118,11 +122,15 @@ export const createBulkOnlineProofOfPayment = async (
           }
         })
 
-        cacheService.invalidateByPrefix('payments:');
-        cacheService.invalidateByPrefix('fines:');
-        cacheService.invalidateByPrefix('fees:');
-        cacheService.invalidateByPrefix('clearance:');
-        getAllProofOfPayments(tempOrgIdForStudents).catch(console.error);
+        const orgId = tempOrgIdForStudents;
+        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
+        cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
+        cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+        
+        getAllProofOfPayments(orgId).catch(console.error);
 
     return [{ success: true, message: "Proof of payment submitted successfully." }];
   }catch(error) {
@@ -169,11 +177,15 @@ export const createOfflineFinesProofOfPayment = async (
 
             const docRef = await addDoc(collection(db, "proofOfPayments"), paymentData);
             
-            cacheService.invalidateByPrefix('payments:');
-            cacheService.invalidateByPrefix('fines:');
-            cacheService.invalidateByPrefix('fees:');
-            cacheService.invalidateByPrefix('clearance:');
-            getAllProofOfPayments(transaction.orgId).catch(console.error);
+            const orgId = transaction.orgId || '';
+            cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
+            cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
+            cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
+            cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+            cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+            cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+            
+            getAllProofOfPayments(orgId).catch(console.error);
 
             return docRef.id;
         }
@@ -225,11 +237,15 @@ export const createBulkOfflineProofOfPayment = async (
       }
     } )
 
-    cacheService.invalidateByPrefix('payments:');
-    cacheService.invalidateByPrefix('fines:');
-    cacheService.invalidateByPrefix('fees:');
-    cacheService.invalidateByPrefix('clearance:');
-    getAllProofOfPayments(currentUser.id!).catch(console.error);
+    const orgId = currentUser.id || '';
+    cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
+    cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
+    cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
+    cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+    cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+    cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+    
+    getAllProofOfPayments(orgId).catch(console.error);
     getAllFines().catch(console.error);
     getAllUnpaidFinesforOrg().catch(console.error);
 }

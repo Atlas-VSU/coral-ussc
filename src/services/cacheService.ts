@@ -116,15 +116,18 @@ class CacheService {
       this.metrics.hits++;
       keyMetrics.hits++;
       const duration = performance.now() - startTime;
+      console.log(`%c[Cache Hit] %c${key} %c(${duration.toFixed(2)}ms)`, 'color: #4CAF50; font-weight: bold', 'color: #2196F3', 'color: #9E9E9E');
       return cached.data as T;
     }
 
     // Cache miss
     this.metrics.misses++;
     keyMetrics.misses++;
+    console.log(`%c[Cache Miss] %c${key}`, 'color: #F44336; font-weight: bold', 'color: #2196F3');
     
     const data = await fetchFn();
     const duration = performance.now() - startTime;
+    console.log(`%c[Cache Populated] %c${key} %c(Fetched in ${duration.toFixed(2)}ms)`, 'color: #FF9800; font-weight: bold', 'color: #2196F3', 'color: #9E9E9E');
 
     // Store in cache
     this.cache.set(key, {
@@ -180,6 +183,26 @@ class CacheService {
   public clear(): void {
     this.cache.clear();
     localStorage.removeItem("app-data-cache");
+  }
+
+  /**
+   * Updates a single item within a cached list without re-fetching the entire list.
+   * @param key The cache key for the list
+   * @param id The ID of the item to update
+   * @param updater Function that takes the old item and returns the updated item
+   */
+  public updateInList<T extends { id?: string | number }>(
+    key: string,
+    id: string | number,
+    updater: (item: T) => T
+  ): void {
+    const entry = this.get<T[]>(key);
+    if (entry) {
+      const updatedData = entry.data.map((item) =>
+        (item.id === id || (item as any).uid === id) ? updater(item) : item
+      );
+      this.set(key, updatedData);
+    }
   }
 
   // Clear all application caches and local storage data
@@ -295,11 +318,11 @@ export const CACHE_DURATIONS = {
     RECENT_MEMBERS: 30 * 60 * 1000, // 30 minutes
   },
   UI_STATE: 30 * 1000, // 30 seconds for UI state
-  FEES: 5 * 60 * 1000, // 5 minutes
-  FINES: 5 * 60 * 1000, // 5 minutes
-  PAYMENTS: 2 * 60 * 1000, // 2 minutes (payments change more frequently)
-  PAYMENT_HISTORY: 5 * 60 * 1000, // 5 minutes
-  CLEARANCE: 5 * 60 * 1000, // 5 minutes
+  FEES: 20 * 60 * 1000, // 20 minutes
+  FINES: 20 * 60 * 1000, // 20 minutes
+  PAYMENTS: 10 * 60 * 1000, // 10 minutes (payments change more frequently)
+  PAYMENT_HISTORY: 10 * 60 * 1000, // 10 minutes
+  CLEARANCE: 10 * 60 * 1000, // 10 minutes
 };
 
 // Structured cache key helpers — use these everywhere instead of raw strings

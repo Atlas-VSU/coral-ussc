@@ -1,7 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+/* @custom-variant dark (&:is(.dark *)); */
+@variant dark (false);
 
 @theme inline {
   --color-background: var(--background);
@@ -44,7 +45,13 @@
 }
 
 :root {
+  color-scheme: light !important; 
+}
+
+:root {
+  
   --radius: 0.65rem;
+  
 
   /* Base - light mode*/
   --background: oklch(1 0 0);
@@ -96,8 +103,10 @@
   --sidebar-ring: oklch(0.70 0.22 130);
 }
 
-.dark {
-  /* Ocean theme - Dark mode */
+
+
+/*.dark {
+  /* Ocean theme - Dark mode 
   --background: oklch(0.15 0.05 240);
   --foreground: oklch(0.92 0.03 220);
 
@@ -124,14 +133,14 @@
   --input: oklch(0.3 0.05 230);
   --ring: oklch(0.55 0.15 210);
 
-  /* Chart colors - Ocean dark theme */
+   Chart colors - Ocean dark theme 
   --chart-1: oklch(0.7 0.25 200);
   --chart-2: oklch(0.6 0.2 220);
   --chart-3: oklch(0.5 0.15 240);
   --chart-4: oklch(0.65 0.2 180);
   --chart-5: oklch(0.75 0.25 260);
 
-  /* Sidebar - Ocean dark theme */
+   Sidebar - Ocean dark theme 
   --sidebar: oklch(0.2 0.07 230);
   --sidebar-foreground: oklch(0.92 0.03 220);
   --sidebar-primary: oklch(0.65 0.2 210);
@@ -140,7 +149,8 @@
   --sidebar-accent-foreground: oklch(0.92 0.03 220);
   --sidebar-border: oklch(0.35 0.05 230);
   --sidebar-ring: oklch(0.55 0.15 210);
-}
+}*/
+
 
 /* Define base styles */
 * {

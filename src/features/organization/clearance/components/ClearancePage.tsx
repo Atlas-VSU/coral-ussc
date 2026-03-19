@@ -53,6 +53,7 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
     handleRejectPayment,
     openLogPayment,
     handleLogPayment,
+    hardRefresh
   } = useClearancePage(orgId)
 
   return (
@@ -76,6 +77,8 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
             onExport={() => toast.success("Export started (mock)")}
             viewMode={viewMode}
             onViewChange={setViewMode}
+            onRefresh={hardRefresh}
+            isLoading={loading}
           />
         </CardHeader>
         <CardContent>

@@ -1,6 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface AuthLoadingOverlayProps {
   loading: boolean;
@@ -28,7 +29,7 @@ export function AuthLoadingOverlay({
 
   if (!loading) return null;
 
-  return (
+  return createPortal(
     <div
       className={cn(
         "fixed inset-0 flex flex-col items-center justify-center bg-background/90 backdrop-blur-md z-[9999]", // Higher z-index
@@ -49,6 +50,7 @@ export function AuthLoadingOverlay({
           </p>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

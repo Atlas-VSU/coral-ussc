@@ -39,7 +39,6 @@ const attendanceCache = new Map<
   }
 >();
 
-// Minimum time between manual refreshes (3 seconds)
 const REFRESH_COOLDOWN = 3000;
 
 export function RecentAttendance({
@@ -56,10 +55,8 @@ export function RecentAttendance({
 
   // Track the last refresh timestamp
   const lastRefreshRef = useRef<number>(0);
-
   // Create a cache key based on event ID and type
   const cacheKey = `${eventId}-${type}`;
-
   const isInitialLoadRef = useRef(true);
 
   const loadAttendance = useCallback(
@@ -93,16 +90,14 @@ export function RecentAttendance({
       try {
         // Update the last refresh timestamp
         lastRefreshRef.current = now;
-
         // Fetch fresh data from Firestore
         const recentRecords = (await getRecentAttendance(
           eventId,
-          type
+          type,
         )) as unknown as EventAttendance[];
 
         // Update the UI
         setRecords(recentRecords);
-
         // Store in cache
         attendanceCache.set(cacheKey, {
           records: recentRecords,
@@ -114,14 +109,10 @@ export function RecentAttendance({
         setRecords([]);
       } finally {
         setIsLoading(false);
-
-        // Re-enable refresh button after cooldown
-        setTimeout(() => {
-          setRefreshDisabled(false);
-        }, REFRESH_COOLDOWN);
+        setTimeout(() => setRefreshDisabled(false), REFRESH_COOLDOWN);
       }
     },
-    [eventId, type, cacheKey]
+    [eventId, type, cacheKey],
   );
 
   // Handle initial load and prop changes
@@ -131,11 +122,9 @@ export function RecentAttendance({
       // Always use cache if it exists, regardless of age
       const cachedData = attendanceCache.get(cacheKey)!;
       setRecords(cachedData.records);
-
       // Just update the UI to show cache age
       return;
     }
-
     // Only load from Firestore if no cache exists at all
     loadAttendance(false);
   }, [cacheKey, loadAttendance]);
@@ -154,20 +143,15 @@ export function RecentAttendance({
     const minutes = date.getMinutes().toString().padStart(2, "0");
     const ampm = hours >= 12 ? "PM" : "AM";
     const formattedHours = hours % 12 || 12;
-
     return `${formattedHours}:${minutes} ${ampm}`;
   };
-
-  
 
   // Determine the attendees page URL
   const attendeesUrl = organizationId
     ? `/organization/${organizationId}/events/${eventId}/attendees`
     : `/org-events/${eventId}/attendees`;
 
-  const handleRefreshClick = () => {
-    loadAttendance(true);
-  };
+  const handleRefreshClick = () => loadAttendance(true);
 
   // Calculate cache status
   const cachedData = attendanceCache.get(cacheKey);
@@ -178,34 +162,55 @@ export function RecentAttendance({
 
   return (
     <div className="space-y-6 flex flex-col flex-1">
+      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
-        <div>
-          <h3 className="font-nunito text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            Recent {type === "time-in" ? "Time-Ins" : "Time-Outs"}
-          </h3>
-          <p className="font-nunito-sans text-base text-gray-600 dark:text-gray-400">
-            Students who have recently{" "}
-            {type === "time-in" ? "timed in" : "timed out"} for this event
-          </p>
-          {hasCache && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Data cached {cacheAge} seconds ago
+        <div className="flex items-center gap-3">
+          <div
+            className="h-10 w-10 rounded-xl flex items-center justify-center shadow-sm"
+            style={{ background: "linear-gradient(135deg, #058C11, #38B000)" }}
+          >
+            <UsersIcon className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h3
+              className="font-nunito text-xl font-bold"
+              style={{ color: "#27500A" }}
+            >
+              Recent {type === "time-in" ? "Time-Ins" : "Time-Outs"}
+            </h3>
+            <p
+              className="font-nunito-sans text-sm"
+              style={{ color: "#3B6D11" }}
+            >
+              Students who have recently{" "}
+              {type === "time-in" ? "timed in" : "timed out"} for this event
             </p>
-          )}
+            {hasCache && (
+              <p className="text-xs mt-0.5" style={{ color: "#3B6D11" }}>
+                Data cached {cacheAge} seconds ago
+              </p>
+            )}
+          </div>
         </div>
-        <div className="flex items-center justify-end gap-1.5 w-full">
-          <div className="inline-flex items-center rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-0.5 shadow-sm w-full sm:w-auto">
-            {/* List/Grid toggle - only show on sm and up */}
+
+        {/* Controls */}
+        <div className="flex items-center justify-end gap-1.5 w-full sm:w-auto">
+          <div
+            className="inline-flex items-center rounded-lg border p-0.5 w-full sm:w-auto"
+            style={{ borderColor: "#97C459", background: "#ffffff" }}
+          >
+            {/* List/Grid toggle */}
             <Button
               type="button"
               variant="ghost"
               size="sm"
               onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-              className={`hidden sm:flex flex-1 h-9 rounded-sm text-xs sm:text-sm font-nunito-sans font-medium ${
-                viewMode === "grid"
-                  ? "text-gray-600 dark:text-gray-400"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              }`}
+              className="hidden sm:flex flex-1 h-9 rounded-md text-xs font-nunito-sans font-medium transition-colors"
+              style={
+                viewMode !== "grid"
+                  ? { background: "#EAF3DE", color: "#27500A" }
+                  : { color: "#3B6D11" }
+              }
             >
               {viewMode === "grid" ? (
                 <>
@@ -220,8 +225,10 @@ export function RecentAttendance({
               )}
             </Button>
 
-            {/* Divider - only show if List/Grid toggle is visible */}
-            <div className="hidden sm:block h-9 border-l border-gray-200 dark:border-gray-700 mx-0.5"></div>
+            <div
+              className="hidden sm:block h-9 border-l mx-0.5"
+              style={{ borderColor: "#C0DD97" }}
+            />
 
             <Button
               type="button"
@@ -229,26 +236,27 @@ export function RecentAttendance({
               size="sm"
               onClick={handleRefreshClick}
               disabled={refreshDisabled || isLoading}
-              className={`flex-1 h-9 rounded-sm text-xs sm:text-sm font-nunito-sans font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                refreshDisabled ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              className="flex-1 h-9 rounded-md text-xs font-nunito-sans font-medium transition-colors"
+              style={{ color: "#3B6D11" }}
             >
               <RefreshCcw
-                className={`h-3.5 w-3.5 mr-1.5 sm:mr-2 ${
-                  isLoading ? "animate-spin" : ""
-                }`}
+                className={`h-3.5 w-3.5 mr-1.5 sm:mr-2 ${isLoading ? "animate-spin" : ""}`}
               />
               <span className="sm:inline">Refresh</span>
             </Button>
 
-            <div className="h-9 border-l border-gray-200 dark:border-gray-700 mx-0.5"></div>
+            <div
+              className="h-9 border-l mx-0.5"
+              style={{ borderColor: "#C0DD97" }}
+            />
 
             <Button
               type="button"
               variant="ghost"
               size="sm"
               onClick={() => setShowNames(!showNames)}
-              className="flex-1 h-9 rounded-sm text-xs sm:text-sm font-nunito-sans font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="flex-1 h-9 rounded-md text-xs font-nunito-sans font-medium transition-colors"
+              style={{ color: "#3B6D11" }}
             >
               {showNames ? (
                 <>
@@ -266,95 +274,169 @@ export function RecentAttendance({
         </div>
       </div>
 
+      {/* Divider */}
+      <div
+        className="h-px w-full"
+        style={{
+          background:
+            "linear-gradient(to right, transparent, #97C459, transparent)",
+        }}
+      />
+
       {isLoading ? (
-        <div className="flex justify-center items-center py-12 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-          <LoaderIcon className="h-8 w-8 animate-spin text-gray-400" />
+        <div
+          className="flex justify-center items-center py-12 rounded-lg border"
+          style={{ background: "#EAF3DE", borderColor: "#97C459" }}
+        >
+          <LoaderIcon
+            className="h-8 w-8 animate-spin"
+            style={{ color: "#058C11" }}
+          />
         </div>
       ) : records.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-            <UsersIcon className="w-8 h-8 text-gray-400" />
+        <div
+          className="text-center py-12 rounded-lg border"
+          style={{ background: "#EAF3DE", borderColor: "#97C459" }}
+        >
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+            style={{ background: "#C0DD97" }}
+          >
+            <UsersIcon className="w-8 h-8" style={{ color: "#058C11" }} />
           </div>
-          <h4 className="font-nunito text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+          <h4
+            className="font-nunito text-lg font-semibold mb-2"
+            style={{ color: "#27500A" }}
+          >
             No {type === "time-in" ? "time-ins" : "time-outs"} recorded yet
           </h4>
-          <p className="font-nunito-sans text-gray-600 dark:text-gray-400">
+          <p className="font-nunito-sans text-sm" style={{ color: "#3B6D11" }}>
             Attendance records will appear here once students start checking{" "}
             {type === "time-in" ? "in" : "out"}
           </p>
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Main content area with flexible height */}
           <div className="flex flex-col flex-1">
             {viewMode === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 flex-1">
                 {records.map((record) => {
-
                   const remarkStyles = getRemarkStyles(record.remark!);
                   return (
                     <div
                       key={record.id}
-                      className={`h-28 sm:h-32 border ${
+                      className={`h-28 sm:h-32 rounded-lg p-3 sm:p-4 border transition-all duration-200 shadow-sm flex flex-col relative ${
                         record.remark
-                          ? `${remarkStyles.border}`
-                          : "border-gray-200 dark:border-gray-700"
-                      } rounded-lg p-3 sm:p-4 ${
-                        record.remark
-                          ? `${remarkStyles.bg}`
-                          : "bg-white dark:bg-gray-800"
-                      } hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors shadow-sm flex flex-col relative`}
+                          ? `${remarkStyles.border} ${remarkStyles.bg}`
+                          : ""
+                      }`}
+                      style={
+                        !record.remark
+                          ? { background: "#ffffff", borderColor: "#C0DD97" }
+                          : undefined
+                      }
+                      onMouseEnter={
+                        !record.remark
+                          ? (e) => {
+                              (
+                                e.currentTarget as HTMLElement
+                              ).style.background = "#EAF3DE";
+                              (
+                                e.currentTarget as HTMLElement
+                              ).style.borderColor = "#97C459";
+                            }
+                          : undefined
+                      }
+                      onMouseLeave={
+                        !record.remark
+                          ? (e) => {
+                              (
+                                e.currentTarget as HTMLElement
+                              ).style.background = "#ffffff";
+                              (
+                                e.currentTarget as HTMLElement
+                              ).style.borderColor = "#C0DD97";
+                            }
+                          : undefined
+                      }
                     >
-                      {/* Red indicator for remarks */}
                       {record.remark && (
                         <div className="absolute top-2 right-2">
-                          <div className="h-2 w-2 rounded-full bg-red-500 dark:bg-red-600"></div>
+                          <div className="h-2 w-2 rounded-full bg-red-500" />
                         </div>
                       )}
 
                       <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
                         <div className="relative">
-                          <Avatar className="h-8 w-8 sm:h-10 sm:w-10 bg-primary/10 text-primary border border-gray-200 dark:border-gray-700">
-                            <AvatarFallback className="font-nunito-sans font-semibold text-sm">
+                          <Avatar
+                            className="h-8 w-8 sm:h-10 sm:w-10 border-2 shadow-sm"
+                            style={{ borderColor: "#97C459" }}
+                          >
+                            <AvatarFallback
+                              className="font-semibold text-white text-sm"
+                              style={{
+                                background:
+                                  "linear-gradient(135deg, #058C11, #38B000)",
+                              }}
+                            >
                               {showNames
                                 ? getInitials(
                                     record.student.firstName +
                                       " " +
-                                      record.student.lastName
+                                      record.student.lastName,
                                   )
                                 : "ST"}
                             </AvatarFallback>
                           </Avatar>
                           {record.remark && (
-                            <div className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 rounded-full bg-red-500 dark:bg-red-600 border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                            <div className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 rounded-full bg-red-500 border-2 border-white flex items-center justify-center">
                               <AlertTriangle className="h-1.5 w-1.5 sm:h-2 sm:w-2 text-white" />
                             </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-nunito font-semibold text-gray-900 dark:text-gray-100 truncate text-sm sm:text-base">
+                          <p
+                            className="font-nunito font-semibold truncate text-sm sm:text-base"
+                            style={{ color: "#27500A" }}
+                          >
                             {showNames
-                              ? record.student.firstName + " " + record.student.lastName
+                              ? record.student.firstName +
+                                " " +
+                                record.student.lastName
                               : "Student"}
                           </p>
-                          <p className="font-nunito-sans text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
+                          <p
+                            className="font-nunito-sans text-xs sm:text-sm truncate"
+                            style={{ color: "#3B6D11" }}
+                          >
                             ID: {record.student.studentId}
                           </p>
                         </div>
                         <Badge
                           variant="outline"
-                          className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700 flex items-center font-nunito-sans font-semibold text-xs"
+                          className="flex items-center font-nunito-sans font-semibold text-xs"
+                          style={{
+                            background: "#EAF3DE",
+                            color: "#27500A",
+                            borderColor: "#97C459",
+                          }}
                         >
                           <CheckCircleIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
                           Success
                         </Badge>
                       </div>
+
                       <div className="flex justify-between items-end mt-auto">
-                        <div className="flex items-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        <div
+                          className="flex items-center text-xs sm:text-sm"
+                          style={{ color: "#3B6D11" }}
+                        >
                           <ClockIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
                           <span className="font-nunito-sans font-medium">
                             {formatTime(
-                              type === "time-in" ? record.timeIn : record.timeOut
+                              type === "time-in"
+                                ? record.timeIn
+                                : record.timeOut,
                             )}
                           </span>
                         </div>
@@ -379,53 +461,92 @@ export function RecentAttendance({
                   return (
                     <div
                       key={record.id}
-                      className={`border ${
+                      className={`rounded-lg p-4 border transition-all duration-200 shadow-sm relative ${
                         record.remark
-                          ? `${remarkStyles.border}`
-                          : "border-gray-200 dark:border-gray-700"
-                      } rounded-lg p-4 ${
-                        record.remark
-                          ? `${remarkStyles.bg}`
-                          : "bg-white dark:bg-gray-800"
-                      } hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-all duration-200 shadow-sm relative`}
+                          ? `${remarkStyles.border} ${remarkStyles.bg}`
+                          : ""
+                      }`}
+                      style={
+                        !record.remark
+                          ? { background: "#ffffff", borderColor: "#C0DD97" }
+                          : undefined
+                      }
+                      onMouseEnter={
+                        !record.remark
+                          ? (e) => {
+                              (
+                                e.currentTarget as HTMLElement
+                              ).style.background = "#EAF3DE";
+                              (
+                                e.currentTarget as HTMLElement
+                              ).style.borderColor = "#97C459";
+                            }
+                          : undefined
+                      }
+                      onMouseLeave={
+                        !record.remark
+                          ? (e) => {
+                              (
+                                e.currentTarget as HTMLElement
+                              ).style.background = "#ffffff";
+                              (
+                                e.currentTarget as HTMLElement
+                              ).style.borderColor = "#C0DD97";
+                            }
+                          : undefined
+                      }
                     >
-                      {/* Red indicator for remarks */}
                       {record.remark && (
                         <div className="absolute top-4 right-4">
-                          <div className="h-2 w-2 rounded-full bg-red-500 dark:bg-red-600"></div>
+                          <div className="h-2 w-2 rounded-full bg-red-500" />
                         </div>
                       )}
 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div className="relative">
-                            <Avatar className="h-9 w-9 bg-primary/10 text-primary border border-gray-200 dark:border-gray-700">
-                              <AvatarFallback className="font-nunito-sans font-semibold text-sm">
+                            <Avatar
+                              className="h-9 w-9 border-2 shadow-sm"
+                              style={{ borderColor: "#97C459" }}
+                            >
+                              <AvatarFallback
+                                className="font-semibold text-white text-sm"
+                                style={{
+                                  background:
+                                    "linear-gradient(135deg, #058C11, #38B000)",
+                                }}
+                              >
                                 {showNames
                                   ? getInitials(
                                       record.student.firstName +
                                         " " +
-                                        record.student.lastName
+                                        record.student.lastName,
                                     )
                                   : "ST"}
                               </AvatarFallback>
                             </Avatar>
                             {record.remark && (
-                              <div className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-red-500 dark:bg-red-600 border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                              <div className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-red-500 border-2 border-white flex items-center justify-center">
                                 <AlertTriangle className="h-1.5 w-1.5 text-white" />
                               </div>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-3">
-                              <p className="font-nunito font-semibold text-gray-900 dark:text-gray-100 truncate">
+                              <p
+                                className="font-nunito font-semibold truncate"
+                                style={{ color: "#27500A" }}
+                              >
                                 {showNames
                                   ? record.student.firstName +
                                     " " +
                                     record.student.lastName
                                   : "Student"}
                               </p>
-                              <p className="font-nunito-sans text-sm text-gray-600 dark:text-gray-400">
+                              <p
+                                className="font-nunito-sans text-sm"
+                                style={{ color: "#3B6D11" }}
+                              >
                                 ID: {record.student.studentId}
                               </p>
                               {record.remark && (
@@ -441,39 +562,58 @@ export function RecentAttendance({
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
-                          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                          <div
+                            className="flex items-center text-sm"
+                            style={{ color: "#3B6D11" }}
+                          >
                             <ClockIcon className="h-3.5 w-3.5 mr-1.5" />
                             <span className="font-nunito-sans font-medium">
                               {formatTime(
-                                type === "time-in" ? record.timeIn : record.timeOut
+                                type === "time-in"
+                                  ? record.timeIn
+                                  : record.timeOut,
                               )}
                             </span>
                           </div>
                           <Badge
                             variant="outline"
-                            className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700 flex items-center font-nunito-sans font-semibold"
+                            className="flex items-center font-nunito-sans font-semibold"
+                            style={{
+                              background: "#EAF3DE",
+                              color: "#27500A",
+                              borderColor: "#97C459",
+                            }}
                           >
                             <CheckCircleIcon className="h-3 w-3 mr-1" />
                             Success
                           </Badge>
-                       </div>
-                     </div>
-                   </div>
-                )})}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
 
-      {/* View All Attendees Button */}
-      {!isLoading && (
-        <div className="flex justify-center pt-4">
-          <Button
-            asChild
+          {/* View All Attendees Button */}
+          {!isLoading && (
+            <div className="flex justify-center pt-4">
+              <Button
+                asChild
                 variant="outline"
-                className="font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                className="font-nunito-sans font-medium shadow-sm transition-all duration-200 hover:scale-[1.02]"
+                style={{
+                  borderColor: "#97C459",
+                  color: "#27500A",
+                  background: "#ffffff",
+                }}
               >
                 <Link href={attendeesUrl}>
-                  <UsersIcon className="h-4 w-4 mr-2" />
+                  <UsersIcon
+                    className="h-4 w-4 mr-2"
+                    style={{ color: "#058C11" }}
+                  />
                   View All Attendees
                 </Link>
               </Button>

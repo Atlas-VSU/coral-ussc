@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { Zap, ChevronRight, CircleDollarSign, Loader2, Plus } from "lucide-react"
+import { Zap, ChevronRight, CircleDollarSign, Loader2, Plus, RefreshCcw } from "lucide-react"
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
@@ -92,6 +92,10 @@ export default function FeeListPage() {
                 filterStatus={filterStatus}
                 onFilterChange={setFilterStatus as any}
               />
+              <Button onClick={refetchFees} variant="outline" disabled={isLoading}>
+                <RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                {isLoading ? 'Refreshing...' : 'Refresh'}
+              </Button>
               <ViewToggle viewMode={viewMode} onViewChange={() => setViewMode(viewMode === "card" ? "table" : "card")} />
               <Button variant="outline" style={
                 {
