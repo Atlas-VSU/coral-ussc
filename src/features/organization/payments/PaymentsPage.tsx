@@ -50,7 +50,7 @@ export default function PaymentsPage() {
       total: selectedPayment?.amount || 0,
       date: selectedPayment?.submittedAt.toDate().toLocaleDateString() || "N/A",
       verifiedByName: selectedPayment?.verifiedByName || "N/A",
-      paymentMethod: selectedPayment?.paymentMethod || "N/A",
+      paymentMethod: selectedPayment?.paymentMethod || "Cash (Manual)",
     });
     setReceiptOpen(true)
     
