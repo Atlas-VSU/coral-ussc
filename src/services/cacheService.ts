@@ -312,7 +312,7 @@ export const CACHE_KEYS = {
   feeLogs:      (feeId: string) => `fees:logs:${feeId}`,
 
   // Fines
-  finesAll:        (orgId: string, status: string) => `fines:all:${orgId}:${status}`,
+  finesAll:        (orgId: string) => `fines:all:${orgId}`,
   finesUnpaid:     (orgId: string) => `fines:unpaid:${orgId}`,
   fineByStudent:   (studentId: string) => `fines:student:${studentId}`,
   fineDoc:         (fineId: string) => `fines:doc:${fineId}`,
