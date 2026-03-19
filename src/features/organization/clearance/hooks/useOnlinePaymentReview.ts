@@ -26,7 +26,6 @@ export function useOnlinePaymentReview(clearance: ClearanceStatus) {
     useEffect(() => { 
         getPendingPayments(); 
     }, [getPendingPayments]);
-
     return { 
         pendingPayments, 
         getPendingPayments, 

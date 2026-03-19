@@ -66,64 +66,53 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
 
       <ClearanceStats clearances={clearances} />
 
-      {loading && clearances.length === 0 ? (
-        <Card className="border-border bg-card">
-          <CardContent className="flex flex-col items-center justify-center py-20 gap-3">
-            <div className="size-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-            <p className="text-sm text-muted-foreground italic">Fetching clearance records...</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="border-border bg-card">
-          <CardHeader>
-            <ClearanceFilters
-              search={search}
-              onSearchChange={setSearch}
-              filterStatus={filterStatus}
-              onFilterChange={setFilterStatus}
-              onExport={() => toast.success("Export started (mock)")}
-              viewMode={viewMode}
-              onViewChange={setViewMode}
-            />
-          </CardHeader>
-          <CardContent>
-            {viewMode === "card" ? (
-              !loading && paginated.length === 0 ? (
-                <p className="py-12 text-center text-sm text-muted-foreground">No clearance records found.</p>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {loading && paginated.length === 0 ? (
-                    <CardGridSkeleton count={6} />
-                  ) : (
-                    paginated.map(c => (
-                      <ClearanceCard
-                        key={c.id}
-                        clearance={c}
-                        onReviewPayment={openPaymentReview}
-                        onLogPayment={openLogPayment}
-                      />
-                    ))
-                  )}
-                </div>
-              )
+      <Card className="border-border bg-card">
+        <CardHeader>
+          <ClearanceFilters
+            search={search}
+            onSearchChange={setSearch}
+            filterStatus={filterStatus}
+            onFilterChange={setFilterStatus}
+            onExport={() => toast.success("Export started (mock)")}
+            viewMode={viewMode}
+            onViewChange={setViewMode}
+          />
+        </CardHeader>
+        <CardContent>
+          {viewMode === "card" ? (
+            loading && clearances.length === 0 ? (
+              <CardGridSkeleton count={6} />
+            ) : paginated.length === 0 ? (
+              <p className="py-12 text-center text-sm text-muted-foreground">No clearance records found.</p>
             ) : (
-              <ClearanceTable
-                paginated={paginated}
-                onReviewPayment={openPaymentReview}
-                onLogPayment={openLogPayment}
-                isLoading={loading}
-              />
-            )}
-            <DataPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={filtered.length}
-              itemsPerPage={10}
-              onPageChange={setCurrentPage}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {paginated.map(c => (
+                  <ClearanceCard
+                    key={c.id}
+                    clearance={c}
+                    onReviewPayment={openPaymentReview}
+                    onLogPayment={openLogPayment}
+                  />
+                ))}
+              </div>
+            )
+          ) : (
+            <ClearanceTable
+              paginated={paginated}
+              onReviewPayment={openPaymentReview}
+              onLogPayment={openLogPayment}
+              isLoading={loading && clearances.length === 0}
             />
-          </CardContent>
-        </Card>
-      )}
+          )}
+          <DataPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filtered.length}
+            itemsPerPage={10}
+            onPageChange={setCurrentPage}
+          />
+        </CardContent>
+      </Card>
 
       <PaymentReviewDialog
         open={paymentReviewOpen}

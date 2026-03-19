@@ -14,7 +14,8 @@ export function usePayments() {
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
   const [loadingUnpaid, setLoadingUnpaid] = useState(true);
   
-  const isLoading = loadingSubmissions || loadingUnpaid;
+  const isLoading = loadingSubmissions;
+  const isLoadingUnpaid = loadingUnpaid;
 
   // ── Fetch proof of payments ───────────────────────────────────────────────
   const loadPayments = useCallback(async () => {
@@ -120,5 +121,6 @@ export function usePayments() {
     verifiedPayments,
     refetchPayments: loadPayments,
     isLoading,
+    isLoadingUnpaid,
   };
 }

@@ -22,6 +22,7 @@ export function usePaymentsPage() {
     payments,
     unpaidPayments,
     isLoading,
+    isLoadingUnpaid,
     refetchPayments,
   } = usePayments();
 
@@ -281,6 +282,7 @@ export function usePaymentsPage() {
     dataView, handleTabChange,
     isLoading,
     loading,
+    isLoadingUnpaid,
     // submissions
     paymentsList, search, setSearch, filterStatus, setFilterStatus,
     selectedPayment, setSelectedPayment,
