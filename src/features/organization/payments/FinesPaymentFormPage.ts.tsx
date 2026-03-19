@@ -503,19 +503,19 @@ export default function FinesPaymentFormPage({
                       Treasurer GCash Details
                     </h4>
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                      <div className="flex flex-col gap-1 p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg min-[430px]:flex-row min-[430px]:items-center min-[430px]:justify-between">
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-blue-600 hidden md:block " />
                           <span className="text-xs md:text-sm text-muted-foreground">Treasurer Name:</span>
                         </div>
-                        <span className="font-medium text-sm md:text-base">{treasurerName}</span>
+                        <span className="font-medium text-sm md:text-base break-words text-left min-[430px]:text-right">{treasurerName}</span>
                       </div>
-                      <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                      <div className="flex flex-col gap-1 p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg min-[430px]:flex-row min-[430px]:items-center min-[430px]:justify-between">
                         <div className="flex items-center gap-2">
                           <Phone className="h-4 w-4 text-blue-600 hidden md:block" />
                           <span className="text-xs md:text-sm text-muted-foreground">GCash Number:</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex w-full items-center justify-between gap-2 min-[430px]:w-auto min-[430px]:justify-end">
                           <span className="font-medium text-sm md:text-base">{treasurerNumber}</span>
                           <button
                             type="button"
@@ -531,12 +531,12 @@ export default function FinesPaymentFormPage({
                           <Button
                             type="button"
                             variant="outline"
-                            className="w-full border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-950/30"
+                            className="h-auto w-full whitespace-normal py-2 text-xs leading-snug border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-950/30 sm:text-sm"
                           >
                             Use alternative payment account (Auditor)
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-md">
+                        <DialogContent className="w-[calc(100%-1.5rem)] max-w-md rounded-lg sm:max-w-md">
                           <DialogHeader>
                             <DialogTitle>Alternative GCash Account</DialogTitle>
                             <DialogDescription>
@@ -555,13 +555,13 @@ export default function FinesPaymentFormPage({
                             </div>
 
                             <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-3 dark:border-blue-800 dark:bg-blue-950/20">
-                              <div className="mb-2 flex items-center justify-between gap-2">
+                              <div className="mb-2 flex flex-col gap-1 min-[430px]:flex-row min-[430px]:items-center min-[430px]:justify-between min-[430px]:gap-2">
                                 <span className="text-sm text-muted-foreground">Auditor Name:</span>
-                                <span className="text-sm font-medium text-right">{auditorName}</span>
+                                <span className="text-sm font-medium break-words text-left min-[430px]:text-right">{auditorName}</span>
                               </div>
-                              <div className="flex items-center justify-between gap-2">
+                              <div className="flex flex-col gap-1 min-[430px]:flex-row min-[430px]:items-center min-[430px]:justify-between min-[430px]:gap-2">
                                 <span className="text-sm text-muted-foreground">GCash Number:</span>
-                                <div className="flex items-center gap-2">
+                                <div className="flex w-full items-center justify-between gap-2 min-[430px]:w-auto min-[430px]:justify-end">
                                   <span className="text-sm font-medium">{auditorNumber}</span>
                                   <button
                                     type="button"
