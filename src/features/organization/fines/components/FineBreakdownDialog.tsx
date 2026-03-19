@@ -453,6 +453,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                             reviewedBy: pendingPayment.verifiedByName,
                             reviewedAt: pendingPayment.verifiedAt?.toDate().toLocaleDateString() || "",
                             paymentMethod: pendingPayment.paymentMethod,
+                            notes: pendingPayment.notes || (pendingPayment as any)?.metadata?.notes || "",
                         } : null}
                         onApprove={async () => {
                             if (pendingPayment) await handleApprovalSucceed(pendingPayment);
