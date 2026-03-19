@@ -1,5 +1,5 @@
 // Event status type
-export type EventStatus = "ongoing" | "upcoming" | "archived" | "completed";
+export type EventStatus = "ongoing" | "upcoming" | "completed" | "archived" | "all";
 
 // Event type
 export type Event = {

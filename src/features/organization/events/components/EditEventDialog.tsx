@@ -113,17 +113,17 @@ export function EditEventDialog({
     }
   };
 
-  const handleCancel = () => {
+  const handleOpenChange = () => {
     if (!loading) {
       onOpenChange(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={loading ? undefined : onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Update Event</DialogTitle>
+          <DialogTitle>Edit Event</DialogTitle>
           <DialogDescription>
             Update the details of the event below.
           </DialogDescription>
@@ -223,7 +223,7 @@ export function EditEventDialog({
               />
 
               {timeInRequired && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
                   name="timeInStart"
@@ -264,7 +264,7 @@ export function EditEventDialog({
             )}
               
               {timeOutRequired && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
                   name="timeOutStart"
@@ -364,7 +364,7 @@ export function EditEventDialog({
                 <Button
                   variant="outline"
                   type="button"
-                  onClick={handleCancel}
+                  onClick={handleOpenChange}
                   disabled={loading}
                 >
                   Cancel
