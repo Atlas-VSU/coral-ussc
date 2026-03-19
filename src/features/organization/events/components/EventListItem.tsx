@@ -200,7 +200,7 @@ export function EventListItem({ event, onEdit, onArchive, onUnarchive, onDelete,
                       )}
                       {event.status === "ongoing" && (
                         <DropdownMenuItem onClick={() => onMarkAsCompleted(event)} disabled={opLoading}>
-                          Issue Fines
+                          Mark as Completed
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuItem onClick={() => onEdit(event)} disabled={opLoading}>

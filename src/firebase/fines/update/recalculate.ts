@@ -62,7 +62,7 @@ export const recalculateFines = async (fineId: string, addedAmount?: number | nu
         const q = query(fineItemsRef, where("isPending", "==", true));
         const fineItemsSnapShot = await getDocs(q);
         
-        if (!fineItemsSnapShot.empty && newBalance > 0) {
+        if (!fineItemsSnapShot.empty) {
             newStatus = FineStatus.PENDING;
          }
 
