@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataPagination } from "@/components/organization/DataPagination";
-import { StatCards } from "@/features/organization/fees/components/StatCards";
+// import { StatCards } from "@/features/organization/fees/components/StatCards";
+import { StatCards } from "../local-components/StatCards";
 import { SearchFilterBar } from "@/features/organization/fees/components/SearchFilterBar";
 import { ViewToggle } from "@/components/organization/ViewToggle";
 import { SubmissionsView } from "@/features/organization/fees/components/SubmissionView";
@@ -17,6 +18,7 @@ import { ManualPaymentDialog } from "@/features/organization/fees/components/Man
 import { PaymentDetailDialog } from "@/features/organization/fees/components/PaymentDetailDialog";
 import { RejectDialog } from "@/features/organization/fees/components/RejectDialog";
 import type { Fee, PaymentLog } from "@/features/organization/fees/types";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -111,7 +113,7 @@ export function FeesRosterContent({
   } = actions;
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
         <Button
           variant="ghost"

@@ -35,7 +35,7 @@ export function FeesPage() {
       : 0
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 py-8">
       <PageHeader
         title="Fees"
         context="2nd Semester · A.Y. 2025–2026"
