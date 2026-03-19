@@ -22,7 +22,7 @@ export function SubmissionsTableView({ paginated, filtered, onOpenReview }: Subm
             <TableHead>Student</TableHead>
             <TableHead className="hidden sm:table-cell">Type</TableHead>
             <TableHead>Amount</TableHead>
-            <TableHead className="hidden md:table-cell">Reference Code</TableHead>
+            <TableHead className="hidden md:table-cell">Receipt ID</TableHead>
             <TableHead className="hidden sm:table-cell">Submitted</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Actions</TableHead>
