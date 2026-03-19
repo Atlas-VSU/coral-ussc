@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 import { SuccessScreen } from "./components/SuccessScreen";
 import { PaymentFormData } from "@/lib/validators";
@@ -68,6 +69,7 @@ export default function FinesPaymentFormPage({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitResult, setSubmitResult] = useState<PublicSubmitResult | null>(null);
   const [receiptError, setReceiptError] = useState<string | null>(null);
+  const [showAuditorQr, setShowAuditorQr] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
   const [restoredFromDraft, setRestoredFromDraft] = useState(false);
   const [lastDraftSavedAt, setLastDraftSavedAt] = useState<number | null>(null);
@@ -230,6 +232,10 @@ export default function FinesPaymentFormPage({
     : (Number.isFinite(watchedAmount) ? watchedAmount : 0);
   const feeCount = selectedPaymentItems?.fees.length ?? 0;
   const fineCount = selectedFineItems.length ?? 0;
+  const treasurerName = "Kleenie Elumene B. Yuzon";
+  const treasurerNumber = "09631000393";
+  const auditorName = "Reniel Emberso";
+  const auditorNumber = "09123127184";
 
   useEffect(() => {
     let cancelled = false;
@@ -482,8 +488,8 @@ export default function FinesPaymentFormPage({
                   {/* QR Code Section */}
                   <div className="relative w-48 h-48 bg-white rounded-lg p-2 border-2 border-blue-200 dark:border-blue-800">
                     <Image
-                      src="/images/public-student-payment/mock-qr-student-payment1.jpeg"
-                      alt="GCash Payment QR Code"
+                      src="/images/public-student-payment/USSC-Treasurer.png"
+                      alt="Treasurer GCash Payment QR Code"
                       fill
                       className="object-contain"
                       priority
@@ -494,28 +500,82 @@ export default function FinesPaymentFormPage({
                   <div className="w-full bg-white/80 dark:bg-gray-900/80 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
                     <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
                       <Phone className="h-4 w-4 text-blue-600 hidden md:block" />
-                      GCash Account Details
+                      Treasurer GCash Details
                     </h4>
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                      <div className="flex flex-col gap-1 p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg min-[430px]:flex-row min-[430px]:items-center min-[430px]:justify-between">
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-blue-600 hidden md:block " />
-                          <span className="text-xs md:text-sm text-muted-foreground">Account Name:</span>
+                          <span className="text-xs md:text-sm text-muted-foreground">Treasurer Name:</span>
                         </div>
-                        <span className="font-medium text-sm md:text-base">JUAN DELA CRUZ</span>
+                        <span className="font-medium text-sm md:text-base break-words text-left min-[430px]:text-right">{treasurerName}</span>
                       </div>
-                      <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                      <div className="flex flex-col gap-1 p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg min-[430px]:flex-row min-[430px]:items-center min-[430px]:justify-between">
                         <div className="flex items-center gap-2">
                           <Phone className="h-4 w-4 text-blue-600 hidden md:block" />
                           <span className="text-xs md:text-sm text-muted-foreground">GCash Number:</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm md:text-base">0917 123 4567</span>
-                          <button onClick={() => navigator.clipboard.writeText("0917 123 4567")} className="p-1 hover:bg-blue-200 dark:hover:bg-blue-800 rounded transition-colors">
+                        <div className="flex w-full items-center justify-between gap-2 min-[430px]:w-auto min-[430px]:justify-end">
+                          <span className="font-medium text-sm md:text-base">{treasurerNumber}</span>
+                          <button
+                            type="button"
+                            onClick={() => navigator.clipboard.writeText(treasurerNumber)}
+                            className="p-1 hover:bg-blue-200 dark:hover:bg-blue-800 rounded transition-colors"
+                          >
                             <Copy className="h-3.5 w-3.5 text-blue-600" />
                           </button>
                         </div>
                       </div>
+                      <Dialog open={showAuditorQr} onOpenChange={setShowAuditorQr}>
+                        <DialogTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-auto w-full whitespace-normal py-2 text-xs leading-snug border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-950/30 sm:text-sm"
+                          >
+                            Use alternative payment account (Auditor)
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="w-[calc(100%-1.5rem)] max-w-md rounded-lg sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Alternative GCash Account</DialogTitle>
+                            <DialogDescription>
+                              Use the auditor account only if the treasurer account is unavailable.
+                            </DialogDescription>
+                          </DialogHeader>
+
+                          <div className="space-y-4">
+                            <div className="relative mx-auto h-48 w-48 rounded-lg border-2 border-blue-200 bg-white p-2 dark:border-blue-800">
+                              <Image
+                                src="/images/public-student-payment/USSC-Auditor.png"
+                                alt="Auditor GCash Payment QR Code"
+                                fill
+                                className="object-contain"
+                              />
+                            </div>
+
+                            <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-3 dark:border-blue-800 dark:bg-blue-950/20">
+                              <div className="mb-2 flex flex-col gap-1 min-[430px]:flex-row min-[430px]:items-center min-[430px]:justify-between min-[430px]:gap-2">
+                                <span className="text-sm text-muted-foreground">Auditor Name:</span>
+                                <span className="text-sm font-medium break-words text-left min-[430px]:text-right">{auditorName}</span>
+                              </div>
+                              <div className="flex flex-col gap-1 min-[430px]:flex-row min-[430px]:items-center min-[430px]:justify-between min-[430px]:gap-2">
+                                <span className="text-sm text-muted-foreground">GCash Number:</span>
+                                <div className="flex w-full items-center justify-between gap-2 min-[430px]:w-auto min-[430px]:justify-end">
+                                  <span className="text-sm font-medium">{auditorNumber}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => navigator.clipboard.writeText(auditorNumber)}
+                                    className="rounded p-1 transition-colors hover:bg-blue-200 dark:hover:bg-blue-800"
+                                  >
+                                    <Copy className="h-3.5 w-3.5 text-blue-600" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </div>
 
@@ -532,7 +592,7 @@ export default function FinesPaymentFormPage({
                       <ol className="space-y-1.5 pl-5 list-decimal text-xs text-muted-foreground">
                         <li>Open GCash app and tap "Scan QR"</li>
                         <li>Scan the QR code above</li>
-                        <li>Verify the account name: <span className="font-medium text-foreground">JUAN DELA CRUZ</span></li>
+                        <li>Verify the account name: <span className="font-medium text-foreground">{treasurerName}</span></li>
                         <li>Enter the amount: <span className="font-medium text-foreground">₱{mobileTotal}</span></li>
                         <li>Add your Student ID as a note (Optional)</li>
                         <li>Complete payment and save reference number</li>
@@ -544,8 +604,8 @@ export default function FinesPaymentFormPage({
                       <p className="text-xs font-medium text-blue-600">Option 2: Send Money</p>
                       <ol className="space-y-1.5 pl-5 list-decimal text-xs text-muted-foreground">
                         <li>Open GCash app and tap "Send Money"</li>
-                        <li>Enter GCash number: <span className="font-medium text-foreground">0917 123 4567</span></li>
-                        <li>Verify account name: <span className="font-medium text-foreground">JUAN DELA CRUZ</span></li>
+                        <li>Enter GCash number: <span className="font-medium text-foreground">{treasurerNumber}</span></li>
+                        <li>Verify account name: <span className="font-medium text-foreground">{treasurerName}</span></li>
                         <li>Enter amount: <span className="font-medium text-foreground">₱{mobileTotal}</span></li>
                         <li>Add your Student ID in the message/notes (Optional)</li>
                         <li>Review and confirm payment</li>
