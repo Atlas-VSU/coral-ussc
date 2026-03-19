@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import type { ClearanceStatus } from "../types"
+import { useState, useEffect } from "react"
 
 interface LogManualPaymentDialogProps {
   open: boolean
@@ -26,6 +27,18 @@ export function LogManualPaymentDialog({
   isProcessing,
   onLogPayment
 }: LogManualPaymentDialogProps) {
+  const [checkedAllFees, setCheckedAllFees] = useState(false);
+  const [checkedAllFines, setCheckedAllFines] = useState(false);
+
+  // Reset states when dialog opens
+  useEffect(() => {
+    if (open) {
+      setCheckedAllFees(false);
+      setCheckedAllFines(false);
+      selection.clearSelection();
+    }
+  }, [open]);
+
   // Group items by type
   const groupedItems = {
     fees: selection.items.filter((item: any) => item.type.toLowerCase().includes('fee')),
@@ -56,6 +69,34 @@ export function LogManualPaymentDialog({
     return { feesTotal, finesTotal, otherTotal }
   }
 
+  const handleSelectAllFees = () => {
+    const nextState = !checkedAllFees;
+    setCheckedAllFees(nextState);
+    
+    groupedItems.fees.forEach((item: any) => {
+      const isCurrentlySelected = selection.selectedRefIds.has(item.refId);
+      if (nextState && !isCurrentlySelected) {
+        selection.toggleItem(item.refId);
+      } else if (!nextState && isCurrentlySelected) {
+        selection.toggleItem(item.refId);
+      }
+    });
+  }
+
+  const handleSelectAllFines = () => {
+    const nextState = !checkedAllFines;
+    setCheckedAllFines(nextState);
+
+    groupedItems.fines.forEach((item: any) => {
+      const isCurrentlySelected = selection.selectedRefIds.has(item.refId);
+      if (nextState && !isCurrentlySelected) {
+        selection.toggleItem(item.refId);
+      } else if (!nextState && isCurrentlySelected) {
+        selection.toggleItem(item.refId);
+      }
+    });
+  }
+
   const groupTotals = getGroupTotals()
 
   const renderItem = (item: any, index: number) => {
@@ -73,14 +114,15 @@ export function LogManualPaymentDialog({
           isFine && "has-[button[data-state=checked]]:border-destructive/40 has-[button[data-state=checked]]:bg-destructive/5"
         )}
       >
-        <Checkbox
+        {/* <Checkbox
           checked={selection.selectedRefIds.has(item.refId)}
-          onCheckedChange={() => selection.toggleItem(item.refId)}
+          onCheckedChange={() => {}}
+          disabled
           className={cn(
             isFee && "data-[state=checked]:bg-[#1B5E20] data-[state=checked]:border-[#1B5E20]",
             isFine && "data-[state=checked]:bg-destructive data-[state=checked]:border-destructive"
           )}
-        />
+        /> */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             {isFee && <CreditCard className="size-3.5 text-[#1B5E20]" />}
@@ -137,9 +179,12 @@ export function LogManualPaymentDialog({
               <button
                 type="button"
                 className="text-xs text-primary hover:underline"
-                onClick={selection.toggleAll}
+                onClick={() => {
+                  handleSelectAllFees();
+                  handleSelectAllFines();
+                }}
               >
-                {selection.selectedRefIds.size === selection.items.length ? "Deselect All" : "Select All"}
+                {checkedAllFees && checkedAllFines ? "Deselect All" : "Select All"}
               </button>
             </div>
 
@@ -147,6 +192,10 @@ export function LogManualPaymentDialog({
             {hasFees && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 px-1">
+                  <Checkbox
+                    checked={checkedAllFees}
+                    onCheckedChange={handleSelectAllFees}
+                  />
                   <CreditCard className="size-4 text-[#1B5E20]" />
                   <h3 className="text-sm font-medium text-foreground">Fees</h3>
                   <Badge variant="secondary" className="text-[10px] ml-auto">
@@ -163,6 +212,10 @@ export function LogManualPaymentDialog({
             {hasFines && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 px-1">
+                  <Checkbox
+                    checked={checkedAllFines}
+                    onCheckedChange={handleSelectAllFines}
+                  />
                   <AlertCircle className="size-4 text-destructive" />
                   <h3 className="text-sm font-medium text-foreground">Fines</h3>
                   <Badge variant="secondary" className="text-[10px] ml-auto">
