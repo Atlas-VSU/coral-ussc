@@ -76,8 +76,8 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
     
     const getVariant = (status: string) => {
         switch (status) {
-            case "pending": return "outline";
-            case "partial": return "outline";
+            case "pending": return "default";
+            case "partial": return "link";
             case "paid": return "secondary";
             case "waived": return "outline";
             case "unpaid": return "destructive";
@@ -141,7 +141,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                                 <Banknote className="size-4 shrink-0 text-[#1B5E20]" />
                                 <span className="text-sm font-semibold text-[#1B5E20]">Payment Submissions</span>
                                 <Badge variant={cfg} className="bg-[#AED581]/30 text-[#1B5E20] border-[#2E7D32]/30 uppercase">
-                                    {fines?.status}
+                                    {fines?.status.toLocaleUpperCase()}
                                 </Badge>
                             </div>
                             {fines?.status === "pending" && (
