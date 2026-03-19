@@ -1,6 +1,4 @@
 "use client";
-import { SiteHeader } from "@/components/NavBar/site-header";
-import { MobileBottomNav } from "@/components/NavBar/mobile-bottom-nav";
 import { Home as HomeIcon, Info, LogIn, LayoutDashboard } from "lucide-react";
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
@@ -10,6 +8,11 @@ import { LoadingScreen } from "@/components/ui/loading-screen";
 import { cacheUtils } from "@/utils/cacheUtils";
 import { useTheme } from "next-themes";
 import { useRef } from "react";
+import { AdminSidebar } from "@/components/NavBar/app-sidebar/AdminSidebar";
+import { MobileBottomNav } from "@/components/NavBar/mobile-bottom-nav";
+import { SiteHeader } from "@/components/NavBar/site-header";
+
+
 
 // Define mobile icon map
 const mobileIconMap = {
@@ -149,12 +152,13 @@ export default function PublicLayout({
     return <LoadingScreen message="Redirecting to dashboard..." />;
   }
 
+  
+
   // Only render children when not loading
   return (
     <div className="flex min-h-screen w-full">
       <div className="flex-1 flex flex-col min-w-0">
-        {!isPublicPaymentPage && <SiteHeader user={null} isAuthenticated={isAuthenticated} />}
-        <main className={`flex-1 p-2 sm:p-4 ${isPublicPaymentPage ? "pb-4" : "pb-16 md:pb-4"}`}>
+        <main className={`flex-1 ${isPublicPaymentPage ? "pb-4" : ""}`}>
           {children}
         </main>
         {!isPublicPaymentPage && <MobileBottomNav links={navLinks} iconMap={mobileIconMap} />}
