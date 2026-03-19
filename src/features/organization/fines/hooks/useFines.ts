@@ -1,87 +1,100 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { StudentFines } from "@/features/organization/fines/types";
-import { countFinesOfStudents, countStudentsWithFines, countUnsettleFinesOfStudents, getAllFines } from "@/firebase/fines/read/fines";
+import { subscribeFines } from "@/firebase/fines/read/fines";
+import { getCurrentUserData } from "@/firebase";
+import { Member } from "../../members/types";
+import { CACHE_KEYS, cacheService } from "@/services/cacheService";
+
 
 interface UseFinesProps {
   initialStatusFilter?: string;
   itemsPerPage?: number;
 }
 
-export function useFines({ initialStatusFilter = "paid", itemsPerPage = 10 }: UseFinesProps = {}) {
+export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: UseFinesProps = {}) {
   const [allFines, setAllFines] = useState<StudentFines[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState(initialStatusFilter);
-  const [totalStudentsWithFines, setTotalStudentsWithFines] = useState(0);
-  const [totalUnsettled, setTotalUnsettled] = useState(0);
-  const [isStatusChanging, setIsStatusChanging] = useState(true);
 
-  // Initialize stats
-  const initializeStats = async () => {
-    try {
-      let count = await countStudentsWithFines();
-      setTotalStudentsWithFines(count);
-      count = await countUnsettleFinesOfStudents();
-      setTotalUnsettled(count);
-    } catch (error) {
-      console.error("Failed to fetch total count of students with fines:", error);
-    }
-  };
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
 
-  // Fetch ALL fines once (or when status filter changes)
-  const fetchAllFines = useCallback(async (status: string) => {
-    setIsLoading(true);
-    try {
-      const docs = await getAllFines(status);
-      setAllFines(docs);
-      setCurrentPage(1); // always reset to page 1 on new fetch
-    } catch (error) {
-      console.error("Failed to fetch fines:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    const init = async () => {
+      const currUser = await getCurrentUserData() as unknown as Member;
+      if (!currUser?.id) return;
+
+      const cached = cacheService.get<StudentFines[]>(CACHE_KEYS.finesAll(currUser.id));
+      if (cached) {
+        setAllFines(cached.data);
+      } else {
+        setIsLoading(true); 
+      }
+
+      unsubscribe = subscribeFines(
+        currUser.id,
+        (fines) => {
+          setAllFines(fines);
+          setIsLoading(false);
+        },
+        (error) => {
+          console.error("Fines subscription error:", error);
+          setIsLoading(false);
+        }
+      );
+    };
+
+    init();
+
+    return () => unsubscribe?.();
   }, []);
 
-  useEffect(() => {
-    if (isStatusChanging) {
-      setIsStatusChanging(false);
-      initializeStats();
-    }
-      
-    fetchAllFines(filterStatus);
-  }, [filterStatus, isStatusChanging, fetchAllFines]);
+  const totalStudentsWithFines = useMemo(() => {
+    const uniqueStudents = new Set(allFines.map(f => f.studentId));
+    return uniqueStudents.size;
+  }, [allFines]);
 
-  // Reset to page 1 when search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search]);
+  const totalUnsettled = useMemo(() => {
+    return allFines.filter(f => f.status !== "paid").length;
+  }, [allFines]);
 
-  // Filter in memory (search + status already filtered at fetch level) 
+  const totalUnpaidFines = useMemo(() => {
+    return allFines
+      .filter(f => f.status !== "paid")
+      .reduce((sum, f) => sum + f.accumulatedAmount, 0);
+  }, [allFines]);
+
+  const totalCollectedFines = useMemo(() => {
+    return allFines
+      .filter(f => f.status === "paid")
+      .reduce((sum, f) => sum + f.paidAmount, 0);
+  }, [allFines]);
+
   const filtered = useMemo(() => {
-    if (!search.trim()) return allFines;
-    const q = search.toLowerCase();
-    return allFines.filter(f =>
-      f.userName.toLowerCase().includes(q) ||
-      f.studentId.toLowerCase().includes(q)
-    );
-  }, [allFines, search]);
+    return allFines.filter(f => {
+      const matchesStatus = filterStatus === "all" || f.status === filterStatus;
+      const q = search.toLowerCase().trim();
+      const matchesSearch = !q ||
+        f.userName.toLowerCase().includes(q) ||
+        f.studentId.toLowerCase().includes(q);
+      return matchesStatus && matchesSearch;
+    });
+  }, [allFines, filterStatus, search]);
 
-  // Client-side pagination 
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const paginatedFines = filtered.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, search]);
+
   const handleStatusFilterChange = (v: string) => {
     setFilterStatus(v);
-    setSearch(""); // clear search when switching status
-  };
-
-  const markStatusChanged = () => {
-    setIsStatusChanging(true);
-    setFilterStatus("paid");
+    setSearch("");
   };
 
   return {
@@ -98,6 +111,7 @@ export function useFines({ initialStatusFilter = "paid", itemsPerPage = 10 }: Us
     handleStatusFilterChange,
     totalStudentsWithFines,
     totalUnsettled,
-    markStatusChanged,
+    totalUnpaidFines,
+    totalCollectedFines,
   };
 }

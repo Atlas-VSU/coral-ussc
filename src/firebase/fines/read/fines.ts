@@ -4,7 +4,7 @@ import { Member, MemberData } from "@/features/organization/members/types";
 import { StudentFineItem } from "@/features/organization/payments/types";
 import { db } from "@/firebase/firebase.config";
 import { getCurrentUserData } from "@/firebase/users";
-import { collection, query, where, getDocs, CollectionReference, DocumentData, DocumentSnapshot, orderBy, limit, startAfter, getCountFromServer, getDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, CollectionReference, DocumentData, DocumentSnapshot, orderBy, limit, startAfter, getCountFromServer, getDoc, doc, onSnapshot } from "firebase/firestore";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 
 const finesCollection: CollectionReference<DocumentData> = collection(
@@ -185,17 +185,43 @@ export const getUnpaidFineItemsByFineId = async (fine: StudentFines) => {
   );
 }
 
-export const getAllFines = async (status?: string) => {
+
+export const subscribeFines = (
+  userId: string,
+  onUpdate: (fines: StudentFines[]) => void,
+  onError?: (error: Error) => void
+) => {
+  const constraints = [
+    where("metadata.isArchived", "==", false),
+    where("orgId", "==", userId),
+    where("accumulatedAmount", ">", 0),
+    orderBy("metadata.updatedAt", "desc"),
+  ];
+
+  return onSnapshot(
+    query(finesCollection, ...constraints),
+    (snapshot) => {
+      const fines = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as StudentFines[];
+      
+      cacheService.set(CACHE_KEYS.finesAll(userId), fines, CACHE_DURATIONS.FINES);
+      
+      onUpdate(fines);
+    },
+    (error) => onError?.(error)
+  );
+};
+
+export const getAllFines = async () => {
   const currUser = await getCurrentUserData() as unknown as Member;
+
   return cacheService.getOrFetch(
-    CACHE_KEYS.finesAll(currUser.id || '', status || 'all'),
+    CACHE_KEYS.finesAll(currUser.id || ''),  
     async () => {
       const constraints = [
         where("metadata.isArchived", "==", false),
         where("orgId", "==", currUser.id),
         where("accumulatedAmount", ">", 0),
         orderBy("metadata.updatedAt", "desc"),
-        ...(status && status !== "all" ? [where("status", "==", status)] : []),
       ];
       const snapshot = await getDocs(query(finesCollection, ...constraints));
       return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as StudentFines[];
@@ -203,6 +229,7 @@ export const getAllFines = async (status?: string) => {
     CACHE_DURATIONS.FINES
   );
 };
+
 
 export const getAllUnpaidFinesforOrg = async () => {
   const currUser = await getCurrentUserData() as unknown as Member;

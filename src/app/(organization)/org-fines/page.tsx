@@ -50,7 +50,9 @@ export default function FinesPage() {
     handleStatusFilterChange,
     totalStudentsWithFines,
     totalUnsettled,
-    markStatusChanged,
+    totalCollectedFines,
+    totalUnpaidFines
+    // markStatusChanged,
   } = useFines({ itemsPerPage: ITEMS_PER_PAGE });
 
   const {
@@ -91,7 +93,7 @@ export default function FinesPage() {
   };
 
   const handleSuccess = async () => {
-    markStatusChanged();
+    // markStatusChanged();
   };
 
   return (
@@ -106,8 +108,8 @@ export default function FinesPage() {
         {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-2">
           <StatCard title="Students w/ Fines" value={totalStudentsWithFines} description="Have at least one fine" icon={Users} />
-          {/* <StatCard title="Outstanding Balance" value={`₱${999}`} description="Total unpaid amount" icon={AlertTriangle} />
-          <StatCard title="Total Collected" value={`₱${999}`} description="Total approved payments" icon={Banknote} /> */}
+          <StatCard title="Outstanding Balance" value={`₱${totalUnpaidFines}`} description="Total unpaid amount" icon={AlertTriangle} />
+          <StatCard title="Total Collected" value={`₱${totalCollectedFines}`} description="Total approved payments" icon={Banknote} />
           <StatCard title="Unsettled" value={totalUnsettled} description="Students with outstanding fines" icon={CircleDollarSign} />
         </div>
 
