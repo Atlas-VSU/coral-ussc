@@ -461,7 +461,7 @@ export const getDashboardRecentPayments = async (count = 5) => {
     const currentUser = (await getCurrentUserData()) as unknown as Member;
     if (!currentUser) return [];
 
-    const orgId = (currentUser as any).uid ?? (currentUser as any).id ?? "";
+    const orgId = (currentUser as any).id ?? "";
 
     const paymentsQuery = query(
       collection(db, "proofOfPayments"),
@@ -480,7 +480,7 @@ export const getDashboardRecentPayments = async (count = 5) => {
         userName: data.userName ?? "",
         studentId: data.studentId ?? "",
         amount: data.amount ?? 0,
-        status: data.status ?? "pending",       
+        status: data.status ?? "pending",      
         paymentMethod: data.paymentMethod ?? "",
         paymentType: data.paymentType ?? "",    
         receiptCode: data.receiptCode ?? "",
@@ -501,36 +501,81 @@ export const getDashboardRecentPayments = async (count = 5) => {
 };
 
 // Fees Collected
+// Scoped to current org, excludes archived, sums paidAmount
 export const getDashboardFeesCollected = async () => {
-  const feesSnapshot = await getDocs(collection(db, "fees"));
-  let total = 0;
-  feesSnapshot.forEach(doc => {
-    total += doc.data().paidAmount || 0;
-  });
-  return total;
+  try {
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return 0;
+
+    const orgId = (currentUser as any).id ?? "";
+
+    const feesSnapshot = await getDocs(query(
+      collection(db, "fees"),
+      where("orgId", "==", orgId),
+      where("isArchived", "==", false)
+    ));
+
+    let total = 0;
+    feesSnapshot.forEach(doc => {
+      total += doc.data().paidAmount || 0;
+    });
+    return total;
+  } catch (error) {
+    console.error("Error getting fees collected:", error);
+    return 0;
+  }
 };
 
 // Unpaid Fines Amount
+// Scoped to current org, excludes archived, sums balance of fines per student incl partial payments
 export const getDashboardUnpaidFinesAmount = async () => {
-  const finesSnapshot = await getDocs(collection(db, "fines"));
-  let total = 0;
-  finesSnapshot.forEach(doc => {
-    const data = doc.data();
-    if (data.status === "unpaid" || (data.balance && data.balance > 0)) {
-      total += data.balance || 0;
-    }
-  });
-  return total;
+  try {
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return 0;
+
+    const orgId = (currentUser as any).id ?? "";
+
+    const finesSnapshot = await getDocs(query(
+      collection(db, "fines"),
+      where("metadata.isArchived", "==", false),
+      where("orgId", "==", orgId),
+      where("status", "in", ["unpaid", "partial", "pending"]),
+      where("accumulatedAmount", ">", 0)
+    ));
+
+    let total = 0;
+    finesSnapshot.forEach(doc => {
+      total += doc.data().balance || 0;
+    });
+    return total;
+  } catch (error) {
+    console.error("Error getting unpaid fines amount:", error);
+    return 0;
+  }
 };
 
 // Clearance Rate
 export const getDashboardClearanceRate = async () => {
-  const clearanceSnapshot = await getDocs(collection(db, "clearanceStatus"));
-  let cleared = 0;
-  let total = 0;
-  clearanceSnapshot.forEach(doc => {
-    total += 1;
-    if (doc.data().status === "cleared") cleared += 1;
-  });
-  return total > 0 ? cleared / total : 0;
+  try {
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return 0;
+
+    const orgId = (currentUser as any).id ?? "";
+
+    const clearanceSnapshot = await getDocs(query(
+      collection(db, "clearanceStatus"),
+      where("orgId", "==", orgId)
+    ));
+
+    let cleared = 0;
+    let total = 0;
+    clearanceSnapshot.forEach(doc => {
+      total += 1;
+      if (doc.data().status === "cleared") cleared += 1;
+    });
+    return total > 0 ? cleared / total : 0;
+  } catch (error) {
+    console.error("Error getting clearance rate:", error);
+    return 0;
+  }
 };
