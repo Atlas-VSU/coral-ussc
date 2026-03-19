@@ -94,8 +94,11 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
     }, [open, fines?.id, fetchFineItems]); 
   
     const handlePaymentSucceed = async () => {
-        if (onSuccess && fines) onSuccess(fines);
-        onOpenChange(false);
+        if (fines?.id) await fetchFineItems(fines.id);
+        if (onSuccess && fines) {
+            onSuccess(fines);
+            onOpenChange(false);
+        }
     }
 
     const handleApprovalSucceed = async (payment: ProofOfPayment) => {

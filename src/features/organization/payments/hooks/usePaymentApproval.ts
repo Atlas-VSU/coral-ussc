@@ -69,7 +69,7 @@ export const usePaymentApproval = () => {
                 }
             }
         } catch (error) {
-            console.error("Failed payment approval.")
+            console.error("Failed payment approval.", error)
             toast.error("Failed payment approval, please contact the developer")
             
         }

@@ -32,6 +32,7 @@ import {
 
 import { StudentFeeRow } from "../hooks/useFeesRoster";
 import { useFeesRosterUI } from "../hooks/useFeesRosterUI";
+import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -254,7 +255,29 @@ export function FeesRosterContent({
         }}
         onSuccess={handleAddManualLog}
       />
-      <PaymentDetailDialog
+
+      <PaymentReviewDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        title={selectedLog?.status === "pending" ? "Review Payment" : "Payment Details"}
+        description={selectedLog?.status === "pending" ? "Review the payment details and approve or reject the payment." : "View the payment details."}
+        data={{
+          studentId: (selectedLog as any)?.studentId || "",
+          studentName: (selectedLog as any)?.studentName || "",
+          amountPaid: (selectedLog)?.amount || 0,
+          paymentMethod: (selectedLog)?.paymentMethod || "",
+          submittedAt: selectedLog?.paidAt ? (selectedLog as any)!.paidAt.toDate().toISOString().slice(0, 10) : "",
+          receiptContent: (selectedLog as any)?.imageUrl || "",
+          referenceNo: selectedLog?.gcashReference || "",
+          typeLabel: "FEES",
+        }}
+        onApprove={selectedLog?.status === "pending" ? () => handleApprove(selectedLog!.paymentProofId!) : undefined}
+        onReject={selectedLog?.status === "pending" ? handleReject : undefined}
+        isProcessing={isSubmitting}
+      />
+
+
+      {/* <PaymentDetailDialog
         feeId={fee.id!}
         log={selectedLog}
         open={detailOpen}
@@ -265,8 +288,8 @@ export function FeesRosterContent({
           setRejectOpen(true);
         }}
         isSubmitting={isSubmitting}
-      />
-      <RejectDialog
+      /> */}
+      {/* <RejectDialog
         log={selectedLog}
         open={rejectOpen}
         onOpenChange={setRejectOpen}
@@ -274,7 +297,7 @@ export function FeesRosterContent({
         onReasonChange={setRejectionReason}
         onConfirm={() => handleReject(selectedLog!.paymentProofId!)}
         isSubmitting={isSubmitting}
-      />
+      /> */}
     </div>
   );
 }
