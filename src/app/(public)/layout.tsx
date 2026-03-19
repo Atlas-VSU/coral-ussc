@@ -32,6 +32,8 @@ export default function PublicLayout({
   const pathname = usePathname();
   const isPublicPaymentPage = pathname.startsWith("/payment");
   const isHomePage = pathname === "/";
+  const isLoginPage = pathname === "/login";
+  const isFullBleedPage = isHomePage || isLoginPage;
   const { setTheme } = useTheme();
   const previousThemeRef = useRef<string | null>(null);
 
@@ -162,7 +164,7 @@ export default function PublicLayout({
       <div className="flex-1 flex flex-col min-w-0">
         <main
           className={`flex-1 ${
-            isHomePage
+            isFullBleedPage
               ? "p-0"
               : `p-2 sm:p-4 ${isPublicPaymentPage ? "pb-4" : "pb-16 md:pb-4"}`
           }`}
