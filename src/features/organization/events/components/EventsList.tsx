@@ -4,7 +4,7 @@ import { EventListItem } from "./EventListItem";
 import { EditEventDialog } from "./EditEventDialog";
 import { CalendarIcon } from "lucide-react";
 import { Event } from "../types";
-import { archiveEvent, deleteEvent } from "@/firebase";
+import { archiveEvent, completeEvent, deleteEvent } from "@/firebase";
 import { ViewMode } from "./ViewToggle";
 import { useEventFineTypes } from "../hooks/useEventFineTypes";
 import { BulkFinesIssuance } from "../../fines/components/BulkFinesIssuance";
@@ -27,7 +27,7 @@ interface EventsListProps {
 }
 
 type PendingAction = {
-  type: "archive" | "delete" | "issue" | "unarchive";
+  type: "archive" | "delete" | "issue" | "unarchive"|"markAsCompleted";
   event: Event;
 };
 
@@ -51,6 +51,10 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
   const handleIssueClick = (event: Event) => {
     setPendingAction({ type: "issue", event });
   };
+
+  const handleMarkAsCompletedClick = (event: Event) => {
+    setPendingAction({ type: "markAsCompleted", event });
+   }
 
   const handleDeleteClick = (event: Event) => {
     setPendingAction({ type: "delete", event });
@@ -82,7 +86,11 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
     } else if (type === "issue") {
       setSelectedEvent(event);
       setBulkIssueFinesOpen(true);
-    } else if (type === "unarchive") {
+    } else if (type === "markAsCompleted") {
+      await completeEvent(event.id.toString());
+      toast.success(`"${event.name}" has been completed.`);
+      onEventsUpdate();
+    }else if (type === "unarchive") {
       // TODO: Implement unarchiveEvent in firebase.ts and call it here
       toast.success(`"${event.name}" has been unarchived.`);
       onEventsUpdate();
@@ -115,6 +123,11 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
       title: "Unarchive this event?",
       description: `"${pendingAction?.event.name}" will be restored and visible in active events.`,
       confirmLabel: "Unarchive",
+    },
+    markAsCompleted: {
+      title: "Mark this event as completed?",
+      description: `"${pendingAction?.event.name}" will be marked as completed and moved to the completed events section.`,
+      confirmLabel: "Mark as Completed",
     },
   };
 
@@ -156,6 +169,7 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
                 onArchive={handleArchiveClick}
                 onIssueFine={handleIssueClick}
                 onUnarchive={handleUnarchiveClick}
+                onMarkAsCompleted={handleMarkAsCompletedClick}
                 onDelete={handleDeleteClick}
               />
             </div>
@@ -174,6 +188,7 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
                 onArchive={handleArchiveClick}
                 onIssueFine={handleIssueClick}
                 onUnarchive={handleUnarchiveClick}
+                onMarkAsCompleted={handleMarkAsCompletedClick}
                 onDelete={handleDeleteClick}
               />
             </div>

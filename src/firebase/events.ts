@@ -291,6 +291,7 @@ export const addEvent = async (eventData: EventFormData) => {
       isDeleted: false,
       finesGenerated: false,  
       accessLevelEvent: levelAccess,
+      manuallyCompleted: false,
       ...dynamicFields,
 
     });
@@ -421,6 +422,7 @@ export const updateEventStatuses = async (
     events.forEach((event) => {
       // Skip archived events - they stay archived
       if (event.status === "archived") return;
+      if (event.manuallyCompleted) return; // Skip events manually marked as completed
 
       // Convert ID to string if it's a number
       const eventId =
@@ -624,6 +626,19 @@ export const deleteEvent = async (eventId: string) => {
     handleFirestoreError(error, `delete event with ID ${eventId}`);
   }
 };
+
+export const completeEvent = async (eventId: string) => { 
+  try {
+    const eventDoc = doc(db, "events", eventId);
+    await updateDoc(eventDoc, { status: "completed", manuallyCompleted: true });
+
+    // Invalidate specific event cache and all paginated events
+    cacheService.invalidate(`event:${eventId}`);
+    cacheService.invalidateByPrefix("events:");
+  } catch (error) {
+    console.error(`Error updating status for event ${eventId}:`, error);
+  }
+}
 
 // Convenience methods with caching
 export const getOngoingEvents = async (): Promise<Event[]> => {

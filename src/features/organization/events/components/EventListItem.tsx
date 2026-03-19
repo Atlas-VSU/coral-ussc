@@ -31,6 +31,7 @@ interface EventListItemProps {
   onUnarchive: (event: Event) => void
   onDelete: (event: Event) => void
   onIssueFine: (event: Event) => void
+  onMarkAsCompleted: (event: Event) => void
 }
 
 function formatTime(time: string | null | undefined) {
@@ -78,7 +79,7 @@ function StatusBadge({ status }: { status: Event["status"] }) {
   }
 }
 
-export function EventListItem({ event, onEdit, onArchive, onUnarchive, onDelete, onIssueFine }: EventListItemProps) {
+export function EventListItem({ event, onEdit, onArchive, onUnarchive, onDelete, onIssueFine, onMarkAsCompleted }: EventListItemProps) {
   const [opLoading, setOpLoading] = useState(false)
   const [viewAttendeesLoading, setViewAttendeesLoading] = useState(false)
   const [logAttendanceLoading, setLogAttendanceLoading] = useState(false)
@@ -195,6 +196,11 @@ export function EventListItem({ event, onEdit, onArchive, onUnarchive, onDelete,
                       {!event.finesGenerated && event.status === "completed" && (
                         <DropdownMenuItem onClick={() => onIssueFine(event)} disabled={opLoading}>
                           Issue Fines
+                        </DropdownMenuItem>
+                      )}
+                      {event.status === "ongoing" && (
+                        <DropdownMenuItem onClick={() => onMarkAsCompleted(event)} disabled={opLoading}>
+                          Mark as Completed
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuItem onClick={() => onEdit(event)} disabled={opLoading}>

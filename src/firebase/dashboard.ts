@@ -451,4 +451,131 @@ export const getDashboardStats = async (): Promise<{
       totalAbsences: 0,
     };
   }
+
+  
+};
+
+// Recent Payments
+export const getDashboardRecentPayments = async (count = 5) => {
+  try {
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return [];
+
+    const orgId = (currentUser as any).id ?? "";
+
+    const paymentsQuery = query(
+      collection(db, "proofOfPayments"),
+      where("orgId", "==", orgId),
+      where("isArchived", "==", false),
+      orderBy("submittedAt", "desc"),
+      limit(count)
+    );
+
+    const snapshot = await getDocs(paymentsQuery);
+
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        userName: data.userName ?? "",
+        studentId: data.studentId ?? "",
+        amount: data.amount ?? 0,
+        status: data.status ?? "pending",      
+        paymentMethod: data.paymentMethod ?? "",
+        paymentType: data.paymentType ?? "",    
+        receiptCode: data.receiptCode ?? "",
+        referenceNumber: data.referenceNumber ?? "",
+        submittedAt: data.submittedAt ?? null,
+        // items nested under metadata
+        items: (data.metadata?.items ?? []) as Array<{
+          title: string;
+          amount: number;
+          paymentType: string;
+        }>,
+      };
+    });
+  } catch (error) {
+    console.error("Error getting dashboard recent payments:", error);
+    return [];
+  }
+};
+
+// Fees Collected
+// Scoped to current org, excludes archived, sums paidAmount
+export const getDashboardFeesCollected = async () => {
+  try {
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return 0;
+
+    const orgId = (currentUser as any).id ?? "";
+
+    const feesSnapshot = await getDocs(query(
+      collection(db, "fees"),
+      where("orgId", "==", orgId),
+      where("isArchived", "==", false)
+    ));
+
+    let total = 0;
+    feesSnapshot.forEach(doc => {
+      total += doc.data().paidAmount || 0;
+    });
+    return total;
+  } catch (error) {
+    console.error("Error getting fees collected:", error);
+    return 0;
+  }
+};
+
+// Unpaid Fines Amount
+// Scoped to current org, excludes archived, sums balance of fines per student incl partial payments
+export const getDashboardUnpaidFinesAmount = async () => {
+  try {
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return 0;
+
+    const orgId = (currentUser as any).id ?? "";
+
+    const finesSnapshot = await getDocs(query(
+      collection(db, "fines"),
+      where("metadata.isArchived", "==", false),
+      where("orgId", "==", orgId),
+      where("status", "in", ["unpaid", "partial", "pending"]),
+      where("accumulatedAmount", ">", 0)
+    ));
+
+    let total = 0;
+    finesSnapshot.forEach(doc => {
+      total += doc.data().balance || 0;
+    });
+    return total;
+  } catch (error) {
+    console.error("Error getting unpaid fines amount:", error);
+    return 0;
+  }
+};
+
+// Clearance Rate
+export const getDashboardClearanceRate = async () => {
+  try {
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return 0;
+
+    const orgId = (currentUser as any).id ?? "";
+
+    const clearanceSnapshot = await getDocs(query(
+      collection(db, "clearanceStatus"),
+      where("orgId", "==", orgId)
+    ));
+
+    let cleared = 0;
+    let total = 0;
+    clearanceSnapshot.forEach(doc => {
+      total += 1;
+      if (doc.data().status === "cleared") cleared += 1;
+    });
+    return total > 0 ? cleared / total : 0;
+  } catch (error) {
+    console.error("Error getting clearance rate:", error);
+    return 0;
+  }
 };

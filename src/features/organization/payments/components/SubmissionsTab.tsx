@@ -21,12 +21,14 @@ interface SubmissionsTabProps {
   onStatusChange: (value: string) => void
   onViewChange: (mode: ViewMode) => void
   onOpenReview: (payment: ProofOfPayment) => void
+  isLoading?: boolean
 }
 
 export function SubmissionsTab({
   filtered, paginated, totalPages, currentPage,
   search, filterStatus, viewMode,
   onPageChange, onSearchChange, onStatusChange, onViewChange, onOpenReview,
+  isLoading
 }: SubmissionsTabProps) {
   return (
     <>
@@ -63,9 +65,9 @@ export function SubmissionsTab({
 
       <CardContent>
         {viewMode === "card" ? (
-          <SubmissionsCardView paginated={paginated} onOpenReview={onOpenReview} />
+          <SubmissionsCardView paginated={paginated} onOpenReview={onOpenReview} isLoading={isLoading} />
         ) : (
-          <SubmissionsTableView paginated={paginated} filtered={filtered} onOpenReview={onOpenReview} />
+          <SubmissionsTableView paginated={paginated} filtered={filtered} onOpenReview={onOpenReview} isLoading={isLoading} />
         )}
         <DataPagination
           currentPage={currentPage}
