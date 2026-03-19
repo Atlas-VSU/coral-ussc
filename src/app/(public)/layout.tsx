@@ -34,6 +34,9 @@ export default function PublicLayout({
   const router = useRouter();
   const pathname = usePathname();
   const isPublicPaymentPage = pathname.startsWith("/payment");
+  const isHomePage = pathname === "/";
+  const isLoginPage = pathname === "/login";
+  const isFullBleedPage = isHomePage || isLoginPage;
   const { setTheme } = useTheme();
   const previousThemeRef = useRef<string | null>(null);
 
@@ -51,7 +54,11 @@ export default function PublicLayout({
     if (previousThemeRef.current !== null) {
       const previous = previousThemeRef.current;
 
-      if (previous === "light" || previous === "dark" || previous === "system") {
+      if (
+        previous === "light" ||
+        previous === "dark" ||
+        previous === "system"
+      ) {
         setTheme(previous);
       } else {
         window.localStorage.removeItem("theme");
@@ -145,7 +152,9 @@ export default function PublicLayout({
 
   // Always show loading screen while loading
   if (loading) {
-    return <LoadingScreen message="Loading your student payment portal... Welcome! We're getting everything ready for you." />;
+    return (
+      <LoadingScreen message="Loading your student payment portal... Welcome! We're getting everything ready for you." />
+    );
   }
 
   if (isRedirecting) {
@@ -158,10 +167,15 @@ export default function PublicLayout({
   return (
     <div className="flex min-h-screen w-full">
       <div className="flex-1 flex flex-col min-w-0">
-        <main className={`flex-1 ${isPublicPaymentPage ? "pb-4" : ""}`}>
+        <main
+          className={`flex-1 ${
+            isFullBleedPage
+              ? "p-0"
+              : `p-2 sm:p-4 ${isPublicPaymentPage ? "pb-4" : "pb-16 md:pb-4"}`
+          }`}
+        >
           {children}
         </main>
-        {!isPublicPaymentPage && <MobileBottomNav links={navLinks} iconMap={mobileIconMap} />}
       </div>
     </div>
   );

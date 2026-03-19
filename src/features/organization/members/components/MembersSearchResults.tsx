@@ -57,12 +57,12 @@ export function MembersSearchResults({
   if (searchResults.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
-        <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg shadow-sm text-center">
+        <div className="bg-gray-50 p-6 rounded-lg shadow-sm text-center">
           <XCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+          <h3 className="text-lg font-medium text-gray-900">
             No results found
           </h3>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-2 text-sm text-gray-500">
             No members matching &quot;{searchQuery}&quot; were found.
           </p>
           <Button
@@ -129,7 +129,7 @@ export function MembersSearchResults({
                   size="sm"
                   onClick={() => onEdit(member)}
                 >
-                  <Edit className="h-4 w-4 mr-1" />
+                  <Edit className="h-4 w-4 mr-1 text-green-700" />
                   Edit
                 </Button>
                 <Button

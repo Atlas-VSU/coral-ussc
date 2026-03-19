@@ -85,7 +85,7 @@ export function BulkImportResultModal({
       {/* Modal container */}
       <div
         ref={containerRef}
-        className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 rounded-lg shadow-lg z-10 m-7 mb-15"
+        className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-lg z-10 m-7 mb-15"
         onMouseDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -184,7 +184,7 @@ export function BulkImportResultModal({
                         {errors.map((error, index) => (
                           <TableRow
                             key={index}
-                            className="hover:bg-slate-50 hover:text-black dark:hover:bg-slate-800 dark:hover:text-white"
+                            className="hover:bg-slate-50 hover:text-black"
                           >
                             <TableCell className="font-medium px-3 py-2.5">
                               {error.row}
@@ -285,7 +285,7 @@ export function BulkImportResultModal({
           )}
         </div>
 
-        <div className="flex items-center justify-end gap-2 bg-slate-50 dark:bg-slate-800 p-4 px-6 border-t rounded-b-lg">
+        <div className="flex items-center justify-end gap-2 bg-slate-50 p-4 px-6 border-t rounded-b-lg">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>
