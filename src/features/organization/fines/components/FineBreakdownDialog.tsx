@@ -197,7 +197,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                         {rejectedPayments[0] && rejectedPayments[0].rejectionReason && (
                             <div className="flex items-start gap-2 rounded-sm border border-red-300/30 bg-red-50/50 px-3 py-2">
                                 <XIcon className="size-3.5 mt-0.5 shrink-0 text-red-600" />
-                                <p className="text-xs text-red-700 leading-relaxed">{rejectedPayments[0].rejectionReason}</p>
+                                <p className="text-xs text-red-700 leading-relaxed">{"Previously rejected: " + rejectedPayments[rejectedPayments.length-1].rejectionReason}</p>
                             </div>
                         )}
                     </div>

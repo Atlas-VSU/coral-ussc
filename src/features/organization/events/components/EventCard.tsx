@@ -37,6 +37,7 @@ interface EventCardProps {
   onUnarchive: (event: Event) => void
   onDelete: (event: Event) => void
   onIssueFine: (event: Event) => void
+  onMarkAsCompleted: (event: Event) => void
 }
 
 function formatTime(time: string | null | undefined) {
@@ -84,7 +85,7 @@ function StatusBadge({ status }: { status: Event["status"] }) {
   }
 }
 
-export function EventCard({ event, onEdit, onArchive, onUnarchive, onDelete, onIssueFine }: EventCardProps) {
+export function EventCard({ event, onEdit, onArchive, onUnarchive, onDelete, onIssueFine, onMarkAsCompleted}: EventCardProps) {
   const [opLoading, setOpLoading] = useState(false)
   const [viewAttendeesLoading, setViewAttendeesLoading] = useState(false)
   const [logAttendanceLoading, setLogAttendanceLoading] = useState(false)
@@ -199,7 +200,12 @@ export function EventCard({ event, onEdit, onArchive, onUnarchive, onDelete, onI
                     <DropdownMenuItem onClick={() => onIssueFine(event)} disabled={opLoading}>
                       Issue Fines
                     </DropdownMenuItem>
-                  )}
+                    )}
+                    {event.status === "ongoing" && (
+                      <DropdownMenuItem onClick={() => onMarkAsCompleted(event)} disabled={opLoading}>
+                        Mark as Completed
+                      </DropdownMenuItem>
+                    )}
                   <DropdownMenuItem onClick={() => onEdit(event)} disabled={opLoading}>
                     Edit Event
                   </DropdownMenuItem>
