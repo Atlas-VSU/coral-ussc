@@ -25,7 +25,7 @@ export async function CompactMemberList({
     return program ? program.name : "N/A";
   };
 
-  const currentUser = await getCurrentUserData() as unknown as Member;
+  const currentUser = (await getCurrentUserData()) as unknown as Member;
 
   const currentUserFacultyId = currentUser.facultyId;
 
@@ -64,7 +64,7 @@ export async function CompactMemberList({
                 <AvatarFallback className="bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-700 font-bold">
                   {getInitials(
                     memberData.member.firstName,
-                    memberData.member.lastName
+                    memberData.member.lastName,
                   )}
                 </AvatarFallback>
               </Avatar>
@@ -125,7 +125,7 @@ export async function CompactMemberList({
                 className="h-9 w-9 p-0 hover:bg-blue-50 transition-all duration-200"
                 onClick={() => onEdit(memberData)}
               >
-                <Pencil className="h-4 w-4" />
+                <Pencil className="h-4 w-4 text-green-700" />
               </Button>
               <Button
                 variant="ghost"

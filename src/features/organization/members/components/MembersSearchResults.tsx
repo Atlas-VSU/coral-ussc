@@ -129,7 +129,7 @@ export function MembersSearchResults({
                   size="sm"
                   onClick={() => onEdit(member)}
                 >
-                  <Edit className="h-4 w-4 mr-1" />
+                  <Edit className="h-4 w-4 mr-1 text-green-700" />
                   Edit
                 </Button>
                 <Button

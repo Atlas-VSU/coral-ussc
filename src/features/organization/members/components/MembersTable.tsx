@@ -95,7 +95,7 @@ export function MembersTable({
                       className="h-8 w-8 p-0 hover:bg-gray-100"
                       onClick={() => onEdit(memberData)}
                     >
-                      <Pencil className="h-3.5 w-3.5" />
+                      <Pencil className="h-3.5 w-3.5 text-green-700" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -111,9 +111,7 @@ export function MembersTable({
                 {/* Program and Faculty */}
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs">
-                    <span className="text-gray-500">
-                      Program:
-                    </span>
+                    <span className="text-gray-500">Program:</span>
                     <span className="text-gray-700 text-right">
                       {getProgramName(memberData.member?.programId)}
                       {memberData.member?.yearLevel &&
@@ -121,9 +119,7 @@ export function MembersTable({
                     </span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-gray-500">
-                      Faculty:
-                    </span>
+                    <span className="text-gray-500">Faculty:</span>
                     <span className="text-gray-700 text-right">
                       {getFacultyName(memberData.member.facultyId as string)}
                     </span>
@@ -203,7 +199,7 @@ export function MembersTable({
                         className="h-7 w-7 sm:h-8 sm:w-8 p-0 hover:bg-gray-100"
                         onClick={() => onEdit(memberData)}
                       >
-                        <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-700" />
                       </Button>
                       <Button
                         variant="ghost"

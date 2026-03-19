@@ -77,7 +77,7 @@ export function MembersPagination({
                     className={`h-9 w-9 p-0 text-sm ${
                       pageNum === currentPage
                         ? "bg-primary text-primary-foreground shadow-sm"
-                        : "hover:bg-gray-100"
+                        : "text-green-600 hover:bg-gray-100"
                     }`}
                   >
                     {pageNum}

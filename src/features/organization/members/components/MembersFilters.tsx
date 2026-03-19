@@ -73,7 +73,7 @@ export function MembersFilters({
     <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-4">
       {/* Header Section - Only show on mobile/tablet */}
       <div className="mb-3 lg:hidden">
-        <h3 className="text-sm font-medium text-gray-900 mb-1">
+        <h3 className="text-sm font-medium text-green-800 mb-1">
           Search & Filter Members
         </h3>
         <p className="text-xs text-gray-500 hidden sm:block">
@@ -169,7 +169,7 @@ export function MembersFilters({
         {/* Desktop: Horizontal layout */}
         <div className="hidden lg:flex lg:flex-col lg:gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
-            <h3 className="text-sm font-medium text-gray-900 mb-1">
+            <h3 className="text-sm font-medium text-green-800 mb-1">
               Search & Filter Members
             </h3>
             <p className="text-xs text-gray-500">

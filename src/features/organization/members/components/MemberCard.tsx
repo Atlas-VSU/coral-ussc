@@ -3,13 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Pencil,
-  Trash2,
-  Mail,
-  Building2,
-  Hash,
-} from "lucide-react";
+import { Pencil, Trash2, Mail, Building2, Hash } from "lucide-react";
 
 interface MemberCardProps {
   memberData: MemberData;
@@ -69,10 +63,10 @@ export function MemberCard({
         <div className="p-5 space-y-4">
           <div className="flex items-start gap-4">
             <Avatar className="h-12 w-12 border border-gray-200">
-              <AvatarFallback className="bg-gray-100 text-gray-700 font-semibold text-sm">
+              <AvatarFallback className="bg-linear-to-r from-[#b8d390] via-[#51a555] to-[#225825] text-white font-semibold text-sm">
                 {getInitials(
                   memberData.member.firstName,
-                  memberData.member.lastName
+                  memberData.member.lastName,
                 )}
               </AvatarFallback>
             </Avatar>
@@ -169,7 +163,7 @@ export function MemberCard({
             className="flex-1 rounded-none h-11 text-sm font-medium hover:bg-gray-100 transition-colors duration-150"
             onClick={() => onEdit(memberData)}
           >
-            <Pencil className="h-4 w-4 mr-2" />
+            <Pencil className="h-4 w-4 mr-2 text-green-700" />
             Edit
           </Button>
           <div className="border-r border-gray-200 h-11" />
