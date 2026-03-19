@@ -1,8 +1,8 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../local-components/dialog";
 import { Banknote, AlertTriangle, XIcon, CalendarIcon, UserIcon, ShieldCheckIcon, MessageSquareIcon, Eye, PenLine } from "lucide-react";
 import { appealStatusConfig } from "../config";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "../local-components/button";
 import { FineItem, FinesPaymentLog, ProofOfPayment, StudentFines } from "../types";
 import { useEffect, useState, useCallback } from "react";
 import { getFineItemsByFineId } from "@/firebase/fines/read/fines";
@@ -10,10 +10,10 @@ import { FineItemDetailDialog } from "./FineItemDetailDialog";
 import { getFinesPaymentHistoriesByReferenceId} from "@/firebase/payment/read/paymentHistory";
 import { computeTotalPaid } from "../utils/fineComputations";
 import { ManualPaymentDialog } from "./ManualPaymentDialog";
-import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog";
+import { PaymentReviewDialog } from "../local-components/PaymentReviewDialog";
 import { useFineItems } from "../hooks/useFineItems";
 import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval";
-import PaymentReceiptDialog, { ReceiptData } from "@/components/organization/PaymentReceiptDialog";
+import PaymentReceiptDialog, { ReceiptData } from "../local-components/PaymentReceiptDialog";
 import { toast } from "sonner";
 
 interface FineBreakdownDialogProps { 
@@ -129,46 +129,51 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
     return (
         <div>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+                <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto !bg-white border-[#2E7D32]/30">
                     <DialogHeader>
-                        <DialogTitle>Fine Breakdown — {fines?.userName}</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle className="text-[#1B5E20] font-bold">Fine Breakdown — {fines?.userName}</DialogTitle>
+                        <DialogDescription className="text-[#2E7D32]/70">
                             {fines?.studentId} · {fines?.fineItemsCount} fine item(s)
                         </DialogDescription>
                     </DialogHeader>
           
-                    <div className="flex flex-col gap-2.5 rounded-md border border-border bg-muted/30 px-4 py-3">
+                    <div className="flex flex-col gap-2.5 rounded-md border border-[#2E7D32]/30 bg-[#AED581]/10 px-4 py-3">
                         {/* Header row */}
                         <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2">
-                                <Banknote className="size-4 shrink-0 text-muted-foreground" />
-                                <span className="text-sm font-semibold">Payment Submissions</span>
-                                <Badge variant={cfg}>
+                                <Banknote className="size-4 shrink-0 text-[#1B5E20]" />
+                                <span className="text-sm font-semibold text-[#1B5E20]">Payment Submissions</span>
+                                <Badge variant={cfg} className="bg-[#AED581]/30 text-[#1B5E20] border-[#2E7D32]/30 uppercase">
                                     {fines?.status}
                                 </Badge>
                             </div>
                             {fines?.status === "pending" && (
-                                <Button size="sm" variant="outline" onClick={() => setPaymentOpen(true)}>
+                                <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="border-[#2E7D32]/30 text-[#1B5E20] hover:bg-[#AED581]/20"
+                                    onClick={() => setPaymentOpen(true)}
+                                >
                                     Review Payment
                                 </Button>
                             )}
                         </div>
 
                         {fineItems.length > 0 && paymentLogs.length > 0 && fines?.status !== "pending" &&(
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-[#2E7D32]">
                                 The submission covers{" "}
-                                <span className="font-medium text-foreground">
+                                <span className="font-medium text-[#1B5E20]">
                                     {(fineItems.filter(item => item.isPaid)).length.toLocaleString()} fine item{fineItems.filter(item => item.isPaid).length !== 1 ? "s" : ""}
                                 </span>
                                 {" — "}
                                 {(fineItems.filter(item => item.isPaid)).map((i, idx) => (
-                                    <span key={i.id}>
+                                    <span key={i.id} className="text-[#1B5E20]">
                                         {i.fineTypeName}{i.eventName ? ` (${i.eventName})` : ""}
                                         {idx < fineItems.filter(item => item.isPaid).length - 1 ? ", " : ""}
                                     </span>
                                 ))}
                                 {" — totalling "}
-                                <span className="font-medium text-foreground">₱{totalPaid.toLocaleString()}</span>.
+                                <span className="font-medium text-[#1B5E20]">₱{totalPaid.toLocaleString()}</span>.
                             </p>
                         )}
               
@@ -190,9 +195,9 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                         
                         {/* Declined rejection reason */}
                         {rejectedPayments[0] && rejectedPayments[0].rejectionReason && (
-                            <div className="flex items-start gap-2 rounded-sm border border-destructive/20 bg-destructive/10 px-3 py-2">
-                                <XIcon className="size-3.5 mt-0.5 shrink-0 text-destructive" />
-                                <p className="text-xs text-destructive leading-relaxed">{rejectedPayments[0].rejectionReason}</p>
+                            <div className="flex items-start gap-2 rounded-sm border border-red-300/30 bg-red-50/50 px-3 py-2">
+                                <XIcon className="size-3.5 mt-0.5 shrink-0 text-red-600" />
+                                <p className="text-xs text-red-700 leading-relaxed">{rejectedPayments[0].rejectionReason}</p>
                             </div>
                         )}
                     </div>
@@ -200,8 +205,8 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                     <div className="flex flex-col gap-3">
                         {fineItems.map(item => {
                             const statusColor = item.isWaived
-                                ? "border-muted bg-muted/30"
-                                : "border-border bg-card"
+                                ? "border-[#2E7D32]/30 bg-[#AED581]/10"
+                                : "border-[#2E7D32]/30 bg-white"
                             return (
                                 <div
                                     key={item.id}
@@ -210,14 +215,14 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                                     {/* Header row */}
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex flex-wrap items-center gap-2 min-w-0">
-                                            <span className="text-xs font-bold text-muted-foreground tabular-nums">
+                                            <span className="text-xs font-bold text-[#1B5E20] tabular-nums">
                                                 #{item.itemNumber}
                                             </span>
-                                            <Badge variant="outline" className="font-mono text-xs py-0">
+                                            <Badge variant="outline" className="uppercase font-mono text-xs py-0 border-[#2E7D32]/30 text-[#1B5E20]">
                                                 {item.isPaid ? "Paid" : "Unpaid"}
                                             </Badge>
                                             {item.isWaived && (
-                                                <Badge variant="outline" className="text-xs py-0 text-muted-foreground">
+                                                <Badge variant="outline" className="text-xs py-0 text-[#1B5E20] border-[#2E7D32]/30">
                                                     Waived
                                                 </Badge>
                                             )}
@@ -232,7 +237,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                                         </div>
                                         <span
                                             className={`text-base font-bold shrink-0 ${
-                                                item.isWaived ? "text-muted-foreground line-through" : "text-foreground"
+                                                item.isWaived ? "text-[#2E7D32]/70 line-through" : "text-[#1B5E20]"
                                             }`}
                                         >
                                             ₱{item.amount.toLocaleString()}
@@ -240,49 +245,49 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                                     </div>
 
                                     {/* Fine type name */}
-                                    <p className="text-sm font-semibold text-foreground leading-snug">
+                                    <p className="text-sm font-semibold text-[#1B5E20] leading-snug">
                                         {item.fineTypeName}
                                     </p>
 
                                     {/* Meta row */}
                                     <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                                         {item.eventName && (
-                                            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                            <span className="flex items-center gap-1.5 text-xs !text-[#103712]">
                                                 <CalendarIcon className="size-3 shrink-0" />
                                                 {item.eventName}
-                                                {item.eventDate && <span className="opacity-60">· {item.eventDate.toDate().toLocaleDateString()}</span>}
+                                                {item.eventDate && <span className="">· {item.eventDate.toDate().toLocaleDateString()}</span>}
                                             </span>
                                         )}
-                                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                        <span className="flex items-center gap-1.5 text-xs text-[#103712]">
                                             <UserIcon className="size-3 shrink-0" />
                                             Issued by {item.issuedBy} · {item.issuedAt.toDate().toLocaleDateString()}
                                         </span>
                                     </div>
 
                                     {/* Reason */}
-                                    <p className="text-xs text-muted-foreground border-t border-border pt-2.5">
+                                    <p className="text-xs text-[#103712] border-t border-[#2E7D32]/30 pt-2.5">
                                         {item.reason}
                                     </p>
 
                                     {/* Waiver note */}
                                     {item.isWaived && item.waivedReason && (
-                                        <div className="flex flex-col gap-2.5 rounded-md border border-border bg-muted/40 px-4 py-3">
+                                        <div className="flex flex-col gap-2.5 rounded-md border border-[#2E7D32]/30 bg-[#AED581]/10 px-4 py-3">
                                             <div className="flex items-center gap-2">
-                                                <ShieldCheckIcon className="size-3.5 shrink-0 text-muted-foreground" />
-                                                <span className="text-xs font-semibold text-foreground">Fine Waived</span>
+                                                <ShieldCheckIcon className="size-3.5 shrink-0 text-[#1B5E20]" />
+                                                <span className="text-xs font-semibold text-[#1B5E20]">Fine Waived</span>
                                             </div>
-                                            <p className="text-xs text-muted-foreground leading-relaxed pl-5.5">
+                                            <p className="text-xs text-[#2E7D32]/70 leading-relaxed pl-5.5">
                                                 {item.waivedReason}
                                             </p>
                                             <div className="flex flex-wrap gap-x-4 gap-y-1 pl-5.5">
                                                 {item.waivedBy && (
-                                                    <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                                    <span className="flex items-center gap-1 text-[11px] text-[#2E7D32]/70">
                                                         <UserIcon className="size-3 shrink-0" />
                                                         Waived by {item.waivedBy}
                                                     </span>
                                                 )}
                                                 {item.waivedAt && (
-                                                    <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                                    <span className="flex items-center gap-1 text-[11px] text-[#2E7D32]/70">
                                                         <CalendarIcon className="size-3 shrink-0" />
                                                         {item.waivedAt.toDate().toLocaleDateString()}
                                                     </span>
@@ -293,12 +298,12 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
 
                                     {/* Appeal note */}
                                     {item.appealNotes && (
-                                        <div className="flex flex-col gap-3 rounded-md border border-border bg-muted/40 px-4 py-3">
+                                        <div className="flex flex-col gap-3 rounded-md border border-[#2E7D32]/30 bg-[#AED581]/10 px-4 py-3">
                                             {/* Header */}
                                             <div className="flex items-center justify-between gap-2">
                                                 <div className="flex items-center gap-2">
-                                                    <MessageSquareIcon className="size-3.5 shrink-0 text-muted-foreground" />
-                                                    <span className="text-xs font-semibold text-foreground">Student Appeal</span>
+                                                    <MessageSquareIcon className="size-3.5 shrink-0 text-[#1B5E20]" />
+                                                    <span className="text-xs font-semibold text-[#1B5E20]">Student Appeal</span>
                                                 </div>
                                                 <Badge
                                                     variant={appealStatusConfig[item.appealStatus!].variant}
@@ -309,18 +314,18 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                                             </div>
 
                                             {/* Appeal notes in a blockquote-style indent */}
-                                            <blockquote className="border-l-2 border-muted-foreground/30 pl-3">
-                                                <p className="text-xs text-muted-foreground leading-relaxed">{item.appealNotes}</p>
+                                            <blockquote className="border-l-2 border-[#2E7D32]/30 pl-3">
+                                                <p className="text-xs text-[#2E7D32]/70 leading-relaxed">{item.appealNotes}</p>
                                             </blockquote>
 
                                             {/* Meta row */}
                                             <div className="flex flex-wrap gap-x-4 gap-y-1">
-                                                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                                <span className="flex items-center gap-1 text-[11px] text-[#2E7D32]/70">
                                                     <CalendarIcon className="size-3 shrink-0" />
                                                     Submitted {item.appealedAt?.toDate().toLocaleDateString()}
                                                 </span>
                                                 {item.appealResolvedBy && (
-                                                    <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                                    <span className="flex items-center gap-1 text-[11px] text-[#2E7D32]/70">
                                                         <UserIcon className="size-3 shrink-0" />
                                                         Resolved by {item.appealResolvedBy} · {item.appealResolvedAt?.toDate().toLocaleDateString()}
                                                     </span>
@@ -333,13 +338,13 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                                     {!item.isWaived && verifiedPayments[0]?.status === "pending" && (() => {
                                         const bps = verifiedPayments[0];
                                         return (
-                                            <div className="flex items-start gap-2 rounded-sm border border-border bg-muted/50 px-3 py-2">
-                                                <Banknote className="size-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+                                            <div className="flex items-start gap-2 rounded-sm border border-[#2E7D32]/30 bg-[#AED581]/10 px-3 py-2">
+                                                <Banknote className="size-3.5 mt-0.5 shrink-0 text-[#1B5E20]" />
                                                 <div className="flex flex-col gap-0.5">
-                                                    <p className="text-xs font-medium text-foreground">Included in pending bulk payment</p>
-                                                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                                    <p className="text-xs font-medium text-[#1B5E20]">Included in pending bulk payment</p>
+                                                    <p className="text-[11px] text-[#2E7D32]/70 leading-relaxed">
                                                         This fine is part of a{" "}
-                                                        <span className="font-medium text-foreground">
+                                                        <span className="font-medium text-[#1B5E20]">
                                                             ₱{bps.amount.toLocaleString()} {bps.paymentMethod}
                                                         </span>{" "}
                                                         submission dated {bps.paidAt.toDate().toLocaleDateString()}
@@ -358,7 +363,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                                     <Button
                                         size="sm"
                                         variant="outline"
-                                        className="self-end gap-1.5 text-xs h-8"
+                                        className="self-end gap-1.5 text-xs h-8 !bg-[#95e969] border-[#2E7D32]/30 text-[#0c3b0f] !hover:bg-[#57871f]"
                                         onClick={() => openFineDetail(item)}
                                     >
                                         <Eye className="size-3.5" />
@@ -371,11 +376,11 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
             
                     {/* Total row */}
                     {fineItems.length > 0 && (
-                        <div className="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-4 py-3 mt-1">
-                            <span className="text-sm font-medium text-muted-foreground">
+                        <div className="flex items-center justify-between rounded-lg border border-[#2E7D32]/30 bg-[#AED581]/10 px-4 py-3 mt-1">
+                            <span className="text-sm font-medium text-[#1B5E20]">
                                 Total outstanding ({fineItems.filter(i => !i.isWaived && !i.isPaid).length} fine{fineItems.filter(i => !i.isWaived && !i.isPaid).length !== 1 ? "s" : ""})
                             </span>
-                            <span className="text-base font-bold text-foreground">
+                            <span className="text-base font-bold text-[#1B5E20]">
                                 ₱{fines?.balance?.toLocaleString() || "0"}
                             </span>
                         </div>
@@ -387,7 +392,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                             <Button
                                 size="sm"
                                 variant="outline"
-                                className="gap-1.5 border-green-500/40 text-green-700 hover:bg-green-50 hover:text-green-800 dark:text-green-400 dark:border-green-500/30 dark:hover:bg-green-950"
+                                className="gap-1.5 border-[#2E7D32]/30 text-[#1B5E20] hover:bg-[#AED581]/20"
                                 onClick={() => setManualPayOpen(true)}
                             >
                                 <PenLine className="size-3.5" />

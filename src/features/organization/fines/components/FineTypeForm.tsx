@@ -18,7 +18,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Switch } from "@/components/ui/switch"; 
+import { Switch } from "../local-components/switch"; 
 import { FineType } from "../types";
 import { useFineTypeForm } from "../hooks/useFineTypeForm";
 import { FineTypeFormData } from "@/lib/validators";
@@ -79,9 +79,9 @@ export function FineTypeForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-[90vw] max-h-[80vh] overflow-y-auto py-8">
+      <DialogContent className="bg-white max-w-4xl w-[90vw] max-h-[80vh] overflow-y-auto py-8 border-none">
         <DialogHeader className="pb-2">
-          <DialogTitle>{initialData ? "Edit a Type of Fine" : "Add a Type of Fines"}</DialogTitle>
+          <DialogTitle className="text-xl text-[#1B5E20] font-bold uppercase">{initialData ? "Edit a Type of Fine" : "Add a Type of Fines"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
@@ -94,9 +94,9 @@ export function FineTypeForm({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name of Fine</FormLabel>
+                    <FormLabel className="text-[#1B5E20] font-semibold">Name of Fine</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} className="!bg-white text-black placeholder:text-gray-600 border-[#2E7D32]/30" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -107,9 +107,9 @@ export function FineTypeForm({
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel className="text-[#1B5E20] font-semibold">Description</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} className="!bg-white text-black placeholder:text-gray-600 border-[#2E7D32]/30" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -120,13 +120,14 @@ export function FineTypeForm({
                 name="defaultAmount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Amount per Sign</FormLabel>
+                    <FormLabel className="text-[#1B5E20] font-semibold">Amount per Sign</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
                         placeholder="0" 
                         {...field} 
-                        onChange={(e) => field.onChange(e.target.valueAsNumber)} 
+                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                        className="!bg-white text-black placeholder:text-gray-600 border-[#2E7D32]/30"
                       />
                     </FormControl>
                     <FormMessage />
@@ -138,9 +139,9 @@ export function FineTypeForm({
                 control={form.control}
                 name="requiresTimeOut"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border border-[#2E7D32]/30 p-4 bg-[#8BC34A]/5">
                     <div className="space-y-0.5">
-                      <FormLabel>Time-out Required</FormLabel>
+                      <FormLabel className="text-[#1B5E20] font-semibold">Time-out Required</FormLabel>
                       <FormMessage />
                     </div>
                     <FormControl>
@@ -156,9 +157,9 @@ export function FineTypeForm({
                 control={form.control}
                 name="majorEventsOnly"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border border-[#2E7D32]/30 p-4 bg-[#8BC34A]/5">
                     <div className="space-y-0.5">
-                      <FormLabel>For major events only</FormLabel>
+                      <FormLabel className="text-[#1B5E20] font-semibold">For major events only</FormLabel>
                     </div>
                     <FormControl>
                       <Switch
@@ -172,10 +173,14 @@ export function FineTypeForm({
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
+              <Button variant="outline" onClick={onCancel} disabled={isSubmitting} className="!bg-white border-[#2E7D32]/30 text-[#1B5E20] hover:!bg-white">
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="text-[#000000] gap-1.5 bg-linear-to-r from-[#8BC34A] via-[#6ac947] to-[#55c72c]"
+              >
                 {isSubmitting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
