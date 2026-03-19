@@ -264,7 +264,7 @@ export function PaymentReviewDialog({
 
               {data.notes && (
                 <div>
-                  <Label className="font-bold">Student Notes</Label>
+                  <Label className="font-bold">Payment Notes</Label>
                   <p className="mt-1 rounded-md border border-border bg-muted/30 p-3 text-sm text-foreground">
                     {data.notes}
                   </p>

@@ -12,6 +12,7 @@ import { DataPagination } from "@/components/organization/DataPagination";
 import { StatCards } from "../local-components/StatCards";
 import { SearchFilterBar } from "@/features/organization/fees/components/SearchFilterBar";
 import { ViewToggle } from "@/components/organization/ViewToggle";
+import { TableSkeleton, CardGridSkeleton } from "@/components/organization/Skeletons";
 import { SubmissionsView } from "@/features/organization/fees/components/SubmissionView";
 import { AllStudentsView } from "@/features/organization/fees/components/AllStudentsView";
 import { ManualPaymentDialog } from "@/features/organization/fees/components/ManualPaymentDialog";
@@ -44,6 +45,9 @@ export function FeesRosterContent({
   onManualPaymentAdded,
   onArchiveFee,
   isSubmitting = false,
+  refetchStudentRow,
+  isLoading = false,
+  refetch,
 }: {
   fee: Fee;
   studentRows: StudentFeeRow[];
@@ -52,6 +56,9 @@ export function FeesRosterContent({
   onManualPaymentAdded: (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", ref?: string) => Promise<void>;
   onArchiveFee: (feeTitle: string, academicYear: string, semester: string) => Promise<void>;
   isSubmitting?: boolean;
+  refetchStudentRow: (feeId: string) => Promise<void>;
+  isLoading?: boolean;
+  refetch: () => Promise<void>;
 }) {
   const router = useRouter();
   const { state, computed, actions } = useFeesRosterUI({
@@ -63,6 +70,7 @@ export function FeesRosterContent({
     onManualPaymentAdded,
     onArchiveFee,
     itemsPerPage: ITEMS_PER_PAGE,
+    isLoading,
   });
 
   const {
@@ -174,13 +182,21 @@ export function FeesRosterContent({
                 filterStatus={filterStatus}
                 onFilterChange={setFilterStatus}
                 showUnpaidFilter={dataView === "all-students"}
+                handleRefresh={refetch}
+                isLoading={isLoading}
               />
               <ViewToggle viewMode={viewMode} onViewChange={() => setViewMode(viewMode === "card" ? "table" : "card")} />
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {dataView === "submissions" ? (
+          {isLoading ? (
+            viewMode === "table" ? (
+              <TableSkeleton columns={6} rows={10} />
+            ) : (
+              <CardGridSkeleton count={6} />
+            )
+          ) : dataView === "submissions" ? (
             <SubmissionsView
               logs={paginatedLogs}
               viewMode={viewMode}
@@ -271,6 +287,7 @@ export function FeesRosterContent({
           referenceNo: selectedLog?.gcashReference || "",
           typeLabel: (selectedLog as any)?.type || "",
           notes: (selectedLog as any)?.notes || (selectedLog as any)?.metadata?.notes || "",
+          declineRemarks: (selectedLog as any)?.rejectionReason || "",
         }}
         onApprove={selectedLog?.status === "pending" ? () => handleApprove(selectedLog!.paymentProofId!) : undefined}
         onReject={async (reason) => {

@@ -18,6 +18,7 @@ interface UseFeesRosterUIProps {
   ) => Promise<void>;
   onArchiveFee: (feeTitle: string, academicYear: string, semester: string) => Promise<void>;
   itemsPerPage?: number;
+  isLoading?: boolean;
 }
 
 export function useFeesRosterUI({
@@ -29,6 +30,7 @@ export function useFeesRosterUI({
   onManualPaymentAdded,
   onArchiveFee,
   itemsPerPage = 10,
+  isLoading = false,
 }: UseFeesRosterUIProps) {
   const allLogs = useMemo(() => studentRows.flatMap((row) => row.logs), [studentRows]);
 

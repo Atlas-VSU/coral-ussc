@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DataPagination } from "@/components/organization/DataPagination"
 import { SubmissionsCardView } from "./SubmissionsCardView"
 import { SubmissionsTableView } from "./SubmissionsTableView"
+import { Button } from "@/components/ui/button"
+import { RefreshCcw } from "lucide-react"
 
 interface SubmissionsTabProps {
   filtered: ProofOfPayment[]
@@ -22,13 +24,15 @@ interface SubmissionsTabProps {
   onViewChange: (mode: ViewMode) => void
   onOpenReview: (payment: ProofOfPayment) => void
   isLoading?: boolean
+  refetchPayments: () => void
+  isLoadingUnpaid: boolean
 }
 
 export function SubmissionsTab({
   filtered, paginated, totalPages, currentPage,
   search, filterStatus, viewMode,
   onPageChange, onSearchChange, onStatusChange, onViewChange, onOpenReview,
-  isLoading
+  isLoading, refetchPayments, isLoadingUnpaid
 }: SubmissionsTabProps) {
   return (
     <>
@@ -58,6 +62,10 @@ export function SubmissionsTab({
                 <SelectItem value="rejected">Declined</SelectItem>
               </SelectContent>
             </Select>
+            <Button onClick={refetchPayments} variant="outline" disabled={isLoading || isLoadingUnpaid}>
+              <RefreshCcw className={`mr-2 h-4 w-4 ${(isLoading || isLoadingUnpaid) ? 'animate-spin' : ''}`} />
+              {(isLoading || isLoadingUnpaid) ? 'Refreshing...' : 'Refresh'}
+            </Button>
             <ViewToggle viewMode={viewMode} onViewChange={onViewChange} />
           </div>
         </div>

@@ -7,6 +7,7 @@ import { fetchUnpaidFeesForOrg } from "@/firebase/fees";
 import { getAllUnpaidFinesforOrg, getFineItemsByFineId, getUnpaidFineItemsByFineId } from "@/firebase/fines/read/fines";
 import { Fee } from "../../fees/types";
 import { StudentFineItem, StudentUnpaidRecord, UnpaidDue } from "../types";
+import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 
 export function usePayments() {
   const [payments, setPayments] = useState<ProofOfPayment[]>([]);
@@ -103,6 +104,16 @@ export function usePayments() {
     }
   }, []);
 
+  const hardRefresh = useCallback(async () => {
+    const currentUser = await getCurrentUserData();
+    if (currentUser) {
+      cacheService.invalidate(CACHE_KEYS.proofOfPayments(currentUser.uid));
+      cacheService.invalidate(CACHE_KEYS.finesUnpaid(currentUser.uid));
+      cacheService.invalidate(CACHE_KEYS.feesUnpaid(currentUser.uid));
+    }
+    await Promise.all([loadPayments(), loadUnpaidPayments()]);
+  }, [loadPayments, loadUnpaidPayments]);
+
   useEffect(() => {
     loadPayments();
     loadUnpaidPayments();
@@ -119,7 +130,7 @@ export function usePayments() {
     pendingPayments,
     rejectedPayments,
     verifiedPayments,
-    refetchPayments: loadPayments,
+    refetchPayments: hardRefresh,
     isLoading,
     isLoadingUnpaid,
   };

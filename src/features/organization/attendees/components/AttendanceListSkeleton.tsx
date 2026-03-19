@@ -2,9 +2,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function AttendanceListSkeleton() {
   return (
-    <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 dark:from-gray-800 dark:via-gray-800 dark:to-gray-700/50 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shadow-lg shadow-blue-100/50 dark:shadow-gray-900/20">
+    <div
+      className="rounded-xl border"
+      style={{
+        background:
+          "linear-gradient(135deg, #ffffff 10%, #EAF3DE 100%, #C0DD97 100%)",
+        borderColor: "#97C459",
+        boxShadow: "0 4px 24px 0 rgba(5,140,17,0.08)",
+      }}
+    >
       {/* Header Skeleton */}
-      <div className="p-6 border-b border-gray-200/60 dark:border-gray-700/60">
+      <div className="p-6 border-b" style={{ borderColor: "#C0DD97" }}>
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-3">
             <Skeleton className="h-10 w-10 rounded-xl" />
@@ -18,9 +26,12 @@ export function AttendanceListSkeleton() {
             <Skeleton className="h-8 w-24 rounded-lg" />
           </div>
         </div>
-        
-        {/* Legend Skeleton */}
-        <div className="mt-4 p-3 rounded-lg bg-gray-50/80 dark:bg-gray-800/40 border border-gray-200/60 dark:border-gray-700/60">
+
+       {/* Legend Skeleton */}
+        <div
+          className="mt-4 p-3 rounded-lg border"
+          style={{ background: "#ffffff", borderColor: "#C0DD97" }}
+        >
           <div className="flex flex-wrap items-center gap-4">
             <Skeleton className="h-5 w-32" />
             <Skeleton className="h-5 w-36" />
@@ -34,9 +45,10 @@ export function AttendanceListSkeleton() {
           {Array(8)
             .fill(0)
             .map((_, i) => (
-              <div 
-                key={i} 
-                className="p-4 rounded-lg border border-gray-200/60 dark:border-gray-700/60 bg-white/80 dark:bg-gray-800/40"
+              <div
+                key={i}
+                className="p-4 rounded-lg border"
+                style={{ background: "#ffffff", borderColor: "#C0DD97" }}
               >
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   {/* Student Info Skeleton */}
@@ -53,7 +65,7 @@ export function AttendanceListSkeleton() {
                       </div>
                     </div>
                   </div>
-
+                  
                   {/* Time Records Skeleton */}
                   <div className="flex flex-col sm:flex-row gap-3 lg:flex-shrink-0">
                     <Skeleton className="h-8 w-32 rounded-lg" />

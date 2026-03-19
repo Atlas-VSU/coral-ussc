@@ -16,7 +16,7 @@ import { recalculateClearanceStatus } from "@/firebase/clearance";
 import { recalculateFees } from "@/firebase/fees/update/recalculate";
 import { UnpaidDue } from "@/features/organization/payments/types";
 import { getFineItemsByFineId, getAllFines, getAllUnpaidFinesforOrg } from "@/firebase/fines/read/fines";
-import { cacheService } from "@/services/cacheService";
+import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 
 export const addOnlineFinesPayment = async (fines: StudentFines, type:string, method: PaymentMethod, payRef?: string, senderNumber?:string) => {
     try {
@@ -64,12 +64,17 @@ export const addOnlineFinesPayment = async (fines: StudentFines, type:string, me
             });
             await recalculateClearanceStatus(clearanceRef.id)
         }
-        cacheService.invalidateByPrefix('payments:');
-        cacheService.invalidateByPrefix('fines:');
-        cacheService.invalidateByPrefix('fees:');
-        cacheService.invalidateByPrefix('clearance:');
+        
+        const orgId = fines.orgId || '';
+        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
+        cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
+        cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+        
         // Pre-emptive warming
-        getAllProofOfPayments(fines.orgId).catch(console.error);
+        getAllProofOfPayments(orgId).catch(console.error);
         getAllFines().catch(console.error);
         getAllUnpaidFinesforOrg().catch(console.error);
         
@@ -136,12 +141,16 @@ export const addOfflineFinesPayment = async (fines: StudentFines, type:string, m
             await recalculateClearanceStatus(clearanceRef.id)
         }
 
-        cacheService.invalidateByPrefix('payments:');
-        cacheService.invalidateByPrefix('fines:');
-        cacheService.invalidateByPrefix('fees:');
-        cacheService.invalidateByPrefix('clearance:');
+        const orgId = fines.orgId || '';
+        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
+        cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
+        cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+        
         // Pre-emptive warming
-        getAllProofOfPayments(fines.orgId).catch(console.error);
+        getAllProofOfPayments(orgId).catch(console.error);
         getAllFines().catch(console.error);
         getAllUnpaidFinesforOrg().catch(console.error);
         return proofId;
@@ -218,13 +227,16 @@ export const createFinesPaymentHistory = async (
             throw new Error("Payment recorded, but failed to update clearance status. Please check the clearance record.");
         }
 
-        cacheService.invalidateByPrefix('payments:');
-        cacheService.invalidateByPrefix('fines:');
-        cacheService.invalidateByPrefix('fees:');
-        cacheService.invalidateByPrefix('clearance:');
+        const orgId = current.id || '';
+        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
+        cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
+        cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
 
         // Pre-emptive warming
-        getAllProofOfPayments(current.id!).catch(console.error);
+        getAllProofOfPayments(orgId).catch(console.error);
         getAllFines().catch(console.error);
         getAllUnpaidFinesforOrg().catch(console.error);
 
@@ -277,15 +289,21 @@ export const createOnlinePaymentHistory = async (
                     throw new Error("Payment recorded, but failed to update fines. Please check the fines record.");
                 }
             }
-        cacheService.invalidateByPrefix('payments:');
-        cacheService.invalidateByPrefix('fines:');
-        cacheService.invalidateByPrefix('fees:');
-        cacheService.invalidateByPrefix('clearance:');
+        
+        const user = await getCurrentUserData();
+        const orgId = user?.uid || '';
+        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
+        cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
+        cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
 
         // Pre-emptive warming
-        // getAllProofOfPayments(current.id!).catch(console.error);
-        getAllFines().catch(console.error);
-        getAllUnpaidFinesforOrg().catch(console.error);
+        if (orgId) {
+            getAllFines().catch(console.error);
+            getAllUnpaidFinesforOrg().catch(console.error);
+        }
 
         return paymentHist.id;
     }catch(error){
@@ -293,4 +311,3 @@ export const createOnlinePaymentHistory = async (
         throw new Error("Failed to create fines payment history. Please try again.");
     }
 }
-
