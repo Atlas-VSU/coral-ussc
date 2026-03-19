@@ -184,7 +184,7 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
 
           {/* Footer */}
           <div className="text-center text-xs space-y-1">
-            <p>Payment Method: {data.paymentMethod}</p>
+            <p>Payment Method: {data.paymentMethod === "N/A" || data.paymentMethod === "" ? "Cash (Manual)" : data.paymentMethod.toUpperCase()}</p>
             <p>Verified by {data.verifiedByName}</p>
           </div>
 

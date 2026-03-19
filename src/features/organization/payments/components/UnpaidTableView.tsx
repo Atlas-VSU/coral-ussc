@@ -4,14 +4,16 @@ import { Eye } from "lucide-react"
 import type { StudentUnpaidRecord } from "../types"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { TableSkeleton } from "@/components/organization/Skeletons"
 
 interface UnpaidTableViewProps {
   filteredUnpaid: StudentUnpaidRecord[]
   paginatedUnpaid: StudentUnpaidRecord[]
   onOpenDetail: (r: StudentUnpaidRecord) => void
+  isLoading?: boolean
 }
 
-export function UnpaidTableView({ filteredUnpaid, paginatedUnpaid, onOpenDetail }: UnpaidTableViewProps) {
+export function UnpaidTableView({ filteredUnpaid, paginatedUnpaid, onOpenDetail, isLoading }: UnpaidTableViewProps) {
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -24,7 +26,13 @@ export function UnpaidTableView({ filteredUnpaid, paginatedUnpaid, onOpenDetail 
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredUnpaid.length === 0 ? (
+          {isLoading ? (
+            <TableRow className="hover:bg-transparent">
+              <TableCell colSpan={4} className="p-0 border-none">
+                <TableSkeleton columns={4} rows={5} />
+              </TableCell>
+            </TableRow>
+          ) : filteredUnpaid.length === 0  ? (
             <TableRow>
               <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                 No unpaid records found

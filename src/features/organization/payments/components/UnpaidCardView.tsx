@@ -7,13 +7,18 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 
+import { CardGridSkeleton } from "@/components/organization/Skeletons"
+
 interface UnpaidCardViewProps {
   paginatedUnpaid: StudentUnpaidRecord[]
   onOpenDetail: (r: StudentUnpaidRecord) => void
+  isLoading?: boolean
 }
 
-export function UnpaidCardView({ paginatedUnpaid, onOpenDetail }: UnpaidCardViewProps) {
-  if (paginatedUnpaid.length === 0) {
+export function UnpaidCardView({ paginatedUnpaid, onOpenDetail, isLoading }: UnpaidCardViewProps) {
+  if (isLoading) {
+    return <CardGridSkeleton count={6} />
+  } else if (paginatedUnpaid.length === 0) {
     return <p className="py-12 text-center text-sm text-muted-foreground">No unpaid records found</p>
   }
   return (

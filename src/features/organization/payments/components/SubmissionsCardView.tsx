@@ -7,13 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { CardGridSkeleton } from "@/components/organization/Skeletons"
 
 interface SubmissionsCardViewProps {
   paginated: ProofOfPayment[]
   onOpenReview: (p: ProofOfPayment) => void
+  isLoading?: boolean
 }
 
-export function SubmissionsCardView({ paginated, onOpenReview }: SubmissionsCardViewProps) {
+export function SubmissionsCardView({ paginated, onOpenReview, isLoading }: SubmissionsCardViewProps) {
+  if (isLoading) {
+    return <CardGridSkeleton count={6} />
+  }
   if (paginated.length === 0) {
     return <p className="py-12 text-center text-sm text-muted-foreground">No payment submissions found</p>
   }
