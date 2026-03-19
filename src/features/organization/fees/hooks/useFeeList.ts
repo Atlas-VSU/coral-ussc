@@ -6,6 +6,7 @@ import { fetchFeesForOrg } from "@/firebase/fees";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { getCurrentUserData } from "@/firebase";
+import { cacheService } from "@/services/cacheService";
 
 export function useFeeList() {
     const [rawFees, setRawFees] = useState<Fee[]>([]);
@@ -54,8 +55,12 @@ export function useFeeList() {
             try {
                 const user =  await getCurrentUserData();
                 if(!user) 
-                    throw new Error("Noth Authenticated!");
+                    throw new Error("Not Authenticated!");
                 
+                // Invalidate cache for hard refresh
+                const cacheKey = `fees:org:${user.uid}`;
+                cacheService.invalidate(cacheKey);
+
                 const data = await fetchFeesForOrg(user.uid);
                 setRawFees(data);
             }

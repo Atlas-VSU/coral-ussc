@@ -3,6 +3,8 @@
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/organization/PageHeader"
+import { RefreshCcw } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog"
 import { PaymentStats } from "./components/PaymentStats"
 import { SubmissionsTab } from "./components/SubmissionsTab"
@@ -24,6 +26,7 @@ export default function PaymentsPage() {
     viewMode, setViewMode,
     filtered, totalPages, paginated,
     handleApprove, handleDecline, openReview, isLoading, loading  , isLoadingUnpaid,
+    refetchPayments,
     // unpaid
     unpaidSearch, setUnpaidSearch,
     unpaidPage, setUnpaidPage,
@@ -66,7 +69,10 @@ export default function PaymentsPage() {
         description="Review and manage student payment submissions"
       />
 
-      <PaymentStats {...stats} />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <PaymentStats {...stats} />
+        
+      </div>
 
       {/* ── Main Card ── */}
       <Card className="border-border bg-card">
@@ -81,6 +87,7 @@ export default function PaymentsPage() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+        
         </div>
 
         {dataView === "submissions" ? (
@@ -98,6 +105,8 @@ export default function PaymentsPage() {
             onViewChange={setViewMode}
             onOpenReview={openReview}
             isLoading={isLoading}
+            refetchPayments={refetchPayments}
+            isLoadingUnpaid={isLoadingUnpaid}
           />
         ) : (
           <UnpaidTab
@@ -112,6 +121,8 @@ export default function PaymentsPage() {
             onViewChange={setUnpaidViewMode}
             onOpenDetail={openUnpaidDetail}
             isLoading={isLoadingUnpaid}
+            refetchPayments={refetchPayments}
+            isLoadingUnpaid={isLoadingUnpaid}
           />
         )}
       </Card>

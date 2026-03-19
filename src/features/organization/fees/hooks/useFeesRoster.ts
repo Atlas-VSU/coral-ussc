@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { fetchFee, fetchFeeRoster, fetchPaymentLogs } from "@/firebase/fees";
 import { Fee, PaymentLog } from "../types";
 import { Member } from "../../members/types";
+import { cacheService, CACHE_KEYS } from "@/services/cacheService";
+import { getCurrentUserData } from "@/firebase";
 
 export type BaseFeeData = Partial<Fee>;
 
@@ -90,6 +92,14 @@ export function useFeesRoster(title: string, academicYear: string) {
         }
     }, [title, academicYear]);
 
+    const hardRefresh = useCallback(async () => {
+        const user = await getCurrentUserData();
+        if (user && title && academicYear) {
+            cacheService.invalidate(CACHE_KEYS.feeRoster(user.uid, title, academicYear));
+        }
+        await fetchFeesData();
+    }, [title, academicYear, fetchFeesData]);
+
     const refetchStudentRow = useCallback(async (feeId: string) => {
         try {
             const [freshLogs, updatedFee] = await Promise.all([
@@ -148,6 +158,6 @@ export function useFeesRoster(title: string, academicYear: string) {
         isLoading, 
         error,
         refetchStudentRow,
-        refetch: fetchFeesData
+        refetch: hardRefresh
     };
 }

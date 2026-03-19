@@ -308,5 +308,6 @@ export function usePaymentsPage() {
     // receipt
     receiptOpen, setReceiptOpen, receiptData, setReceiptData,
     stats,
+    refetchPayments,
   }
 }

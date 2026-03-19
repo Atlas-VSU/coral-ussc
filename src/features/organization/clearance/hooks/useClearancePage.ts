@@ -2,9 +2,9 @@
 
 import { useState, useRef, useMemo } from "react"
 import { toast } from "sonner"
-import { useClearances } from "../hooks/useClearances"
-import { useClearanceActions } from "../hooks/useClearanceAction"
-import { useManualPaymentSelection } from "../hooks/useManualPaymentSelection"
+import { useClearances } from "./useClearances"
+import { useClearanceActions } from "./useClearanceAction"
+import { useManualPaymentSelection } from "./useManualPaymentSelection"
 import { getCurrentUserData } from "@/firebase"
 import { Member } from "../../members/types"
 import { PaymentType } from "@/constants/types"
@@ -16,7 +16,7 @@ import { ProofOfPayment } from "../../fines/types"
 import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval"
 
 export function useClearancePage(orgId: string | undefined) {
-  const { clearances, loading, setClearances } = useClearances(orgId)
+  const { clearances, loading, setClearances, hardRefresh } = useClearances(orgId)
   
   // Filtering & View state
   const [search, setSearch] = useState("")
@@ -199,5 +199,6 @@ export function useClearancePage(orgId: string | undefined) {
     handleRejectPayment,
     openLogPayment,
     handleLogPayment,
+    hardRefresh
   }
 }
