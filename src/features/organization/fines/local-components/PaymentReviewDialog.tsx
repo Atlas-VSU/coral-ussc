@@ -205,7 +205,7 @@ export function PaymentReviewDialog({
                     {data.typeLabel && (
                       <div>
                         <Label className="text-[#1B5E20] font-semibold">Type</Label>
-                        <p className="mt-0.5 text-sm font-medium text-[#1B5E20]">{data.typeLabel.toUpperCase()}</p>
+                        <p className="mt-0.5 text-sm font-medium text-[#1B5E20]">{data.typeLabel.toLocaleUpperCase() === "BULK"? `${data.typeLabel.toLocaleUpperCase()} (Fees and Fines)`: data.typeLabel.toLocaleUpperCase()}</p>
                       </div>
                     )}
                   </div>

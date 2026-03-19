@@ -4,7 +4,8 @@ import { DataPagination } from "@/features/organization/fines/components/DataPag
 import { SearchInput } from "@/features/organization/fines/components/SearchInput";
 import { StatCard } from "@/features/organization/fines/components/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/components/ui/select";
+import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/features/organization/fines/local-components/Select";
+
 import { TableHeader, TableRow, TableHead, TableBody, TableCell, Table } from "@/components/ui/table";
 import { ViewToggle } from "@/features/organization/fines/components/ViewToggle";
 import { BulkGenerationDialog } from "@/features/organization/fines/components/BulkGenerationDialog";
@@ -50,7 +51,9 @@ export default function FinesPage() {
     handleStatusFilterChange,
     totalStudentsWithFines,
     totalUnsettled,
-    markStatusChanged,
+    totalCollectedFines,
+    totalUnpaidFines
+    // markStatusChanged,
   } = useFines({ itemsPerPage: ITEMS_PER_PAGE });
 
   const {
@@ -91,7 +94,7 @@ export default function FinesPage() {
   };
 
   const handleSuccess = async () => {
-    markStatusChanged();
+    // markStatusChanged();
   };
 
   return (
@@ -106,8 +109,8 @@ export default function FinesPage() {
         {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-2">
           <StatCard title="Students w/ Fines" value={totalStudentsWithFines} description="Have at least one fine" icon={Users} />
-          {/* <StatCard title="Outstanding Balance" value={`₱${999}`} description="Total unpaid amount" icon={AlertTriangle} />
-          <StatCard title="Total Collected" value={`₱${999}`} description="Total approved payments" icon={Banknote} /> */}
+          <StatCard title="Outstanding Balance" value={`₱${totalUnpaidFines}`} description="Total unpaid amount" icon={AlertTriangle} />
+          <StatCard title="Total Collected" value={`₱${totalCollectedFines}`} description="Total approved payments" icon={Banknote} />
           <StatCard title="Unsettled" value={totalUnsettled} description="Students with outstanding fines" icon={CircleDollarSign} />
         </div>
 
