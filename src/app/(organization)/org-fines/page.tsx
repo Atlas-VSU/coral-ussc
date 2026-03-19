@@ -4,7 +4,8 @@ import { DataPagination } from "@/features/organization/fines/components/DataPag
 import { SearchInput } from "@/features/organization/fines/components/SearchInput";
 import { StatCard } from "@/features/organization/fines/components/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/components/ui/select";
+import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/features/organization/fines/local-components/Select";
+
 import { TableHeader, TableRow, TableHead, TableBody, TableCell, Table } from "@/components/ui/table";
 import { ViewToggle } from "@/features/organization/fines/components/ViewToggle";
 import { BulkGenerationDialog } from "@/features/organization/fines/components/BulkGenerationDialog";
