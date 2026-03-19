@@ -259,8 +259,8 @@ export function FeesRosterContent({
       <PaymentReviewDialog
         open={detailOpen}
         onOpenChange={setDetailOpen}
-        title="Review Payment"
-        description="Review the payment details and approve or reject the payment."
+        title={selectedLog?.status === "pending" ? "Review Payment" : "Payment Details"}
+        description={selectedLog?.status === "pending" ? "Review the payment details and approve or reject the payment." : "View the payment details."}
         data={{
           studentId: (selectedLog as any)?.studentId || "",
           studentName: (selectedLog as any)?.studentName || "",
@@ -271,11 +271,11 @@ export function FeesRosterContent({
           referenceNo: selectedLog?.gcashReference || "",
           typeLabel: "FEES",
         }}
-        onApprove={() => handleApprove(selectedLog!.paymentProofId!)}
-        onReject={handleReject}
+        onApprove={selectedLog?.status === "pending" ? () => handleApprove(selectedLog!.paymentProofId!) : undefined}
+        onReject={selectedLog?.status === "pending" ? handleReject : undefined}
         isProcessing={isSubmitting}
-        onViewReceipt={() => {}}
       />
+
 
       {/* <PaymentDetailDialog
         feeId={fee.id!}
