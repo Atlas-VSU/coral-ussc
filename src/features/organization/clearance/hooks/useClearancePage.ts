@@ -150,6 +150,7 @@ export function useClearancePage(orgId: string | undefined) {
       typeLabel: payment?.paymentType,
       referenceNo: payment?.referenceNumber || "",
       submittedAt: payment?.submittedAt.toDate().toISOString().slice(0, 10),
+      notes: payment?.notes,
       approveConfirmMessage: "This item will be marked as cleared.",
     }
   }, [payment, clearances])
