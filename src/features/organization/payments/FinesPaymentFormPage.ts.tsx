@@ -67,6 +67,7 @@ export default function FinesPaymentFormPage({
   const isContextualFlow = Boolean(studentData && organizationData && selectedPaymentItems);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitResult, setSubmitResult] = useState<PublicSubmitResult | null>(null);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
   const [draftRestored, setDraftRestored] = useState(false);
   const [restoredFromDraft, setRestoredFromDraft] = useState(false);
   const [lastDraftSavedAt, setLastDraftSavedAt] = useState<number | null>(null);
@@ -127,6 +128,14 @@ export default function FinesPaymentFormPage({
   const handleContextualSubmit = async (data: PaymentFormData, image: ImageData | null) => {
     setSubmitError(null);
     setSubmitResult(null);
+    setReceiptError(null);
+
+    if (!image?.file) {
+      const msg = "Receipt image is required before submitting payment.";
+      setReceiptError(msg);
+      setSubmitError(msg);
+      throw new Error(msg);
+    }
 
     let imageUrl = "";
     if (image?.file) {
@@ -607,7 +616,17 @@ export default function FinesPaymentFormPage({
             <SectionHeading number={3} title="Upload Receipt" />
             <Card className="border-border">
               <CardContent className="pt-4">
-                <ImageUpload value={image} onChange={setImage} />
+                <ImageUpload
+                  value={image}
+                  onChange={(nextImage) => {
+                    setImage(nextImage);
+                    if (nextImage?.file) {
+                      setReceiptError(null);
+                    }
+                  }}
+                />
+                <p className="mt-2 text-xs text-muted-foreground">Receipt image is required.</p>
+                {receiptError && <FieldError message={receiptError} />}
               </CardContent>
             </Card>
           </div>
@@ -650,6 +669,7 @@ export default function FinesPaymentFormPage({
                   </div>
                   <Button
                     type="submit"
+                    disabled={!image?.file}
                     className="bg-[#1B5E20] hover:bg-[#2E7D32] text-white dark:bg-[#1B5E20] dark:hover:bg-[#2E7D32] gap-2"
                   >
                     Submit Payment
