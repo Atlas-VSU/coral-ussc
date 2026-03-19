@@ -11,60 +11,103 @@ interface AttendeesHeaderProps {
   isGenerating?: boolean;
 }
 
-export function AttendeesHeader({ event, onExport, isExporting = false, onGenerateFines, isGenerating = false }: AttendeesHeaderProps) {
+export function AttendeesHeader({
+  event,
+  onExport,
+  isExporting = false,
+  onGenerateFines,
+  isGenerating = false,
+}: AttendeesHeaderProps) {
   return (
-    <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 dark:from-gray-800 dark:via-gray-800 dark:to-gray-700/50 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shadow-lg shadow-blue-100/50 dark:shadow-gray-900/20 px-4 sm:px-6 py-4 sm:py-6">
+    <div
+      className="rounded-xl px-4 sm:px-6 py-4 sm:py-6"
+      style={{
+        background:
+          "linear-gradient(135deg, #ffffff 10%, #EAF3DE 100%, #C0DD97 100%)",
+        borderColor: "#97C459",
+        boxShadow: "0 4px 24px 0 rgba(5,140,17,0.08)",
+      }}
+    >
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        {/* Header Section */}
+        {/* Left: icon + title */}
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg">
+          <div
+            className="h-10 w-10 rounded-xl flex items-center justify-center shadow-sm"
+            style={{ background: "linear-gradient(135deg, #058C11, #38B000)" }}
+          >
             <UserPlus className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h2 className="font-nunito text-xl font-bold text-gray-900 dark:text-gray-100">
+            <h2
+              className="font-nunito text-xl font-bold"
+              style={{ color: "#27500A" }}
+            >
               Manage Attendees
             </h2>
-            <p className="font-nunito-sans text-sm text-gray-600 dark:text-gray-400">
+            <p
+              className="font-nunito-sans text-sm"
+              style={{ color: "#3B6D11" }}
+            >
               View, track, and export attendance records
             </p>
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Right: action buttons */}
         <div className="flex flex-wrap gap-3">
-          {/* Show Log Attendance button for ongoing events and Log Special Attendance for completed events */}
           {(event.status === "ongoing" || event.status === "completed") && (
-            <Button 
-              asChild 
-              className=" justify-center gap-1.5 h-10 sm:h-9 text-xs font-bold"
+            <Button
+              asChild
+              className="justify-center gap-1.5 h-10 sm:h-9 text-xs font-bold"
+              style={{ background: "#058C11", color: "#ffffff" }}
             >
               <Link href={`/org-events/${event.id}/log-attendance`}>
                 <UserPlus className="h-4 w-4 mr-2" />
-                {event.status === "completed" ? "Log Special Attendance" : "Log Attendance"}
+                {event.status === "completed"
+                  ? "Log Special Attendance"
+                  : "Log Attendance"}
               </Link>
             </Button>
           )}
 
-          {(event.status === "completed" && !event.finesGenerated)  && (
-              <Button variant="outline" onClick={onGenerateFines} disabled={isGenerating}>
-                <Zap className="size-4 mr-1" /> Generate Fines
-              </Button>
+          {event.status === "completed" && !event.finesGenerated && (
+            <Button
+              variant="outline"
+              onClick={onGenerateFines}
+              disabled={isGenerating}
+              style={{
+                borderColor: "#97C459",
+                color: "#27500A",
+                background: "#ffffff",
+              }}
+            >
+              <Zap className="size-4 mr-1" style={{ color: "#058C11" }} />
+              Generate Fines
+            </Button>
           )}
 
           <Button
             variant="outline"
             onClick={onExport}
             disabled={isExporting}
-            className="bg-white/80 dark:bg-gray-800/60 border-gray-300/60 dark:border-gray-600/60 hover:bg-white dark:hover:bg-gray-800 shadow-sm transition-all duration-200 hover:scale-[1.02]"
+            className="shadow-sm transition-all duration-200 hover:scale-[1.02]"
+            style={{
+              borderColor: "#97C459",
+              color: "#27500A",
+              background: "#ffffff",
+            }}
           >
             {isExporting ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2
+                  className="h-4 w-4 mr-2 animate-spin"
+                  style={{ color: "#058C11" }}
+                />
                 Exporting...
               </>
             ) : (
               <>
-                <Upload className="h-4 w-4 mr-2" />
+                <Upload className="h-4 w-4 mr-2" style={{ color: "#058C11" }} />
                 Export
               </>
             )}
