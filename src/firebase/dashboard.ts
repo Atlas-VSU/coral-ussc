@@ -451,4 +451,86 @@ export const getDashboardStats = async (): Promise<{
       totalAbsences: 0,
     };
   }
+
+  
+};
+
+// Recent Payments
+export const getDashboardRecentPayments = async (count = 5) => {
+  try {
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return [];
+
+    const orgId = (currentUser as any).uid ?? (currentUser as any).id ?? "";
+
+    const paymentsQuery = query(
+      collection(db, "proofOfPayments"),
+      where("orgId", "==", orgId),
+      where("isArchived", "==", false),
+      orderBy("submittedAt", "desc"),
+      limit(count)
+    );
+
+    const snapshot = await getDocs(paymentsQuery);
+
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        userName: data.userName ?? "",
+        studentId: data.studentId ?? "",
+        amount: data.amount ?? 0,
+        status: data.status ?? "pending",       
+        paymentMethod: data.paymentMethod ?? "",
+        paymentType: data.paymentType ?? "",    
+        receiptCode: data.receiptCode ?? "",
+        referenceNumber: data.referenceNumber ?? "",
+        submittedAt: data.submittedAt ?? null,
+        // items nested under metadata
+        items: (data.metadata?.items ?? []) as Array<{
+          title: string;
+          amount: number;
+          paymentType: string;
+        }>,
+      };
+    });
+  } catch (error) {
+    console.error("Error getting dashboard recent payments:", error);
+    return [];
+  }
+};
+
+// Fees Collected
+export const getDashboardFeesCollected = async () => {
+  const feesSnapshot = await getDocs(collection(db, "fees"));
+  let total = 0;
+  feesSnapshot.forEach(doc => {
+    total += doc.data().paidAmount || 0;
+  });
+  return total;
+};
+
+// Unpaid Fines Amount
+export const getDashboardUnpaidFinesAmount = async () => {
+  const finesSnapshot = await getDocs(collection(db, "fines"));
+  let total = 0;
+  finesSnapshot.forEach(doc => {
+    const data = doc.data();
+    if (data.status === "unpaid" || (data.balance && data.balance > 0)) {
+      total += data.balance || 0;
+    }
+  });
+  return total;
+};
+
+// Clearance Rate
+export const getDashboardClearanceRate = async () => {
+  const clearanceSnapshot = await getDocs(collection(db, "clearanceStatus"));
+  let cleared = 0;
+  let total = 0;
+  clearanceSnapshot.forEach(doc => {
+    total += 1;
+    if (doc.data().status === "cleared") cleared += 1;
+  });
+  return total > 0 ? cleared / total : 0;
 };
