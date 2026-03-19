@@ -270,6 +270,7 @@ export function FeesRosterContent({
           receiptContent: (selectedLog as any)?.imageUrl || "",
           referenceNo: selectedLog?.gcashReference || "",
           typeLabel: (selectedLog as any)?.type || "",
+          notes: (selectedLog as any)?.notes || (selectedLog as any)?.metadata?.notes || "",
         }}
         onApprove={selectedLog?.status === "pending" ? () => handleApprove(selectedLog!.paymentProofId!) : undefined}
         onReject={async (reason) => {
