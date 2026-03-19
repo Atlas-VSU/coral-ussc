@@ -28,12 +28,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "../local-components/alert-dialog";
 
 import { StudentFeeRow } from "../hooks/useFeesRoster";
 import { useFeesRosterUI } from "../hooks/useFeesRosterUI";
-import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog";
-
+// import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog";
+import { PaymentReviewDialog } from "../local-components/PaymentReviewDialog";
 const ITEMS_PER_PAGE = 10;
 
 export function FeesRosterContent({
@@ -215,16 +215,16 @@ export function FeesRosterContent({
               <AlertDialogTitle className="text-destructive">Archive Fee</AlertDialogTitle>
             </div>
             <AlertDialogDescription>
-              Are you sure you want to archive <span className="font-semibold text-foreground">"{fee.title}"</span>?
+              Are you sure you want to archive <span className="font-semibold text-[#3b413a]">"{fee.title}"</span>?
             </AlertDialogDescription>
             
-            <div className="bg-muted/50 p-3 rounded-md space-y-1 text-sm text-foreground my-2 text-left">
-              <div><span className="font-medium">Semester:</span> {fee.semester || 'N/A'}</div>
-              <div><span className="font-medium">Academic Year:</span> {fee.academicYear || 'N/A'}</div>
-              <div><span className="font-medium">Amount:</span> ₱{(fee.amount || 0).toLocaleString()}</div>
+            <div className="text-[#103712] bg-[#103712]/10 p-3 rounded-md space-y-1 text-sm my-2 text-left">
+              <div><span className="font-medium !text-[#103712]">Semester:</span> {fee.semester || 'N/A'}</div>
+              <div><span className="font-medium !text-[#103712]">Academic Year:</span> {fee.academicYear || 'N/A'}</div>
+              <div><span className="font-medium !text-[#103712]">Amount:</span> ₱{(fee.amount || 0).toLocaleString()}</div>
             </div>
             
-            <p className="text-sm text-muted-foreground text-left">
+            <p className="text-[#103712] text-sm text-left">
               This fee will be moved to archives and will no longer be active. Students will not be able to make new payments for this fee.
             </p>
           </AlertDialogHeader>
