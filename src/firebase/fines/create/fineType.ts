@@ -3,7 +3,7 @@ import { db } from "@/firebase/firebase.config";
 import { getCurrentUser, getCurrentUserData } from "@/firebase/users";
 import { FineTypeFormData } from "@/lib/validators";
 import { collection, addDoc, Timestamp, updateDoc, doc } from "firebase/firestore";
-import { cacheService } from "@/services/cacheService";
+import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { getAllFineTypes } from "../read/fineType";
 
 
@@ -37,8 +37,10 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
             }
         });
         console.log("Fine type created with ID: ", fineTypeDoc.id);
-        cacheService.invalidateByPrefix('fines:');
-        cacheService.invalidateByPrefix('clearance:');
+        const currentOrgId = orgId ? orgId : currentUser.uid;
+        cacheService.invalidate(CACHE_KEYS.finesAll(currentOrgId));
+        cacheService.invalidate(CACHE_KEYS.finesUnpaid(currentOrgId));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(currentOrgId));
         getAllFineTypes().catch(console.error);
     } catch (error) {
         handleFirestoreError(error, `creating fine type`);
@@ -68,8 +70,10 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
                   updatedAt: Timestamp.now(),
               }
           });
-          cacheService.invalidateByPrefix('fines:');
-          cacheService.invalidateByPrefix('clearance:');
+          const currentOrgId = currentUser.uid;
+          cacheService.invalidate(CACHE_KEYS.finesAll(currentOrgId));
+          cacheService.invalidate(CACHE_KEYS.finesUnpaid(currentOrgId));
+          cacheService.invalidate(CACHE_KEYS.clearanceAll(currentOrgId));
           getAllFineTypes().catch(console.error);
       } catch (error) {
           handleFirestoreError(error, `updating fine type`);
@@ -91,8 +95,10 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
                     updatedAt: Timestamp.now(),
                 }
             });
-            cacheService.invalidateByPrefix('fines:');
-            cacheService.invalidateByPrefix('clearance:');
+            const currentOrgId = currentUser.uid;
+            cacheService.invalidate(CACHE_KEYS.finesAll(currentOrgId));
+            cacheService.invalidate(CACHE_KEYS.finesUnpaid(currentOrgId));
+            cacheService.invalidate(CACHE_KEYS.clearanceAll(currentOrgId));
             getAllFineTypes().catch(console.error);
         } catch (error) {
             handleFirestoreError(error, `deleting fine type`);

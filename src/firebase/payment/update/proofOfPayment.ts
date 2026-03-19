@@ -7,7 +7,7 @@ import { collection, doc, Timestamp, updateDoc } from "firebase/firestore";
 import { rejectPaymentHistory, verifyPaymentHistory } from "./paymentHistory";
 import { PaymentStatus } from "@/constants/status";
 import { generateReceiptId } from "@/features/organization/payments/utils";
-import { cacheService } from "@/services/cacheService";
+import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { getAllProofOfPayments } from "../read/proofOfPayment";
 
 
@@ -18,8 +18,10 @@ export const updateProofOfPaymentHistoryId = async (proofOfPaymentId: string, pa
             paymentHistoryId: paymentHistoryId,
             "updatedAt": Timestamp.now(),
         });
-        cacheService.invalidateByPrefix('payments:');
-        cacheService.invalidateByPrefix('clearance:');
+        const user = await getCurrentUserData();
+        const orgId = user?.uid || '';
+        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
     }catch(error){
         console.error("Error updating proof of payment with history ID:", error);
         throw new Error("Failed to update proof of payment. Please try again.");
@@ -38,11 +40,15 @@ export const verifyPaymentProof = async (proofOfPayment: ProofOfPayment, verifie
             updatedAt: Timestamp.now(),
         });
 
-        cacheService.invalidateByPrefix('payments:');
-        cacheService.invalidateByPrefix('fines:');
-        cacheService.invalidateByPrefix('fees:');
-        cacheService.invalidateByPrefix('clearance:');
-        getAllProofOfPayments(verifier.id!).catch(console.error);
+        const orgId = verifier.id || '';
+        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
+        cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
+        cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+        
+        getAllProofOfPayments(orgId).catch(console.error);
 
         //To Add: email capability
     }catch(error){
@@ -63,11 +69,15 @@ export const rejectPaymentProof = async (proofOfPayment: ProofOfPayment, verifie
             updatedAt: Timestamp.now(),
         });
 
-        cacheService.invalidateByPrefix('payments:');
-        cacheService.invalidateByPrefix('fines:');
-        cacheService.invalidateByPrefix('fees:');
-        cacheService.invalidateByPrefix('clearance:');
-        getAllProofOfPayments(verifier.id!).catch(console.error);
+        const orgId = verifier.id || '';
+        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
+        cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
+        cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+        
+        getAllProofOfPayments(orgId).catch(console.error);
 
         //To Add: email capability
     }catch(error){
@@ -92,12 +102,18 @@ export const updateProofOfPaymentStatus = async (
             verifiedAt: verifiedBy?Timestamp.now():null,
             updatedAt: Timestamp.now(),
         })
-        cacheService.invalidateByPrefix('payments:');
-        cacheService.invalidateByPrefix('fines:');
-        cacheService.invalidateByPrefix('fees:');
-        cacheService.invalidateByPrefix('clearance:');
-        if (verifiedBy) {
-            getAllProofOfPayments(verifiedBy).catch(console.error);
+        
+        const user = await getCurrentUserData();
+        const orgId = user?.uid || '';
+        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
+        cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
+        cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+
+        if (orgId) {
+            getAllProofOfPayments(orgId).catch(console.error);
         }
     } catch (error) {
         console.error("Error updating proof of payment status:", error);

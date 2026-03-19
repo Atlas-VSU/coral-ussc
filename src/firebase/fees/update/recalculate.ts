@@ -1,7 +1,7 @@
 import { db } from "@/firebase/firebase.config";
 import { doc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
 import { Fee } from "@/features/organization/fees/types";
-import { cacheService } from "@/services/cacheService";
+import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 
 // Centralized error handler
 const handleFirestoreError = (error: any, context: string) => {
@@ -41,8 +41,12 @@ export const recalculateFees = async (feeId: string, payment?: number | null) =>
             updatedAt: Timestamp.now(),
         });
 
-        cacheService.invalidateByPrefix('fees:');
-        cacheService.invalidateByPrefix('clearance:');
+        const orgId = feeData.orgId || '';
+        cacheService.invalidate(CACHE_KEYS.feeDoc(feeId));
+        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.clearanceDoc(feeData.userId!));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
 
         return { 
             success: true, 

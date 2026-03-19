@@ -181,11 +181,18 @@ export const generateFeesForAllStudentsInAnOrg = async (
             });
         }
     }
-    cacheService.invalidateByPrefix('fees:');
-    cacheService.invalidateByPrefix('clearance:');
-    fetchFeesForOrg(currentUserName.id || '').catch(console.error);
+    
+    
+    // Targeted invalidation instead of broad prefix
+    const orgId = currentUserName.id || '';
+    cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+    cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+    cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+    
+    // Refresh broad collections background
+    fetchFeesForOrg(orgId).catch(console.error);
     fetchUnpaidFeesForOrg().catch(console.error);
-    fetchClearanceDocuments(currentUserName.id || '').catch(console.error);
+    fetchClearanceDocuments(orgId).catch(console.error);
 }
 export const fetchFeesForOrg = async(orgId: string): Promise<Fee[]> => {
     return cacheService.getOrFetch(
@@ -379,11 +386,15 @@ export const archiveFeeDocuments = async (feeTitle: string, academicYear: string
                 }
             }
         }
-        cacheService.invalidateByPrefix('fees:');
-        cacheService.invalidateByPrefix('clearance:');
-        fetchFeesForOrg(currentUserName.id || '').catch(console.error);
+        
+        const orgId = currentUserName.id || '';
+        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+        
+        fetchFeesForOrg(orgId).catch(console.error);
         fetchUnpaidFeesForOrg().catch(console.error);
-        fetchClearanceDocuments(currentUserName.id || '').catch(console.error);
+        fetchClearanceDocuments(orgId).catch(console.error);
     } catch (error) {
         console.error("Error archiving fee:", error);
         throw error;
@@ -572,12 +583,25 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
             }
         });
         await recalculateClearanceStatus(studentId);
-        cacheService.invalidateByPrefix('fees:');
-        cacheService.invalidateByPrefix('payments:');
-        cacheService.invalidateByPrefix('clearance:');
-        fetchFeesForOrg(currentUserName.id || '').catch(console.error);
+
+        const orgId = currentUserName.id || '';
+        // Granular Invalidation
+        items.forEach(item => {
+            if (item.paymentType === PaymentType.FEES) {
+                cacheService.invalidate(CACHE_KEYS.feeDoc(item.refId));
+                cacheService.invalidate(CACHE_KEYS.feeLogs(item.refId));
+            }
+        });
+        cacheService.invalidate(CACHE_KEYS.clearanceDoc(studentId));
+        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
+
+        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+
+        fetchFeesForOrg(orgId).catch(console.error);
         fetchUnpaidFeesForOrg().catch(console.error);
-        fetchClearanceDocuments(currentUserName.id || '').catch(console.error);
+        fetchClearanceDocuments(orgId).catch(console.error);
 
     } catch (error) {
         console.error("Error processing bulk manual payment and clearance:", error);
@@ -697,12 +721,20 @@ export const recordManualPaymentAndUpdateClearance = async (
         });
 
         await recalculateClearanceStatus(studentId);
-        cacheService.invalidateByPrefix('fees:');
-        cacheService.invalidateByPrefix('payments:');
-        cacheService.invalidateByPrefix('clearance:');
-        fetchFeesForOrg(currentUserName.id || '').catch(console.error);
+
+        const orgId = currentUserName.id || '';
+        cacheService.invalidate(CACHE_KEYS.feeDoc(feeId));
+        cacheService.invalidate(CACHE_KEYS.feeLogs(feeId));
+        cacheService.invalidate(CACHE_KEYS.clearanceDoc(studentId));
+        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
+
+        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+
+        fetchFeesForOrg(orgId).catch(console.error);
         fetchUnpaidFeesForOrg().catch(console.error);
-        fetchClearanceDocuments(currentUserName.id || '').catch(console.error);
+        fetchClearanceDocuments(orgId).catch(console.error);
         return newLogRef.id;
     } catch (error) {
         console.error("Error processing manual payment and clearance:", error);
@@ -776,12 +808,20 @@ export const approvePaymentTransaction = async (feeId: string, paymentLogId: str
         })
 
         await recalculateClearanceStatus(clearanceId);
-        cacheService.invalidateByPrefix('fees:');
-        cacheService.invalidateByPrefix('payments:');
-        cacheService.invalidateByPrefix('clearance:');
-        fetchFeesForOrg(currentUserName.id || '').catch(console.error);
+        
+        const orgId = currentUserName.id || '';
+        cacheService.invalidate(CACHE_KEYS.feeDoc(feeId));
+        cacheService.invalidate(CACHE_KEYS.feeLogs(feeId));
+        cacheService.invalidate(CACHE_KEYS.clearanceDoc(clearanceId));
+        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
+
+        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+
+        fetchFeesForOrg(orgId).catch(console.error);
         fetchUnpaidFeesForOrg().catch(console.error);
-        fetchClearanceDocuments(currentUserName.id || '').catch(console.error);
+        fetchClearanceDocuments(orgId).catch(console.error);
     } catch (error) {
         console.error("Error approving payment:", error);
         throw error;
@@ -855,12 +895,20 @@ export const rejectPaymentTransaction = async (feeId: string, paymentLogId: stri
         })
 
         await recalculateClearanceStatus(clearanceId);
-        cacheService.invalidateByPrefix('fees:');
-        cacheService.invalidateByPrefix('payments:');
-        cacheService.invalidateByPrefix('clearance:');
-        fetchFeesForOrg(currentUserName.id || '').catch(console.error);
+        
+        const orgId = currentUserName.id || '';
+        cacheService.invalidate(CACHE_KEYS.feeDoc(feeId));
+        cacheService.invalidate(CACHE_KEYS.feeLogs(feeId));
+        cacheService.invalidate(CACHE_KEYS.clearanceDoc(clearanceId));
+        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
+
+        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+
+        fetchFeesForOrg(orgId).catch(console.error);
         fetchUnpaidFeesForOrg().catch(console.error);
-        fetchClearanceDocuments(currentUserName.id || '').catch(console.error);
+        fetchClearanceDocuments(orgId).catch(console.error);
     } catch (error) {
         console.error("Error rejecting payment:", error);
         throw error;
