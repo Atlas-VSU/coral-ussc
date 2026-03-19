@@ -1,5 +1,6 @@
 "use client"
 
+import { TableSkeleton } from "@/components/organization/Skeletons"
 import { Eye } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -15,9 +16,10 @@ interface ClearanceTableProps {
   paginated: ClearanceStatus[]
   onReviewPayment: (payment: ProofOfPayment) => void
   onLogPayment: (clearanceId: string) => void
+  isLoading?: boolean
 }
 
-export function ClearanceTable({ paginated, onReviewPayment, onLogPayment }: ClearanceTableProps) {
+export function ClearanceTable({ paginated, onReviewPayment, onLogPayment, isLoading }: ClearanceTableProps) {
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -30,7 +32,20 @@ export function ClearanceTable({ paginated, onReviewPayment, onLogPayment }: Cle
           </TableRow>
         </TableHeader>
         <TableBody>
-          {paginated.map(c => (
+          {isLoading ? (
+            <TableRow className="hover:bg-transparent">
+              <TableCell colSpan={4} className="p-0 border-none">
+                <TableSkeleton columns={4} rows={10} />
+              </TableCell>
+            </TableRow>
+          ) : paginated.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                No clearance records found.
+              </TableCell>
+            </TableRow>
+          ) : (
+            paginated.map(c => (
             <TableRow key={c.id} className="border-border">
               <TableCell>
                 <div className="flex flex-col">
@@ -81,14 +96,15 @@ export function ClearanceTable({ paginated, onReviewPayment, onLogPayment }: Cle
                 </Dialog>
               </TableCell>
             </TableRow>
-          ))}
-          {paginated.length === 0 && (
+          ))
+        )}
+          {/* {!isLoading && paginated.length === 0 && (
             <TableRow>
               <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                 No clearance records found.
               </TableCell>
             </TableRow>
-          )}
+          )} */}
         </TableBody>
       </Table>
     </div>
