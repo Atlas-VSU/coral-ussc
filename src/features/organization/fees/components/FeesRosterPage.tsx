@@ -17,10 +17,10 @@ export default function FeesRosterPage({
   title,
   academicYear,
 }: FeesRosterPageProps) {
-  const { fee, studentRows, isLoading, error, refetchStudentRow } = useFeesRoster(title, academicYear);
+  const { fee, studentRows, isLoading, error, refetchStudentRow, refetch } = useFeesRoster(title, academicYear);
   const { approvePayment, rejectPayment, addManualPayment, receiptData, receiptOpen, setReceiptOpen, archiveFee, isSubmitting } = useFeeAction(refetchStudentRow);
 
-  if (isLoading) {
+  if (isLoading && !fee) {
     return (
       <div className="flex flex-col gap-4 p-6">
         <Skeleton className="h-8 w-64" />
@@ -65,6 +65,9 @@ export default function FeesRosterPage({
       onRejectPayment={rejectPayment} 
       onArchiveFee={archiveFee}
       isSubmitting={isSubmitting}
+      refetchStudentRow={refetchStudentRow}
+      isLoading={isLoading}
+      refetch={refetch}
     />
     </>
   );

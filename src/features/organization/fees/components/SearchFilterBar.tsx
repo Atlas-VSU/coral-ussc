@@ -1,7 +1,8 @@
 // app/admin/fees/roster/components/SearchFilterBar.tsx
-import { Search } from "lucide-react";
+import { RefreshCcw, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../local-components/Select";
+import { Button } from "../local-components/button";
 
 export function SearchFilterBar({
   search,
@@ -9,12 +10,16 @@ export function SearchFilterBar({
   filterStatus,
   onFilterChange,
   showUnpaidFilter,
+  handleRefresh,
+  isLoading
 }: {
   search: string;
   onSearchChange: (value: string) => void;
   filterStatus: string;
   onFilterChange: (value: string) => void;
   showUnpaidFilter: boolean;
+  handleRefresh: () => void;
+  isLoading?: boolean;
 }) {
   return (
     <>
@@ -39,6 +44,11 @@ export function SearchFilterBar({
           {showUnpaidFilter && <SelectItem value="unpaid">Unpaid</SelectItem>}
         </SelectContent>
       </Select>
+
+      <Button onClick={handleRefresh} variant="outline" disabled={isLoading}>
+        <RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+        {isLoading ? 'Refreshing...' : 'Refresh'}
+      </Button>
     </>
   );
 }
