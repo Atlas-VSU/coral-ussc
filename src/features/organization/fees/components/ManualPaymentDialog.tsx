@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../local-components/dialog";
+import { Button } from "../local-components/button";
 import { Input } from "@/components/ui/input";
-import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/components/ui/select";
+import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "../local-components/Select";
 import { Textarea } from "@/components/ui/textarea";
 import { PenLine } from "lucide-react";
 import { Label } from "@/components/ui/label";
@@ -66,12 +66,12 @@ export function ManualPaymentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md ">
         <DialogHeader>
           <DialogTitle>Log Manual Payment</DialogTitle>
           <DialogDescription>
             Record a cash or direct payment for{" "}
-            <span className="font-medium text-foreground">
+            <span className="font-medium text-[#3b413a] font-semibold">
               {student.memberInfo.firstName} {student.memberInfo.lastName}
             </span>.
             This will immediately mark the fee as settled.
@@ -84,12 +84,12 @@ export function ManualPaymentDialog({
             await handleManualPayment(form.getValues());
           }}>
             <div className="flex flex-col gap-4">
-              <div className="rounded-lg border border-border bg-muted/40 px-4 py-3">
-                <p className="text-xs text-muted-foreground">Amount to settle</p>
-                <p className="text-lg font-bold text-foreground mt-0.5">
+              <div className="rounded-lg border border-border px-4 py-3">
+                <p className="text-xs text-[#3b413a]">Amount to settle</p>
+                <p className="text-lg font-bold text-[#3b413a] mt-0.5">
                   ₱{fee.amount.toLocaleString()}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-[#3b413a] mt-0.5">
                   {fee.title}
                 </p>
               </div>
@@ -98,8 +98,8 @@ export function ManualPaymentDialog({
                 control={form.control}
                 name="paymentMethod"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col gap-1.5">
-                    <FormLabel>Payment Method <span className="text-destructive">*</span></FormLabel>
+                  <FormItem className="flex flex-col gap-1.5 text-[#3b413a] !bg-white">
+                    <FormLabel>Payment Method<span className="text-destructive ">*</span></FormLabel>
                     <Select
                       onValueChange={(value) => {
                         field.onChange(value);
@@ -119,8 +119,8 @@ export function ManualPaymentDialog({
                       defaultValue={manualPayMethod}
                     >
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a method" />
+                        <SelectTrigger className="!bg-white">
+                          <SelectValue placeholder="Select a method"/>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -139,7 +139,7 @@ export function ManualPaymentDialog({
                   control={form.control}
                   name="referenceNumber"
                   render={({ field }) => (
-                    <FormItem className="flex flex-col gap-1.5">
+                    <FormItem className="flex flex-col gap-1.5 text-[#3b413a]">
                       <FormLabel>Reference Number <span className="text-destructive">*</span></FormLabel>
                       <FormControl>
                         <Input
@@ -147,6 +147,7 @@ export function ManualPaymentDialog({
                           placeholder={
                             manualPayMethod === "gcash" ? "GCash reference no." : "Bank transaction ref."
                           }
+                          className="!bg-white"
                         />
                       </FormControl>
                       <FormMessage className="text-[10px]" />
@@ -160,12 +161,12 @@ export function ManualPaymentDialog({
                   control={form.control}
                   name="senderNumber"
                   render={({ field }) => (
-                    <FormItem className="flex flex-col gap-1.5">
+                    <FormItem className="flex flex-col gap-1.5 text-[#3b413a]">
                       <FormLabel>
                         Sender Number <span className="text-destructive">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="09123456789" />
+                        <Input {...field} placeholder="09123456789" className="!bg-white" />
                       </FormControl>
                       <FormMessage className="text-[10px]" />
                     </FormItem>
@@ -173,9 +174,9 @@ export function ManualPaymentDialog({
                 />
               )}
 
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5 text-[#3b413a]">
                 <Label htmlFor="manualPayNotes">
-                  Notes <span className="text-xs text-muted-foreground">(optional)</span>
+                  Notes <span className="text-xs text-[#3b413a]">(optional)</span>
                 </Label>
                 <Textarea
                   id="manualPayNotes"
@@ -183,15 +184,15 @@ export function ManualPaymentDialog({
                   placeholder="Any additional notes about this payment…"
                   value={manualPayNotes}
                   onChange={(e) => setManualPayNotes(e.target.value)}
-                  className="resize-none text-xs"
+                  className="resize-none text-xs !bg-white"
                 />
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                <Button type="button" className="hover:bg-black/20" variant="outline" onClick={() => onOpenChange(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" className="gap-1.5" disabled={isSubmitting}>
+                <Button type="submit" className="gap-1.5 bg-linear-to-r from-[#8BC34A] via-[#6ac947] to-[#55c72c] hover:text-white" disabled={isSubmitting}>
                   <PenLine className="size-3.5" />
                   {isSubmitting ? (
                      <>
