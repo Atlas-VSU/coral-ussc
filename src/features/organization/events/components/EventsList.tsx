@@ -9,6 +9,16 @@ import { ViewMode } from "./ViewToggle";
 import { useEventFineTypes } from "../hooks/useEventFineTypes";
 import { BulkFinesIssuance } from "../../fines/components/BulkFinesIssuance";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface EventsListProps {
   events: Event[];
@@ -16,42 +26,91 @@ interface EventsListProps {
   viewMode: ViewMode;
 }
 
+type PendingAction = {
+  type: "archive" | "delete" | "issue" | "unarchive";
+  event: Event;
+};
+
 export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const {fineTypes, fetchFineTypes } = useEventFineTypes();
+  const { fineTypes, fetchFineTypes } = useEventFineTypes();
   const [isBulkIssueFinesOpen, setBulkIssueFinesOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
   const handleEditClick = async (event: Event) => {
     setSelectedEvent(event);
     setIsEditDialogOpen(true);
-    fetchFineTypes(); //temporary
+    fetchFineTypes();
   };
 
-  const handleArchiveClick = async (event: Event) => {
-    if (window.confirm(`Are you sure you want to archive "${event.name}"?`)) {
+  const handleArchiveClick = (event: Event) => {
+    setPendingAction({ type: "archive", event });
+  };
+
+  const handleIssueClick = (event: Event) => {
+    setPendingAction({ type: "issue", event });
+  };
+
+  const handleDeleteClick = (event: Event) => {
+    setPendingAction({ type: "delete", event });
+  };
+
+  const handleUnarchiveClick = (event: Event) => {
+    setPendingAction({ type: "unarchive", event });
+  };
+
+  // Executes after the user confirms
+  const handleConfirm = async () => {
+    if (!pendingAction) return;
+    const { type, event } = pendingAction;
+
+    if (type === "archive") {
       await archiveEvent(event.id.toString());
       toast.success(`"${event.name}" has been archived.`);
       onEventsUpdate();
-    }
-  };
-
-    const handleIssueClick = async (event: Event) => {
-    setSelectedEvent(event);
-    setBulkIssueFinesOpen(true);
-    toast.success(`Fines issued for "${event.name}".`);
-  };
-
-  const handleDeleteClick = async (event: Event) => {
-    if (
-      window.confirm(
-        `Are you sure you want to permanently delete "${event.name}"? This action cannot be undone.`
-      )
-    ) {
+    } else if (type === "delete") {
       await deleteEvent(event.id.toString());
       toast.success(`"${event.name}" has been deleted.`);
       onEventsUpdate();
+    } else if (type === "issue") {
+      setSelectedEvent(event);
+      setBulkIssueFinesOpen(true);
+      toast.success(`Fines issued for "${event.name}".`);
+    } else if (type === "unarchive") {
+      // TODO: Implement unarchiveEvent in firebase.ts and call it here
+      toast.success(`"${event.name}" has been unarchived.`);
+      onEventsUpdate();
     }
+
+    setPendingAction(null);
+  };
+
+  const handleCancelConfirm = () => {
+    setPendingAction(null);
+  };
+
+  const confirmContent: Record<PendingAction["type"], { title: string; description: string; confirmLabel: string }> = {
+    archive: {
+      title: "Archive this event?",
+      description: `"${pendingAction?.event.name}" will be archived and hidden from active events.`,
+      confirmLabel: "Archive",
+    },
+    delete: {
+      title: "Delete this event?",
+      description: `"${pendingAction?.event.name}" will be permanently deleted. This cannot be undone.`,
+      confirmLabel: "Delete",
+    },
+    issue: {
+      title: "Issue fines for this event?",
+      description: `You're about to issue fines to members for "${pendingAction?.event.name}". Make sure attendance is finalized before proceeding.`,
+      confirmLabel: "Issue Fines",
+    },
+    unarchive: {
+      title: "Unarchive this event?",
+      description: `"${pendingAction?.event.name}" will be restored and visible in active events.`,
+      confirmLabel: "Unarchive",
+    },
   };
 
   const eventName = selectedEvent ? selectedEvent.name : "Event";
@@ -61,13 +120,6 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
     setIsEditDialogOpen(false);
     setSelectedEvent(null);
     toast.success(`"${eventName}" has been updated.`);
-  };
-
-  const handleUnarchiveClick = async (event: Event) => {
-    if (window.confirm(`Are you sure you want to unarchive "${event.name}"?`)) {
-      window.alert("Unarchive logic to be implemented!");
-      
-    }
   };
 
   if (!events || events.length === 0) {
@@ -81,7 +133,7 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
           Try adjusting your filters or search to find what you&apos;re looking for.
         </p>
       </div>
-    )
+    );
   }
 
   return (
@@ -123,10 +175,34 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
           ))}
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={!!pendingAction} onOpenChange={(open) => !open && handleCancelConfirm()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingAction ? confirmContent[pendingAction.type].title : ""}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingAction ? confirmContent[pendingAction.type].description : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelConfirm}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirm}
+              className={pendingAction?.type === "delete" ? "bg-destructive hover:bg-destructive/90" : ""}
+            >
+              {pendingAction ? confirmContent[pendingAction.type].confirmLabel : "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {selectedEvent && (
         <EditEventDialog
           open={isEditDialogOpen}
-          fineTypes ={fineTypes}
+          fineTypes={fineTypes}
           onOpenChange={setIsEditDialogOpen}
           selectedEvent={selectedEvent}
           onEventEdited={handleEventEdited}
@@ -134,9 +210,9 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
       )}
       {selectedEvent && (
         <BulkFinesIssuance
-        open={isBulkIssueFinesOpen}
-        onOpenChange={setBulkIssueFinesOpen}
-        event={selectedEvent}
+          open={isBulkIssueFinesOpen}
+          onOpenChange={setBulkIssueFinesOpen}
+          event={selectedEvent}
         />
       )}
     </>
