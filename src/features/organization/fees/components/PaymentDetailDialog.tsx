@@ -1,6 +1,6 @@
 "use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "../local-components/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { statusConfig, paymentMethodLabels } from "@/features/organization/fees/utils/statusConfig";
@@ -34,9 +34,9 @@ export function PaymentDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md border-border bg-background">
+      <DialogContent className="max-w-md border-border bg-white">
         <DialogHeader className="pb-2">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between bg-white">
             <DialogTitle className="text-xl font-bold">Payment Details</DialogTitle>
             <Badge variant={config.variant} className="flex items-center gap-1">
               <StatusIcon className="size-3" /> {config.label}
