@@ -1,6 +1,4 @@
 "use client";
-import { SiteHeader } from "@/components/NavBar/site-header";
-import { MobileBottomNav } from "@/components/NavBar/mobile-bottom-nav";
 import { Home as HomeIcon, Info, LogIn, LayoutDashboard } from "lucide-react";
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
@@ -10,6 +8,11 @@ import { LoadingScreen } from "@/components/ui/loading-screen";
 import { cacheUtils } from "@/utils/cacheUtils";
 import { useTheme } from "next-themes";
 import { useRef } from "react";
+import { AdminSidebar } from "@/components/NavBar/app-sidebar/AdminSidebar";
+import { MobileBottomNav } from "@/components/NavBar/mobile-bottom-nav";
+import { SiteHeader } from "@/components/NavBar/site-header";
+
+
 
 // Define mobile icon map
 const mobileIconMap = {
@@ -157,6 +160,8 @@ export default function PublicLayout({
   if (isRedirecting) {
     return <LoadingScreen message="Redirecting to dashboard..." />;
   }
+
+  
 
   // Only render children when not loading
   return (

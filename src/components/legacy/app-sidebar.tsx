@@ -1,7 +1,7 @@
 import * as React from "react";
 import { LayoutDashboard, List, ChartBar } from "lucide-react";
-import { NavUser } from "./nav-user";
-import { NavMain } from "./nav-main";
+import { NavUser } from "../NavBar/nav-user";
+import { NavMain } from "../NavBar/nav-main";
 import {
   Sidebar,
   SidebarContent,

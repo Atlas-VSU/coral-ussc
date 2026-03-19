@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { collection, query, where, onSnapshot } from "firebase/firestore"
+import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore"
 import { db } from "@/firebase/firebase.config"
 import { fetchClearanceDocuments } from "@/firebase"
 import type { ClearanceStatus } from "../types"
@@ -39,7 +39,8 @@ export function useClearances(orgId: string | undefined) {
     const q = query(
       clearanceRef,
       where("orgId", "==", orgId),
-      where("isArchived", "==", false)
+      where("isArchived", "==", false),
+      orderBy("updatedAt", "desc")
     )
 
     const unsubscribe = onSnapshot(

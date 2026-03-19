@@ -52,6 +52,7 @@ export function useFeesRoster(title: string, academicYear: string) {
                 newRows[rowIndex] = updatedRow;
 
                 setLogs(newRows.flatMap(row => row.logs));
+                newRows.sort((a, b) => b.updatedAt?.toMillis() - a.createdAt.toMillis());
                 return newRows;
             });
         } catch (err) {

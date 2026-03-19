@@ -60,6 +60,12 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
     setPendingAction({ type: "unarchive", event });
   };
 
+    const handleBulkIssueFinesClose = () => {
+    onEventsUpdate();
+    setBulkIssueFinesOpen(false);
+    setSelectedEvent(null);
+   }
+
   // Executes after the user confirms
   const handleConfirm = async () => {
     if (!pendingAction) return;
@@ -76,7 +82,6 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
     } else if (type === "issue") {
       setSelectedEvent(event);
       setBulkIssueFinesOpen(true);
-      toast.success(`Fines issued for "${event.name}".`);
     } else if (type === "unarchive") {
       // TODO: Implement unarchiveEvent in firebase.ts and call it here
       toast.success(`"${event.name}" has been unarchived.`);
@@ -210,9 +215,9 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
       )}
       {selectedEvent && (
         <BulkFinesIssuance
-          open={isBulkIssueFinesOpen}
-          onOpenChange={setBulkIssueFinesOpen}
-          event={selectedEvent}
+        open={isBulkIssueFinesOpen}
+        onOpenChange={handleBulkIssueFinesClose}
+        event={selectedEvent}
         />
       )}
     </>
