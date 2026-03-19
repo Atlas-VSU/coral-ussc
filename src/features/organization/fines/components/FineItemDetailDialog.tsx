@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../local-components/dialog";
 import { FineItem } from "../types";
 import { ShieldCheckIcon, MessageSquareIcon, XIcon } from "lucide-react";
 import { appealStatusConfig } from "../config";
@@ -9,8 +9,8 @@ import { Badge } from "@/components/ui/badge";
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium text-foreground">{value}</span>
+      <span className="text-xs font-bold text-[#1B5E20]">{label}</span>
+      <span className="text-sm font-medium text-[#1B5E20]">{value}</span>
     </div>
   )
 }
@@ -27,9 +27,9 @@ export function FineItemDetailDialog({ open, onOpenChange, fineItem }: FineItemD
     return (
         <div>
         <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
+        <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto bg-white">
           <DialogHeader>
-            <DialogTitle>Fine Item Details — #{fineItem.itemNumber}</DialogTitle>
+            <DialogTitle className="text-[#1B5E20]">Fine Item Details — #{fineItem.itemNumber}</DialogTitle>
             <DialogDescription>Complete details of this fine item.</DialogDescription>
           </DialogHeader>
           {fineItem && (
