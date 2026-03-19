@@ -110,9 +110,9 @@ export function useFeesRosterUI({
     setSelectedLog(null);
   };
 
-  const handleReject = async (proofId: string) => {
-    if (!rejectionReason.trim()) return;
-    await onRejectPayment(proofId, rejectionReason);
+  const handleReject = async (proofId: string, reason: string) => {
+    if (!reason.trim()) return;
+    await onRejectPayment(proofId, reason);
     setRejectOpen(false);
     setDetailOpen(false);
     setSelectedLog(null);
