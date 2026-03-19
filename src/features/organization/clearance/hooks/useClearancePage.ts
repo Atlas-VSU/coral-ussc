@@ -152,6 +152,7 @@ export function useClearancePage(orgId: string | undefined) {
       submittedAt: payment?.submittedAt.toDate().toISOString().slice(0, 10),
       notes: payment?.notes,
       approveConfirmMessage: "This item will be marked as cleared.",
+      declineRemarks: payment?.rejectionReason || ""
     }
   }, [payment, clearances])
 

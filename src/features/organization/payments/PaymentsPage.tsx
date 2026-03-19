@@ -140,6 +140,7 @@ export default function PaymentsPage() {
         onReject={selectedPayment?.status === "pending" ? (async (reason: string) => await handleDecline(selectedPayment, reason)) : undefined}
         onViewReceipt={handleViewReceipt}
         isProcessing={isLoading}
+        isLoading={loading}
       />
 
       {/* ── Log Payment Dialog ── */}

@@ -79,6 +79,7 @@ interface PaymentReviewDialogProps {
   onReject?: (reason: string) => Promise<void>
   onViewReceipt?: (bool: boolean) => void
   isProcessing?: boolean
+  isLoading?: boolean
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -93,6 +94,7 @@ export function PaymentReviewDialog({
   onReject,
   isProcessing = false,
   onViewReceipt,
+  isLoading,
 }: PaymentReviewDialogProps) {
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false)
   const [rejectOpen, setRejectOpen] = useState(false)
@@ -109,9 +111,9 @@ export function PaymentReviewDialog({
   }
 
   async function handleRejectConfirmed() {
-    if (!rejectReason.trim()) return
+    if (!rejectReason.trim() || isLoading) return
     setIsSubmitting(true)
-    onReject?.(rejectReason)
+    await onReject?.(rejectReason)
     setRejectOpen(false)
     setRejectReason("")
     onOpenChange(false)
@@ -373,17 +375,17 @@ export function PaymentReviewDialog({
             <Button
               variant="outline"
               onClick={() => { setRejectOpen(false); setRejectReason("") }}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLoading}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
-              disabled={!rejectReason.trim() || isSubmitting}
+              disabled={!rejectReason.trim() || isSubmitting || isLoading}
               onClick={handleRejectConfirmed}
               className="gap-2"
             >
-              {isSubmitting && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+              {isSubmitting || isLoading && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
               Reject
             </Button>
           </DialogFooter>
