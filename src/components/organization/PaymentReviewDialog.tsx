@@ -310,7 +310,7 @@ export function PaymentReviewDialog({
                   </>
                 ) : (
                     <>
-                  {!data.declineRemarks && (
+                  {!data.declineRemarks && onViewReceipt && (
                     <Button variant="outline" className="gap-1.5" onClick={()=>handleViewReceipt(true)}>
                       View Receipt
                     </Button>
