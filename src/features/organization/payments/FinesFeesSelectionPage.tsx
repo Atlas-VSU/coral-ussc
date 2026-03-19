@@ -103,8 +103,8 @@ export default function FinesFeesSelectionPage({
   }, [fineItems]);
 
   const payableFees = useMemo(() => fees.filter((fee) => fee.isPayable !== false), [fees]);
-  const payableFines = useMemo(() => fines.filter((fine) => fine.isPayable !== false), [fines]);
   const payableFineItems = useMemo(() => fineItems.filter((fine) => fine.isPending !== true), [fineItems]);
+  const payableFines = useMemo(() => payableFineItems.length>0? fines : [], [fines]);
 
   const feesPayableTotal = useMemo(() => {
     return payableFees.reduce((sum, fee) => sum + fee.amount, 0);
@@ -121,6 +121,7 @@ export default function FinesFeesSelectionPage({
   const grandTotal = (payFees ? feesPayableTotal : 0) + (payFines ? finesPayableTotal : 0);
 
   const handleContinue = () => {
+    console.log("Selected Finessss:", payFines);
     if (payFees || payFines) {
       onNext({
         fees: payFees ? payableFees : [],

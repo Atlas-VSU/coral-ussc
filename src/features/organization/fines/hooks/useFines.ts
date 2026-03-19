@@ -62,12 +62,12 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
   const totalUnpaidFines = useMemo(() => {
     return allFines
       .filter(f => f.status !== "paid")
-      .reduce((sum, f) => sum + f.accumulatedAmount, 0);
+      .reduce((sum, f) => sum + f.balance, 0);
   }, [allFines]);
 
   const totalCollectedFines = useMemo(() => {
     return allFines
-      .filter(f => f.status === "paid")
+      .filter(f => f.status === "paid" || f.status === "partial")
       .reduce((sum, f) => sum + f.paidAmount, 0);
   }, [allFines]);
 
