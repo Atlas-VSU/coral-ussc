@@ -34,15 +34,13 @@ import {
   Users,
   Percent,
   CalendarDays,
-  UsersRound,
   UserStar,
   EqualApproximately,
   BarChart3,
   Activity,
-  UserX,
   Banknote,
-  ShieldCheck,
   AlertTriangle,
+  ShieldCheck,
 } from "lucide-react";
 import { Event } from "../types";
 
@@ -63,7 +61,7 @@ const CustomTooltip = ({
         <div className="space-y-1.5">
           {payload.map((entry, index) => (
             <div key={`item-${index}`} className="flex items-center justify-between gap-6">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <div
                   className="w-2.5 h-2.5 rounded-full"
                   style={{ backgroundColor: entry.color }}
@@ -198,43 +196,41 @@ export function MembersStats({
   };
 
   // ─── Stat card definitions ─────────────────────────────────────────────────
+  const clearedStudents = Math.round(clearanceRate * studentStats.totalStudents);
+  const unclearedStudents = studentStats.totalStudents - clearedStudents;
+
   const statCards = [
     {
       title: "Total Students",
       value: studentStats.totalStudents.toLocaleString(),
+      description: `${studentStats.totalEvents} event${studentStats.totalEvents !== 1 ? "s" : ""} this semester`,
       icon: Users,
-      description: "Number of registered students",
     },
     {
       title: "Fees Collected",
       value: `₱${feesCollected.toLocaleString()}`,
-      icon: Banknote,
       description: "Total fees paid this semester",
+      icon: Banknote,
     },
     {
       title: "Unpaid Fines",
       value: `₱${unpaidFinesAmount.toLocaleString()}`,
-      icon: AlertTriangle,
       description: "Outstanding fines balance",
+      icon: AlertTriangle,
     },
     {
       title: "Clearance Rate",
       value: `${(clearanceRate * 100).toFixed(1)}%`,
+      description: `${clearedStudents} cleared · ${unclearedStudents} uncleared`,
       icon: ShieldCheck,
-      description: "Students fully cleared",
     },
-  ];
-
-  // ─── Financial stat card definitions ──────────────────────────────────────
-  const financialCards = [
-    
   ];
 
   return (
     <div className="flex flex-col gap-4">
-      {/* ── Attendance Stat Cards ── */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {statCards.map(({ title, value, icon: Icon, description }) => (
+      {/* ── Stat Cards ── */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+        {statCards.map(({ title, value, description, icon: Icon }) => (
           <Card key={title} className="border-border bg-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 pt-4 sm:px-6 sm:pt-5">
               <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">
@@ -244,7 +240,10 @@ export function MembersStats({
             </CardHeader>
             <CardContent className="px-4 pb-4 sm:px-6 sm:pb-5">
               {isLoading ? (
-                <Skeleton className="h-8 w-24" />
+                <>
+                  <Skeleton className="h-8 w-24 mb-1" />
+                  <Skeleton className="h-3 w-32" />
+                </>
               ) : (
                 <>
                   <div className="text-2xl font-bold text-foreground">{value}</div>
@@ -271,7 +270,7 @@ export function MembersStats({
             </div>
             <div className="flex items-center gap-2">
               <Select value={chartType} onValueChange={setChartType}>
-                <SelectTrigger className="w-[140px] h-8 text-xs border-border">
+                <SelectTrigger className="w-full sm:w-[140px] h-8 text-xs border-border">
                   <SelectValue placeholder="Chart type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -291,7 +290,7 @@ export function MembersStats({
               </Select>
 
               <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-[140px] h-8 text-xs border-border">
+                <SelectTrigger className="w-full sm:w-[140px] h-8 text-xs border-border">
                   <SelectValue placeholder="Filter" />
                 </SelectTrigger>
                 <SelectContent>
@@ -400,8 +399,10 @@ export function MembersStats({
               })}
             </div>
           ) : (
-            /* ── Bar chart — JSX inlined directly, NOT via function call ── */
-            <div className="h-72">
+            /* ── Bar chart ── */
+            /* inline style height is required — Tailwind h-* classes alone can cause
+               ResponsiveContainer to measure 0px during SSR/hydration in Next.js     */
+            <div style={{ width: "100%", height: 288 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={chartData}
@@ -437,7 +438,7 @@ export function MembersStats({
 
           {/* Key stats footer */}
           {!isLoading && (
-            <div className="mt-4 pt-4 border-t border-border grid grid-cols-3 divide-x divide-border">
+            <div className="mt-4 pt-4 border-t border-border grid grid-cols-3 divide-x divide-border sm:grid-cols-3">
               <div className="flex flex-col items-center gap-1 px-4">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <UserStar className="h-3.5 w-3.5" />

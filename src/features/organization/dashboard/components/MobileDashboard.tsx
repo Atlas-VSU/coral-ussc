@@ -1,10 +1,13 @@
+"use client";
+
 // src/features/organization/dashboard/components/MobileDashboard.tsx
 import { ShortcutLinks } from "./ShortcutLinks";
 import { RecentMembers } from "./RecentMembers";
+import { RecentPayments, DashboardPayment } from "./RecentPayments";
 import { Event } from "../types";
 import { Member } from "../../members/types";
 import { MobileMembersStats } from "./MobileMembersStats";
-import { LayoutDashboard } from "lucide-react";
+import { PageHeader } from "@/components/organization/PageHeader";
 
 interface StudentStats {
   totalStudents: number;
@@ -23,6 +26,10 @@ interface MobileDashboardProps {
   upcomingEvents: Event[];
   ongoingEvents: Event[];
   recentMembers: Member[];
+  recentPayments: DashboardPayment[];
+  feesCollected: number;
+  unpaidFinesAmount: number;
+  clearanceRate: number;
 }
 
 export function MobileDashboard({
@@ -32,37 +39,44 @@ export function MobileDashboard({
   upcomingEvents,
   ongoingEvents,
   recentMembers,
+  recentPayments,
+  feesCollected,
+  unpaidFinesAmount,
+  clearanceRate,
 }: MobileDashboardProps) {
   return (
-    <div className="flex flex-col gap-6 px-4 py-6">
-      {/* Mobile Header */}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <LayoutDashboard className="size-5 text-primary" />
-          <h1 className="text-xl font-bold tracking-tight text-foreground">
-            Organization Dashboard
-          </h1>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Overview of your organization&apos;s attendance and activity.
-        </p>
-      </div>
+    <div className="flex flex-col gap-6 px-4 py-6 max-w-2xl mx-auto w-full">
+      <PageHeader
+        variant="admin"
+        title="Dashboard"
+        context="2nd Semester · A.Y. 2025–2026"
+        description="Overview of your organization's attendance and activity."
+      />
 
-      {/* Mobile Stats */}
+      {/* Stat cards + attendance chart */}
       <MobileMembersStats
         isLoading={isLoading}
         studentStats={studentStats}
         eventAttendance={eventAttendance}
+        feesCollected={feesCollected}
+        unpaidFinesAmount={unpaidFinesAmount}
+        clearanceRate={clearanceRate}
       />
 
-      {/* Mobile Events */}
+      {/* Recent Transactions */}
+      <RecentPayments
+        isLoading={isLoading}
+        payments={recentPayments}
+      />
+
+      {/* Events */}
       <ShortcutLinks
         upcomingEvents={upcomingEvents}
         ongoingEvents={ongoingEvents}
         isLoading={isLoading}
       />
 
-      {/* Mobile Recent Members */}
+      {/* Recent Members */}
       <RecentMembers isLoading={isLoading} recentMembers={recentMembers} />
     </div>
   );

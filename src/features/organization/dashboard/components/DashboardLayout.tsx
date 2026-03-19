@@ -34,6 +34,10 @@ export function DashboardLayout() {
         upcomingEvents={upcomingEvents}
         ongoingEvents={ongoingEvents}
         recentMembers={recentMembers}
+        recentPayments={recentPayments}
+        feesCollected={feesCollected}
+        unpaidFinesAmount={unpaidFinesAmount}
+        clearanceRate={clearanceRate}
       />
     );
   }
@@ -47,7 +51,6 @@ export function DashboardLayout() {
         description="Overview of your organization's attendance and activity."
       />
 
-      {/* Stat cards + attendance chart */}
       <MembersStats
         isLoading={isLoading}
         studentStats={stats}
@@ -57,19 +60,16 @@ export function DashboardLayout() {
         clearanceRate={clearanceRate}
       />
 
-      {/* Bottom grid: Transactions + Events + Members — equal 3-col */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <RecentPayments
           isLoading={isLoading}
           payments={recentPayments}
         />
-
         <ShortcutLinks
           upcomingEvents={upcomingEvents}
           ongoingEvents={ongoingEvents}
           isLoading={isLoading}
         />
-
         <RecentMembers
           isLoading={isLoading}
           recentMembers={recentMembers}

@@ -29,10 +29,11 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  UserX,
   Users,
   Calendar,
-  CheckCircle,
+  Banknote,
+  AlertTriangle,
+  ShieldCheck,
   BarChart3,
   Activity,
 } from "lucide-react";
@@ -53,6 +54,9 @@ interface MembersStatsProps {
   };
   eventAttendance: Event[];
   selectedEvent?: Event | null;
+  feesCollected?: number;
+  unpaidFinesAmount?: number;
+  clearanceRate?: number;
 }
 
 const CustomTooltip = ({
@@ -119,6 +123,9 @@ export function MobileMembersStats({
   studentStats,
   eventAttendance,
   selectedEvent = null,
+  feesCollected = 0,
+  unpaidFinesAmount = 0,
+  clearanceRate = 0,
 }: MembersStatsProps) {
   const [internalSelectedEvent, setInternalSelectedEvent] = useState<Event | null>(selectedEvent);
   const [selectedEventPresentCount, setSelectedEventPresentCount] = useState<number | null>(null);
@@ -191,19 +198,42 @@ export function MobileMembersStats({
     absent: "hsl(0 84% 60%)",
   };
 
-  // ── Stat cards ──────────────────────────────────────────────────────────────
+  // ── Stat cards — matches desktop layout ────────────────────────────────────
+  const clearedStudents = Math.round(clearanceRate * studentStats.totalStudents);
+  const unclearedStudents = studentStats.totalStudents - clearedStudents;
+
   const statCards = [
-    { title: "Total Students", value: studentStats.totalStudents, icon: Users },
-    { title: "Total Events", value: studentStats.totalEvents, icon: Calendar },
-    { title: "Total Attendances", value: studentStats.totalAttendances, icon: CheckCircle },
-    { title: "Total Absences", value: studentStats.totalAbsences, icon: UserX },
+    {
+      title: "Total Students",
+      value: studentStats.totalStudents.toLocaleString(),
+      description: `${studentStats.totalEvents} event${studentStats.totalEvents !== 1 ? "s" : ""} this semester`,
+      icon: Users,
+    },
+    {
+      title: "Fees Collected",
+      value: `₱${feesCollected.toLocaleString()}`,
+      description: "Total fees paid",
+      icon: Banknote,
+    },
+    {
+      title: "Unpaid Fines",
+      value: `₱${unpaidFinesAmount.toLocaleString()}`,
+      description: "Outstanding balance",
+      icon: AlertTriangle,
+    },
+    {
+      title: "Clearance Rate",
+      value: `${(clearanceRate * 100).toFixed(1)}%`,
+      description: `${clearedStudents} cleared · ${unclearedStudents} not`,
+      icon: ShieldCheck,
+    },
   ];
 
   return (
     <div className="flex flex-col gap-4">
       {/* ── Stat Grid ── */}
       <div className="grid grid-cols-2 gap-3">
-        {statCards.map(({ title, value, icon: Icon }) => (
+        {statCards.map(({ title, value, description, icon: Icon }) => (
           <Card key={title} className="border-border bg-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-3">
               <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -213,9 +243,15 @@ export function MobileMembersStats({
             </CardHeader>
             <CardContent className="px-3 pb-3">
               {isLoading ? (
-                <Skeleton className="h-6 w-16" />
+                <>
+                  <Skeleton className="h-6 w-16 mb-1" />
+                  <Skeleton className="h-3 w-20" />
+                </>
               ) : (
-                <div className="text-xl font-bold text-foreground">{value.toLocaleString()}</div>
+                <>
+                  <div className="text-xl font-bold text-foreground">{value}</div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{description}</p>
+                </>
               )}
             </CardContent>
           </Card>
