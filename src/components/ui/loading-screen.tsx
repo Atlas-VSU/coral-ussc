@@ -27,7 +27,7 @@ export function LoadingScreen({
   return (
     <div
       className={cn(
-        "fixed inset-0 flex flex-col items-center justify-center bg-background z-50 ",
+        "fixed inset-0 flex flex-col items-center justify-center bg-background z-100 ",
         className,
       )}
       style={{
