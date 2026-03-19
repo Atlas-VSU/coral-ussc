@@ -1,6 +1,5 @@
 "use client";
-import { AdminSidebar } from "@/components/layout/AdminSidebar";
-import { SiteHeader } from "@/components/NavBar/site-header";
+import { AdminSidebar } from "@/components/NavBar/app-sidebar/AdminSidebar";
 import { MobileBottomNav } from "@/components/NavBar/mobile-bottom-nav";
 import {
   LayoutDashboard,
@@ -172,7 +171,7 @@ export default function OrganizationLayout({
       <LoadingScreen
         message={
           isSigningOut
-            ? "Signing out... Please come back soon! Your coral will miss you."
+            ? "Signing out... Please come back soon!"
             : "Loading your organization dashboard... Welcome! We're getting everything ready for you."
         }
         className="bg-primary/5"

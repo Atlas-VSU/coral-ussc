@@ -23,7 +23,7 @@ export function MembersPagination({
 
   return (
     <div className="flex justify-center mt-8">
-      <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm p-3">
+      <div className="bg-white rounded-lg border shadow-sm p-3">
         <div className="flex flex-col sm:flex-row items-center gap-4">
           {/* Page Navigation */}
           <nav className="flex items-center gap-1">
@@ -32,7 +32,7 @@ export function MembersPagination({
               size="sm"
               onClick={() => onPageChange(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+              className="h-9 w-9 p-0 hover:bg-gray-100 disabled:opacity-50"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -62,7 +62,7 @@ export function MembersPagination({
                   (i === 3 && pageNum < totalPages - 1)
                 ) {
                   return (
-                    <span key={`ellipsis-${i}`} className="px-2 py-1 text-gray-500 dark:text-gray-400 text-sm">
+                    <span key={`ellipsis-${i}`} className="px-2 py-1 text-gray-500 text-sm">
                       ...
                     </span>
                   );
@@ -77,7 +77,7 @@ export function MembersPagination({
                     className={`h-9 w-9 p-0 text-sm ${
                       pageNum === currentPage
                         ? "bg-primary text-primary-foreground shadow-sm"
-                        : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                        : "text-green-600 hover:bg-gray-100"
                     }`}
                   >
                     {pageNum}
@@ -91,7 +91,7 @@ export function MembersPagination({
               size="sm"
               onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="h-9 w-9 p-0 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+              className="h-9 w-9 p-0 hover:bg-gray-100 disabled:opacity-50"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -100,12 +100,12 @@ export function MembersPagination({
           {/* Page Dropdown for quick navigation */}
           {totalPages > 5 && (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Go to:</span>
+              <span className="text-sm text-gray-600">Go to:</span>
               <Select
                 value={currentPage.toString()}
                 onValueChange={(value) => onPageChange(parseInt(value))}
               >
-                <SelectTrigger className="w-20 h-9 text-sm border-gray-300 dark:border-gray-600">
+                <SelectTrigger className="w-20 h-9 text-sm border-gray-300">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -120,7 +120,7 @@ export function MembersPagination({
           )}
 
           {/* Page Info */}
-          <div className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="text-sm text-gray-600">
             Page {currentPage} of {totalPages}
           </div>
         </div>

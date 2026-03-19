@@ -48,19 +48,29 @@ export function useFeesRosterUI({
   const [studentRowFee, setStudentRowFee] = useState<StudentFeeRow | null>(null);
 
   const allStudentRows = useMemo(() => {
-    return studentRows.map((s) => {
-      const latestLog = s.logs.length > 0 ? s.logs[s.logs.length - 1] : null;
-      return {
-        student: s.memberInfo,
-        log: latestLog,
-        status: s.status || "unpaid",
-      };
-    });
+    return studentRows
+      .map((s) => {
+        const latestLog = s.logs.length > 0 ? s.logs[s.logs.length - 1] : null;
+        return {
+          student: s.memberInfo,
+          log: latestLog,
+          status: s.status || "unpaid",
+          updatedAt: s.updatedAt,
+        };
+      })
+      .sort((a, b) => b.updatedAt?.toMillis() - a.updatedAt?.toMillis());
   }, [studentRows]);
 
   const filteredLogs = useMemo(() => {
-    return allLogs.filter((l) => filterStatus === "all" || l.status === filterStatus);
-  }, [allLogs, filterStatus]);
+    return allLogs.filter((l: any) => {
+      const matchesSearch =
+        (l.studentName || "").toLowerCase().includes(search.toLowerCase()) ||
+        (l.studentName || "").toLowerCase().includes(search.toLowerCase()) ||
+        (l.studentName || "").toLowerCase().includes(search.toLowerCase());
+      const matchesStatus = filterStatus === "all" || l.status === filterStatus;
+      return matchesSearch && matchesStatus;
+    });
+  }, [allLogs, filterStatus, search]);
 
   const filteredRows = useMemo(() => {
     return allStudentRows.filter((r) => {
@@ -83,7 +93,7 @@ export function useFeesRosterUI({
   );
 
   const paginatedRows = useMemo(
-    () => filteredRows.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage),
+    () => filteredRows.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).sort((a, b) => b.updatedAt?.toMillis() || 0 - (a.updatedAt?.toMillis() || 0)),
     [filteredRows, currentPage, itemsPerPage]
   );
 
