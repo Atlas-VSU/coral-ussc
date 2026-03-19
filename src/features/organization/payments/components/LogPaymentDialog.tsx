@@ -33,7 +33,7 @@ export function LogPaymentDialog({
   open, onOpenChange, record,
   checkedDues, selectedDues, selectedTotal,
   paymentDate, onPaymentDateChange,
-  onToggleDue, onToggleAll, onLogPayment, studentProgram, isLoading
+  onToggleDue, onToggleAll, onLogPayment, studentProgram, isLoading 
 }: LogPaymentDialogProps) {
 
   const handleToggleType = (type: string) => {

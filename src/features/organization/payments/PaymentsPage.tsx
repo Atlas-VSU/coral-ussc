@@ -23,7 +23,7 @@ export default function PaymentsPage() {
     reviewOpen, setReviewOpen,
     viewMode, setViewMode,
     filtered, totalPages, paginated,
-    handleApprove, handleDecline, openReview, isLoading, loading,
+    handleApprove, handleDecline, openReview, isLoading, loading  , isLoadingUnpaid,
     // unpaid
     unpaidSearch, setUnpaidSearch,
     unpaidPage, setUnpaidPage,
@@ -97,6 +97,7 @@ export default function PaymentsPage() {
             onStatusChange={setFilterStatus}
             onViewChange={setViewMode}
             onOpenReview={openReview}
+            isLoading={isLoading}
           />
         ) : (
           <UnpaidTab
@@ -110,6 +111,7 @@ export default function PaymentsPage() {
             onSearchChange={setUnpaidSearch}
             onViewChange={setUnpaidViewMode}
             onOpenDetail={openUnpaidDetail}
+            isLoading={isLoadingUnpaid}
           />
         )}
       </Card>

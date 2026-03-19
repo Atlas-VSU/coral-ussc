@@ -18,13 +18,15 @@ interface UnpaidTabProps {
   onSearchChange: (value: string) => void
   onViewChange: (mode: ViewMode) => void
   onOpenDetail: (record: StudentUnpaidRecord) => void
+  isLoading: boolean
 }
 
 export function UnpaidTab({
   filteredUnpaid, paginatedUnpaid, unpaidTotalPages, unpaidPage,
   unpaidSearch, unpaidViewMode,
-  onPageChange, onSearchChange, onViewChange, onOpenDetail,
+  onPageChange, onSearchChange, onViewChange, onOpenDetail, isLoading
 }: UnpaidTabProps) {
+  
   return (
     <>
       <CardHeader>
@@ -49,9 +51,9 @@ export function UnpaidTab({
 
       <CardContent>
         {unpaidViewMode === "card" ? (
-          <UnpaidCardView paginatedUnpaid={paginatedUnpaid} onOpenDetail={onOpenDetail} />
+          <UnpaidCardView paginatedUnpaid={paginatedUnpaid} onOpenDetail={onOpenDetail} isLoading={isLoading} />
         ) : (
-          <UnpaidTableView filteredUnpaid={filteredUnpaid} paginatedUnpaid={paginatedUnpaid} onOpenDetail={onOpenDetail} />
+          <UnpaidTableView filteredUnpaid={filteredUnpaid} paginatedUnpaid={paginatedUnpaid} onOpenDetail={onOpenDetail} isLoading={isLoading} />
         )}
         <DataPagination
           currentPage={unpaidPage}

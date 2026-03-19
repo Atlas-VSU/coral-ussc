@@ -113,7 +113,7 @@ const validateMemberData = async (data: RawMemberData): Promise<string[]> => {
   } else {
     const studentIdRegex = /^[0-9]{2}-[0-9]{1}-[0-9]{5}$/;
     if (!studentIdRegex.test(data.studentId.trim())) {
-      errors.push("Student ID must be in format XX-1-XXXXX (where X is a number from 0-9)");
+      errors.push("Student ID must be in format XX-X-XXXXX (where X is a number from 0-9)");
     }
   }
 

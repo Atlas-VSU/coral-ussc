@@ -17,6 +17,8 @@ export function useClearances(orgId: string | undefined) {
       return
     }
 
+    setLoading(true)
+
     let isMounted = true;
     
     // Initial fetch from cache/API

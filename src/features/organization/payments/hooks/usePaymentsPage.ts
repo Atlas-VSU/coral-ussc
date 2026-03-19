@@ -14,16 +14,15 @@ import { Fee } from "../../fees/types"
 import { generateReceiptId } from "../utils"
 import { Member } from "../../members/types"
 import { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
-import { is, se } from "date-fns/locale"
 import { PaymentMethods, PaymentType } from "@/constants/types"
 import { usePaymentApproval } from "./usePaymentApproval"
-import { set } from "zod"
 
 export function usePaymentsPage() {
   const {
     payments,
     unpaidPayments,
     isLoading,
+    isLoadingUnpaid,
     refetchPayments,
   } = usePayments();
 
@@ -62,8 +61,8 @@ export function usePaymentsPage() {
   const { _approvePayment, _rejectPayment } = usePaymentApproval()
 
   // Sync payments from hook into local state
-  useEffect(() => { if (payments.length > 0) setPaymentsList(payments) }, [payments])
-  useEffect(() => { if (unpaidPayments.length > 0) setUnpaidRecords(unpaidPayments) }, [unpaidPayments])
+  useEffect(() => { setPaymentsList(payments) }, [payments])
+  useEffect(() => { setUnpaidRecords(unpaidPayments) }, [unpaidPayments])
 
   // Fetch student program when selected unpaid changes
   useEffect(() => {
@@ -138,8 +137,8 @@ export function usePaymentsPage() {
     try {
       const result = await _approvePayment(payment);
       setReceiptData(result?.receipt!);
-      setDetailOpen(false)
       setReceiptOpen(true)
+      setDetailOpen(false)
       setLoading(false)
       toast.success("Payment approved successfully")
     } catch (error) {
@@ -158,7 +157,9 @@ export function usePaymentsPage() {
 
   const handleDecline = useCallback(async(payment: ProofOfPayment, reason: string) => {
     try {
+      setLoading(true);
       await _rejectPayment(payment, reason);
+      setLoading(false)
       toast.success("Payment declined successfully")
     }catch(error){
       console.error("Error declining payment:", error);
@@ -283,6 +284,7 @@ export function usePaymentsPage() {
     dataView, handleTabChange,
     isLoading,
     loading,
+    isLoadingUnpaid,
     // submissions
     paymentsList, search, setSearch, filterStatus, setFilterStatus,
     selectedPayment, setSelectedPayment,

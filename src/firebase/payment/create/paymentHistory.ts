@@ -183,10 +183,13 @@ export const createFinesPaymentHistory = async (
             createdAt: Timestamp.now(),
          });
         
+        let reference = referenceId;
+        
         if ((paid?.type? paid.type : proof.type!) === "fines") {
             try {
                 await recalculateFines(referenceId, null, paid?.balance);
                 await markFineItemsAsPaid(referenceId, paid?.id);
+                reference = paid?.id!;
             } catch (error) {
                 console.error("Error updating fines after payment:", error);
                 throw new Error("Payment recorded, but failed to update fines. Please check the fines record.");
@@ -204,9 +207,9 @@ export const createFinesPaymentHistory = async (
         try {
             const clearanceRef = doc(db, 'clearanceStatus', userId);
             await updateDoc(clearanceRef, {
-                [`blockingItems.${referenceId}.balance`]: 0,
-                [`blockingItems.${referenceId}.status`]: "paid",
-                [`blockingItems.${referenceId}.pendingReview`]: false,
+                [`blockingItems.${reference}.balance`]: 0,
+                [`blockingItems.${reference}.status`]: "paid",
+                [`blockingItems.${reference}.pendingReview`]: false,
             });
 
             await recalculateClearanceStatus(clearanceRef.id)

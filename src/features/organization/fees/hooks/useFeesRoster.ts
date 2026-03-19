@@ -40,6 +40,8 @@ export function useFeesRoster(title: string, academicYear: string) {
                     status: log.status,
                     studentId: rowToUpdate.studentId,
                     studentName: rowToUpdate.userName,
+                    type: rowToUpdate.feeType,
+                    amount: log.amount,
                 }));
 
                 const updatedRow = {
