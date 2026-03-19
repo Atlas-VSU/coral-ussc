@@ -157,7 +157,7 @@ export default function PaymentsPage() {
         onToggleAll={toggleAllDues}
         onLogPayment={handleLogPayment}
         studentProgram={studentProgram}
-        isLoading = {loading}
+        isLoading = {isLoading}
       />
 
       {/* ── Receipt Dialog ── */}

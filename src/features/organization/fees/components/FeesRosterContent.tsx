@@ -287,6 +287,7 @@ export function FeesRosterContent({
           referenceNo: selectedLog?.gcashReference || "",
           typeLabel: (selectedLog as any)?.type || "",
           notes: (selectedLog as any)?.notes || (selectedLog as any)?.metadata?.notes || "",
+          declineRemarks: (selectedLog as any)?.rejectionReason || "",
         }}
         onApprove={selectedLog?.status === "pending" ? () => handleApprove(selectedLog!.paymentProofId!) : undefined}
         onReject={async (reason) => {
