@@ -22,13 +22,13 @@ export function FinesHeader({
       />
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 text-[#333333]">
         <div className="flex gap-2">
 
           {/* NOTE: THIS IS THE BUTTON TO TRIGGER BULK GENERATION OF FINES CONTAINER FOR ALL STUDENTS OR MEMBERS THAT ARE ALREADY ADDED IN THE DATABASE */}
           {/* USING THIS MEANS A BRUTEFORCE SINCE A FINES CONTAINER SHOULD BE MADE TOGETHER WITH THE CLEARANCE AS SOON AS A STUDENT WAS ADDED TO THE SYSTEM */}
           {/* <Button size="sm" onClick={onBulkGenerate}>
-            Create Fines to All Users
+            Seed Fines to All Users
           </Button> */}
           
           <Button variant="outline" size="lg" onClick={onAddFineType}>

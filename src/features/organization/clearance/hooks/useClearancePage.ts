@@ -71,6 +71,7 @@ export function useClearancePage(orgId: string | undefined) {
       // await approvePayment(reviewTarget.clearanceId, [reviewTarget.referenceId])
       const result = await _approvePayment(payment);
       setReceiptData(result?.receipt!);
+      setReceiptOpen(true);
       setPaymentReviewOpen(false)
     } finally {
       setIsProcessing(false)
@@ -143,8 +144,13 @@ export function useClearancePage(orgId: string | undefined) {
       lineItems: payment?.metadata.items?.map((p)=>({ label: p.title, amount: p.amount })) || [],
       amountPaid: payment?.amount || 0,
       paymentMethod: payment?.paymentMethod,
+      receiptContent: payment?.imageUrl,
+      studentName: payment?.userName,
+      studentId: payment?.studentId,
+      typeLabel: payment?.paymentType,
       referenceNo: payment?.referenceNumber || "",
-      submittedAt: payment?.submittedAt.toDate().toISOString(),
+      submittedAt: payment?.submittedAt.toDate().toISOString().slice(0, 10),
+      notes: payment?.notes,
       approveConfirmMessage: "This item will be marked as cleared.",
     }
   }, [payment, clearances])

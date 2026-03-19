@@ -69,7 +69,7 @@ export const usePaymentApproval = () => {
                 }
             }
         } catch (error) {
-            console.error("Failed payment approval.")
+            console.error("Failed payment approval.", error)
             toast.error("Failed payment approval, please contact the developer")
             
         }
@@ -106,8 +106,8 @@ export const usePaymentApproval = () => {
                     const paymentHistory = await getPendingPaymentHistory(parentFine, "fines");
                     await rejectPaymentHistory(paymentHistory!.id, verifier, "fines", parentFine, fineItemIds, reason);
                     await markFineItemsAsNotPending(parentFine, fineItemIds);
+                    await recalculateFines(parentFine,0);
                 }
-                await recalculateFines(parentFine,0);
                 await recalculateClearanceStatus(paymentOwner.id!);
                 
                 return {

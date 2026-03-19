@@ -125,11 +125,13 @@ export const addOfflineFinesPayment = async (fines: StudentFines, type:string, m
             await markFineItemsAsPaid(fines.id!);
 
             const clearanceRef = doc(db, 'clearanceStatus', fines.userId);
-            await updateDoc(clearanceRef, {
-                [`blockingItems.${fines.id}.balance`]: 0,
-                [`blockingItems.${fines.id}.status`]: "paid",
-                [`blockingItems.${fines.id}.pendingReview`]: false,
+            for (const item of fineItems) {
+                await updateDoc(clearanceRef, {
+                [`blockingItems.${item.id}.balance`]: 0,
+                [`blockingItems.${item.id}.status`]: "paid",
+                [`blockingItems.${item.id}.pendingReview`]: false,
             });
+            }
 
             await recalculateClearanceStatus(clearanceRef.id)
         }

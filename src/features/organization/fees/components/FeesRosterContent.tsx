@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataPagination } from "@/components/organization/DataPagination";
-import { StatCards } from "@/features/organization/fees/components/StatCards";
+// import { StatCards } from "@/features/organization/fees/components/StatCards";
+import { StatCards } from "../local-components/StatCards";
 import { SearchFilterBar } from "@/features/organization/fees/components/SearchFilterBar";
 import { ViewToggle } from "@/components/organization/ViewToggle";
 import { SubmissionsView } from "@/features/organization/fees/components/SubmissionView";
@@ -17,6 +18,7 @@ import { ManualPaymentDialog } from "@/features/organization/fees/components/Man
 import { PaymentDetailDialog } from "@/features/organization/fees/components/PaymentDetailDialog";
 import { RejectDialog } from "@/features/organization/fees/components/RejectDialog";
 import type { Fee, PaymentLog } from "@/features/organization/fees/types";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +32,7 @@ import {
 
 import { StudentFeeRow } from "../hooks/useFeesRoster";
 import { useFeesRosterUI } from "../hooks/useFeesRosterUI";
+import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -111,7 +114,7 @@ export function FeesRosterContent({
   } = actions;
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
         <Button
           variant="ghost"
@@ -252,7 +255,29 @@ export function FeesRosterContent({
         }}
         onSuccess={handleAddManualLog}
       />
-      <PaymentDetailDialog
+
+      <PaymentReviewDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        title={selectedLog?.status === "pending" ? "Review Payment" : "Payment Details"}
+        description={selectedLog?.status === "pending" ? "Review the payment details and approve or reject the payment." : "View the payment details."}
+        data={{
+          studentId: (selectedLog as any)?.studentId || "",
+          studentName: (selectedLog as any)?.studentName || "",
+          amountPaid: (selectedLog)?.amount || 0,
+          paymentMethod: (selectedLog)?.paymentMethod || "",
+          submittedAt: selectedLog?.paidAt ? (selectedLog as any)!.paidAt.toDate().toISOString().slice(0, 10) : "",
+          receiptContent: (selectedLog as any)?.imageUrl || "",
+          referenceNo: selectedLog?.gcashReference || "",
+          typeLabel: "FEES",
+        }}
+        onApprove={selectedLog?.status === "pending" ? () => handleApprove(selectedLog!.paymentProofId!) : undefined}
+        onReject={selectedLog?.status === "pending" ? handleReject : undefined}
+        isProcessing={isSubmitting}
+      />
+
+
+      {/* <PaymentDetailDialog
         feeId={fee.id!}
         log={selectedLog}
         open={detailOpen}
@@ -263,8 +288,8 @@ export function FeesRosterContent({
           setRejectOpen(true);
         }}
         isSubmitting={isSubmitting}
-      />
-      <RejectDialog
+      /> */}
+      {/* <RejectDialog
         log={selectedLog}
         open={rejectOpen}
         onOpenChange={setRejectOpen}
@@ -272,7 +297,7 @@ export function FeesRosterContent({
         onReasonChange={setRejectionReason}
         onConfirm={() => handleReject(selectedLog!.paymentProofId!)}
         isSubmitting={isSubmitting}
-      />
+      /> */}
     </div>
   );
 }

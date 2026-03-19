@@ -50,14 +50,14 @@ export default function PaymentsPage() {
       total: selectedPayment?.amount || 0,
       date: selectedPayment?.submittedAt.toDate().toLocaleDateString() || "N/A",
       verifiedByName: selectedPayment?.verifiedByName || "N/A",
-      paymentMethod: selectedPayment?.paymentMethod || "N/A",
+      paymentMethod: selectedPayment?.paymentMethod || "Cash (Manual)",
     });
     setReceiptOpen(true)
     
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 pb-24 lg:pb-0">
 
       <PageHeader
         variant="admin"
@@ -72,9 +72,13 @@ export default function PaymentsPage() {
       <Card className="border-border bg-card">
         <div className="px-6 pt-6">
           <Tabs value={dataView} onValueChange={v => handleTabChange(v as "submissions" | "unpaid")}>
-            <TabsList className="w-full flex-1">
-              <TabsTrigger value="submissions">Payment Submissions</TabsTrigger>
-              <TabsTrigger value="unpaid">Log Payments Manually</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 max-[510px]:h-auto max-[510px]:grid-cols-1">
+              <TabsTrigger value="submissions" className="w-full max-[510px]:justify-center">
+                Payment Submissions
+              </TabsTrigger>
+              <TabsTrigger value="unpaid" className="w-full max-[510px]:justify-center">
+                Log Payments Manually
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -123,6 +127,7 @@ export default function PaymentsPage() {
           amountPaid:   selectedPayment.amount,
           referenceNo:  selectedPayment.referenceNumber,
           submittedAt:  selectedPayment.submittedAt.toDate().toLocaleDateString(),
+          notes: selectedPayment.notes,
           receiptContent: selectedPayment.imageUrl,
           declineRemarks: selectedPayment.rejectionReason,
           reviewedBy:   selectedPayment.verifiedByName,

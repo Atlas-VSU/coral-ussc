@@ -14,8 +14,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { ReceiptData } from "./PaymentReceiptDialog"
+} from "./dialog"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -39,7 +38,7 @@ export interface PaymentReviewData {
   /** e.g. "Membership Fee", "Bulk Payment" */
   typeLabel?: string
 
-  // ── Covered items ─────────────────────────────────────────────────────────
+  // ── Covered items 	 ─────────────────────────────────────────────────────
   lineItems?: PaymentReviewLineItem[]
   /** When true, renders a "Total" row at the bottom of the items table */
   showLineItemsTotal?: boolean
@@ -132,27 +131,27 @@ export function PaymentReviewDialog({
     const renderRow = (item: PaymentReviewLineItem) => (
       <div key={item.label} className="flex items-center justify-between px-3 py-2">
         <div className="flex flex-col gap-0.5">
-          <span className="text-sm">{item.label}</span>
+          <span className="text-sm text-[#1B5E20] font-medium">{item.label}</span>
           {item.sublabel && (
-            <span className="text-xs capitalize text-muted-foreground">{item.sublabel}</span>
+            <span className="text-xs capitalize text-[#2E7D32]/70">{item.sublabel}</span>
           )}
         </div>
         {item.amount != null && (
-          <span className="text-sm font-medium">₱{item.amount.toLocaleString()}</span>
+          <span className="text-sm font-medium text-[#1B5E20]">₱{item.amount.toLocaleString()}</span>
         )}
       </div>
     )
 
     return (
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#1B5E20]">
           Payable Covered
         </p>
-        <div className="divide-y divide-border rounded-md border border-border">
+        <div className="divide-y divide-[#2E7D32]/30 rounded-md border border-[#2E7D32]/30 bg-white">
           {hasGroups
             ? uniqueGroups.map(group => (
                 <div key={group}>
-                  <div className="border-b border-border bg-muted/40 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+                  <div className="border-b border-[#2E7D32]/30 bg-[#AED581]/20 px-3 py-1.5 text-xs font-semibold text-[#1B5E20]">
                     {group}
                   </div>
                   {items.filter(i => i.group === group).map(renderRow)}
@@ -160,9 +159,9 @@ export function PaymentReviewDialog({
               ))
             : items.map(renderRow)}
           {data.showLineItemsTotal && (
-            <div className="flex items-center justify-between bg-muted/40 px-3 py-2">
-              <span className="text-sm font-semibold">Total</span>
-              <span className="text-sm font-semibold">₱{total.toLocaleString()}</span>
+            <div className="flex items-center justify-between bg-[#AED581]/20 px-3 py-2">
+              <span className="text-sm font-semibold text-[#1B5E20]">Total</span>
+              <span className="text-sm font-semibold text-[#1B5E20]">₱{total.toLocaleString()}</span>
             </div>
           )}
         </div>
@@ -178,10 +177,14 @@ export function PaymentReviewDialog({
     <>
       {/* ── Main review dialog ─────────────────────────────────────────── */}
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg bg-white border-[#2E7D32]/30">
           <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>{description}</DialogDescription>
+            <DialogTitle className="text-[#1B5E20] font-bold">
+              {title}
+            </DialogTitle>
+            <DialogDescription className="text-[#2E7D32]/70">
+              {description}
+            </DialogDescription>
           </DialogHeader>
 
           {data && (
@@ -192,21 +195,21 @@ export function PaymentReviewDialog({
                   <div className="grid grid-cols-2 gap-3">
                     {data.studentName && (
                       <div>
-                        <Label className="text-muted-foreground">Student</Label>
-                        <p className="mt-0.5 text-sm font-medium">{data.studentName}</p>
+                        <Label className="text-[#1B5E20] font-semibold">Student</Label>
+                        <p className="mt-0.5 text-sm font-medium text-[#1B5E20]">{data.studentName}</p>
                         {data.studentId && (
-                          <p className="text-xs text-muted-foreground">{data.studentId}</p>
+                          <p className="text-xs text-[#2E7D32]/70">{data.studentId}</p>
                         )}
                       </div>
                     )}
                     {data.typeLabel && (
                       <div>
-                        <Label className="text-muted-foreground">Type</Label>
-                        <p className="mt-0.5 text-sm font-medium">{data.typeLabel.toUpperCase()}</p>
+                        <Label className="text-[#1B5E20] font-semibold">Type</Label>
+                        <p className="mt-0.5 text-sm font-medium text-[#1B5E20]">{data.typeLabel.toLocaleUpperCase() === "BULK"? `${data.typeLabel.toLocaleUpperCase()} (Fees and Fines)`: data.typeLabel.toLocaleUpperCase()}</p>
                       </div>
                     )}
                   </div>
-                  <Separator />
+                  <Separator className="bg-[#2E7D32]/30" />
                 </>
               )}
 
@@ -215,7 +218,7 @@ export function PaymentReviewDialog({
 
               {/* Receipt placeholder */}
              {data.paymentMethod !== "cash" && data.receiptContent && (
-                <div className="group relative h-48 w-full rounded-md border bg-muted/30">
+                <div className="group relative h-48 w-full rounded-md border-[#2E7D32]/30 border bg-white">
                   <img
                     src={data.receiptContent}
                     alt="Receipt"
@@ -236,36 +239,36 @@ export function PaymentReviewDialog({
                 </div>
               )}
 
-              <Separator />
+              <Separator className="bg-[#2E7D32]/30" />
 
               {/* Payment details grid */}
               <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                 {data.paymentMethod && (
                   <div>
-                    <Label className="text-muted-foreground">Payment Method</Label>
-                    <p className="mt-0.5 text-sm font-medium">{data.paymentMethod.toUpperCase()}</p>
+                    <Label className="text-[#1B5E20] font-semibold">Payment Method</Label>
+                    <p className="mt-0.5 text-sm font-medium text-[#1B5E20]">{data.paymentMethod.toUpperCase()}</p>
                   </div>
                 )}
                 {data.referenceNo && (
                   <div>
-                    <Label className="text-muted-foreground">Reference No.</Label>
-                    <p className="mt-0.5 text-sm font-mono">{data.referenceNo}</p>
+                    <Label className="text-[#1B5E20] font-semibold">Reference No.</Label>
+                    <p className="mt-0.5 text-sm font-mono text-[#1B5E20]">{data.referenceNo}</p>
                   </div>
                 )}
                 <div>
-                  <Label className="text-muted-foreground">Amount Paid</Label>
-                  <p className="mt-0.5 text-sm font-medium">₱{data.amountPaid.toLocaleString()}</p>
+                  <Label className="text-[#1B5E20] font-semibold">Amount Paid</Label>
+                  <p className="mt-0.5 text-sm font-medium text-[#1B5E20]">₱{data.amountPaid.toLocaleString()}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Date Submitted</Label>
-                  <p className="mt-0.5 text-sm">{data.submittedAt}</p>
+                  <Label className="text-[#1B5E20] font-semibold">Date Submitted</Label>
+                  <p className="mt-0.5 text-sm text-[#1B5E20]">{data.submittedAt}</p>
                 </div>
               </div>
 
               {data.notes && (
                 <div>
-                  <Label className="text-muted-foreground">Student Notes</Label>
-                  <p className="mt-1 rounded-md border border-border bg-muted/30 p-3 text-sm text-foreground">
+                  <Label className="text-[#1B5E20] font-semibold">Student Notes</Label>
+                  <p className="mt-1 rounded-md border border-[#2E7D32]/30 bg-white p-3 text-sm text-[#1B5E20]">
                     {data.notes}
                   </p>
                 </div>
@@ -274,8 +277,8 @@ export function PaymentReviewDialog({
               {/* Decline remarks (read-only, shown for declined payments) */}
               {data.declineRemarks && (
                 <div>
-                  <Label className="text-muted-foreground">Decline Remarks</Label>
-                  <p className="mt-1 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                  <Label className="text-[#1B5E20] font-semibold">Decline Remarks</Label>
+                  <p className="mt-1 rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
                     {data.declineRemarks}
                   </p>
                 </div>
@@ -283,7 +286,7 @@ export function PaymentReviewDialog({
 
               {/* Reviewed-by info */}
               {(data.reviewedBy || data.reviewedAt) && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-[#2E7D32]/70">
                   Reviewed{data.reviewedAt ? ` on ${data.reviewedAt}` : ""}
                   {data.reviewedBy ? ` by ${data.reviewedBy}` : ""}
                 </p>
@@ -294,14 +297,14 @@ export function PaymentReviewDialog({
                   <>
                     <Button
                       variant="outline"
-                      className="gap-1.5 text-destructive hover:text-destructive"
+                      className="gap-1.5 text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
                       onClick={() => setRejectOpen(true)}
                       disabled={isProcessing}
                     >
                       <XCircle className="size-4" /> Reject
                     </Button>
                     <Button 
-                      className="gap-1.5" 
+                      className="gap-1.5 bg-linear-to-r from-[#8BC34A] via-[#6ac947] to-[#55c72c] text-black hover:opacity-90" 
                       onClick={() => setApproveConfirmOpen(true)}
                       disabled={isProcessing}
                     >
@@ -310,12 +313,20 @@ export function PaymentReviewDialog({
                   </>
                 ) : (
                     <>
-                  {!data.declineRemarks && onViewReceipt && (
-                    <Button variant="outline" className="gap-1.5" onClick={()=>handleViewReceipt(true)}>
+                  {!data.declineRemarks && (
+                    <Button 
+                      variant="outline" 
+                      className="gap-1.5 border-[#2E7D32]/30 text-[#1B5E20] hover:bg-[#AED581]/20" 
+                      onClick={()=>handleViewReceipt(true)}
+                    >
                       View Receipt
                     </Button>
                   )}
-                  <Button variant="outline" className="gap-1.5" onClick={() => onOpenChange(false)}>
+                  <Button 
+                    variant="outline" 
+                    className="gap-1.5 border-[#2E7D32]/30 text-[#1B5E20] hover:bg-white" 
+                    onClick={() => onOpenChange(false)}
+                  >
                     Close
                   </Button>
                     </>
@@ -328,18 +339,27 @@ export function PaymentReviewDialog({
 
       {/* ── Approve confirmation ───────────────────────────────────────── */}
       <Dialog open={approveConfirmOpen} onOpenChange={setApproveConfirmOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm bg-white border-[#2E7D32]/30">
           <DialogHeader>
-            <DialogTitle>Confirm Approval</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-[#1B5E20] font-bold">Confirm Approval</DialogTitle>
+            <DialogDescription className="text-[#2E7D32]/70">
               {data?.approveConfirmMessage ?? "Are you sure you want to approve this payment?"}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setApproveConfirmOpen(false)} disabled={isProcessing}>
+            <Button 
+              variant="outline" 
+              className="border-[#2E7D32]/30 text-[#1B5E20] hover:bg-white" 
+              onClick={() => setApproveConfirmOpen(false)} 
+              disabled={isProcessing}
+            >
               Cancel
             </Button>
-            <Button onClick={handleApproveConfirmed} disabled={isSubmitting} className="gap-2">
+            <Button 
+              onClick={handleApproveConfirmed} 
+              disabled={isSubmitting} 
+              className="gap-2 bg-linear-to-r from-[#8BC34A] via-[#6ac947] to-[#55c72c] text-black hover:opacity-90"
+            >
               {isSubmitting && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
               Yes, Approve
             </Button>
@@ -352,36 +372,37 @@ export function PaymentReviewDialog({
         open={rejectOpen}
         onOpenChange={v => { setRejectOpen(v); if (!v) setRejectReason("") }}
       >
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm bg-white border-[#2E7D32]/30">
           <DialogHeader>
-            <DialogTitle>Reject Payment</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-[#1B5E20] font-bold">Reject Payment</DialogTitle>
+            <DialogDescription className="text-[#2E7D32]/70">
               Provide a reason for rejecting this payment submission.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="prd-rejectReason">Reason for Rejection</Label>
+            <Label htmlFor="prd-rejectReason" className="text-[#1B5E20] font-semibold">Reason for Rejection</Label>
             <Textarea
               id="prd-rejectReason"
               placeholder="e.g. Receipt image is unclear. Please resubmit."
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}
               rows={3}
+              className="!bg-white text-black placeholder:text-gray-600 border-[#2E7D32]/30"
             />
           </div>
           <DialogFooter>
             <Button
               variant="outline"
+              className="border-[#2E7D32]/30 text-[#1B5E20] hover:bg-white"
               onClick={() => { setRejectOpen(false); setRejectReason("") }}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button
-              variant="destructive"
               disabled={!rejectReason.trim() || isSubmitting}
               onClick={handleRejectConfirmed}
-              className="gap-2"
+              className="gap-2 bg-red-600 text-white hover:bg-red-700"
             >
               {isSubmitting && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
               Reject

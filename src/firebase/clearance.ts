@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, query, serverTimestamp, Timestamp, updateDoc, where, writeBatch } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, orderBy, query, serverTimestamp, Timestamp, updateDoc, where, writeBatch } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { BlockingItem, ClearanceStatus } from "@/features/organization/clearance/types";
 import { approvePaymentTransaction, checkFeeStatusForClearance, fetchFee, recordBulkManualPaymentAndUpdateClearance, recordManualPaymentAndUpdateClearance, rejectPaymentTransaction } from "./fees";
@@ -22,7 +22,8 @@ export const fetchClearanceDocuments = async (orgId: string) => {
             const q = query(
                 clearanceRef, 
                 where('orgId', '==', orgId), 
-                where('isArchived', '==', false)
+                where('isArchived', '==', false),
+                orderBy('updatedAt', 'desc')
             );
             const snapshot = await getDocs(q);
             return snapshot.docs.map(doc => ({ 
@@ -177,7 +178,7 @@ export const addStudentWithClearance = async (studentId: string,studentData: any
         };
 
         // 3. Set both documents in the batch
-        batch.set(studentRef, studentData); // Create the user
+      batch.set(studentRef, { ...studentData, createdAt: now, isDeleted:false }); // Create the user
         batch.set(clearanceRef, clearanceData); // Create their clearance profile
 
         // 4. Commit to Firestore

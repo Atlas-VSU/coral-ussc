@@ -55,7 +55,7 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
   } = useClearancePage(orgId)
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 pb-24 lg:pb-0">
       <PageHeader
       variant="admin"
         title="Clearance Management"

@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-
+// import { StatCard } from "@/features/organization/fees/local-components/StatCard";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { countFinesOfStudents, countStudentsWithFines, countUnsettleFinesOfStudents, getAllFines } from "@/firebase/fines/read/fines";
 import { FineBreakdownDialog } from "@/features/organization/fines/components/FineBreakdownDialog";
@@ -50,7 +50,9 @@ export default function FinesPage() {
     handleStatusFilterChange,
     totalStudentsWithFines,
     totalUnsettled,
-    markStatusChanged,
+    totalCollectedFines,
+    totalUnpaidFines
+    // markStatusChanged,
   } = useFines({ itemsPerPage: ITEMS_PER_PAGE });
 
   const {
@@ -91,12 +93,12 @@ export default function FinesPage() {
   };
 
   const handleSuccess = async () => {
-    markStatusChanged();
+    // markStatusChanged();
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex flex-col gap-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen">
+      <div className="flex flex-col gap-6 max-w-7xl mx-auto sm:px-6 lg:px-8 py-8">
 
         <FinesHeader
           onAddFineType={handleAddFineType}
@@ -106,8 +108,8 @@ export default function FinesPage() {
         {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-2">
           <StatCard title="Students w/ Fines" value={totalStudentsWithFines} description="Have at least one fine" icon={Users} />
-          {/* <StatCard title="Outstanding Balance" value={`₱${999}`} description="Total unpaid amount" icon={AlertTriangle} />
-          <StatCard title="Total Collected" value={`₱${999}`} description="Total approved payments" icon={Banknote} /> */}
+          <StatCard title="Outstanding Balance" value={`₱${totalUnpaidFines}`} description="Total unpaid amount" icon={AlertTriangle} />
+          <StatCard title="Total Collected" value={`₱${totalCollectedFines}`} description="Total approved payments" icon={Banknote} />
           <StatCard title="Unsettled" value={totalUnsettled} description="Students with outstanding fines" icon={CircleDollarSign} />
         </div>
 

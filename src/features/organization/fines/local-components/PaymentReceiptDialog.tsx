@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./dialog"
 import { Separator } from "@/components/ui/separator"
 import { getCurrentUserData } from "@/firebase"
 import Image from "next/image"
@@ -49,23 +49,23 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
           <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
             body { font-family: sans-serif; display: flex; justify-content: center; padding: 32px; background: white; }
-            .receipt { border: 1px solid #e5e7eb; border-radius: 8px; padding: 24px; width: 340px; font-size: 14px; color: #000; }
+            .receipt { border: 1px solid #1B5E20; border-radius: 8px; padding: 24px; width: 340px; font-size: 14px; color: #1B5E20; }
             .header { text-align: center; margin-bottom: 16px; }
             .header img { width: 40px; height: 40px; margin: 0 auto 8px; display: block; }
             .org-name { font-weight: 700; font-size: 16px; }
             .university { font-size: 11px; margin-top: 2px; }
-            .subtitle { font-size: 11px; color: #6b7280; margin-top: 2px; }
-            hr { border: none; border-top: 1px solid #e5e7eb; margin: 12px 0; }
+            .subtitle { font-size: 11px; color: #2E7D32; margin-top: 2px; }
+            hr { border: none; border-top: 1px solid #2E7D32; margin: 12px 0; }
             .row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; gap: 8px; }
             .item-name { flex: 1; }
             .value { font-weight: 500; }
-            .section-label { font-size: 11px; color: #6b7280; margin-bottom: 4px; }
+            .section-label { font-size: 11px; color: #2E7D32; margin-bottom: 4px; }
             .student-name { font-weight: 500; font-size: 14px; }
             .student-id { font-size: 11px; margin-top: 2px; }
             .total-row { display: flex; justify-content: space-between; font-weight: 600; font-size: 16px; }
             .footer { text-align: center; font-size: 11px; }
             .footer p + p { margin-top: 4px; }
-            .footer-note { margin-top: 24px; text-align: center; font-size: 11px; color: #6b7280; }
+            .footer-note { margin-top: 24px; text-align: center; font-size: 11px; color: #2E7D32; }
           </style>
         </head>
         <body>
@@ -114,13 +114,13 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
   if (!data) return null
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md bg-white border-[#2E7D32]/30">
         <DialogHeader>
-          <DialogTitle>Payment Receipt</DialogTitle>
-          <DialogDescription>Preview before printing</DialogDescription>
+          <DialogTitle className="text-[#1B5E20] font-bold">Payment Receipt</DialogTitle>
+          <DialogDescription className="text-[#2E7D32]/70">Preview before printing</DialogDescription>
         </DialogHeader>
 
-        <div className="border rounded-lg p-6 bg-white text-black text-sm max-w-sm mx-auto">
+        <div className="border border-[#2E7D32]/30 rounded-lg p-6 bg-white text-black text-sm max-w-sm mx-auto">
           {/* Header */}
           <div className="text-center mb-4">
             <Image
@@ -130,74 +130,83 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
               height={40}
               className="mx-auto mb-2"
             />
-            <p className="font-bold text-lg">University Supreme Student Council</p>
-            <p className="text-xs">Visayas State University - Baybay Main Campus</p>
-            <p className="text-xs text-muted-foreground">Official Payment Receipt</p>
+            <p className="font-bold text-lg text-[#1B5E20]">University Supreme Student Council</p>
+            <p className="text-xs text-[#2E7D32]/70">Visayas State University - Baybay Main Campus</p>
+            <p className="text-xs text-[#2E7D32]/70">Official Payment Receipt</p>
           </div>
 
-          <Separator className="my-3" />
+          <Separator className="my-3 bg-[#2E7D32]/30" />
 
           {/* Receipt info */}
-          <div className="flex justify-between text-xs">
+          <div className="flex justify-between text-xs text-[#1B5E20]">
             <span>Receipt No.</span>
             <span className="font-medium">{data.receiptId}</span>
           </div>
-          <div className="flex justify-between text-xs mt-1">
+          <div className="flex justify-between text-xs mt-1 text-[#1B5E20]">
             <span>Date</span>
             <span>{data.date}</span>
           </div>
 
-          <Separator className="my-3" />
+          <Separator className="my-3 bg-[#2E7D32]/30" />
 
           {/* Student info */}
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Received From</p>
-            <p className="font-medium">{data.studentName}</p>
-            <p className="text-xs">{data.studentId}</p>
+            <p className="text-xs text-[#2E7D32]/70">Received From</p>
+            <p className="font-medium text-[#1B5E20]">{data.studentName}</p>
+            <p className="text-xs text-[#1B5E20]">{data.studentId}</p>
           </div>
 
-          <Separator className="my-3" />
+          <Separator className="my-3 bg-[#2E7D32]/30" />
 
           {/* Items */}
           <div className="space-y-1.5">
-            <p className="text-xs text-muted-foreground mb-1">Items Paid</p>
+            <p className="text-xs text-[#2E7D32]/70 mb-1">Items Paid</p>
             {data.items.map((item, idx) => (
-              <div key={idx} className="flex justify-between text-xs gap-2">
+              <div key={idx} className="flex justify-between text-xs gap-2 text-[#1B5E20]">
                 <span className="flex-1 leading-snug">
                   {item.name}
-                  <span className="text-muted-foreground"> ({item.type})</span>
+                  <span className="text-[#2E7D32]/70"> ({item.type})</span>
                 </span>
                 <span className="shrink-0 font-medium">₱{item.amount.toLocaleString()}</span>
               </div>
             ))}
           </div>
 
-          <Separator className="my-3" />
+          <Separator className="my-3 bg-[#2E7D32]/30" />
 
           {/* Total */}
-          <div className="flex justify-between font-semibold text-base">
+          <div className="flex justify-between font-semibold text-base text-[#1B5E20]">
             <span>Total Paid</span>
             <span>₱{data.total.toLocaleString()}</span>
           </div>
 
-          <Separator className="my-4" />
+          <Separator className="my-4 bg-[#2E7D32]/30" />
 
           {/* Footer */}
-          <div className="text-center text-xs space-y-1">
+          <div className="text-center text-xs space-y-1 text-[#1B5E20]">
             <p>Payment Method: {data.paymentMethod}</p>
             <p>Verified by {data.verifiedByName}</p>
           </div>
 
-          <div className="mt-6 text-center text-xs text-muted-foreground">
+          <div className="mt-6 text-center text-xs text-[#2E7D32]/70">
             This serves as an official proof of payment.
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button 
+            variant="outline" 
+            className="border-[#2E7D32]/30 text-[#1B5E20] hover:bg-white"
+            onClick={() => onOpenChange(false)}
+          >
             Close
           </Button>
-          <Button onClick={handlePrint}>Print</Button>
+          <Button 
+            className="bg-linear-to-r from-[#8BC34A] via-[#6ac947] to-[#55c72c] text-black hover:opacity-90"
+            onClick={handlePrint}
+          >
+            Print
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -6,7 +6,7 @@ import LoginCard from "./components/LoginCard";
 
 export function HomePageLayout() {
   return (
-    <div className="flex min-h-svh flex-col relative">
+    <div className="flex min-h-svh flex-col relative bg-white">
       <div>
         {/*Desktop layout*/}
         <div
