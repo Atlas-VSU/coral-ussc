@@ -25,6 +25,7 @@ interface LogPaymentDialogProps {
   onLogPayment: () => void
   studentProgram?: Program | null | undefined
   isLoading: boolean
+  isSubmitting: boolean
 }
 
 const DUE_TYPES = ["fees", "fines"] as const
@@ -33,7 +34,7 @@ export function LogPaymentDialog({
   open, onOpenChange, record,
   checkedDues, selectedDues, selectedTotal,
   paymentDate, onPaymentDateChange,
-  onToggleDue, onToggleAll, onLogPayment, studentProgram, isLoading 
+  onToggleDue, onToggleAll, onLogPayment, studentProgram, isLoading, isSubmitting 
 }: LogPaymentDialogProps) {
 
   const handleToggleType = (type: string) => {
@@ -174,11 +175,11 @@ export function LogPaymentDialog({
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button
-            disabled={selectedDues.length === 0 || isLoading}
+            disabled={selectedDues.length === 0 || isLoading || isSubmitting}
             className="gap-1.5 bg-[#1B5E20] text-white hover:bg-[#2E7D32] dark:bg-green-700 dark:hover:bg-green-600"
             onClick={onLogPayment}
           >
-            {isLoading ? (
+            {isLoading || isSubmitting ? (
               <>
                 <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
                 Logging Payment...

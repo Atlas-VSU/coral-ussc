@@ -318,11 +318,11 @@ export const CACHE_DURATIONS = {
     RECENT_MEMBERS: 30 * 60 * 1000, // 30 minutes
   },
   UI_STATE: 30 * 1000, // 30 seconds for UI state
-  FEES: 5 * 60 * 1000, // 5 minutes
-  FINES: 5 * 60 * 1000, // 5 minutes
-  PAYMENTS: 2 * 60 * 1000, // 2 minutes (payments change more frequently)
-  PAYMENT_HISTORY: 5 * 60 * 1000, // 5 minutes
-  CLEARANCE: 5 * 60 * 1000, // 5 minutes
+  FEES: 20 * 60 * 1000, // 20 minutes
+  FINES: 20 * 60 * 1000, // 20 minutes
+  PAYMENTS: 10 * 60 * 1000, // 10 minutes (payments change more frequently)
+  PAYMENT_HISTORY: 10 * 60 * 1000, // 10 minutes
+  CLEARANCE: 10 * 60 * 1000, // 10 minutes
 };
 
 // Structured cache key helpers — use these everywhere instead of raw strings

@@ -37,7 +37,7 @@ export function usePaymentsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [reviewOpen, setReviewOpen] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>("table")
-  const [loading, setLoading] = useState(isLoading)
+  const [loading, setLoading] = useState(false)
 
   // ── Unpaid ────────────────────────────────────────────────────────────────
   const [unpaidRecords, setUnpaidRecords] = useState<StudentUnpaidRecord[]>([])

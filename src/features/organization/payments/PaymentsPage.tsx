@@ -158,6 +158,7 @@ export default function PaymentsPage() {
         onLogPayment={handleLogPayment}
         studentProgram={studentProgram}
         isLoading = {isLoading}
+        isSubmitting={loading}
       />
 
       {/* ── Receipt Dialog ── */}
