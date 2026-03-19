@@ -138,8 +138,8 @@ export function usePaymentsPage() {
     try {
       const result = await _approvePayment(payment);
       setReceiptData(result?.receipt!);
-      setDetailOpen(false)
       setReceiptOpen(true)
+      setDetailOpen(false)
       setLoading(false)
       toast.success("Payment approved successfully")
     } catch (error) {
@@ -158,7 +158,9 @@ export function usePaymentsPage() {
 
   const handleDecline = useCallback(async(payment: ProofOfPayment, reason: string) => {
     try {
+      setLoading(true);
       await _rejectPayment(payment, reason);
+      setLoading(false)
       toast.success("Payment declined successfully")
     }catch(error){
       console.error("Error declining payment:", error);
