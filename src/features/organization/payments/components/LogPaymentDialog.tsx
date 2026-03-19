@@ -1,6 +1,5 @@
 import { PenLine } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
@@ -28,12 +27,26 @@ interface LogPaymentDialogProps {
   isLoading: boolean
 }
 
+const DUE_TYPES = ["fees", "fines"] as const
+
 export function LogPaymentDialog({
   open, onOpenChange, record,
   checkedDues, selectedDues, selectedTotal,
   paymentDate, onPaymentDateChange,
-  onToggleDue, onToggleAll, onLogPayment,studentProgram, isLoading
+  onToggleDue, onToggleAll, onLogPayment, studentProgram, isLoading
 }: LogPaymentDialogProps) {
+
+  const handleToggleType = (type: string) => {
+    if (!record) return
+    const duesOfType = record.dues.filter(d => d.type === type)
+    const allChecked = duesOfType.every(d => checkedDues.has(d.id))
+    duesOfType.forEach(d => {
+      const isChecked = checkedDues.has(d.id)
+      if (allChecked && isChecked) onToggleDue(d.id)
+      if (!allChecked && !isChecked) onToggleDue(d.id)
+    })
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
@@ -68,36 +81,64 @@ export function LogPaymentDialog({
 
             {/* ── Payable items ── */}
             <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-bold uppercase tracking-wider text-foreground">Payable Items</p>
-                <button
-                  type="button"
-                  className="text-xs text-primary hover:underline"
-                  onClick={onToggleAll}
-                >
-                  {record.dues.every(d => checkedDues.has(d.id)) ? "Deselect All" : "Select All"}
-                </button>
-              </div>
+              <p className="text-xs font-bold uppercase tracking-wider text-foreground">Payable Items</p>
 
-              <div className="flex flex-col gap-1.5">
-                {record.dues.map(due => (
-                  <label
-                    key={due.id}
-                    className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 cursor-pointer hover:bg-muted/40 transition-colors has-[button[data-state=checked]]:border-primary/40 has-[button[data-state=checked]]:bg-primary/5"
-                  >
-                    <Checkbox
-                      checked={checkedDues.has(due.id)}
-                      onCheckedChange={() => onToggleDue(due.id)}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground leading-snug">{due.name}</p>
-                      <Badge variant="outline" className="mt-1 text-[10px] capitalize">{due.type}</Badge>
+              <div className="flex flex-col gap-3">
+                {DUE_TYPES.map(type => {
+                  const duesOfType = record.dues.filter(d => d.type === type)
+                  if (duesOfType.length === 0) return null
+
+                  const allChecked = duesOfType.every(d => checkedDues.has(d.id))
+                  const someChecked = duesOfType.some(d => checkedDues.has(d.id))
+                  const totalBalance = duesOfType.reduce((sum, d) => sum + d.balance, 0)
+
+                  return (
+                    <div
+                      key={type}
+                      className={`flex flex-col gap-0 rounded-lg border transition-colors ${
+                        allChecked
+                          ? "border-primary/40 bg-primary/5"
+                          : someChecked
+                          ? "border-primary/20 bg-primary/[0.02]"
+                          : "border-border"
+                      }`}
+                    >
+                      <label className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/40 transition-colors rounded-lg">
+                        <Checkbox
+                          checked={allChecked}
+                          data-state={allChecked ? "checked" : someChecked ? "indeterminate" : "unchecked"}
+                          onCheckedChange={() => handleToggleType(type)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-foreground capitalize">{type}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {duesOfType.length} item{duesOfType.length !== 1 ? "s" : ""}
+                          </p>
+                        </div>
+                        <span className="text-sm font-bold text-foreground shrink-0">
+                          ₱{totalBalance.toLocaleString()}
+                        </span>
+                      </label>
+
+                      {/* Breakdown */}
+                      <div className="flex flex-col gap-0 border-t border-border mx-4 mb-3">
+                        {duesOfType.map((due, i) => (
+                          <div
+                            key={due.id}
+                            className={`flex items-center justify-between gap-2 py-2 text-xs ${
+                              i !== duesOfType.length - 1 ? "border-b border-border/50" : ""
+                            }`}
+                          >
+                            <p className="text-muted-foreground truncate">{due.name}</p>
+                            <span className="text-muted-foreground shrink-0">
+                              ₱{due.balance.toLocaleString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <span className="text-sm font-semibold text-foreground shrink-0">
-                      ₱{due.balance.toLocaleString()}
-                    </span>
-                  </label>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
@@ -138,16 +179,16 @@ export function LogPaymentDialog({
             onClick={onLogPayment}
           >
             {isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
-                  Logging Payment...
-                </>
-              ) : (
-                <>
-                  <PenLine className="size-3.5" />
-                  Log Payment
-                </>
-              )}
+              <>
+                <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
+                Logging Payment...
+              </>
+            ) : (
+              <>
+                <PenLine className="size-3.5" />
+                Log Payment
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -5,7 +5,7 @@ import Link from "next/link";
 export function DesktopHeader() {
   return (
     <div>
-      <header className="absolute m-8 inset-3 top-0 z-50 px-6 sm:px-10 py-0 flex items-center justify-between bg-transparent h-20">
+      <header className="absolute m-8 inset-3 top-0 z-30 px-6 sm:px-10 py-0 flex items-center justify-between bg-transparent h-20">
         <div className="inline-flex items-center gap-4 group">
           <img
             src="/images/main-banner-2.png"
@@ -42,12 +42,12 @@ export function DesktopHeader() {
             Login
           </Link> */}
 
-          <Link
+          {/* <Link
             href="/payment"
             className="px-4 py-2 rounded-lg bg-linear-to-r from-[#8BC34A] to-[#2E7D32] text-white hover:bg-[#2E7D32] transition-colors uppercase font-semibold"
           >
             Payment
-          </Link>
+          </Link> */}
         </nav>
       </header>
     </div>

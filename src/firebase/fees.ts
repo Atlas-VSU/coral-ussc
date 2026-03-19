@@ -564,9 +564,9 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                 clearanceUpdates[`blockingItems.${refId}.status`] = newBalance <= 0 ? "paid" : "unpaid";
                 clearanceUpdates[`blockingItems.${refId}.pendingReview`] = false;
             }
-
-            await recalculateFines(fineParentId, null, totalFinesPaid, null, null);
-
+            if (fineParentId !== "" && totalFinesPaid > 0) {
+                await recalculateFines(fineParentId, null, totalFinesPaid, null, null);
+            }
             if (Object.keys(clearanceUpdates).length > 0) {
                 transaction.update(clearanceRef, clearanceUpdates);
             }
