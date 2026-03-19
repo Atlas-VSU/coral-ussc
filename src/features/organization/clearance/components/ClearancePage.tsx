@@ -16,6 +16,7 @@ import { useClearancePage } from "../hooks/useClearancePage"
 import { ClearanceCard } from "./ClearanceCard"
 import { ClearanceTable } from "./ClearanceTable"
 import { LogManualPaymentDialog } from "./LogManualPaymentDialog"
+import { CardGridSkeleton } from "@/components/organization/Skeletons"
 
 interface ClearancePageProps {
   orgId: string | undefined
@@ -87,18 +88,22 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
           </CardHeader>
           <CardContent>
             {viewMode === "card" ? (
-              paginated.length === 0 ? (
+              !loading && paginated.length === 0 ? (
                 <p className="py-12 text-center text-sm text-muted-foreground">No clearance records found.</p>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {paginated.map(c => (
-                    <ClearanceCard
-                      key={c.id}
-                      clearance={c}
-                      onReviewPayment={openPaymentReview}
-                      onLogPayment={openLogPayment}
-                    />
-                  ))}
+                  {loading && paginated.length === 0 ? (
+                    <CardGridSkeleton count={6} />
+                  ) : (
+                    paginated.map(c => (
+                      <ClearanceCard
+                        key={c.id}
+                        clearance={c}
+                        onReviewPayment={openPaymentReview}
+                        onLogPayment={openLogPayment}
+                      />
+                    ))
+                  )}
                 </div>
               )
             ) : (
@@ -106,6 +111,7 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
                 paginated={paginated}
                 onReviewPayment={openPaymentReview}
                 onLogPayment={openLogPayment}
+                isLoading={loading}
               />
             )}
             <DataPagination

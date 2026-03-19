@@ -97,6 +97,7 @@ export default function PaymentsPage() {
             onStatusChange={setFilterStatus}
             onViewChange={setViewMode}
             onOpenReview={openReview}
+            isLoading={isLoading}
           />
         ) : (
           <UnpaidTab
@@ -110,6 +111,7 @@ export default function PaymentsPage() {
             onSearchChange={setUnpaidSearch}
             onViewChange={setUnpaidViewMode}
             onOpenDetail={openUnpaidDetail}
+            isLoading={isLoading}
           />
         )}
       </Card>

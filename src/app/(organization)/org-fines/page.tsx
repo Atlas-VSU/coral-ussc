@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/features/organization/fines/local-components/Select";
 
 import { TableHeader, TableRow, TableHead, TableBody, TableCell, Table } from "@/components/ui/table";
+import { TableSkeleton, CardGridSkeleton } from "@/components/organization/Skeletons";
 import { ViewToggle } from "@/features/organization/fines/components/ViewToggle";
 import { BulkGenerationDialog } from "@/features/organization/fines/components/BulkGenerationDialog";
 import { FinesHeader } from "@/features/organization/fines/components/FinesHeader";
@@ -166,10 +167,12 @@ export default function FinesPage() {
 
           <CardContent>
             {isLoading ? (
-              <div className="py-8 text-center text-sm text-muted-foreground">
-                Loading…
-              </div>
-            ) : viewMode === "table" ? (
+            viewMode === "table" ? (
+              <TableSkeleton columns={7} rows={10} />
+            ) : (
+              <CardGridSkeleton count={6} />
+            )
+          ) : viewMode === "table" ? (
               <>
                 <div className="overflow-x-auto">
                   <Table>

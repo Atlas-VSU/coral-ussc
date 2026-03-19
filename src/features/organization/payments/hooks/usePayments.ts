@@ -11,11 +11,14 @@ import { StudentFineItem, StudentUnpaidRecord, UnpaidDue } from "../types";
 export function usePayments() {
   const [payments, setPayments] = useState<ProofOfPayment[]>([]);
   const [unpaidPayments, setUnpaidPayments] = useState<StudentUnpaidRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(true);
+  const [loadingUnpaid, setLoadingUnpaid] = useState(true);
+  
+  const isLoading = loadingSubmissions || loadingUnpaid;
 
   // ── Fetch proof of payments ───────────────────────────────────────────────
   const loadPayments = useCallback(async () => {
-    setIsLoading(true);
+    setLoadingSubmissions(true);
     try {
       const currentUser = await getCurrentUserData();
       if (!currentUser) throw new Error("Not Authenticated!");
@@ -25,13 +28,13 @@ export function usePayments() {
       toast.error("Could not load payments at this time.");
       console.error(error);
     } finally {
-      setIsLoading(false);
+      setLoadingSubmissions(false);
     }
   }, []);
 
   // ── Fetch unpaid fees + fines, then merge by student ─────────────────────
   const loadUnpaidPayments = useCallback(async () => {
-    setIsLoading(true);
+    setLoadingUnpaid(true);
     try {
       const [fees, fines] = await Promise.all([
         fetchUnpaidFeesForOrg(),
@@ -95,7 +98,7 @@ export function usePayments() {
       toast.error("Could not load unpaid payments.");
       console.error(error);
     } finally {
-      setIsLoading(false);
+      setLoadingUnpaid(false);
     }
   }, []);
 

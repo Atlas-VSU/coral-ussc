@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { Zap, ChevronRight, CircleDollarSign, Loader2, Plus } from "lucide-react"
 
+import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -13,6 +14,7 @@ import { Progress } from "@/components/ui/progress"
 import { SearchInput } from "@/components/organization/SearchInput"
 import { ViewToggle } from "@/components/organization/ViewToggle"
 import { DataPagination } from "@/components/organization/DataPagination"
+import { TableSkeleton, CardGridSkeleton } from "@/components/organization/Skeletons"
 
 import { useFeeList } from "@/features/organization/fees/hooks/useFeeList"
 import { usePaginatedMembers } from "@/features/organization/members/hooks/usePaginatedMembers"
@@ -46,8 +48,29 @@ export default function FeeListPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex flex-col gap-6">
+        <Card className="border-border">
+          <CardHeader>
+             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-2">
+                  <Skeleton className="h-5 w-[120px]" />
+                  <Skeleton className="h-4 w-[200px]" />
+                </div>
+                <div className="flex gap-2">
+                  <Skeleton className="h-9 w-64" />
+                  <Skeleton className="h-9 w-20" />
+                  <Skeleton className="h-9 w-32" />
+                </div>
+             </div>
+          </CardHeader>
+          <CardContent>
+            {viewMode === "card" ? (
+              <CardGridSkeleton count={6} />
+            ) : (
+              <TableSkeleton columns={5} rows={10} />
+            )}
+          </CardContent>
+        </Card>
       </div>
     )
   }
