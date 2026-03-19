@@ -35,7 +35,7 @@ export function determineEventStatus(
 export function getEventsNeedingStatusUpdate(events: Event[]): Event[] {
   return events.filter((event) => {
     // Skip archived events - they stay archived
-    if (event.status === "archived") return false;
+    if (event.status === "archived" || event.manuallyCompleted === true) return false;
 
     const currentStatus = event.status;
     const correctStatus = determineEventStatus(new Date(event.date));
