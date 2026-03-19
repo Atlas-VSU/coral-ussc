@@ -81,7 +81,8 @@ export const recalculateClearanceStatus = async (clearanceId: string) => {
         clearanceDate: status === 'cleared' ? now : null
     });
 
-    cacheService.invalidateByPrefix('clearance:');
+    cacheService.invalidate(CACHE_KEYS.clearanceDoc(clearanceId));
+    cacheService.invalidate(CACHE_KEYS.clearanceAll(clearance.orgId));
     fetchClearanceDocuments(clearance.orgId).catch(console.error);
 }
 
@@ -185,7 +186,8 @@ export const addStudentWithClearance = async (studentId: string,studentData: any
         await batch.commit();
         console.log(`✅ Successfully added student ${studentData.firstName} and initialized clearance.`);
         
-        cacheService.invalidateByPrefix('clearance:');
+        cacheService.invalidate(CACHE_KEYS.clearanceDoc(studentRef.id));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
         fetchClearanceDocuments(orgId).catch(console.error);
 
         return studentRef.id;

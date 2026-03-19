@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore"
 import { db } from "@/firebase/firebase.config"
 import { fetchClearanceDocuments } from "@/firebase"
+import { cacheService, CACHE_KEYS } from "@/services/cacheService"
 import type { ClearanceStatus } from "../types"
 
 export function useClearances(orgId: string | undefined) {
@@ -74,5 +75,17 @@ export function useClearances(orgId: string | undefined) {
     }
   }, [orgId])
 
-  return { clearances, loading, error, setClearances }
+  const hardRefresh = async () => {
+    if (!orgId) return;
+    cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+    setLoading(true);
+    try {
+        const data = await fetchClearanceDocuments(orgId);
+        setClearances(data);
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  return { clearances, loading, error, setClearances, hardRefresh }
 }

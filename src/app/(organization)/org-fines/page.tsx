@@ -14,7 +14,7 @@ import { FinesHeader } from "@/features/organization/fines/components/FinesHeade
 import { FineTypeForm } from "@/features/organization/fines/components/FineTypeForm";
 import { FineType, StudentFines } from "@/features/organization/fines/types";
 import { createFineType, deleteFineType, updateFineType } from "@/firebase/fines/create/fineType";
-import { Users, AlertTriangle, Banknote, CircleDollarSign, ChevronRight, Eye } from "lucide-react";
+import { Users, AlertTriangle, Banknote, CircleDollarSign, ChevronRight, Eye, RefreshCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
@@ -52,8 +52,9 @@ export default function FinesPage() {
     handleStatusFilterChange,
     totalStudentsWithFines,
     totalUnsettled,
+    totalUnpaidFines,
     totalCollectedFines,
-    totalUnpaidFines
+    hardRefresh,
     // markStatusChanged,
   } = useFines({ itemsPerPage: ITEMS_PER_PAGE });
 
@@ -105,6 +106,8 @@ export default function FinesPage() {
         <FinesHeader
           onAddFineType={handleAddFineType}
           onBulkGenerate={() => setIsBulkGenerateOpen(true)}
+          onRefresh={hardRefresh}
+          isLoading={isLoading}
         />
 
         {/* Stats */}
@@ -144,6 +147,10 @@ export default function FinesPage() {
                     {/* <SelectItem value="waived">Waived</SelectItem> */}
                   </SelectContent>
                 </Select>
+                <Button onClick={hardRefresh} variant="outline" size="lg" disabled={isLoading}>
+                  <RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  {isLoading ? 'Refreshing...' : 'Refresh'}
+                </Button>
                 {/* <Select value={filterAppeal} onValueChange={(v: string) => { setFilterAppeal(v); setCurrentPage(1) }}>
                   <SelectTrigger className="w-40">
                     <SelectValue placeholder="Appeals" />
