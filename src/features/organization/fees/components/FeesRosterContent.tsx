@@ -272,32 +272,12 @@ export function FeesRosterContent({
           typeLabel: (selectedLog as any)?.type || "",
         }}
         onApprove={selectedLog?.status === "pending" ? () => handleApprove(selectedLog!.paymentProofId!) : undefined}
-        onReject={selectedLog?.status === "pending" ? handleReject : undefined}
+        onReject={async (reason) => {
+        if (selectedLog?.status === "pending" ) handleReject(selectedLog!.paymentProofId!, reason);
+        }}
         isProcessing={isSubmitting}
       />
 
-
-      {/* <PaymentDetailDialog
-        feeId={fee.id!}
-        log={selectedLog}
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-        onApprove={() => handleApprove(selectedLog!.paymentProofId!)}
-        onReject={() => {
-          setDetailOpen(false);
-          setRejectOpen(true);
-        }}
-        isSubmitting={isSubmitting}
-      /> */}
-      {/* <RejectDialog
-        log={selectedLog}
-        open={rejectOpen}
-        onOpenChange={setRejectOpen}
-        rejectionReason={rejectionReason}
-        onReasonChange={setRejectionReason}
-        onConfirm={() => handleReject(selectedLog!.paymentProofId!)}
-        isSubmitting={isSubmitting}
-      /> */}
     </div>
   );
 }
