@@ -68,19 +68,27 @@ export const fetchClearanceDocumentsPaginated = async (
     const cached = cacheService.get(key);
     if (cached) {
       // Color-coded logs matching cacheService.ts for a professional feel
-      console.log(`%c[Cache Hit] %c${key}`, 'color: #4CAF50; font-weight: bold', 'color: #2196F3');
+      console.log(
+        `%c[Cache Hit]%c ${key}`,
+        "color: #10b981; font-weight: bold;",
+        "color: inherit;"
+      );
     } else {
-      console.log(`%c[Cache Miss] %c${key}`, 'color: #F44336; font-weight: bold', 'color: #2196F3');
+      console.log(
+        `%c[Cache Miss]%c ${key}`,
+        "color: #f59e0b; font-weight: bold;",
+        "color: inherit;"
+      );
+      cacheService.set(key, data, CACHE_DURATIONS.CLEARANCE);
     }
-
-    // Always update to the latest Firestore data
-    cacheService.set(key, data, CACHE_DURATIONS.CLEARANCE);
+    
     return data;
   });
 
   return {
     docs,
     lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
+    allSnapshots: snapshot.docs,
     hasMore: snapshot.docs.length === pageSize,
   };
 };

@@ -297,6 +297,7 @@ export const fetchFeesPaginated = async (
   return {
     docs,
     lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
+    allSnapshots: snapshot.docs,
     hasMore: snapshot.docs.length === pageSize,
   };
 };
@@ -395,6 +396,7 @@ export const fetchFeeSubmissionsPaginated = async (
   return {
     docs,
     lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
+    allSnapshots: snapshot.docs,
     hasMore: snapshot.docs.length === pageSize,
   };
 };
