@@ -3,6 +3,7 @@
 import { useIsMobile } from "@/hooks/use-mobile";
 import Link from "next/link";
 import { LucideIcon } from "lucide-react";
+import { usePathname } from "next/navigation";
 import React from "react";
 
 // Accept either LucideIcon or a function component that returns JSX
@@ -25,6 +26,7 @@ interface MobileBottomNavProps {
 
 export function MobileBottomNav({ links, iconMap }: MobileBottomNavProps) {
   const isMobile = useIsMobile();
+  const pathname = usePathname();
   const [showMore, setShowMore] = React.useState(false);
 
   if (!isMobile) return null;
@@ -34,16 +36,23 @@ export function MobileBottomNav({ links, iconMap }: MobileBottomNavProps) {
   const overflowLinks = links.filter((link) => moreLabels.has(link.label.trim().toLowerCase()));
   const hasOverflow = overflowLinks.length > 0;
 
+  const isActiveRoute = (href: string) => {
+    if (!pathname) return false;
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
   const renderNavLink = ({ label, icon, href }: NavLink, compact = false) => {
     const Icon = iconMap[icon];
     if (!Icon) return null;
+    const isActive = isActiveRoute(href);
 
     return (
       <Link
         key={label}
         href={href}
         onClick={() => setShowMore(false)}
-        className={`flex min-w-0 flex-col items-center text-muted-foreground hover:text-primary transition-colors ${compact ? "px-1 py-1 text-[10px] leading-tight" : "p-1 text-xs"}`}
+        className={`flex min-w-0 flex-col items-center transition-colors ${compact ? "px-1 py-1 text-[10px] leading-tight" : "p-1 text-xs"} ${isActive ? "rounded-md bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary"}`}
       >
         <Icon className={`mb-1 ${compact ? "h-4 w-4" : "h-5 w-5"}`} />
         <span className="truncate">{label}</span>
