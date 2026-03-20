@@ -105,7 +105,7 @@ export type FineItem = {
 }
 
 // Add "clearance" to your phase type
-type FineGenerationPhase = "preflight" | "absent" | "partial" | "clearance" | "done" | "error"
+export type FineGenerationPhase = "preflight" | "absent" | "partial" | "clearance" | "done" | "error"
 
 export type FineGenerationProgress = {
   phase: FineGenerationPhase;
