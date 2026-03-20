@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
 import { StudentFines } from "@/features/organization/fines/types";
-import { subscribeFines } from "@/firebase/fines/read/fines";
+import { fetchFinesPaginated, getFinesCount, countStudentsWithFines, countUnsettleFinesOfStudents } from "@/firebase/fines/read/fines";
 import { getCurrentUserData } from "@/firebase";
 import { Member } from "../../members/types";
 import { CACHE_KEYS, cacheService } from "@/services/cacheService";
+import { getDashboardUnpaidFinesAmount, getDashboardFeesCollected } from "@/firebase/dashboard";
 
 
 interface UseFinesProps {
@@ -12,123 +13,119 @@ interface UseFinesProps {
 }
 
 export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: UseFinesProps = {}) {
-  const [allFines, setAllFines] = useState<StudentFines[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [paginatedFines, setPaginatedFines] = useState<StudentFines[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState(initialStatusFilter);
+  const [totalCount, setTotalCount] = useState(0);
+  const [lastVisibleDocs, setLastVisibleDocs] = useState<any[]>([]);
+
+  // Stats
+  const [totalStudentsWithFines, setTotalStudentsWithFines] = useState(0);
+  const [totalUnsettled, setTotalUnsettled] = useState(0);
+  const [totalUnpaidFines, setTotalUnpaidFines] = useState(0); // This might be hard to sum server-side without an aggregation
+  const [totalCollectedFines, setTotalCollectedFines] = useState(0);
 
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-
-    const init = async () => {
+    let isMounted = true;
+    
+    const fetchData = async () => {
       const currUser = await getCurrentUserData() as unknown as Member;
       if (!currUser?.id) return;
 
-      const cached = cacheService.get<StudentFines[]>(CACHE_KEYS.finesAll(currUser.id));
-      if (cached) {
-        setAllFines(cached.data);
-      } else {
-        setIsLoading(true); 
-      }
+      setIsLoading(true);
+      try {
+        // 1. Fetch total count for the current filter
+        const count = await getFinesCount(currUser.id, filterStatus);
+        if (isMounted) setTotalCount(count);
 
-      unsubscribe = subscribeFines(
-        currUser.id,
-        (fines) => {
-          setAllFines(fines);
-          setIsLoading(false);
-        },
-        (error) => {
-          console.error("Fines subscription error:", error);
+        // 2. Fetch stats (these could be optimized with a single server-side call)
+        const [studentsCount, unsettledCount, unpaidTotal, collectedTotal] = await Promise.all([
+          countStudentsWithFines(),
+          countUnsettleFinesOfStudents(),
+          getDashboardUnpaidFinesAmount(),
+          getDashboardFeesCollected()
+        ]);
+        if (isMounted) {
+          setTotalStudentsWithFines(studentsCount);
+          setTotalUnsettled(unsettledCount);
+          setTotalUnpaidFines(unpaidTotal);
+          setTotalCollectedFines(collectedTotal);
+        }
+
+        // 3. Fetch paginated data
+        const cursor = currentPage > 1 ? lastVisibleDocs[currentPage - 2] : null;
+        const { docs, lastVisible } = await fetchFinesPaginated(
+          currUser.id,
+          itemsPerPage,
+          cursor,
+          search,
+          filterStatus
+        );
+
+        if (isMounted) {
+          setPaginatedFines(docs);
+          if (lastVisible) {
+            setLastVisibleDocs(prev => {
+              const next = [...prev];
+              next[currentPage - 1] = lastVisible;
+              return next;
+            });
+          }
           setIsLoading(false);
         }
-      );
+      } catch (err) {
+        console.error("Error fetching fines:", err);
+        if (isMounted) setIsLoading(false);
+      }
     };
 
-    init();
+    fetchData();
 
-    return () => unsubscribe?.();
-  }, []);
-
-  const totalStudentsWithFines = useMemo(() => {
-    const uniqueStudents = new Set(allFines.map(f => f.studentId));
-    return uniqueStudents.size;
-  }, [allFines]);
-
-  const totalUnsettled = useMemo(() => {
-    return allFines.filter(f => f.status !== "paid").length;
-  }, [allFines]);
-
-  const totalUnpaidFines = useMemo(() => {
-    return allFines
-      .filter(f => f.status !== "paid")
-      .reduce((sum, f) => sum + f.balance, 0);
-  }, [allFines]);
-
-  const totalCollectedFines = useMemo(() => {
-    return allFines
-      .filter(f => f.status === "paid" || f.status === "partial")
-      .reduce((sum, f) => sum + f.paidAmount, 0);
-  }, [allFines]);
-
-  const filtered = useMemo(() => {
-    return allFines.filter(f => {
-      const matchesStatus = filterStatus === "all" || f.status === filterStatus;
-      const q = search.toLowerCase().trim();
-      const matchesSearch = !q ||
-        f.userName.toLowerCase().includes(q) ||
-        f.studentId.toLowerCase().includes(q);
-      return matchesStatus && matchesSearch;
-    });
-  }, [allFines, filterStatus, search]);
-
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
-  const paginatedFines = filtered.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filterStatus, search]);
+    return () => {
+      isMounted = false;
+    };
+  }, [filterStatus, search, currentPage, itemsPerPage]);
 
   const handleStatusFilterChange = (v: string) => {
     setFilterStatus(v);
-    setSearch("");
+    setCurrentPage(1);
+    setLastVisibleDocs([]);
+  };
+
+  const handleSearchChange = (v: string) => {
+    setSearch(v);
+    setCurrentPage(1);
+    setLastVisibleDocs([]);
   };
 
   const hardRefresh = async () => {
-    setIsLoading(true);
     const currUser = await getCurrentUserData() as unknown as Member;
     if (currUser?.id) {
-        cacheService.invalidate(CACHE_KEYS.finesAll(currUser.id));
-        cacheService.invalidate(CACHE_KEYS.finesUnpaid(currUser.id));
+        cacheService.invalidateByPrefix('fines:doc:');
+        cacheService.invalidateByPrefix('fines:count:');
     }
-    setIsLoading(false);
-    // Since it's a subscription, invalidating the cache and toggling a state 
-    // might not be enough to force a fresh fetch from server if the subscription 
-    // is already active. But usually, onSnapshot returns cached data first.
-    // To be sure, we could trigger a manual getDocs or just wait for the next snapshot.
-    // However, for "Hard Refresh", the best way is to force a re-render of the init effect.
-    // But since it has no deps other than [], we can just call init logic again if we extract it.
+    setCurrentPage(1);
+    setLastVisibleDocs([]);
+    // The useEffect will trigger fetchData
   };
 
   return {
-    allFines,
     paginatedFines,
-    filteredCount: filtered.length,
+    filteredCount: totalCount,
     isLoading,
     currentPage,
     setCurrentPage,
-    totalPages,
+    totalPages: Math.ceil(totalCount / itemsPerPage),
     search,
-    setSearch,
+    setSearch: handleSearchChange,
     filterStatus,
     handleStatusFilterChange,
     totalStudentsWithFines,
     totalUnsettled,
-    totalUnpaidFines,
-    totalCollectedFines,
+    totalUnpaidFines, // Note: Unpaid total sum across 9,000 needs aggregation doc
+    totalCollectedFines, // Note: Collected total sum across 9,000 needs aggregation doc
     hardRefresh,
   };
-}
+}

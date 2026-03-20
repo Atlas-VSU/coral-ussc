@@ -186,25 +186,97 @@ export const getUnpaidFineItemsByFineId = async (fine: StudentFines) => {
 }
 
 
+/**
+ * Fetches fine documents with server-side pagination and searching.
+ */
+export const fetchFinesPaginated = async (
+  orgId: string,
+  pageSize: number = 10,
+  lastVisibleDoc: any = null,
+  searchTerm: string = "",
+  statusFilter: string = "all"
+) => {
+  let constraints: any[] = [
+    where("orgId", "==", orgId),
+    where("metadata.isArchived", "==", false),
+    where("accumulatedAmount", ">", 0),
+  ];
+
+  if (statusFilter !== "all") {
+    constraints.push(where("status", "==", statusFilter));
+  }
+
+  // Handle Search using prefix logic
+  if (searchTerm) {
+    constraints.push(where("userName", ">=", searchTerm));
+    constraints.push(where("userName", "<=", searchTerm + "\uf8ff"));
+    constraints.push(orderBy("userName"));
+  } else {
+    constraints.push(orderBy("metadata.updatedAt", "desc"));
+  }
+
+  // Apply pagination
+  constraints.push(limit(pageSize));
+  if (lastVisibleDoc) {
+    constraints.push(startAfter(lastVisibleDoc));
+  }
+
+  const q = query(finesCollection, ...constraints);
+  const snapshot = await getDocs(q);
+
+  const docs = snapshot.docs.map((doc) => {
+    const data = { id: doc.id, ...doc.data() } as StudentFines;
+    // Granular caching: Cache each document individually
+    cacheService.set(CACHE_KEYS.fineDoc(doc.id), data, CACHE_DURATIONS.FINES);
+    return data;
+  });
+
+  return {
+    docs,
+    lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
+    hasMore: snapshot.docs.length === pageSize,
+  };
+};
+
+/**
+ * Gets the total count of fine documents for an organization.
+ */
+export const getFinesCount = async (orgId: string, statusFilter: string = "all") => {
+  let constraints: any[] = [
+    where("orgId", "==", orgId),
+    where("metadata.isArchived", "==", false),
+    where("accumulatedAmount", ">", 0),
+  ];
+
+  if (statusFilter !== "all") {
+    constraints.push(where("status", "==", statusFilter));
+  }
+
+  const q = query(finesCollection, ...constraints);
+  const snapshot = await getCountFromServer(q);
+  return snapshot.data().count;
+};
+
 export const subscribeFines = (
   userId: string,
   onUpdate: (fines: StudentFines[]) => void,
   onError?: (error: Error) => void
 ) => {
+  // Deprecated for the main roster due to performance with labels like 9,000 students
+  console.warn("subscribeFines is deprecated for large datasets. Use fetchFinesPaginated instead.");
+  
   const constraints = [
     where("metadata.isArchived", "==", false),
     where("orgId", "==", userId),
     where("accumulatedAmount", ">", 0),
     orderBy("metadata.updatedAt", "desc"),
+    limit(100), // Safety limit
   ];
 
   return onSnapshot(
     query(finesCollection, ...constraints),
     (snapshot) => {
       const fines = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as StudentFines[];
-      
-      cacheService.set(CACHE_KEYS.finesAll(userId), fines, CACHE_DURATIONS.FINES);
-      
       onUpdate(fines);
     },
     (error) => onError?.(error)
@@ -212,22 +284,10 @@ export const subscribeFines = (
 };
 
 export const getAllFines = async () => {
-  const currUser = await getCurrentUserData() as unknown as Member;
-
-  return cacheService.getOrFetch(
-    CACHE_KEYS.finesAll(currUser.id || ''),  
-    async () => {
-      const constraints = [
-        where("metadata.isArchived", "==", false),
-        where("orgId", "==", currUser.id),
-        where("accumulatedAmount", ">", 0),
-        orderBy("metadata.updatedAt", "desc"),
-      ];
-      const snapshot = await getDocs(query(finesCollection, ...constraints));
-      return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as StudentFines[];
-    },
-    CACHE_DURATIONS.FINES
-  );
+    const currUser = await getCurrentUserData() as unknown as Member;
+    console.warn("getAllFines is deprecated. Use fetchFinesPaginated instead.");
+    const { docs } = await fetchFinesPaginated(currUser.id || "", 100);
+    return docs;
 };
 
 
