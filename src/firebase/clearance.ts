@@ -34,15 +34,17 @@ export const fetchClearanceDocumentsPaginated = async (
     constraints.push(where("status", "==", statusFilter));
   }
 
-  // Handle Search using prefix logic
-  const normalizedSearch = searchTerm
-    ? searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ")
-    : "";
+  // Normalize search term
+  const isIdSearch = /\d/.test(searchTerm);
+  const normalizedSearch = isIdSearch 
+    ? searchTerm.trim() 
+    : searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
 
   if (normalizedSearch) {
-    constraints.push(where("userName", ">=", normalizedSearch));
-    constraints.push(where("userName", "<=", normalizedSearch + "\uf8ff"));
-    constraints.push(orderBy("userName"));
+    const searchField = isIdSearch ? "studentId" : "userName";
+    constraints.push(where(searchField, ">=", normalizedSearch));
+    constraints.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
+    constraints.push(orderBy(searchField));
   } else {
     constraints.push(orderBy("updatedAt", "desc"));
   }
@@ -84,13 +86,15 @@ export const getClearanceCount = async (orgId: string, statusFilter: string = "a
     constraints.push(where("status", "==", statusFilter));
   }
 
-  const normalizedSearch = searchTerm
-    ? searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ")
-    : "";
+  const isIdSearch = /\d/.test(searchTerm);
+  const normalizedSearch = isIdSearch 
+    ? searchTerm.trim() 
+    : searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
 
   if (normalizedSearch) {
-    constraints.push(where("userName", ">=", normalizedSearch));
-    constraints.push(where("userName", "<=", normalizedSearch + "\uf8ff"));
+    const searchField = isIdSearch ? "studentId" : "userName";
+    constraints.push(where(searchField, ">=", normalizedSearch));
+    constraints.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
   }
 
   const q = query(clearanceRef, ...constraints);

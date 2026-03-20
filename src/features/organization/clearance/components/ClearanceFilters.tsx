@@ -40,7 +40,7 @@ export function ClearanceFilters({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <SearchInput
-          placeholder="Search student..."
+          placeholder="Search Name or Student ID..."
           value={search}
           onChange={onSearchChange}
           className="w-full sm:w-56"
