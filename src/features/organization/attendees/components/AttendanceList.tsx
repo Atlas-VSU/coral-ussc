@@ -15,6 +15,56 @@ import { batchGetPrograms } from "@/firebase/programBatch";
 // Global program cache to prevent redundant fetches
 const programCache = new Map<string, { name: string; timestamp: number }>();
 
+
+// Component to display program name with optimized caching
+function ProgramName({ programId }: { programId: string }) {
+  const [programName, setProgramName] = useState(() => {
+    // Initialize from global cache if available and not expired
+    const cached = programCache.get(programId);
+    const now = Date.now();
+    if (cached && now - cached.timestamp < CACHE_DURATIONS.PROGRAMS) {
+      return cached.name;
+    }
+    return "Loading...";
+  });
+
+  const fetchProgramName = useCallback(async () => {
+    try {
+      // Check global cache first (double-check in case state initialized from old data)
+      const cached = programCache.get(programId);
+      const now = Date.now();
+      if (cached && now - cached.timestamp < CACHE_DURATIONS.PROGRAMS) {
+        setProgramName(cached.name);
+        return;
+      }
+
+      // Use batch function to get the program
+      const programsMap = await batchGetPrograms([programId]);
+      const program = programsMap[programId];
+
+      const name = program?.shortName || "Unknown Program";
+
+      // Update both the component state and global cache
+      setProgramName(name);
+      programCache.set(programId, { name, timestamp: now });
+    } catch (error) {
+      console.error("Error fetching program:", error);
+      setProgramName("Unknown Program");
+    }
+  }, [programId]);
+
+  // Fetch on mount or when programId changes
+  useEffect(() => {
+    fetchProgramName();
+  }, [fetchProgramName]);
+
+  return (
+  <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-semibold">
+    {programName}
+  </span>
+  );
+}
+
 // Prefetch and cache all programs for better performance
 const prefetchPrograms = async (programIds: string[]) => {
   // Only prefetch programs not already in the cache
@@ -355,9 +405,7 @@ export function AttendanceList({
                             {student.studentId}
                           </span>
                           {student.programId && (
-                            <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-semibold">
-                              {student.programId}
-                            </span>
+                            <ProgramName programId={student.programId}/>
                           )}
                         </div>
                         {hasRemark && (

@@ -35,10 +35,16 @@ export function BulkFinesIssuance({
   };
 
   const handleIssuance = async () => {
-    await generateFinesOnEvent(
-      event,
-      (update) => setProgress(update)  // each report() call triggers a re-render
-    );
+    try {
+      await generateFinesOnEvent(
+        event,
+        (update) => setProgress(update)  // each report() call triggers a re-render
+      );
+      setProgress(null);
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error during fine generation:", error);
+     }
   };
 
   // ── Derived percentages ──────────────────────────────────────────────────
