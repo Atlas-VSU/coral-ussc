@@ -262,12 +262,15 @@ export const fetchFeesPaginated = async (
     constraints.push(where("status", "==", statusFilter));
   }
 
+  // Normalize search term to Title Case (common for names in DB)
+  const normalizedSearch = searchTerm
+    ? searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ")
+    : "";
+
   // Handle Search using prefix logic on userName or studentId
-  if (searchTerm) {
-    // Firestore only supports prefix search on one field at a time with range queries
-    // Usually name is preferred for roster search
-    constraints.push(where("userName", ">=", searchTerm));
-    constraints.push(where("userName", "<=", searchTerm + "\uf8ff"));
+  if (normalizedSearch) {
+    constraints.push(where("userName", ">=", normalizedSearch));
+    constraints.push(where("userName", "<=", normalizedSearch + "\uf8ff"));
     constraints.push(orderBy("userName"));
   } else {
     constraints.push(orderBy("updatedAt", "desc"));
@@ -297,13 +300,14 @@ export const fetchFeesPaginated = async (
 };
 
 /**
- * Gets total count of fee documents for a specific title and filter.
+ * Gets total count of fee documents for a specific title and filter with search.
  */
 export const getFeesCount = async (
   orgId: string,
   title: string,
   academicYear: string,
-  statusFilter: string = "all"
+  statusFilter: string = "all",
+  searchTerm: string = ""
 ) => {
   let constraints: any[] = [
     where("orgId", "==", orgId),
@@ -314,6 +318,15 @@ export const getFeesCount = async (
 
   if (statusFilter !== "all" && statusFilter !== "") {
     constraints.push(where("status", "==", statusFilter));
+  }
+
+  const normalizedSearch = searchTerm
+    ? searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ")
+    : "";
+
+  if (normalizedSearch) {
+    constraints.push(where("userName", ">=", normalizedSearch));
+    constraints.push(where("userName", "<=", normalizedSearch + "\uf8ff"));
   }
 
   const q = query(collection(db, "fees"), ...constraints);
@@ -331,7 +344,8 @@ export const fetchFeeSubmissionsPaginated = async (
   feeTitle: string,
   pageSize: number = 10,
   lastVisibleDoc: any = null,
-  statusFilter: string = "all"
+  statusFilter: string = "all",
+  searchTerm: string = ""
 ) => {
   // We use proofOfPayments for a global "submissions" view across all students
   let constraints: any[] = [
@@ -344,7 +358,18 @@ export const fetchFeeSubmissionsPaginated = async (
     constraints.push(where("status", "==", statusFilter));
   }
 
-  constraints.push(orderBy("submittedAt", "desc"));
+  const normalizedSearch = searchTerm
+    ? searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ")
+    : "";
+
+  if (normalizedSearch) {
+    constraints.push(where("userName", ">=", normalizedSearch));
+    constraints.push(where("userName", "<=", normalizedSearch + "\uf8ff"));
+    constraints.push(orderBy("userName"));
+  } else {
+    constraints.push(orderBy("submittedAt", "desc"));
+  }
+
   constraints.push(limit(pageSize));
   if (lastVisibleDoc) {
     constraints.push(startAfter(lastVisibleDoc));

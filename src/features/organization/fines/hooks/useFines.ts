@@ -37,7 +37,7 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
       setIsLoading(true);
       try {
         // 1. Fetch total count for the current filter
-        const count = await getFinesCount(currUser.id, filterStatus);
+        const count = await getFinesCount(currUser.id, filterStatus, search);
         if (isMounted) setTotalCount(count);
 
         // 2. Fetch stats (these could be optimized with a single server-side call)

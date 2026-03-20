@@ -148,6 +148,8 @@ export function FeesRosterContent({
     setCurrentPage: handlePageChange,
   } = actions;
 
+  console.log(paginatedRows)
+
   return (
     <div className="flex flex-col gap-6 pb-24 lg:pb-0">
       <div className="flex flex-col gap-1">

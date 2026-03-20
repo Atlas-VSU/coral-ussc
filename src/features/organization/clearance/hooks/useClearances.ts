@@ -30,7 +30,7 @@ export function useClearances(
     const fetchData = async () => {
       try {
         // 1. Get total count for pagination UI
-        const count = await getClearanceCount(orgId, statusFilter)
+        const count = await getClearanceCount(orgId, statusFilter, searchTerm)
         if (isMounted) setTotalCount(count)
 
         // 2. Determine the cursor for the current page
@@ -88,7 +88,7 @@ export function useClearances(
         statusFilter
       )
       setClearances(docs)
-      const count = await getClearanceCount(orgId, statusFilter)
+      const count = await getClearanceCount(orgId, statusFilter, searchTerm)
       setTotalCount(count)
     } finally {
       setLoading(false)

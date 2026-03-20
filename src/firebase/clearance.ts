@@ -35,12 +35,13 @@ export const fetchClearanceDocumentsPaginated = async (
   }
 
   // Handle Search using prefix logic
-  // Note: This is a basic prefix search. For more complex search, consider Algolia.
-  if (searchTerm) {
-    // If we have a search term, we prioritize it
-    // Firestore prefix search: >= term AND <= term + \uf8ff
-    constraints.push(where("userName", ">=", searchTerm));
-    constraints.push(where("userName", "<=", searchTerm + "\uf8ff"));
+  const normalizedSearch = searchTerm
+    ? searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ")
+    : "";
+
+  if (normalizedSearch) {
+    constraints.push(where("userName", ">=", normalizedSearch));
+    constraints.push(where("userName", "<=", normalizedSearch + "\uf8ff"));
     constraints.push(orderBy("userName"));
   } else {
     constraints.push(orderBy("updatedAt", "desc"));
@@ -70,9 +71,9 @@ export const fetchClearanceDocumentsPaginated = async (
 };
 
 /**
- * Gets the total count of clearance documents for an organization.
+ * Gets the total count of clearance documents for an organization with optional search.
  */
-export const getClearanceCount = async (orgId: string, statusFilter: string = "all") => {
+export const getClearanceCount = async (orgId: string, statusFilter: string = "all", searchTerm: string = "") => {
   const clearanceRef = collection(db, "clearanceStatus");
   let constraints = [
     where("orgId", "==", orgId),
@@ -81,6 +82,15 @@ export const getClearanceCount = async (orgId: string, statusFilter: string = "a
 
   if (statusFilter !== "all") {
     constraints.push(where("status", "==", statusFilter));
+  }
+
+  const normalizedSearch = searchTerm
+    ? searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ")
+    : "";
+
+  if (normalizedSearch) {
+    constraints.push(where("userName", ">=", normalizedSearch));
+    constraints.push(where("userName", "<=", normalizedSearch + "\uf8ff"));
   }
 
   const q = query(clearanceRef, ...constraints);

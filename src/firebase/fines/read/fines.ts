@@ -207,9 +207,13 @@ export const fetchFinesPaginated = async (
   }
 
   // Handle Search using prefix logic
-  if (searchTerm) {
-    constraints.push(where("userName", ">=", searchTerm));
-    constraints.push(where("userName", "<=", searchTerm + "\uf8ff"));
+  const normalizedSearch = searchTerm
+    ? searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ")
+    : "";
+
+  if (normalizedSearch) {
+    constraints.push(where("userName", ">=", normalizedSearch));
+    constraints.push(where("userName", "<=", normalizedSearch + "\uf8ff"));
     constraints.push(orderBy("userName"));
   } else {
     constraints.push(orderBy("metadata.updatedAt", "desc"));
@@ -239,9 +243,9 @@ export const fetchFinesPaginated = async (
 };
 
 /**
- * Gets the total count of fine documents for an organization.
+ * Gets the total count of fine documents for an organization with optional search.
  */
-export const getFinesCount = async (orgId: string, statusFilter: string = "all") => {
+export const getFinesCount = async (orgId: string, statusFilter: string = "all", searchTerm: string = "") => {
   let constraints: any[] = [
     where("orgId", "==", orgId),
     where("metadata.isArchived", "==", false),
@@ -250,6 +254,15 @@ export const getFinesCount = async (orgId: string, statusFilter: string = "all")
 
   if (statusFilter !== "all") {
     constraints.push(where("status", "==", statusFilter));
+  }
+
+  const normalizedSearch = searchTerm
+    ? searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ")
+    : "";
+
+  if (normalizedSearch) {
+    constraints.push(where("userName", ">=", normalizedSearch));
+    constraints.push(where("userName", "<=", normalizedSearch + "\uf8ff"));
   }
 
   const q = query(finesCollection, ...constraints);

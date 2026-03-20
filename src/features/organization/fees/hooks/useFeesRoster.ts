@@ -64,7 +64,7 @@ export function useFeesRoster(
 
             // 2. Fetch data based on dataView
             if (dataView === "all-students") {
-                const count = await getFeesCount(orgId, title, academicYear, filterStatus);
+                const count = await getFeesCount(orgId, title, academicYear, filterStatus, search);
                 setTotalCount(count);
 
                 const cursor = currentPage > 1 ? lastVisibleDocs["all-students"][currentPage - 2] : null;
@@ -83,15 +83,16 @@ export function useFeesRoster(
                     const feeLogs = await fetchPaymentLogs(f.id) as PaymentLog[];
                     return {
                         ...f,
-                        memberInfo: {
+                        student: {
                             id: f.userId,
                             studentId: f.studentId,
                             firstName: f.userName.split(' ')[0],
                             lastName: f.userName.split(' ').slice(1).join(' '),
                         },
                         logs: feeLogs
-                    } as StudentFeeRow;
+                    } as any;
                 }));
+
 
                 setStudentRows(enrichedRows);
                 if (lastVisible) {
@@ -109,7 +110,8 @@ export function useFeesRoster(
                   title, 
                   pageSize, 
                   currentPage > 1 ? lastVisibleDocs["submissions"][currentPage - 2] : null,
-                  filterStatus
+                  filterStatus,
+                  search
                 );
 
                 const mappedLogs = (docs as any[]).map(d => ({
@@ -177,6 +179,7 @@ export function useFeesRoster(
                     ...rowToUpdate,
                     ...updatedFee,
                     logs: freshLogs as PaymentLog[]
+
                 };
 
                 const newRows = [...prevRows];
@@ -198,4 +201,4 @@ export function useFeesRoster(
         refetchStudentRow,
         refetch: hardRefresh
     };
-}
+}
