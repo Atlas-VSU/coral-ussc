@@ -104,12 +104,8 @@ export type FineItem = {
   isPending?: boolean;
 }
 
-export type FineGenerationPhase =
-  | "preflight"   // fetching event, fine type, user lists
-  | "absent"      // writing fines for absent users
-  | "partial"     // writing fines for partial attendees
-  | "done"        // all writes committed successfully
-  | "error";      // something went wrong
+// Add "clearance" to your phase type
+type FineGenerationPhase = "preflight" | "absent" | "partial" | "clearance" | "done" | "error"
 
 export type FineGenerationProgress = {
   phase: FineGenerationPhase;
