@@ -79,6 +79,9 @@ export function useClearances(
   const hardRefresh = async () => {
     if (!orgId) return
     setLoading(true)
+    // Clear relevant caches before refetching
+    cacheService.invalidateByPrefix('clearance:doc:');
+    cacheService.invalidateByPrefix('clearance:all:');
     try {
       const { docs } = await fetchClearanceDocumentsPaginated(
         orgId,

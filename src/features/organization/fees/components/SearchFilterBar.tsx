@@ -39,9 +39,10 @@ export function SearchFilterBar({
         <SelectContent>
           <SelectItem value="all">All Status</SelectItem>
           <SelectItem value="pending">Pending</SelectItem>
-          <SelectItem value="verified">Verified</SelectItem>
+          {!showUnpaidFilter && <SelectItem value="verified">Verified</SelectItem>}
           <SelectItem value="rejected">Rejected</SelectItem>
           {showUnpaidFilter && <SelectItem value="unpaid">Unpaid</SelectItem>}
+          {showUnpaidFilter && <SelectItem value="paid">Paid</SelectItem>}
         </SelectContent>
       </Select>
 

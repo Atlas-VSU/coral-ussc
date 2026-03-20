@@ -148,7 +148,7 @@ export function FeesRosterContent({
     setCurrentPage: handlePageChange,
   } = actions;
 
-  console.log(paginatedRows)
+  
 
   return (
     <div className="flex flex-col gap-6 pb-24 lg:pb-0">
@@ -310,13 +310,14 @@ export function FeesRosterContent({
           studentId: (selectedLog as any)?.studentId || "",
           studentName: (selectedLog as any)?.studentName || "",
           amountPaid: (selectedLog)?.amount || 0,
-          paymentMethod: (selectedLog)?.paymentMethod || "",
+          paymentMethod: (selectedLog)?.paymentMethod || "Cash (Manual)",
           submittedAt: selectedLog?.paidAt ? (selectedLog as any)!.paidAt.toDate().toISOString().slice(0, 10) : "",
-          receiptContent: (selectedLog as any)?.imageUrl || "",
+          receiptContent: (selectedLog as any)?.receiptContent || "",
           referenceNo: selectedLog?.gcashReference || "",
           typeLabel: (selectedLog as any)?.type || "",
+          reviewedBy: (selectedLog as any)?.reviewedBy || "",
           notes: (selectedLog as any)?.notes || (selectedLog as any)?.metadata?.notes || "",
-          declineRemarks: (selectedLog as any)?.rejectionReason || "",
+          declineRemarks: (selectedLog as any)?.declineRemarks || "",
         }}
         onApprove={selectedLog?.status === "pending" ? () => handleApprove(selectedLog!.paymentProofId!) : undefined}
         onReject={async (reason) => {

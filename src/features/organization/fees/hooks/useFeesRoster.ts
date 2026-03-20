@@ -9,7 +9,7 @@ export type BaseFeeData = Partial<Fee>;
 
 export interface StudentFeeRow extends Fee {
     id: string; 
-    memberInfo: Partial<Member>;
+    student: Partial<Member>;
     logs: PaymentLog[];
 }
 
@@ -83,6 +83,7 @@ export function useFeesRoster(
                     const feeLogs = await fetchPaymentLogs(f.id) as PaymentLog[];
                     return {
                         ...f,
+                        log: feeLogs.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())[0],
                         student: {
                             id: f.userId,
                             studentId: f.studentId,
@@ -92,6 +93,8 @@ export function useFeesRoster(
                         logs: feeLogs
                     } as any;
                 }));
+
+                console.log(enrichedRows)
 
 
                 setStudentRows(enrichedRows);
@@ -124,7 +127,13 @@ export function useFeesRoster(
                    studentId: d.studentId,
                    paymentMethod: d.paymentMethod,
                    gcashReference: d.referenceNumber,
+                   declineRemarks: d.rejectionReason,
+                   receiptContent: d.imageUrl,
+                   notes: d.notes,
+                   reviewedAt: d.verifiedAt,
+                   reviewedBy: d.verifiedByName,
                    createdAt: d.submittedAt,
+                   type: d.paymentType,
                 } as unknown as PaymentLog));
 
                 setLogs(mappedLogs);
@@ -155,7 +164,11 @@ export function useFeesRoster(
     const hardRefresh = useCallback(async () => {
         const user = await getCurrentUserData();
         if (user && title && academicYear) {
-            cacheService.invalidateByPrefix('fee:doc:');
+            // Corrected prefix to 'fees:doc:' and added 'fees:logs:'
+            cacheService.invalidateByPrefix('fees:doc:');
+            cacheService.invalidateByPrefix('fees:logs:');
+            // If the roster list itself is cached, it should be cleared too
+            cacheService.invalidateByPrefix('fees:roster:');
         }
         setLastVisibleDocs({ "all-students": [], "submissions": [] });
         await fetchData();

@@ -354,7 +354,7 @@ export const fetchFeeSubmissionsPaginated = async (
   // We use proofOfPayments for a global "submissions" view across all students
   let constraints: any[] = [
     where("orgId", "==", orgId),
-    where("paymentType", "==", "fee"),
+    where("paymentType", "in", ["bulk", "fees"]),
     where("isArchived", "==", false),
   ];
 

@@ -104,7 +104,9 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
     const currUser = await getCurrentUserData() as unknown as Member;
     if (currUser?.id) {
         cacheService.invalidateByPrefix('fines:doc:');
-        cacheService.invalidateByPrefix('fines:count:');
+        cacheService.invalidateByPrefix('fines:all:');
+        cacheService.invalidateByPrefix('fines:items:');
+        cacheService.invalidateByPrefix('fines:student:');
     }
     setCurrentPage(1);
     setLastVisibleDocs([]);

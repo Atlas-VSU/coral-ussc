@@ -99,11 +99,13 @@ export function useFeesRosterUI({
 
   const handleViewDetails = (log: PaymentLog) => {
     setSelectedLog(log);
+    console.log(log)
     setDetailOpen(true);
   };
 
   const handleManualLogRequest = (studentId: string) => {
-    const matchedRow = studentRows.find((row) => row.id === studentId);
+    // studentId here is actually the userId (from student.id)
+    const matchedRow = studentRows.find((row) => row.userId === studentId);
     setStudentRowFee(matchedRow || null);
     setManualLogOpen(true);
   };
