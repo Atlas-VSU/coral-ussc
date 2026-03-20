@@ -67,7 +67,7 @@ export function UnpaidTab({
         <DataPagination
           currentPage={unpaidPage}
           totalPages={unpaidTotalPages}
-          totalItems={filteredUnpaid.length}
+          totalItems={totalCount}
           itemsPerPage={ITEMS_PER_PAGE}
           onPageChange={onPageChange}
         />

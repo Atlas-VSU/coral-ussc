@@ -1,4 +1,4 @@
-// usePaymentsPage.ts
+
 "use client"
 import { useState, useMemo, useEffect, useCallback } from "react"
 import { toast } from "sonner"
@@ -23,14 +23,16 @@ export function usePaymentsPage() {
     payments,
     unpaidPayments,
     setUnpaidPayments,
-    unpaidHasMore,
-    isFetchingMore,
-    loadMoreUnpaid,
-    fetchUnpaid,
+    search,
+    setSearch,
     isLoading,
     isLoadingUnpaid,
     refetchPayments,
+    setTotalUnpaidCount,
     totalUnpaidCount,
+    unpaidPage,
+    setUnpaidPage,
+    searchCount
   } = usePayments()
 
   // ── Tab ───────────────────────────────────────────────────────────────────
@@ -38,7 +40,6 @@ export function usePaymentsPage() {
 
   // ── Submissions ───────────────────────────────────────────────────────────
   const [paymentsList, setPaymentsList] = useState<ProofOfPayment[]>([])
-  const [search, setSearch] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [selectedPayment, setSelectedPayment] = useState<ProofOfPayment | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
@@ -48,7 +49,6 @@ export function usePaymentsPage() {
 
   // ── Unpaid ────────────────────────────────────────────────────────────────
   const [unpaidSearch, setUnpaidSearch] = useState("")
-  const [unpaidPage, setUnpaidPage] = useState(1)
   const [unpaidViewMode, setUnpaidViewMode] = useState<ViewMode>("table")
 
   // ── Unpaid detail modal ───────────────────────────────────────────────────
@@ -75,8 +75,8 @@ export function usePaymentsPage() {
   useEffect(() => {
     // Reset to page 1 and fetch with new search term
     setUnpaidPage(1)
-    fetchUnpaid(debouncedUnpaidSearch, true)
-  }, [debouncedUnpaidSearch, fetchUnpaid])
+    setSearch(debouncedUnpaidSearch)
+  }, [debouncedUnpaidSearch])
 
   // Fetch student program when selected unpaid changes
   useEffect(() => {
@@ -106,19 +106,8 @@ export function usePaymentsPage() {
   )
 
   // ── Derived: unpaid — server already filtered, just paginate in memory ────
-  const unpaidTotalPages = Math.ceil(unpaidPayments.length / ITEMS_PER_PAGE)
-  const paginatedUnpaid = useMemo(
-    () => unpaidPayments.slice((unpaidPage - 1) * ITEMS_PER_PAGE, unpaidPage * ITEMS_PER_PAGE),
-    [unpaidPayments, unpaidPage]
-  )
-
-  // ── Auto load more when user reaches last page ────────────────────────────
-  useEffect(() => {
-    const onLastPage = unpaidPage === unpaidTotalPages && unpaidTotalPages > 0
-    if (onLastPage && unpaidHasMore && !isFetchingMore) {
-      loadMoreUnpaid()
-    }
-  }, [unpaidPage, unpaidTotalPages, unpaidHasMore, isFetchingMore, loadMoreUnpaid])
+  const unpaidTotalPages = Math.ceil(totalUnpaidCount / ITEMS_PER_PAGE)
+  const paginatedUnpaid = unpaidPayments;
 
   // ── Stats ─────────────────────────────────────────────────────────────────
   const stats = useMemo(() => ({
@@ -288,6 +277,7 @@ export function usePaymentsPage() {
     setCurrentPage(1)
     setUnpaidPage(1)
     setFilterStatus("all")
+    setSearch("")
   }, [])
 
   return {
@@ -313,6 +303,6 @@ export function usePaymentsPage() {
     studentProgram,
     receiptOpen, setReceiptOpen, receiptData, setReceiptData,
     stats,
-    refetchPayments, totalUnpaidCount,
+    refetchPayments, totalUnpaidCount
   }
 }
