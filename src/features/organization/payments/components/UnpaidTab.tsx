@@ -23,12 +23,13 @@ interface UnpaidTabProps {
   isLoading: boolean
   refetchPayments: () => void
   isLoadingUnpaid: boolean
+  totalCount: number
 }
 
 export function UnpaidTab({
   filteredUnpaid, paginatedUnpaid, unpaidTotalPages, unpaidPage,
   unpaidSearch, unpaidViewMode,
-  onPageChange, onSearchChange, onViewChange, onOpenDetail, isLoading, refetchPayments, isLoadingUnpaid
+  onPageChange, onSearchChange, onViewChange, onOpenDetail, isLoading, refetchPayments, isLoadingUnpaid, totalCount
 }: UnpaidTabProps) {
   
   return (
@@ -39,7 +40,7 @@ export function UnpaidTab({
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">
               Students with Unpaid Dues
             </CardTitle>
-            <CardDescription>{filteredUnpaid.length} student(s) found</CardDescription>
+            <CardDescription>{totalCount} student(s) found</CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <SearchInput

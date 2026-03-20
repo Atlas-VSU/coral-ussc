@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, orderBy, query, serverTimestamp, Timestamp, updateDoc, where, writeBatch, limit, startAfter, getCountFromServer, queryEqual, QueryConstraint } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, orderBy, query, serverTimestamp, Timestamp, updateDoc, where, writeBatch, limit, startAfter, getCountFromServer, queryEqual, QueryConstraint, DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { BlockingItem, ClearanceStatus } from "@/features/organization/clearance/types";
 import { approvePaymentTransaction, checkFeeStatusForClearance, fetchFee, recordBulkManualPaymentAndUpdateClearance, recordManualPaymentAndUpdateClearance, rejectPaymentTransaction } from "./fees";
@@ -14,6 +14,8 @@ import { getProofOfPaymentByUserId } from "./payment/read/proofOfPayment";
 import { use } from "react";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 import { usePaymentApproval } from "@/features/organization/payments/hooks/usePaymentApproval";
+import { getCurrentUserData } from "./users";
+import { Member } from "@/features/organization/members/types";
 /**
  * Fetches clearance documents with server-side pagination and searching.
  */
@@ -108,6 +110,17 @@ export const fetchClearanceDocuments = async (orgId: string) => {
     const { docs } = await fetchClearanceDocumentsPaginated(orgId, 100); // Fetch first 100 as fallback
     return docs;
 }
+
+export const getCountOfUnclearedDocuments = async (orgId: string) => {
+  const snapshot = await getCountFromServer(query(
+    collection(db, 'clearanceStatus'),
+    where('orgId', '==', orgId),
+    where('isArchived', '==', false),
+    where('status', '==', 'not_cleared')
+  ));
+  return snapshot.data().count;
+ }
+
 
 export const fetchClearanceStatus = async (userId: string) => {
     return cacheService.getOrFetch(
