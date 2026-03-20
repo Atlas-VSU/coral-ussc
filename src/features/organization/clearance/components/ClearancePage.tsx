@@ -78,7 +78,12 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
             onExport={() => toast.success("Export started (mock)")}
             viewMode={viewMode}
             onViewChange={setViewMode}
-            onRefresh={hardRefresh}
+            onRefresh={() => {
+              setCurrentPage(1);
+              setFilterStatus("all");
+              setSearch("");
+              hardRefresh();
+            }}
             isLoading={loading}
           />
         </CardHeader>

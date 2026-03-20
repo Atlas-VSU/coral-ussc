@@ -154,7 +154,6 @@ export function FeesRosterContent({
     setCurrentPage: handlePageChange,
   } = actions;
 
-  console.log(stats)
 
   return (
     <div className="flex flex-col gap-6 pt-14 lg:pt-0 pb-24 lg:pb-0">

@@ -43,7 +43,7 @@ export const checkFeeTitleExist = async (title: string, academicYear: string, se
 
 export const checkFeeStatusForClearance = async (userId: string, orgId: string) => {
     return cacheService.getOrFetch(
-        CACHE_KEYS.clearanceDoc(userId),
+        CACHE_KEYS.feeStatusForClearance(userId, orgId),
         async () => {
             const feeRef = collection(db, "fees");
             const q = query(
@@ -579,7 +579,6 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
         if (isNaN(totalAmount) || totalAmount <= 0) {
             throw new Error("Invalid total payment amount");
         }
-        console.log("called once")
 
         const studentDataDoc = await getDoc(doc(db, "users", studentId));
         const studentData = studentDataDoc.data();
@@ -756,6 +755,7 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
             }
         });
         cacheService.invalidate(CACHE_KEYS.clearanceDoc(studentId));
+        cacheService.invalidate(CACHE_KEYS.feeStatusForClearance(studentId, orgId));
         cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
 
         cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
@@ -889,6 +889,7 @@ export const recordManualPaymentAndUpdateClearance = async (
         cacheService.invalidate(CACHE_KEYS.feeDoc(feeId));
         cacheService.invalidate(CACHE_KEYS.feeLogs(feeId));
         cacheService.invalidate(CACHE_KEYS.clearanceDoc(studentId));
+        cacheService.invalidate(CACHE_KEYS.feeStatusForClearance(studentId, orgId));
         cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
 
         cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
@@ -976,6 +977,7 @@ export const approvePaymentTransaction = async (feeId: string, paymentLogId: str
         cacheService.invalidate(CACHE_KEYS.feeDoc(feeId));
         cacheService.invalidate(CACHE_KEYS.feeLogs(feeId));
         cacheService.invalidate(CACHE_KEYS.clearanceDoc(clearanceId));
+        cacheService.invalidate(CACHE_KEYS.feeStatusForClearance(clearanceId, orgId));
         cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
 
         cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
@@ -1063,6 +1065,7 @@ export const rejectPaymentTransaction = async (feeId: string, paymentLogId: stri
         cacheService.invalidate(CACHE_KEYS.feeDoc(feeId));
         cacheService.invalidate(CACHE_KEYS.feeLogs(feeId));
         cacheService.invalidate(CACHE_KEYS.clearanceDoc(clearanceId));
+        cacheService.invalidate(CACHE_KEYS.feeStatusForClearance(clearanceId, orgId));
         cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
 
         cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));

@@ -62,8 +62,19 @@ export const fetchClearanceDocumentsPaginated = async (
 
   const docs = snapshot.docs.map((doc) => {
     const data = { id: doc.id, ...doc.data() } as ClearanceStatus;
-    // Granular caching: Cache each document individually
-    cacheService.set(CACHE_KEYS.clearanceDoc(doc.id), data, CACHE_DURATIONS.CLEARANCE);
+    const key = CACHE_KEYS.clearanceDoc(doc.id);
+    
+    // Check if it already exists to determine if it's a "hit" or "miss" for visibility
+    const cached = cacheService.get(key);
+    if (cached) {
+      // Color-coded logs matching cacheService.ts for a professional feel
+      console.log(`%c[Cache Hit] %c${key}`, 'color: #4CAF50; font-weight: bold', 'color: #2196F3');
+    } else {
+      console.log(`%c[Cache Miss] %c${key}`, 'color: #F44336; font-weight: bold', 'color: #2196F3');
+    }
+
+    // Always update to the latest Firestore data
+    cacheService.set(key, data, CACHE_DURATIONS.CLEARANCE);
     return data;
   });
 

@@ -100,7 +100,6 @@ export function useFeesRoster(
                     } as any;
                 }));
 
-                console.log(enrichedRows)
 
 
                 setStudentRows(enrichedRows);
