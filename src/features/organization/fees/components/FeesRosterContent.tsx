@@ -122,7 +122,7 @@ export function FeesRosterContent({
   } = actions;
 
   return (
-    <div className="flex flex-col gap-6 pb-24 lg:pb-0">
+    <div className="flex flex-col gap-6 pt-14 lg:pt-0 pb-24 lg:pb-0">
       <div className="flex flex-col gap-1">
         <Button
           variant="ghost"
