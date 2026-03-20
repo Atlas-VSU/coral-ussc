@@ -14,6 +14,7 @@ import {
   orderBy,
   limit,
   documentId,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { MemberFormData } from "@/lib/validators";
@@ -442,3 +443,25 @@ export const getUserById = async (userId: string): Promise<Member | null> => {
     return null;
   }
 };
+
+export const hardDeleteUsers = async (number: number) => {
+  try {
+    let count = 0;
+    const usersQuery = query(
+      usersCollection,
+      orderBy("createdAt", "desc"),
+      limit(number)
+    );
+    const querySnapshot = await getDocs(usersQuery);
+    const batch = writeBatch(db);
+    querySnapshot.docs.forEach((doc) => {
+      count++;
+      console.log(`(Deleted count: ${count})`);
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+    console.log(`Hard deleted ${querySnapshot.size} users.`);
+  } catch (error) {
+    handleFirestoreError(error, "hard delete users");
+  }
+}
