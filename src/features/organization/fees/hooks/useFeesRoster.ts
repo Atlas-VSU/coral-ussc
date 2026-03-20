@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchFee, fetchFeeRoster, fetchPaymentLogs } from "@/firebase/fees";
+import { fetchFee, fetchFeesPaginated, getFeesCount, fetchFeeSubmissionsPaginated, fetchPaymentLogs } from "@/firebase/fees";
 import { Fee, PaymentLog } from "../types";
 import { Member } from "../../members/types";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
@@ -9,96 +9,170 @@ export type BaseFeeData = Partial<Fee>;
 
 export interface StudentFeeRow extends Fee {
     id: string; 
-    memberInfo: Partial<Member>;
+    student: Partial<Member>;
     logs: PaymentLog[];
 }
 
-export function useFeesRoster(title: string, academicYear: string) {
+export function useFeesRoster(
+  title: string, 
+  academicYear: string,
+  options: {
+    pageSize?: number;
+    currentPage?: number;
+    search?: string;
+    filterStatus?: string;
+    dataView?: "submissions" | "all-students";
+  } = {}
+) {
+    const { 
+      pageSize = 10, 
+      currentPage = 1, 
+      search = "", 
+      filterStatus = "all",
+      dataView = "submissions"
+    } = options;
+
     const [fee, setFee] = useState<BaseFeeData | null>(null);
     const [studentRows, setStudentRows] = useState<StudentFeeRow[]>([]);
-    const [students, setStudents] = useState<Member[]>([]);
     const [logs, setLogs] = useState<PaymentLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const [totalCount, setTotalCount] = useState(0);
+    const [lastVisibleDocs, setLastVisibleDocs] = useState<Record<string, any[]>>({
+      "all-students": [],
+      "submissions": []
+    });
 
-    const fetchFeesData = useCallback(async () => {
+    const fetchData = useCallback(async () => {
         if (!title || !academicYear) return;
 
         setIsLoading(true);
         setError(null);
 
         try {
-            const fetchedFees = await fetchFeeRoster(title, academicYear) as (Fee & { id: string })[];
-            
-            if (fetchedFees.length > 0) {
-                const referenceDoc = fetchedFees[0];
-                setFee({
-                    id: referenceDoc.id,
-                    title: referenceDoc.title,
-                    academicYear: referenceDoc.academicYear,
-                    semester: referenceDoc.semester,
-                    amount: referenceDoc.amount,
-                    description: referenceDoc.description,
-                    dueDate: referenceDoc.dueDate,
-                    feeType: referenceDoc.feeType,
-                    createdBy: referenceDoc.createdBy,
-                    orgId: referenceDoc.orgId
-                });
-                
-                const connectedRowsPromises = fetchedFees.map(async (f) => {
+            const user = await getCurrentUserData() as any;
+            if (!user?.uid) return;
+            const orgId = user.uid;
+
+            // 1. Fetch the reference fee document if not already set
+            if (!fee) {
+              const { docs: feeDocs } = await fetchFeesPaginated(orgId, title, academicYear, 1);
+              if (feeDocs.length > 0) {
+                setFee(feeDocs[0]);
+              }
+            }
+
+            // 2. Fetch data based on dataView
+            if (dataView === "all-students") {
+                const count = await getFeesCount(orgId, title, academicYear, filterStatus, search);
+                setTotalCount(count);
+
+                const cursor = currentPage > 1 ? lastVisibleDocs["all-students"][currentPage - 2] : null;
+                const { docs, lastVisible } = await fetchFeesPaginated(
+                  orgId, 
+                  title, 
+                  academicYear, 
+                  pageSize, 
+                  cursor, 
+                  search, 
+                  filterStatus
+                );
+
+                const enrichedRows = await Promise.all(docs.map(async (f) => {
+                    // For the roster view, we might want the last payment log for each student
                     const feeLogs = await fetchPaymentLogs(f.id) as PaymentLog[];
-                    
-                    const enrichedLogs = feeLogs.map(log => ({
-                        ...log,
-                        feeId: f.id,
-                        userId: f.userId,
-                        status: log.status,
-                        studentId: f.studentId,
-                        studentName: f.userName,
-                    }));
-
-                    const memberInfo: Partial<Member> = {
-                        id: f.userId,
-                        studentId: f.studentId,
-                        firstName: f.userName.split(' ')[0],
-                        lastName: f.userName.split(' ').slice(1).join(' '),
-                        role: "user",
-                    };
-
                     return {
                         ...f,
-                        memberInfo,
-                        logs: enrichedLogs
-                    } as StudentFeeRow;
-                });
+                        log: feeLogs.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())[0],
+                        student: {
+                            id: f.userId,
+                            studentId: f.studentId,
+                            firstName: f.userName.split(' ')[0],
+                            lastName: f.userName.split(' ').slice(1).join(' '),
+                        },
+                        logs: feeLogs
+                    } as any;
+                }));
 
-                const resolvedRows = await Promise.all(connectedRowsPromises);
-                setStudentRows(resolvedRows);
+                console.log(enrichedRows)
 
-                setStudents(resolvedRows.map(row => row.memberInfo as Member));
-                setLogs(resolvedRows.flatMap(row => row.logs)); 
+
+                setStudentRows(enrichedRows);
+                if (lastVisible) {
+                  setLastVisibleDocs(prev => ({
+                    ...prev,
+                    "all-students": { ...prev["all-students"], [currentPage - 1]: lastVisible }
+                  }));
+                }
 
             } else {
-                setFee(null);
-                setStudentRows([]);
-                setStudents([]);
-                setLogs([]);
+                // submissions view
+                // For submissions, we fetch from proofOfPayments
+                const { docs, lastVisible } = await fetchFeeSubmissionsPaginated(
+                  orgId, 
+                  title, 
+                  pageSize, 
+                  currentPage > 1 ? lastVisibleDocs["submissions"][currentPage - 2] : null,
+                  filterStatus,
+                  search
+                );
+
+                const mappedLogs = (docs as any[]).map(d => ({
+                   id: d.id,
+                   paymentProofId: d.id,
+                   amount: d.amount,
+                   status: d.status,
+                   paidAt: d.submittedAt,
+                   studentName: d.userName,
+                   studentId: d.studentId,
+                   paymentMethod: d.paymentMethod,
+                   gcashReference: d.referenceNumber,
+                   declineRemarks: d.rejectionReason,
+                   receiptContent: d.imageUrl,
+                   notes: d.notes,
+                   reviewedAt: d.verifiedAt,
+                   reviewedBy: d.verifiedByName,
+                   createdAt: d.submittedAt,
+                   type: d.paymentType,
+                } as unknown as PaymentLog));
+
+                setLogs(mappedLogs);
+                // Note: totalCount for submissions should be fetched separately if needed
+                // For now we use docs.length or a fixed estimate
+                setTotalCount(docs.length > 0 ? (currentPage * pageSize + (docs.length === pageSize ? pageSize : 0)) : (currentPage - 1) * pageSize);
+
+                if (lastVisible) {
+                  setLastVisibleDocs(prev => ({
+                    ...prev,
+                    "submissions": { ...prev["submissions"], [currentPage - 1]: lastVisible }
+                  }));
+                }
             }
+
         } catch (err) {
             console.error("Error fetching fees roster:", err);
             setError(err as Error);
         } finally {
             setIsLoading(false);
         }
-    }, [title, academicYear]);
+    }, [title, academicYear, dataView, currentPage, pageSize, search, filterStatus, fee]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const hardRefresh = useCallback(async () => {
         const user = await getCurrentUserData();
         if (user && title && academicYear) {
-            cacheService.invalidate(CACHE_KEYS.feeRoster(user.uid, title, academicYear));
+            // Corrected prefix to 'fees:doc:' and added 'fees:logs:'
+            cacheService.invalidateByPrefix('fees:doc:');
+            cacheService.invalidateByPrefix('fees:logs:');
+            // If the roster list itself is cached, it should be cleared too
+            cacheService.invalidateByPrefix('fees:roster:');
         }
-        await fetchFeesData();
-    }, [title, academicYear, fetchFeesData]);
+        setLastVisibleDocs({ "all-students": [], "submissions": [] });
+        await fetchData();
+    }, [title, academicYear, fetchData]);
 
     const refetchStudentRow = useCallback(async (feeId: string) => {
         try {
@@ -114,29 +188,15 @@ export function useFeesRoster(title: string, academicYear: string) {
                 if (rowIndex === -1) return prevRows;
 
                 const rowToUpdate = prevRows[rowIndex];
-                
-                const enrichedLogs = (freshLogs as PaymentLog[]).map(log => ({
-                    ...log,
-                    feeId: rowToUpdate.id,
-                    userId: rowToUpdate.userId,
-                    status: log.status,
-                    studentId: rowToUpdate.studentId,
-                    studentName: rowToUpdate.userName,
-                    type: rowToUpdate.feeType,
-                    amount: log.amount,
-                }));
-
                 const updatedRow = {
                     ...rowToUpdate,
                     ...updatedFee,
-                    logs: enrichedLogs
+                    logs: freshLogs as PaymentLog[]
+
                 };
 
                 const newRows = [...prevRows];
                 newRows[rowIndex] = updatedRow;
-
-                setLogs(newRows.flatMap(row => row.logs));
-                newRows.sort((a, b) => b.updatedAt?.toMillis() - a.createdAt.toMillis());
                 return newRows;
             });
         } catch (err) {
@@ -144,20 +204,14 @@ export function useFeesRoster(title: string, academicYear: string) {
         }
     }, []);
 
-
-    useEffect(() => {
-        fetchFeesData();
-    }, [fetchFeesData]);
-
-
     return { 
         fee, 
         studentRows, 
-        students, 
         logs, 
         isLoading, 
         error,
+        totalCount,
         refetchStudentRow,
         refetch: hardRefresh
     };
-}
+}

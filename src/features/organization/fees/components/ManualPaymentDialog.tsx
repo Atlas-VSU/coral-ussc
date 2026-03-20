@@ -33,12 +33,11 @@ export function ManualPaymentDialog({
   const [manualPayMethod, setManualPayMethod] = useState<string>("cash");
   const [manualPayNotes, setManualPayNotes] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const form = useProofOfPaymentForm({
     defaultValues: {
-      userName: student ? `${student.memberInfo.firstName} ${student.memberInfo.lastName}` : "",
-      studentId: student?.memberInfo.studentId || "",
-      amount: fee.amount,
+      userName: student?.student ? `${student.student.firstName} ${student.student.lastName}` : "",
+      studentId: student?.student?.studentId || "",
+      amount: fee?.amount || 0,
       paymentMethod: "cash",
       referenceNumber: "",
       senderNumber: "",
@@ -72,7 +71,7 @@ export function ManualPaymentDialog({
           <DialogDescription>
             Record a cash or direct payment for{" "}
             <span className="font-medium text-[#3b413a] font-semibold">
-              {student.memberInfo.firstName} {student.memberInfo.lastName}
+              {student.student?.firstName} {student.student?.lastName}
             </span>.
             This will immediately mark the fee as settled.
           </DialogDescription>
@@ -87,10 +86,10 @@ export function ManualPaymentDialog({
               <div className="rounded-lg border border-border px-4 py-3">
                 <p className="text-xs text-[#3b413a]">Amount to settle</p>
                 <p className="text-lg font-bold text-[#3b413a] mt-0.5">
-                  ₱{fee.amount.toLocaleString()}
+                  ₱{(fee?.amount || 0).toLocaleString()}
                 </p>
                 <p className="text-xs text-[#3b413a] mt-0.5">
-                  {fee.title}
+                  {fee?.title || "Fee"}
                 </p>
               </div>
 
