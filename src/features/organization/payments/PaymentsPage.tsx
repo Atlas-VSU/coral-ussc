@@ -3,8 +3,6 @@
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/organization/PageHeader"
-import { RefreshCcw } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog"
 import { PaymentStats } from "./components/PaymentStats"
 import { SubmissionsTab } from "./components/SubmissionsTab"
@@ -12,7 +10,6 @@ import { UnpaidTab } from "./components/UnpaidTab"
 import { LogPaymentDialog } from "./components/LogPaymentDialog"
 import { usePaymentsPage } from "./hooks/usePaymentsPage"
 import PaymentReceiptDialog, { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
-import { set } from "zod"
 
 export default function PaymentsPage() {
   const {
@@ -41,7 +38,7 @@ export default function PaymentsPage() {
     studentProgram,
     // receipt
     receiptOpen, setReceiptOpen, receiptData, setReceiptData,
-    stats,
+    stats, totalUnpaidCount
   } = usePaymentsPage()
 
   const handleViewReceipt = () => {
@@ -123,6 +120,7 @@ export default function PaymentsPage() {
             isLoading={isLoadingUnpaid}
             refetchPayments={refetchPayments}
             isLoadingUnpaid={isLoadingUnpaid}
+            totalCount={totalUnpaidCount}
           />
         )}
       </Card>
