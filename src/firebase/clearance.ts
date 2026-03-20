@@ -16,6 +16,18 @@ import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheServi
 import { usePaymentApproval } from "@/features/organization/payments/hooks/usePaymentApproval";
 import { getCurrentUserData } from "./users";
 import { Member } from "@/features/organization/members/types";
+
+
+export const getClearanceStats = async (orgId: string, statusFilter: string = "all") => {
+  const snapshot = await getCountFromServer(query(
+    collection(db, 'clearanceStatus'),
+    where('orgId', '==', orgId),
+    where('isArchived', '==', false),
+    where('status', '==', statusFilter)
+  ));
+  return snapshot.data().count;
+}
+
 /**
  * Fetches clearance documents with server-side pagination and searching.
  */
@@ -62,14 +74,33 @@ export const fetchClearanceDocumentsPaginated = async (
 
   const docs = snapshot.docs.map((doc) => {
     const data = { id: doc.id, ...doc.data() } as ClearanceStatus;
-    // Granular caching: Cache each document individually
-    cacheService.set(CACHE_KEYS.clearanceDoc(doc.id), data, CACHE_DURATIONS.CLEARANCE);
+    const key = CACHE_KEYS.clearanceDoc(doc.id);
+    
+    // Check if it already exists to determine if it's a "hit" or "miss" for visibility
+    const cached = cacheService.get(key);
+    if (cached) {
+      // Color-coded logs matching cacheService.ts for a professional feel
+      console.log(
+        `%c[Cache Hit]%c ${key}`,
+        "color: #10b981; font-weight: bold;",
+        "color: inherit;"
+      );
+    } else {
+      console.log(
+        `%c[Cache Miss]%c ${key}`,
+        "color: #f59e0b; font-weight: bold;",
+        "color: inherit;"
+      );
+      cacheService.set(key, data, CACHE_DURATIONS.CLEARANCE);
+    }
+    
     return data;
   });
 
   return {
     docs,
     lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
+    allSnapshots: snapshot.docs,
     hasMore: snapshot.docs.length === pageSize,
   };
 };

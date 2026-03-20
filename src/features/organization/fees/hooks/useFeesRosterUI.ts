@@ -99,7 +99,6 @@ export function useFeesRosterUI({
 
   const handleViewDetails = (log: PaymentLog) => {
     setSelectedLog(log);
-    console.log(log)
     setDetailOpen(true);
   };
 

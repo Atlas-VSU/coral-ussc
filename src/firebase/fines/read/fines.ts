@@ -241,6 +241,7 @@ export const fetchFinesPaginated = async (
     docs,
     lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
     hasMore: snapshot.docs.length === pageSize,
+    allSnapshots: snapshot.docs,
   };
 };
 

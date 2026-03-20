@@ -33,7 +33,8 @@ export default function FeesRosterPage({
     error, 
     totalCount,
     refetchStudentRow, 
-    refetch 
+    refetch,
+    stats
   } = useFeesRoster(title, academicYear, {
     pageSize: ITEMS_PER_PAGE,
     currentPage,
@@ -94,6 +95,7 @@ export default function FeesRosterPage({
       fee={fee as any} 
       studentRows={studentRows}
       logs={logs}
+      stats={stats}
       onApprovePayment={approvePayment} 
       onManualPaymentAdded={addManualPayment} 
       onRejectPayment={rejectPayment} 

@@ -1,11 +1,14 @@
 "use client"
 
-import { useState, useRef, useMemo } from "react"
+import { useState, useRef, useMemo, useEffect } from "react"
 import { toast } from "sonner"
+import { Timestamp } from "firebase/firestore"
+import { useAuth } from "@/hooks/useAuth"
+
 import { useClearances } from "./useClearances"
 import { useClearanceActions } from "./useClearanceAction"
 import { useManualPaymentSelection } from "./useManualPaymentSelection"
-import { getCurrentUserData } from "@/firebase"
+import { getClearanceStats, getCurrentUserData } from "@/firebase"
 import { Member } from "../../members/types"
 import { PaymentType } from "@/constants/types"
 import type { ViewMode } from "@/components/organization/ViewToggle"
@@ -17,11 +20,18 @@ import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval"
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 
 export function useClearancePage(orgId: string | undefined) {
+  const { user: currentUser } = useAuth()
   // Filtering & View state
+
   const [search, setSearch] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [viewMode, setViewMode] = useState<ViewMode>("table")
   const [currentPage, setCurrentPage] = useState(1)
+  const [stats, setStats] = useState<{ cleared: number; not_cleared: number; pending: number }>({
+    cleared: 0,
+    not_cleared: 0,
+    pending: 0,
+  })
   const pageSize = 10
 
   const { clearances, loading, totalCount, setClearances, hardRefresh } = useClearances(
@@ -64,18 +74,75 @@ export function useClearancePage(orgId: string | undefined) {
     setPaymentReviewOpen(true)
   }
 
+  const fetchStats = async () => {
+    const orgId = currentUser?.uid;
+    if (!orgId) return;
+    const [cleared, not_cleared, pending] = await Promise.all([
+      getClearanceStats(orgId, "cleared"),
+      getClearanceStats(orgId, "not_cleared"),
+      getClearanceStats(orgId, "pending"),
+    ])
+    setStats({ cleared, not_cleared, pending })
+  }
+
+  useEffect(() => {
+    fetchStats()
+  }, [orgId])
+
   const handleApprovePayment = async () => {
     if (!payment) return
     setIsProcessing(true)
     try {
       // await approvePayment(reviewTarget.clearanceId, [reviewTarget.referenceId])
       const result = await _approvePayment(payment);
+      
+      // Optimistic update
+      const referenceIds = payment.metadata.items?.map(i => i.refId) || [];
+      const clearanceId = payment.referenceId; // In clearance context, referenceId in ProofOfPayment is often used for the refId, but we need the clearance record ID.
+  
+      
+      setClearances(prev => prev.map(cl => {
+        // Find by studentId or userId since we don't have the clearanceId explicitly in the payment object easily
+        if (cl.studentId !== payment.studentId && cl.userId !== payment.studentId) return cl;
+        
+        const updatedBlocking = { ...cl.blockingItems };
+        referenceIds.forEach(refId => {
+          const item = updatedBlocking[refId];
+          if (!item) return;
+          
+          const newItem = { ...item };
+          newItem.status = "paid";
+          newItem.pendingReview = false;
+          // newItem.paymentHistory = newItem.paymentHistory.map(p => 
+          //   p.status === "pending" 
+          //     ? {
+          //         ...p,
+          //         status: "verified",
+          //         verifiedAt: Timestamp.now(),
+          //         verifiedByName: currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : "Admin",
+          //       } 
+          //     : p
+          // );
+          updatedBlocking[refId] = newItem;
+        });
+        
+        const overallStatus = Object.values(updatedBlocking).some(
+          i => (i.status === "unpaid" || i.balance > 0) && i.isRequiredForClearance
+        ) ? "not_cleared" : "cleared";
+        
+        return { ...cl, blockingItems: updatedBlocking, status: overallStatus };
+      }));
+
+      // Invalidate cache
+      cacheService.invalidate(CACHE_KEYS.proofOfPaymentByUser(payment.studentId, payment.orgId));
+
       setReceiptData(result?.receipt!);
       setReceiptOpen(true);
       setPaymentReviewOpen(false)
     } finally {
       setIsProcessing(false)
     }
+
   }
 
   const handleRejectPayment = async (reason: string) => {
@@ -84,10 +151,50 @@ export function useClearancePage(orgId: string | undefined) {
     try {
       // await rejectPayment(reviewTarget.clearanceId, [reviewTarget.referenceId], reason)
       await _rejectPayment(payment, reason);
+
+      // Optimistic update
+      const referenceIds = payment.metadata.items?.map(i => i.refId) || [];
+      
+      setClearances(prev => prev.map(cl => {
+        if (cl.studentId !== payment.studentId && cl.userId !== payment.studentId) return cl;
+        
+        const updatedBlocking = { ...cl.blockingItems };
+        referenceIds.forEach(refId => {
+          const item = updatedBlocking[refId];
+          if (!item) return;
+          
+          const newItem = { ...item };
+          newItem.status = "unpaid";
+          newItem.pendingReview = false;
+          // newItem.paymentHistory = newItem.paymentHistory.map(p => 
+          //   p.status === "pending" 
+          //     ? {
+          //         ...p,
+          //         status: "rejected",
+          //         rejectionReason: reason,
+          //         verifiedAt: Timestamp.now(),
+          //         verifiedByName: currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : "Admin",
+          //       } 
+          //     : p
+          // );
+          updatedBlocking[refId] = newItem;
+        });
+        
+        const overallStatus = Object.values(updatedBlocking).some(
+          i => (i.status === "unpaid" || i.balance > 0) && i.isRequiredForClearance
+        ) ? "not_cleared" : "cleared";
+        
+        return { ...cl, blockingItems: updatedBlocking, status: overallStatus };
+      }));
+
+      // Invalidate cache
+      cacheService.invalidate(CACHE_KEYS.proofOfPaymentByUser(payment.studentId, payment.orgId));
+
       setPaymentReviewOpen(false)
     } finally {
       setIsProcessing(false)
     }
+
   }
 
   // Handlers: Log Payment
@@ -172,6 +279,7 @@ export function useClearancePage(orgId: string | undefined) {
     paginated,
     totalPages,
     reviewData,
+    stats,
     
     // UI State
     search,

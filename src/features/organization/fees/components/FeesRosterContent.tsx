@@ -59,6 +59,7 @@ export function FeesRosterContent({
   dataView,
   setDataView,
   totalCount,
+  stats
 }: {
   fee: Fee;
   studentRows: StudentFeeRow[];
@@ -81,6 +82,12 @@ export function FeesRosterContent({
   dataView: "submissions" | "all-students";
   setDataView: (v: "submissions" | "all-students") => void;
   totalCount: number;
+  stats: {
+    pending: number;
+    verified: number;
+    rejected: number;
+    unpaid: number;
+  };
 }) {
   const router = useRouter();
   const { state, computed, actions } = useFeesRosterUI({
@@ -122,7 +129,6 @@ export function FeesRosterContent({
   const {
     paginatedLogs,
     paginatedRows,
-    stats,
   } = computed;
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
@@ -148,7 +154,6 @@ export function FeesRosterContent({
     setCurrentPage: handlePageChange,
   } = actions;
 
-  
 
   return (
     <div className="flex flex-col gap-6 pt-14 lg:pt-0 pb-24 lg:pb-0">
@@ -319,9 +324,9 @@ export function FeesRosterContent({
           notes: (selectedLog as any)?.notes || (selectedLog as any)?.metadata?.notes || "",
           declineRemarks: (selectedLog as any)?.declineRemarks || "",
         }}
-        onApprove={selectedLog?.status === "pending" ? () => handleApprove(selectedLog!.paymentProofId!) : undefined}
+        onApprove={selectedLog?.status === "pending" ? async () => await handleApprove(selectedLog!.paymentProofId!) : undefined}
         onReject={async (reason) => {
-        if (selectedLog?.status === "pending" ) handleReject(selectedLog!.paymentProofId!, reason);
+        if (selectedLog?.status === "pending" ) await handleReject(selectedLog!.paymentProofId!, reason);
         }}
         isProcessing={isSubmitting}
       />

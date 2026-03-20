@@ -42,6 +42,12 @@ export function useFeesRoster(
       "all-students": [],
       "submissions": []
     });
+    const [stats, setStats] = useState({
+      pending: 0,
+      verified: 0,
+      rejected: 0,
+      unpaid: 0
+    });
 
     const fetchData = useCallback(async () => {
         if (!title || !academicYear) return;
@@ -64,19 +70,21 @@ export function useFeesRoster(
 
             // 2. Fetch data based on dataView
             if (dataView === "all-students") {
-                const count = await getFeesCount(orgId, title, academicYear, filterStatus, search);
-                setTotalCount(count);
+                const isJump = currentPage > 1 && !lastVisibleDocs["all-students"][currentPage - 2];
+                const effectivePageSize = isJump ? (currentPage * pageSize) : pageSize;
+                const effectiveCursor = isJump ? null : (currentPage > 1 ? lastVisibleDocs["all-students"][currentPage - 2] : null);
 
-                const cursor = currentPage > 1 ? lastVisibleDocs["all-students"][currentPage - 2] : null;
-                const { docs, lastVisible } = await fetchFeesPaginated(
+                const { docs: fetchedDocs, lastVisible, allSnapshots } = await fetchFeesPaginated(
                   orgId, 
                   title, 
                   academicYear, 
-                  pageSize, 
-                  cursor, 
+                  effectivePageSize, 
+                  effectiveCursor, 
                   search, 
                   filterStatus
                 );
+
+                const docs = isJump ? fetchedDocs.slice((currentPage - 1) * pageSize) : fetchedDocs;
 
                 const enrichedRows = await Promise.all(docs.map(async (f) => {
                     // For the roster view, we might want the last payment log for each student
@@ -94,28 +102,45 @@ export function useFeesRoster(
                     } as any;
                 }));
 
-                console.log(enrichedRows)
-
-
                 setStudentRows(enrichedRows);
-                if (lastVisible) {
-                  setLastVisibleDocs(prev => ({
-                    ...prev,
-                    "all-students": { ...prev["all-students"], [currentPage - 1]: lastVisible }
-                  }));
+                
+                if (allSnapshots && allSnapshots.length > 0) {
+                  setLastVisibleDocs(prev => {
+                    const nextAll = { ...prev["all-students"] };
+                    const next = { ...prev, "all-students": nextAll };
+                    
+                    allSnapshots.forEach((snap, index) => {
+                      const absoluteIndex = isJump ? index : ((currentPage - 1) * pageSize + index);
+                      if ((absoluteIndex + 1) % pageSize === 0) {
+                        const pageNum = (absoluteIndex + 1) / pageSize;
+                        nextAll[pageNum - 1] = snap;
+                      }
+                    });
+                    
+                    const finalAbsoluteIndex = isJump ? (allSnapshots.length - 1) : ((currentPage - 1) * pageSize + allSnapshots.length - 1);
+                    const finalPageNum = Math.ceil((finalAbsoluteIndex + 1) / pageSize);
+                    nextAll[finalPageNum - 1] = allSnapshots[allSnapshots.length - 1];
+                    
+                    return next;
+                  });
                 }
 
             } else {
                 // submissions view
-                // For submissions, we fetch from proofOfPayments
-                const { docs, lastVisible } = await fetchFeeSubmissionsPaginated(
+                const isJump = currentPage > 1 && !lastVisibleDocs["submissions"][currentPage - 2];
+                const effectivePageSize = isJump ? (currentPage * pageSize) : pageSize;
+                const effectiveCursor = isJump ? null : (currentPage > 1 ? lastVisibleDocs["submissions"][currentPage - 2] : null);
+
+                const { docs: fetchedDocs, lastVisible, allSnapshots } = await fetchFeeSubmissionsPaginated(
                   orgId, 
                   title, 
-                  pageSize, 
-                  currentPage > 1 ? lastVisibleDocs["submissions"][currentPage - 2] : null,
+                  effectivePageSize, 
+                  effectiveCursor,
                   filterStatus,
                   search
                 );
+
+                const docs = isJump ? fetchedDocs.slice((currentPage - 1) * pageSize) : fetchedDocs;
 
                 const mappedLogs = (docs as any[]).map(d => ({
                    id: d.id,
@@ -141,11 +166,25 @@ export function useFeesRoster(
                 // For now we use docs.length or a fixed estimate
                 setTotalCount(docs.length > 0 ? (currentPage * pageSize + (docs.length === pageSize ? pageSize : 0)) : (currentPage - 1) * pageSize);
 
-                if (lastVisible) {
-                  setLastVisibleDocs(prev => ({
-                    ...prev,
-                    "submissions": { ...prev["submissions"], [currentPage - 1]: lastVisible }
-                  }));
+                if (allSnapshots && allSnapshots.length > 0) {
+                  setLastVisibleDocs(prev => {
+                    const nextSub = { ...prev["submissions"] };
+                    const next = { ...prev, "submissions": nextSub };
+                    
+                    allSnapshots.forEach((snap, index) => {
+                      const absoluteIndex = isJump ? index : ((currentPage - 1) * pageSize + index);
+                      if ((absoluteIndex + 1) % pageSize === 0) {
+                        const pageNum = (absoluteIndex + 1) / pageSize;
+                        nextSub[pageNum - 1] = snap;
+                      }
+                    });
+                    
+                    const finalAbsoluteIndex = isJump ? (allSnapshots.length - 1) : ((currentPage - 1) * pageSize + allSnapshots.length - 1);
+                    const finalPageNum = Math.ceil((finalAbsoluteIndex + 1) / pageSize);
+                    nextSub[finalPageNum - 1] = allSnapshots[allSnapshots.length - 1];
+                    
+                    return next;
+                  });
                 }
             }
 
@@ -204,8 +243,38 @@ export function useFeesRoster(
         }
     }, []);
 
+    const fetchStatistics = useCallback(async () => {
+        try {
+            const user = await getCurrentUserData() as any;
+            if (!user?.uid) return;
+            const orgId = user.uid;
+
+            const [pending, verified, rejected, unpaid] = await Promise.all([
+                getFeesCount(orgId, title, academicYear, "pending", ""),
+                getFeesCount(orgId, title, academicYear, "paid", ""),
+                getFeesCount(orgId, title, academicYear, "rejected", ""),
+                getFeesCount(orgId, title, academicYear, "unpaid", "")
+            ]);
+
+
+            setStats({
+                pending,
+                verified,
+                rejected,
+                unpaid
+            });
+        } catch (err) {
+            console.error("Error fetching statistics:", err);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchStatistics();
+    }, [title, academicYear]);
+
     return { 
         fee, 
+        stats,
         studentRows, 
         logs, 
         isLoading, 
