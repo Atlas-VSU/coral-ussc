@@ -71,7 +71,7 @@ export default function EventsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-7xl mx-auto pb-8">
+    <div className="flex flex-col gap-6 max-w-7xl mx-auto pt-8 pb-24 lg:pb-0">
       <EventsCacheLoader />
 
       {/* Page Header */}
