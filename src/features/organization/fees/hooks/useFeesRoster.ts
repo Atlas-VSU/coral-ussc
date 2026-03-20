@@ -42,6 +42,12 @@ export function useFeesRoster(
       "all-students": [],
       "submissions": []
     });
+    const [stats, setStats] = useState({
+      pending: 0,
+      verified: 0,
+      rejected: 0,
+      unpaid: 0
+    });
 
     const fetchData = useCallback(async () => {
         if (!title || !academicYear) return;
@@ -204,8 +210,38 @@ export function useFeesRoster(
         }
     }, []);
 
+    const fetchStatistics = useCallback(async () => {
+        try {
+            const user = await getCurrentUserData() as any;
+            if (!user?.uid) return;
+            const orgId = user.uid;
+
+            const [pending, verified, rejected, unpaid] = await Promise.all([
+                getFeesCount(orgId, title, academicYear, "pending", ""),
+                getFeesCount(orgId, title, academicYear, "paid", ""),
+                getFeesCount(orgId, title, academicYear, "rejected", ""),
+                getFeesCount(orgId, title, academicYear, "unpaid", "")
+            ]);
+
+
+            setStats({
+                pending,
+                verified,
+                rejected,
+                unpaid
+            });
+        } catch (err) {
+            console.error("Error fetching statistics:", err);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchStatistics();
+    }, [title, academicYear]);
+
     return { 
         fee, 
+        stats,
         studentRows, 
         logs, 
         isLoading, 
