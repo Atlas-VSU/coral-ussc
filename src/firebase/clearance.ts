@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, orderBy, query, serverTimestamp, Timestamp, updateDoc, where, writeBatch } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, orderBy, query, serverTimestamp, Timestamp, updateDoc, where, writeBatch, limit, startAfter, getCountFromServer, queryEqual, QueryConstraint } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { BlockingItem, ClearanceStatus } from "@/features/organization/clearance/types";
 import { approvePaymentTransaction, checkFeeStatusForClearance, fetchFee, recordBulkManualPaymentAndUpdateClearance, recordManualPaymentAndUpdateClearance, rejectPaymentTransaction } from "./fees";
@@ -14,25 +14,99 @@ import { getProofOfPaymentByUserId } from "./payment/read/proofOfPayment";
 import { use } from "react";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 import { usePaymentApproval } from "@/features/organization/payments/hooks/usePaymentApproval";
+/**
+ * Fetches clearance documents with server-side pagination and searching.
+ */
+export const fetchClearanceDocumentsPaginated = async (
+  orgId: string,
+  pageSize: number = 10,
+  lastVisibleDoc: any = null,
+  searchTerm: string = "",
+  statusFilter: string = "all"
+) => {
+  const clearanceRef = collection(db, "clearanceStatus");
+  let constraints: QueryConstraint[] = [
+    where("orgId", "==", orgId),
+    where("isArchived", "==", false),
+  ];
+
+  if (statusFilter !== "all") {
+    constraints.push(where("status", "==", statusFilter));
+  }
+
+  // Normalize search term
+  const isIdSearch = /\d/.test(searchTerm);
+  const normalizedSearch = isIdSearch 
+    ? searchTerm.trim() 
+    : searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+
+  if (normalizedSearch) {
+    const searchField = isIdSearch ? "studentId" : "userName";
+    constraints.push(where(searchField, ">=", normalizedSearch));
+    constraints.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
+    constraints.push(orderBy(searchField));
+  } else {
+    constraints.push(orderBy("updatedAt", "desc"));
+  }
+
+  // Apply pagination
+  constraints.push(limit(pageSize));
+  if (lastVisibleDoc) {
+    constraints.push(startAfter(lastVisibleDoc));
+  }
+
+  const q = query(clearanceRef, ...constraints);
+  const snapshot = await getDocs(q);
+
+  const docs = snapshot.docs.map((doc) => {
+    const data = { id: doc.id, ...doc.data() } as ClearanceStatus;
+    // Granular caching: Cache each document individually
+    cacheService.set(CACHE_KEYS.clearanceDoc(doc.id), data, CACHE_DURATIONS.CLEARANCE);
+    return data;
+  });
+
+  return {
+    docs,
+    lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
+    hasMore: snapshot.docs.length === pageSize,
+  };
+};
+
+/**
+ * Gets the total count of clearance documents for an organization with optional search.
+ */
+export const getClearanceCount = async (orgId: string, statusFilter: string = "all", searchTerm: string = "") => {
+  const clearanceRef = collection(db, "clearanceStatus");
+  let constraints = [
+    where("orgId", "==", orgId),
+    where("isArchived", "==", false),
+  ];
+
+  if (statusFilter !== "all") {
+    constraints.push(where("status", "==", statusFilter));
+  }
+
+  const isIdSearch = /\d/.test(searchTerm);
+  const normalizedSearch = isIdSearch 
+    ? searchTerm.trim() 
+    : searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+
+  if (normalizedSearch) {
+    const searchField = isIdSearch ? "studentId" : "userName";
+    constraints.push(where(searchField, ">=", normalizedSearch));
+    constraints.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
+  }
+
+  const q = query(clearanceRef, ...constraints);
+  const snapshot = await getCountFromServer(q);
+  return snapshot.data().count;
+};
+
+// Deprecated in favor of fetchClearanceDocumentsPaginated
 export const fetchClearanceDocuments = async (orgId: string) => {
-    return cacheService.getOrFetch(
-        CACHE_KEYS.clearanceAll(orgId),
-        async () => {
-            const clearanceRef = collection(db, 'clearanceStatus');
-            const q = query(
-                clearanceRef, 
-                where('orgId', '==', orgId), 
-                where('isArchived', '==', false),
-                orderBy('updatedAt', 'desc')
-            );
-            const snapshot = await getDocs(q);
-            return snapshot.docs.map(doc => ({ 
-                id: doc.id, 
-                ...doc.data() 
-            })) as ClearanceStatus[];
-        },
-        CACHE_DURATIONS.CLEARANCE
-    );
+    console.warn("fetchClearanceDocuments is deprecated. Use fetchClearanceDocumentsPaginated instead.");
+    const { docs } = await fetchClearanceDocumentsPaginated(orgId, 100); // Fetch first 100 as fallback
+    return docs;
 }
 
 export const fetchClearanceStatus = async (userId: string) => {
@@ -82,8 +156,8 @@ export const recalculateClearanceStatus = async (clearanceId: string) => {
     });
 
     cacheService.invalidate(CACHE_KEYS.clearanceDoc(clearanceId));
-    cacheService.invalidate(CACHE_KEYS.clearanceAll(clearance.orgId));
-    fetchClearanceDocuments(clearance.orgId).catch(console.error);
+    // ClearanceAll invalidation is deprecated as we move to paginated fetching
+    // cacheService.invalidate(CACHE_KEYS.clearanceAll(clearance.orgId));
 }
 
 export const updateClearanceDocument = async (userId: string, orgId: string) => {
@@ -126,8 +200,7 @@ export const updateClearanceDocument = async (userId: string, orgId: string) => 
     });
 
     await recalculateClearanceStatus(userId);
-    cacheService.invalidateByPrefix('clearance:');
-    fetchClearanceDocuments(orgId).catch(console.error);
+    cacheService.invalidateByPrefix('clearance:doc:');
 }
 
 
@@ -187,8 +260,6 @@ export const addStudentWithClearance = async (studentId: string,studentData: any
         console.log(`✅ Successfully added student ${studentData.firstName} and initialized clearance.`);
         
         cacheService.invalidate(CACHE_KEYS.clearanceDoc(studentRef.id));
-        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
-        fetchClearanceDocuments(orgId).catch(console.error);
 
         return studentRef.id;
     } catch (error) {
@@ -538,8 +609,7 @@ export const seedClearanceDocuments = async (orgId: string) => {
     }
 
     console.log(`✅ Successfully seeded clearance documents for ${totalAddedCount} new students.`);
-    cacheService.invalidateByPrefix('clearance:');
-    fetchClearanceDocuments(orgId).catch(console.error);
+    cacheService.invalidateByPrefix('clearance:doc:');
   } catch (error) {
     console.error('❌ Error seeding clearance documents:', error);
   }

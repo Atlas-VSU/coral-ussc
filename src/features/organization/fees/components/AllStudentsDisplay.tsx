@@ -38,10 +38,10 @@ export function AllStudentsTable({
             const config = log?.status ? statusConfig[log.status] : statusConfig["unpaid"];
             const Icon = config.icon;
             return (
-              <TableRow key={student.studentId || student.id}>
-                <TableCell className="text-xs font-mono text-muted-foreground">{student.studentId || "—"}</TableCell>
+              <TableRow key={student?.studentId || student?.id}>
+                <TableCell className="text-xs font-mono text-muted-foreground">{student?.studentId || "—"}</TableCell>
                 <TableCell className="text-sm font-medium text-foreground">
-                  {student.firstName || ""} {student.lastName || ""}
+                  {student?.firstName || ""} {student?.lastName || ""}
                 </TableCell>
                 <TableCell>
                   <Badge variant={config.variant} className="flex items-center gap-1 w-fit text-xs">

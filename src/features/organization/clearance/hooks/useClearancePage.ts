@@ -14,15 +14,23 @@ import type { ReceiptData } from "@/components/organization/PaymentReceiptDialog
 import { generateReceiptId } from "../../payments/utils"
 import { ProofOfPayment } from "../../fines/types"
 import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval"
+import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 
 export function useClearancePage(orgId: string | undefined) {
-  const { clearances, loading, setClearances, hardRefresh } = useClearances(orgId)
-  
   // Filtering & View state
   const [search, setSearch] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [viewMode, setViewMode] = useState<ViewMode>("table")
   const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 10
+
+  const { clearances, loading, totalCount, setClearances, hardRefresh } = useClearances(
+    orgId,
+    pageSize,
+    search,
+    filterStatus,
+    currentPage
+  )
 
   // Payment Review state
   const [paymentReviewOpen, setPaymentReviewOpen] = useState(false)
@@ -45,18 +53,10 @@ export function useClearancePage(orgId: string | undefined) {
   const { /*approvePayment, rejectPayment,*/ logManualPayment, receiptData,setReceiptData, setReceiptOpen, receiptOpen } = useClearanceActions(clearances, setClearances)
   const selection = useManualPaymentSelection(logPaymentTarget)
 
-  // Derived state: Filtered/Paginated data
-  const filtered = useMemo(() => {
-    return clearances.filter(c => {
-      const matchesSearch = c.userName.toLowerCase().includes(search.toLowerCase()) || 
-                            c.studentId.toLowerCase().includes(search.toLowerCase())
-      const matchesStatus = filterStatus === "all" || c.status === filterStatus
-      return matchesSearch && matchesStatus
-    })
-  }, [clearances, search, filterStatus])
-
-  const totalPages = Math.ceil(filtered.length / 10)
-  const paginated = filtered.slice((currentPage - 1) * 10, currentPage * 10)
+  // Paginated and filtered data now comes directly from the server via useClearances
+  const totalPages = Math.ceil(totalCount / pageSize)
+  const paginated = clearances // In server-side pagination, clearances only contains the current page
+  const filtered = clearances // Simplified for backwards compatibility in UI if needed
 
   // Handlers: Payment Review
   const openPaymentReview = (payment: ProofOfPayment) => {
@@ -111,6 +111,9 @@ export function useClearancePage(orgId: string | undefined) {
         receipt
       )
 
+      // Invalidate the individual doc cache since it was updated
+      cacheService.invalidate(CACHE_KEYS.clearanceDoc(logPaymentTarget.id));
+      
       idCounter.current += 1
       const currentUser = await getCurrentUserData() as unknown as Member;
       setReceiptData({
@@ -164,6 +167,7 @@ export function useClearancePage(orgId: string | undefined) {
     // Data
     clearances,
     loading,
+    totalCount,
     filtered,
     paginated,
     totalPages,

@@ -29,6 +29,7 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
     filtered,
     paginated,
     totalPages,
+    totalCount,
     reviewData,
     search,
     setSearch,
@@ -110,7 +111,7 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
           <DataPagination
             currentPage={currentPage}
             totalPages={totalPages}
-            totalItems={filtered.length}
+            totalItems={totalCount}
             itemsPerPage={10}
             onPageChange={setCurrentPage}
           />
