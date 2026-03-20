@@ -26,7 +26,7 @@ export function SearchFilterBar({
       <div className="relative">
         <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
         <Input
-          placeholder="Search student..."
+          placeholder="Search Name or Student ID..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-8 w-48"
@@ -39,9 +39,10 @@ export function SearchFilterBar({
         <SelectContent>
           <SelectItem value="all">All Status</SelectItem>
           <SelectItem value="pending">Pending</SelectItem>
-          <SelectItem value="verified">Verified</SelectItem>
+          {!showUnpaidFilter && <SelectItem value="verified">Verified</SelectItem>}
           <SelectItem value="rejected">Rejected</SelectItem>
           {showUnpaidFilter && <SelectItem value="unpaid">Unpaid</SelectItem>}
+          {showUnpaidFilter && <SelectItem value="paid">Paid</SelectItem>}
         </SelectContent>
       </Select>
 

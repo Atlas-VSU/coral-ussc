@@ -29,6 +29,7 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
     filtered,
     paginated,
     totalPages,
+    totalCount,
     reviewData,
     search,
     setSearch,
@@ -57,7 +58,7 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
   } = useClearancePage(orgId)
 
   return (
-    <div className="flex flex-col gap-6 pb-24 lg:pb-0">
+    <div className="flex flex-col gap-6 pt-8 pb-24 lg:pb-0">
       <PageHeader
       variant="admin"
         title="Clearance Management"
@@ -110,7 +111,7 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
           <DataPagination
             currentPage={currentPage}
             totalPages={totalPages}
-            totalItems={filtered.length}
+            totalItems={totalCount}
             itemsPerPage={10}
             onPageChange={setCurrentPage}
           />
