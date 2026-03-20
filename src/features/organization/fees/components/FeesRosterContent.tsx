@@ -40,6 +40,7 @@ const ITEMS_PER_PAGE = 10;
 export function FeesRosterContent({
   fee,
   studentRows,
+  logs,
   onApprovePayment,
   onRejectPayment,
   onManualPaymentAdded,
@@ -48,9 +49,20 @@ export function FeesRosterContent({
   refetchStudentRow,
   isLoading = false,
   refetch,
+  // Lifted State
+  currentPage,
+  setCurrentPage,
+  search,
+  setSearch,
+  filterStatus,
+  setFilterStatus,
+  dataView,
+  setDataView,
+  totalCount,
 }: {
   fee: Fee;
   studentRows: StudentFeeRow[];
+  logs: PaymentLog[];
   onApprovePayment: (proofId: string) => Promise<void>;
   onRejectPayment: (proofId: string, reason: string) => Promise<void>;
   onManualPaymentAdded: (feeId: string, amount: string, method: "gcash" | "cash" | "bank_transfer" | "waiver", ref?: string) => Promise<void>;
@@ -59,27 +71,42 @@ export function FeesRosterContent({
   refetchStudentRow: (feeId: string) => Promise<void>;
   isLoading?: boolean;
   refetch: () => Promise<void>;
+  // Lifted State Types
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  search: string;
+  setSearch: (s: string) => void;
+  filterStatus: string;
+  setFilterStatus: (s: string) => void;
+  dataView: "submissions" | "all-students";
+  setDataView: (v: "submissions" | "all-students") => void;
+  totalCount: number;
 }) {
   const router = useRouter();
   const { state, computed, actions } = useFeesRosterUI({
     fee,
     router,
     studentRows,
+    logs,
     onApprovePayment,
     onRejectPayment,
     onManualPaymentAdded,
     onArchiveFee,
     itemsPerPage: ITEMS_PER_PAGE,
     isLoading,
+    search,
+    setSearch,
+    filterStatus,
+    setFilterStatus,
+    currentPage,
+    setCurrentPage,
+    dataView,
+    setDataView,
   });
 
   const {
     archiveDialogOpen,
-    search,
-    filterStatus,
     viewMode,
-    dataView,
-    currentPage,
     selectedLog,
     detailOpen,
     rejectOpen,
@@ -95,19 +122,14 @@ export function FeesRosterContent({
   const {
     paginatedLogs,
     paginatedRows,
-    totalPages,
     stats,
-    filteredLogsCount,
-    filteredRowsCount,
   } = computed;
+
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   const {
     setArchiveDialogOpen,
-    setSearch,
-    setFilterStatus,
     setViewMode,
-    setDataView,
-    setCurrentPage,
     setDetailOpen,
     setRejectOpen,
     setRejectionReason,
@@ -118,7 +140,12 @@ export function FeesRosterContent({
     handleViewDetails,
     handleManualLogRequest,
     setStudentRowFee,
-    handleArchiveConfirm
+    handleArchiveConfirm,
+    // Use the actions from UI hook as they may contain logic (like resetting page)
+    setSearch: handleSearch,
+    setFilterStatus: handleFilterStatus,
+    setDataView: handleDataView,
+    setCurrentPage: handlePageChange,
   } = actions;
 
   return (
@@ -167,7 +194,7 @@ export function FeesRosterContent({
               </div>
               <Tabs
                 value={dataView}
-                onValueChange={setDataView}
+                onValueChange={(v) => handleDataView(v as any)}
               >
                 <TabsList>
                   <TabsTrigger value="submissions">Submissions</TabsTrigger>
@@ -178,9 +205,9 @@ export function FeesRosterContent({
             <div className="flex flex-wrap items-center gap-2">
               <SearchFilterBar
                 search={search}
-                onSearchChange={setSearch}
+                onSearchChange={handleSearch}
                 filterStatus={filterStatus}
-                onFilterChange={setFilterStatus}
+                onFilterChange={handleFilterStatus}
                 showUnpaidFilter={dataView === "all-students"}
                 handleRefresh={refetch}
                 isLoading={isLoading}
@@ -213,9 +240,9 @@ export function FeesRosterContent({
           <DataPagination
             currentPage={currentPage}
             totalPages={totalPages}
-            totalItems={dataView === "submissions" ? filteredLogsCount : filteredRowsCount}
+            totalItems={totalCount}
             itemsPerPage={ITEMS_PER_PAGE}
-            onPageChange={setCurrentPage}
+            onPageChange={handlePageChange}
           />
         </CardContent>
       </Card>

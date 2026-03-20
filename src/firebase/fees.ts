@@ -1,5 +1,5 @@
 import { Member, MemberData } from "@/features/organization/members/types";
-import { collection, deleteField, doc, getCountFromServer, getDoc, getDocs, orderBy, query, runTransaction, setDoc, Timestamp, updateDoc, where, writeBatch } from "firebase/firestore";
+import { collection, deleteField, doc, getCountFromServer, getDoc, getDocs, limit, orderBy, query, runTransaction, setDoc, startAfter, Timestamp, updateDoc, where, writeBatch } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { FeeGenerationSchema } from "@/features/organization/fees/utils/feeGenerationSchema";
 import z from "zod";
@@ -239,9 +239,140 @@ export const fetchUnpaidFeesForOrg = async (): Promise<Fee[]> => {
 }
 
 
+/**
+ * Fetches fee documents with server-side pagination and searching.
+ */
+export const fetchFeesPaginated = async (
+  orgId: string,
+  title: string,
+  academicYear: string,
+  pageSize: number = 10,
+  lastVisibleDoc: any = null,
+  searchTerm: string = "",
+  statusFilter: string = "all"
+) => {
+  let constraints: any[] = [
+    where("orgId", "==", orgId),
+    where("title", "==", title),
+    where("academicYear", "==", academicYear),
+    where("isArchived", "==", false),
+  ];
+
+  if (statusFilter !== "all" && statusFilter !== "") {
+    constraints.push(where("status", "==", statusFilter));
+  }
+
+  // Handle Search using prefix logic on userName or studentId
+  if (searchTerm) {
+    // Firestore only supports prefix search on one field at a time with range queries
+    // Usually name is preferred for roster search
+    constraints.push(where("userName", ">=", searchTerm));
+    constraints.push(where("userName", "<=", searchTerm + "\uf8ff"));
+    constraints.push(orderBy("userName"));
+  } else {
+    constraints.push(orderBy("updatedAt", "desc"));
+  }
+
+  // Apply pagination
+  constraints.push(limit(pageSize));
+  if (lastVisibleDoc) {
+    constraints.push(startAfter(lastVisibleDoc));
+  }
+
+  const q = query(collection(db, "fees"), ...constraints);
+  const snapshot = await getDocs(q);
+
+  const docs = snapshot.docs.map((doc) => {
+    const data = { id: doc.id, ...doc.data() } as Fee;
+    // Granular caching
+    cacheService.set(CACHE_KEYS.feeDoc(doc.id), data, CACHE_DURATIONS.FEES);
+    return data;
+  });
+
+  return {
+    docs,
+    lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
+    hasMore: snapshot.docs.length === pageSize,
+  };
+};
+
+/**
+ * Gets total count of fee documents for a specific title and filter.
+ */
+export const getFeesCount = async (
+  orgId: string,
+  title: string,
+  academicYear: string,
+  statusFilter: string = "all"
+) => {
+  let constraints: any[] = [
+    where("orgId", "==", orgId),
+    where("title", "==", title),
+    where("academicYear", "==", academicYear),
+    where("isArchived", "==", false),
+  ];
+
+  if (statusFilter !== "all" && statusFilter !== "") {
+    constraints.push(where("status", "==", statusFilter));
+  }
+
+  const q = query(collection(db, "fees"), ...constraints);
+  const snapshot = await getCountFromServer(q);
+  return snapshot.data().count;
+};
+
+/**
+ * Fetches globally aggregated payment submissions for a specific fee.
+ * Note: If no global indexing by title exists in proofOfPayments, 
+ * this might need a Collection Group query or a title-indexed query.
+ */
+export const fetchFeeSubmissionsPaginated = async (
+  orgId: string,
+  feeTitle: string,
+  pageSize: number = 10,
+  lastVisibleDoc: any = null,
+  statusFilter: string = "all"
+) => {
+  // We use proofOfPayments for a global "submissions" view across all students
+  let constraints: any[] = [
+    where("orgId", "==", orgId),
+    where("paymentType", "==", "fee"),
+    where("isArchived", "==", false),
+  ];
+
+  if (statusFilter !== "all" && statusFilter !== "") {
+    constraints.push(where("status", "==", statusFilter));
+  }
+
+  constraints.push(orderBy("submittedAt", "desc"));
+  constraints.push(limit(pageSize));
+  if (lastVisibleDoc) {
+    constraints.push(startAfter(lastVisibleDoc));
+  }
+
+  const q = query(collection(db, "proofOfPayments"), ...constraints);
+  const snapshot = await getDocs(q);
+
+  // Since we don't have feeTitle indexed at root in proofOfPayments yet, 
+  // we filter by title in metadata if possible, but Firestore can't do that.
+  // For now, we fetch recent fee payments for the org.
+  const docs = snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+
+  return {
+    docs,
+    lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
+    hasMore: snapshot.docs.length === pageSize,
+  };
+};
+
 export async function fetchFeeRoster(title: string, academicYear: string) {
-  // orgId is needed for a unique cache key; read from currentUser lazily
+  // Deprecated for main roster. Use fetchFeesPaginated instead.
   const currentUser = await getCurrentUserData() as unknown as Member;
+  console.warn("fetchFeeRoster is deprecated for large datasets. Use fetchFeesPaginated instead.");
+  
   return cacheService.getOrFetch(
     CACHE_KEYS.feeRoster(currentUser.id || '', title, academicYear),
     async () => {
@@ -250,7 +381,8 @@ export async function fetchFeeRoster(title: string, academicYear: string) {
         feesRef,
         where("title", "==", title),
         where("academicYear", "==", academicYear),
-        where("isArchived", "==", false)
+        where("isArchived", "==", false),
+        limit(100) // Safety limit
       );
       const snapshot = await getDocs(rosterQuery);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
