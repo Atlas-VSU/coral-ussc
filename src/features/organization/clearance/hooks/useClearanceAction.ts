@@ -12,6 +12,8 @@ import { PaymentType } from "@/constants/types"
 import { generateReceiptId } from "../../payments/utils"
 import { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
 import { set } from "zod"
+import { cacheService, CACHE_KEYS } from "@/services/cacheService"
+
 
 export function useClearanceActions(
   clearances: ClearanceStatus[], 
@@ -80,7 +82,10 @@ export function useClearanceActions(
         )
         setReceiptData(result?.receipt!);
         setReceiptOpen(true);
+        // Invalidate proof-of-payment cache for the student
+        cacheService.invalidate(CACHE_KEYS.proofOfPaymentByUser(clearance.userId || "", clearance.orgId));
       } else if (newStatus === "unpaid" && options?.rejectionReason) {
+
         await rejectPaymentClearanceUpdate(
           clearanceId, 
           itemsToUpdate, 
@@ -89,7 +94,10 @@ export function useClearanceActions(
           options.rejectionReason, 
           studentData
         )
+        // Invalidate proof-of-payment cache for the student
+        cacheService.invalidate(CACHE_KEYS.proofOfPaymentByUser(clearance.userId || "", clearance.orgId));
       } else if (options?.addPaymentLog) {
+
         // Manual Log handles its own updates
         const studentId = clearance.userId || ""
         await logManualPaymentClearanceUpdate(
@@ -102,7 +110,10 @@ export function useClearanceActions(
           options.addPaymentLog.overallPaymentType,  
           receiptCode 
         )
+        // Invalidate proof-of-payment cache for the student
+        cacheService.invalidate(CACHE_KEYS.proofOfPaymentByUser(studentId, clearance.orgId));
       }
+
 
       // Only recalculate manually if not logged manually (backend does recalculation for manual logs usually)
       if (!options?.addPaymentLog) {
