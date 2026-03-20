@@ -325,9 +325,9 @@ export function FeesRosterContent({
           notes: (selectedLog as any)?.notes || (selectedLog as any)?.metadata?.notes || "",
           declineRemarks: (selectedLog as any)?.declineRemarks || "",
         }}
-        onApprove={selectedLog?.status === "pending" ? () => handleApprove(selectedLog!.paymentProofId!) : undefined}
+        onApprove={selectedLog?.status === "pending" ? async () => await handleApprove(selectedLog!.paymentProofId!) : undefined}
         onReject={async (reason) => {
-        if (selectedLog?.status === "pending" ) handleReject(selectedLog!.paymentProofId!, reason);
+        if (selectedLog?.status === "pending" ) await handleReject(selectedLog!.paymentProofId!, reason);
         }}
         isProcessing={isSubmitting}
       />
