@@ -1,16 +1,22 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore"
-import { db } from "@/firebase/firebase.config"
-import { fetchClearanceDocuments } from "@/firebase"
+import { fetchClearanceDocumentsPaginated, getClearanceCount } from "@/firebase/clearance"
 import { cacheService, CACHE_KEYS } from "@/services/cacheService"
 import type { ClearanceStatus } from "../types"
 
-export function useClearances(orgId: string | undefined) {
+export function useClearances(
+  orgId: string | undefined,
+  pageSize: number = 10,
+  searchTerm: string = "",
+  statusFilter: string = "all",
+  currentPage: number = 1
+) {
   const [clearances, setClearances] = useState<ClearanceStatus[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const [totalCount, setTotalCount] = useState(0)
+  const [lastVisibleDocs, setLastVisibleDocs] = useState<any[]>([]) // Store cursors for each page
 
   useEffect(() => {
     if (!orgId) {
@@ -18,74 +24,76 @@ export function useClearances(orgId: string | undefined) {
       return
     }
 
+    let isMounted = true
     setLoading(true)
 
-    let isMounted = true;
-    
-    // Initial fetch from cache/API
-    const loadInitialData = async () => {
+    const fetchData = async () => {
       try {
-        const data = await fetchClearanceDocuments(orgId);
-        if (isMounted) {
-          setClearances(data);
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error("Initial clearance fetch failed:", err);
-        // Fallback: loading will remain true until snapshot arrives or error handled
-      }
-    };
+        // 1. Get total count for pagination UI
+        const count = await getClearanceCount(orgId, statusFilter)
+        if (isMounted) setTotalCount(count)
 
-    loadInitialData();
+        // 2. Determine the cursor for the current page
+        // page 1 -> null cursor
+        // page 2 -> cursor from end of page 1
+        const cursor = currentPage > 1 ? lastVisibleDocs[currentPage - 2] : null
 
-    const clearanceRef = collection(db, "clearanceStatus")
-    const q = query(
-      clearanceRef,
-      where("orgId", "==", orgId),
-      where("isArchived", "==", false),
-      orderBy("updatedAt", "desc")
-    )
+        // 3. Fetch paginated data
+        const { docs, lastVisible } = await fetchClearanceDocumentsPaginated(
+          orgId,
+          pageSize,
+          cursor,
+          searchTerm,
+          statusFilter
+        )
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const docs = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as ClearanceStatus[]
-        
         if (isMounted) {
           setClearances(docs)
+          // Update the cursor for this page so we can go to next page
+          if (lastVisible) {
+            setLastVisibleDocs(prev => {
+              const next = [...prev]
+              next[currentPage - 1] = lastVisible
+              return next
+            })
+          }
           setLoading(false)
           setError(null)
         }
-      },
-      (err) => {
+      } catch (err) {
         console.error("Error fetching clearances:", err)
         if (isMounted) {
           setError(err instanceof Error ? err : new Error("Failed to fetch clearances"))
           setLoading(false)
         }
       }
-    )
+    }
+
+    fetchData()
 
     return () => {
-      isMounted = false;
-      unsubscribe();
+      isMounted = false
     }
-  }, [orgId])
+  }, [orgId, pageSize, searchTerm, statusFilter, currentPage])
 
   const hardRefresh = async () => {
-    if (!orgId) return;
-    cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
-    setLoading(true);
+    if (!orgId) return
+    setLoading(true)
     try {
-        const data = await fetchClearanceDocuments(orgId);
-        setClearances(data);
+      const { docs } = await fetchClearanceDocumentsPaginated(
+        orgId,
+        pageSize,
+        null,
+        searchTerm,
+        statusFilter
+      )
+      setClearances(docs)
+      const count = await getClearanceCount(orgId, statusFilter)
+      setTotalCount(count)
     } finally {
-        setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  return { clearances, loading, error, setClearances, hardRefresh }
+  return { clearances, loading, error, totalCount, setClearances, hardRefresh }
 }
