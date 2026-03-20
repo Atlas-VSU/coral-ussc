@@ -93,16 +93,16 @@ export function useClearancePage(orgId: string | undefined) {
           const newItem = { ...item };
           newItem.status = "paid";
           newItem.pendingReview = false;
-          newItem.paymentHistory = newItem.paymentHistory.map(p => 
-            p.status === "pending" 
-              ? {
-                  ...p,
-                  status: "verified",
-                  verifiedAt: Timestamp.now(),
-                  verifiedByName: currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : "Admin",
-                } 
-              : p
-          );
+          // newItem.paymentHistory = newItem.paymentHistory.map(p => 
+          //   p.status === "pending" 
+          //     ? {
+          //         ...p,
+          //         status: "verified",
+          //         verifiedAt: Timestamp.now(),
+          //         verifiedByName: currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : "Admin",
+          //       } 
+          //     : p
+          // );
           updatedBlocking[refId] = newItem;
         });
         
