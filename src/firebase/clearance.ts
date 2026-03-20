@@ -16,6 +16,18 @@ import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheServi
 import { usePaymentApproval } from "@/features/organization/payments/hooks/usePaymentApproval";
 import { getCurrentUserData } from "./users";
 import { Member } from "@/features/organization/members/types";
+
+
+export const getClearanceStats = async (orgId: string, statusFilter: string = "all") => {
+  const snapshot = await getCountFromServer(query(
+    collection(db, 'clearanceStatus'),
+    where('orgId', '==', orgId),
+    where('isArchived', '==', false),
+    where('status', '==', statusFilter)
+  ));
+  return snapshot.data().count;
+}
+
 /**
  * Fetches clearance documents with server-side pagination and searching.
  */

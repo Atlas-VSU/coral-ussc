@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useMemo } from "react"
+import { useState, useRef, useMemo, useEffect } from "react"
 import { toast } from "sonner"
 import { Timestamp } from "firebase/firestore"
 import { useAuth } from "@/hooks/useAuth"
@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { useClearances } from "./useClearances"
 import { useClearanceActions } from "./useClearanceAction"
 import { useManualPaymentSelection } from "./useManualPaymentSelection"
-import { getCurrentUserData } from "@/firebase"
+import { getClearanceStats, getCurrentUserData } from "@/firebase"
 import { Member } from "../../members/types"
 import { PaymentType } from "@/constants/types"
 import type { ViewMode } from "@/components/organization/ViewToggle"
@@ -27,6 +27,11 @@ export function useClearancePage(orgId: string | undefined) {
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [viewMode, setViewMode] = useState<ViewMode>("table")
   const [currentPage, setCurrentPage] = useState(1)
+  const [stats, setStats] = useState<{ cleared: number; not_cleared: number; pending: number }>({
+    cleared: 0,
+    not_cleared: 0,
+    pending: 0,
+  })
   const pageSize = 10
 
   const { clearances, loading, totalCount, setClearances, hardRefresh } = useClearances(
@@ -68,6 +73,21 @@ export function useClearancePage(orgId: string | undefined) {
     setPayment(payment)
     setPaymentReviewOpen(true)
   }
+
+  const fetchStats = async () => {
+    const orgId = currentUser?.uid;
+    if (!orgId) return;
+    const [cleared, not_cleared, pending] = await Promise.all([
+      getClearanceStats(orgId, "cleared"),
+      getClearanceStats(orgId, "not_cleared"),
+      getClearanceStats(orgId, "pending"),
+    ])
+    setStats({ cleared, not_cleared, pending })
+  }
+
+  useEffect(() => {
+    fetchStats()
+  }, [orgId])
 
   const handleApprovePayment = async () => {
     if (!payment) return
@@ -259,6 +279,7 @@ export function useClearancePage(orgId: string | undefined) {
     paginated,
     totalPages,
     reviewData,
+    stats,
     
     // UI State
     search,
