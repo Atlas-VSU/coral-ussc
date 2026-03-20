@@ -60,7 +60,7 @@ export default function PaymentsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 pb-24 lg:pb-0">
+    <div className="flex flex-col gap-6 pt-8 pb-24 lg:pb-0">
 
       <PageHeader
         variant="admin"
