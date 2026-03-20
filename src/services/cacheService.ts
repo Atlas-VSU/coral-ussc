@@ -422,4 +422,7 @@ export const CACHE_KEYS = {
   // Clearance
   clearanceAll:   (orgId: string) => `clearance:all:${orgId}`,
   clearanceDoc:   (userId: string) => `clearance:doc:${userId}`,
+  clearancePage:  (orgId: string, page: number, size: number, search: string, status: string) => 
+    `clearance:page:${orgId}:${page}:${size}:${search}:${status}`,
+  feeStatusForClearance: (userId: string, orgId: string) => `fees:statusForClearance:${userId}:${orgId}`,
 };

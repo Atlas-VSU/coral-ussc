@@ -258,7 +258,6 @@ export const addUser = async (userData: MemberFormData) => {
       createdAt: Timestamp.now(),
       isDeleted: false,
     });
-    console.log("here called");
     return docRef.id;
   } catch (error) {
     handleFirestoreError(error, "add user");

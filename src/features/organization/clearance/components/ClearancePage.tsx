@@ -31,6 +31,7 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
     totalPages,
     totalCount,
     reviewData,
+    stats, 
     search,
     setSearch,
     filterStatus,
@@ -66,7 +67,7 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
         description="Review and manage student clearance statuses"
       />
 
-      <ClearanceStats clearances={clearances} />
+      <ClearanceStats stats={stats} />
 
       <Card className="border-border bg-card">
         <CardHeader>
@@ -78,7 +79,12 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
             onExport={() => toast.success("Export started (mock)")}
             viewMode={viewMode}
             onViewChange={setViewMode}
-            onRefresh={hardRefresh}
+            onRefresh={() => {
+              setCurrentPage(1);
+              setFilterStatus("all");
+              setSearch("");
+              hardRefresh();
+            }}
             isLoading={loading}
           />
         </CardHeader>
