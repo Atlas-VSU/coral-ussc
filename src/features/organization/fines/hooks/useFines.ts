@@ -101,6 +101,7 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
   };
 
   const hardRefresh = async () => {
+    setIsLoading(true);
     const currUser = await getCurrentUserData() as unknown as Member;
     if (currUser?.id) {
         cacheService.invalidateByPrefix('fines:doc:');
@@ -109,7 +110,9 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
         cacheService.invalidateByPrefix('fines:student:');
     }
     setCurrentPage(1);
+    setFilterStatus("all");
     setLastVisibleDocs([]);
+    setIsLoading(false);
     // The useEffect will trigger fetchData
   };
 
@@ -130,4 +133,4 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
     totalCollectedFines, // Note: Collected total sum across 9,000 needs aggregation doc
     hardRefresh,
   };
-}
+}
