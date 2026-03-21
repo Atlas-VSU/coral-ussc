@@ -93,6 +93,7 @@ export function FinesPage() {
 
   const handleSuccess = async () => {
     // markStatusChanged();
+    hardRefresh();
   };
 
   return (
@@ -113,21 +114,21 @@ export function FinesPage() {
               <RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
               {isLoading ? "Refreshing..." : "Refresh"}
             </Button>
-            <Button size="sm" onClick={() => setIsBulkGenerateOpen(true)}>
+            {/* <Button size="sm" onClick={() => setIsBulkGenerateOpen(true)}>
               Bulk Generate
-            </Button>
+            </Button> */}
             <Button size="sm" variant="outline" onClick={handleAddFineType}>
-              Add Fine Type
+              View Fine Types
             </Button>
           </div>
         }
       />
 
       {/* Stats */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
         <StatCard title="Students w/ Fines" value={totalStudentsWithFines} description="Have at least one fine" icon={Users} />
         <StatCard title="Outstanding Balance" value={`₱${totalUnpaidFines}`} description="Total unpaid amount" icon={AlertTriangle} />
-        <StatCard title="Total Collected" value={`₱${totalCollectedFines}`} description="Total approved payments" icon={Banknote} />
+        {/* <StatCard title="Total Collected" value={`₱${totalCollectedFines}`} description="Total approved payments" icon={Banknote} /> */}
         <StatCard title="Unsettled" value={totalUnsettled} description="Students with outstanding fines" icon={CircleDollarSign} />
       </div>
 
