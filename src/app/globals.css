@@ -4,9 +4,6 @@
 /* @custom-variant dark (&:is(.dark *)); */
 @variant dark (false);
 
-html {
-  overflow-y: scroll;
-}
 
 @theme inline {
   --color-background: var(--background);
@@ -167,19 +164,12 @@ html, body, * {
   font-family: var(--font-montserrat), system-ui, sans-serif;
 }
 
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-montserrat), system-ui, sans-serif;
+html {
+  scrollbar-gutter: stable;
 }
 
-body[data-scroll-locked] {
-  overflow: hidden !important;
-  pointer-events: none;
-}
-
-body[data-scroll-locked] > * {
-  pointer-events: auto;
+#main-scroll {
+  scrollbar-gutter: stable;
 }
 
 /* Custom Fade Animations */
