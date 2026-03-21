@@ -97,6 +97,8 @@ export default function FinesPage() {
 
   const handleSuccess = async () => {
     // markStatusChanged();
+    setIsBreakdownOpen(false);
+    hardRefresh();
   };
 
   return (
