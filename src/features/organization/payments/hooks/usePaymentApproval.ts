@@ -1,7 +1,6 @@
 import { rejectPaymentProof, verifyPaymentProof } from "@/firebase/payment/update/proofOfPayment"
 import { FineItem, ProofOfPayment } from "../../fines/types"
 import { generateReceiptId } from "../utils"
-import { Fee } from "../../fees/types"
 import { getPendingPaymentHistory } from "@/firebase/payment/read/paymentHistory"
 import { getCurrentUserData, searchUserByStudentId } from "@/firebase/users"
 import { Member } from "../../members/types"
@@ -9,7 +8,6 @@ import { rejectPaymentHistory, verifyPaymentHistory } from "@/firebase/payment/u
 import { markFineItemsAsNotPending, markFineItemsAsPaid } from "@/firebase/fines/update/fineItemsStatus"
 import { toast } from "sonner"
 import { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
-import { useState } from "react"
 import { Timestamp } from "firebase/firestore"
 import { recalculateClearanceStatus } from "@/firebase"
 import { recalculateFines } from "@/firebase/fines/update/recalculate"
@@ -38,8 +36,7 @@ export const usePaymentApproval = () => {
 
                 for (const item of items) {
                     if (item.paymentType === "fees") {
-                        const paymentHistory = await getPendingPaymentHistory(item.refId, "fees");
-                        await verifyPaymentHistory(paymentHistory!.id, verifier, "fees", item.refId, item.amount);
+                        await verifyPaymentHistory(item.historyId!, verifier, "fees", item.refId, item.amount);
                     }
                     if (item.paymentType === "fines") {
                         parentFine = item.parentFineId;
@@ -49,7 +46,7 @@ export const usePaymentApproval = () => {
                     }
                 }
                 if (parentFine !== "") {
-                    const paymentHistory = await getPendingPaymentHistory(parentFine, "fines");
+                    const paymentHistory = await getPendingPaymentHistory(parentFine, "fines", payment.id!);
                     await verifyPaymentHistory(paymentHistory!.id, verifier, "fines", parentFine, totalFine, null, fineItemIds);
                 }
                 await recalculateClearanceStatus(paymentOwner.id!);
@@ -98,8 +95,7 @@ export const usePaymentApproval = () => {
 
                 for (const item of items) {
                     if (item.paymentType === "fees") {
-                        const paymentHistory = await getPendingPaymentHistory(item.refId, "fees");
-                        await rejectPaymentHistory(paymentHistory!.id, verifier, "fees", item.refId, [], reason);
+                        await rejectPaymentHistory(item.historyId!, verifier, "fees", item.refId, [], reason);
                         await recalculateFees(item.refId,0);
                     }
 
@@ -109,7 +105,7 @@ export const usePaymentApproval = () => {
                     }
                 }
                 if (parentFine !== "") {
-                    const paymentHistory = await getPendingPaymentHistory(parentFine, "fines");
+                    const paymentHistory = await getPendingPaymentHistory(parentFine, "fines",payment.id!);
                     await rejectPaymentHistory(paymentHistory!.id, verifier, "fines", parentFine, fineItemIds, reason);
                     await markFineItemsAsNotPending(parentFine, fineItemIds);
                     await recalculateFines(parentFine,0);

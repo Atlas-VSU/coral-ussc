@@ -47,15 +47,14 @@ export const getFinesVerifiedPaymentHistoriesByReferenceId = async (paymentRefer
     );
 }
 
-export const getPendingPaymentHistory = async (paymentTypeRefId: string, paymentType: string) => {
+export const getPendingPaymentHistory = async (paymentTypeRefId: string, paymentType: string, paymentProofId: string) => {
     return cacheService.getOrFetch(
         `payments:pending:${paymentType}:${paymentTypeRefId}`,
         async () => {
-            console.log("Fetching pending payment history for", paymentType, paymentTypeRefId);
             const subColRef = collection(db, paymentType, paymentTypeRefId, "paymentHistory");
-            const querySnapshot = await getDocs(query(subColRef, where("status", "==", "pending")));
+            const querySnapshot = await getDocs(query(subColRef, where("paymentProofId", "==", paymentProofId)));
             if (querySnapshot.empty) return null;
-            const firstDoc = querySnapshot.docs[0] 
+            const firstDoc = querySnapshot.docs[0];
             return {
                 id: firstDoc.id,
                 ...firstDoc.data()
