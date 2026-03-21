@@ -178,7 +178,8 @@ export async function POST(request: NextRequest) {
       notes:           payload.notes ?? "Public payment portal submission.",
       verifiedBy:      null,
       verifiedByName:  null,
-      verifiedAt:      null,
+      verifiedAt: null,
+      updatedAt: now,
       metadata: {
         source:      "public_payment_portal",
         submittedBy: "student",

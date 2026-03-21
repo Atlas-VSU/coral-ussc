@@ -41,6 +41,7 @@ export const createOnlineProofOfPayment = async (
                 verifiedByName: currentUser.firstName + " " + currentUser.lastName,
                 verifiedAt: Timestamp.now(),
                 isArchived: false,
+                updatedAt: Timestamp.now(),
             }
             if (payment.paymentHistoryId) {
                 (paymentData as any).paymentHistoryId = payment.paymentHistoryId;
@@ -88,6 +89,7 @@ export const createBulkOnlineProofOfPayment = async (
         verifiedByName: "",
         verifiedAt: null,
         isArchived: false,
+        updatedAt: Timestamp.now(),
       }
       const ref = collection(db, "proofOfPayments");
       const docRef = await addDoc(ref, paymentData);
@@ -173,6 +175,7 @@ export const createOfflineFinesProofOfPayment = async (
                 verifiedAt: Timestamp.now(),
                 receiptCode: generateReceiptId(),
                 isArchived: false,
+                updatedAt: Timestamp.now(),
             }
 
             const docRef = await addDoc(collection(db, "proofOfPayments"), paymentData);
@@ -217,6 +220,7 @@ export const createBulkOfflineProofOfPayment = async (
     verifiedAt: Timestamp.now(),
     receiptCode: receipt,
     isArchived: false,
+    updatedAt: Timestamp.now(),
   }
   const ref = collection(db, "proofOfPayments");
   const docRef = await addDoc(ref, paymentData);
