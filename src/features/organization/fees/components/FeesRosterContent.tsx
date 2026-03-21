@@ -144,7 +144,10 @@ export function FeesRosterContent({
   // Use the prop isSubmitting if provided, otherwise fallback to local isArchiving state
   const isCurrentlyArchiving = isSubmitting || isStateArchiving;
 
-  const { paginatedLogs, paginatedRows, stats } = computed;
+  const {
+    paginatedLogs,
+    paginatedRows,
+  } = computed;
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
