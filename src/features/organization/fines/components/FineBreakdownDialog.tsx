@@ -101,6 +101,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
             onSuccess(fines);
             onOpenChange(false);
         }
+
     }
 
     const handleApprovalSucceed = async (payment: ProofOfPayment) => {
@@ -108,6 +109,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
             const result = await _approvePayment(payment);
             const receipt = result?.receipt as ReceiptData;
             setReceiptData(receipt);
+            setPaymentOpen(false);
             setReceiptOpen(true);
             toast.success("A payment was logged successfully.");
         } catch (error) { 

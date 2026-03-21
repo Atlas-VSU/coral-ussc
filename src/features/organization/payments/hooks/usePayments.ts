@@ -179,7 +179,8 @@ export function usePayments() {
         effectiveCursor,
         unpaidSearch,
         "not_cleared",
-        unpaidSearch?true:false
+        unpaidSearch ? true : false,
+        true
       )
       
       if (isMounted) {

@@ -72,7 +72,6 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
                 paymentMethod: proofData?.paymentMethod!,
             });
             setReceiptOpen(true);
-            onSuccess?.();
             toast.success("A payment was logged successfully.");
         } catch (error) {
         toast.error("Failed to log payment. Please try again.");

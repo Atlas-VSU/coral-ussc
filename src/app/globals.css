@@ -4,6 +4,7 @@
 /* @custom-variant dark (&:is(.dark *)); */
 @variant dark (false);
 
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -163,10 +164,12 @@ html, body, * {
   font-family: var(--font-montserrat), system-ui, sans-serif;
 }
 
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-montserrat), system-ui, sans-serif;
+html {
+  scrollbar-gutter: stable;
+}
+
+#main-scroll {
+  scrollbar-gutter: stable;
 }
 
 /* Custom Fade Animations */
@@ -256,7 +259,7 @@ body {
 @keyframes page-enter {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;

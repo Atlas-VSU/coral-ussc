@@ -26,10 +26,12 @@ import { SearchFilterBar } from "@/features/organization/fees/components/SearchF
 // import { SearchFilterFee } from "@/features/organization/fees/components/SearchFilterFee"
 import { FeeGenerationDialog } from "./AddFeeDialog"
 import { SearchFilterFee } from "./SearchFilterFee"
+import { useState } from "react"
 const ITEMS_PER_PAGE = 10
 
 export default function FeeListPage() {
   const router = useRouter()
+  const [navigatingId, setNavigatingId] = useState<string | null>(null)
   const { aggregatedFees, isLoading: feesLoading, refetchFees } = useFeeList()
   const { totalMembers, members, isLoading: membersLoading } = usePaginatedMembers() 
   
@@ -45,6 +47,18 @@ export default function FeeListPage() {
     refetchFees,
     itemsPerPage: ITEMS_PER_PAGE
   })
+
+  const handleFeeClick = (fee: { title: string; academicYear: string; id: string; amount?: number; semester?: string; description?: string; type?: string }) => {
+    setNavigatingId(fee.id)
+    // Stash basic fee metadata so the roster page can hydrate instantly
+    try {
+      sessionStorage.setItem(
+        `fee-prefetch:${fee.title}:${fee.academicYear}`,
+        JSON.stringify({ title: fee.title, academicYear: fee.academicYear, amount: fee.amount, semester: fee.semester, description: fee.description, type: fee.type })
+      )
+    } catch {}
+    router.push(`/org-fees/roster?title=${encodeURIComponent(fee.title)}&academic_year=${fee.academicYear}`)
+  }
 
   if (isLoading) {
     return (
@@ -132,13 +146,16 @@ export default function FeeListPage() {
                   return (
                     <Card
                       key={fee.id}
-                      className="border-border cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => router.push(`/org-fees/roster?title=${encodeURIComponent(fee.title)}&academic_year=${fee.academicYear}`)}
+                      className={`border-border cursor-pointer hover:bg-muted/50 transition-colors relative ${navigatingId === fee.id ? "opacity-60 pointer-events-none" : ""}`}
+                      onClick={() => handleFeeClick(fee)}
                     >
                       <CardHeader className="pb-2">
                         <div className="flex items-start justify-between gap-2">
                           <CardTitle className="text-sm font-semibold text-foreground leading-snug">{fee.title}</CardTitle>
-                          <ChevronRight className="size-4 text-muted-foreground shrink-0 mt-0.5" />
+                          {navigatingId === fee.id
+                            ? <Loader2 className="size-4 text-muted-foreground shrink-0 mt-0.5 animate-spin" />
+                            : <ChevronRight className="size-4 text-muted-foreground shrink-0 mt-0.5" />
+                          }
                         </div>
                         <Badge variant={feeTypeVariant[fee.type]} className="w-fit text-xs">
                           {feeTypeLabels[fee.type] || fee.type}
@@ -192,8 +209,8 @@ export default function FeeListPage() {
                       return (
                         <TableRow
                           key={fee.id}
-                          className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => router.push(`/org-fees/roster?title=${encodeURIComponent(fee.title)}&academic_year=${fee.academicYear}`)}
+                          className={`cursor-pointer hover:bg-muted/50 ${navigatingId === fee.id ? "opacity-60 pointer-events-none" : ""}`}
+                          onClick={() => handleFeeClick(fee)}
                         >
                           <TableCell>
                             <p className="text-sm font-medium text-foreground">{fee.title}</p>
@@ -219,7 +236,10 @@ export default function FeeListPage() {
                             {fee.semester ? fee.semester + " Semester" : "" + (fee.academicYear ? " · " + fee.academicYear + " A.Y." : "")}
                           </TableCell>
                           <TableCell>
-                            <ChevronRight className="size-4 text-muted-foreground" />
+                            {navigatingId === fee.id
+                              ? <Loader2 className="size-4 text-muted-foreground animate-spin" />
+                              : <ChevronRight className="size-4 text-muted-foreground" />
+                            }
                           </TableCell>
                         </TableRow>
                       )

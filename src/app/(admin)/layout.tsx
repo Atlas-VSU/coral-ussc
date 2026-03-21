@@ -95,20 +95,24 @@ export default function AdminLayout({
     };
 
     return (
-        <div className="flex min-h-screen w-full">
-            <AdminSidebar user={userData} className="z-50" />
-            <div className="flex-1 flex flex-col min-w-0">
-                <SiteHeader
-                    user={userData}
-                    isAuthenticated={isAuthenticated}
-                    showSidebarTrigger={true}
-                />
-                <main className="flex-1 p-4 pb-16 md:pb-4">{children}</main>
-                <MobileBottomNav
-                    links={adminData.mobileNavLinks}
-                    iconMap={mobileIconMap}
-                />
+      <div className="flex min-h-screen w-full bg-app">
+        <AdminSidebar user={userData} className="z-50" />
+        <div className="flex-1 flex flex-col min-w-0">
+          <SiteHeader
+            user={userData}
+            isAuthenticated={isAuthenticated}
+            showSidebarTrigger={true}
+          />
+          <main className="flex-1">
+            <div className="mx-auto max-w-7xl px-2 py-10 sm:px-6 lg:px-8">
+              {children}
             </div>
+          </main>
+          <MobileBottomNav
+            links={adminData.mobileNavLinks}
+            iconMap={mobileIconMap}
+          />
         </div>
+      </div>
     );
 }

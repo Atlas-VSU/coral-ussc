@@ -146,7 +146,7 @@ export function BulkImportDialog({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
-        className="!w-[min(96vw,1200px)] !max-w-[min(96vw,1200px)] sm:!max-w-[min(96vw,1200px)] overflow-y-auto max-h-[90vh] py-6 px-5 bg-white text-black border !border-[#2E7D32]/30 shadow-lg"
+        className="!w-[min(90vw,1200px)] md:!w-[min(70vw,1200px)] lg:!w-[min(50vw,1200px)] !max-w-[min(96vw,1200px)] sm:!max-w-[min(96vw,1200px)] overflow-y-auto max-h-[90vh] py-6 px-5 bg-white text-black border !border-[#2E7D32]/30 shadow-lg"
         showCloseButton={!isImporting}
       >
         <DialogHeader className="border-b !border-[#2E7D32]/20 pb-3">
