@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchFee, fetchFeesPaginated, getFeesCount, fetchFeeSubmissionsPaginated, fetchPaymentLogs } from "@/firebase/fees";
 import { Fee, PaymentLog } from "../types";
 import { Member } from "../../members/types";
@@ -32,7 +32,18 @@ export function useFeesRoster(
       dataView = "submissions"
     } = options;
 
-    const [fee, setFee] = useState<BaseFeeData | null>(null);
+    const [fee, setFee] = useState<BaseFeeData | null>(() => {
+      try {
+        const stash = sessionStorage.getItem(`fee-prefetch:${title}:${academicYear}`)
+        if (stash) return JSON.parse(stash) as BaseFeeData
+      } catch {}
+      return null
+    })
+    const feeRef = useRef<BaseFeeData | null>(null)
+    // Sync ref with any prefetched value so fetchData skips the fee doc fetch
+    useEffect(() => {
+      if (fee && !feeRef.current) feeRef.current = fee
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
     const [studentRows, setStudentRows] = useState<StudentFeeRow[]>([]);
     const [logs, setLogs] = useState<PaymentLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
