@@ -113,9 +113,9 @@ export function FinesPage() {
               <RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
               {isLoading ? "Refreshing..." : "Refresh"}
             </Button>
-            <Button size="sm" onClick={() => setIsBulkGenerateOpen(true)}>
+            {/* <Button size="sm" onClick={() => setIsBulkGenerateOpen(true)}>
               Bulk Generate
-            </Button>
+            </Button> */}
             <Button size="sm" variant="outline" onClick={handleAddFineType}>
               Add Fine Type
             </Button>
