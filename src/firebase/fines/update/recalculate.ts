@@ -1,8 +1,10 @@
 import { FineStatus } from "@/constants/status";
 import { db } from "@/firebase/firebase.config";
 import { doc, updateDoc, Timestamp, getDoc, collection, getDocs, query, where } from "firebase/firestore";
-import { cacheService } from "@/services/cacheService";
+import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { getAllFines, getAllUnpaidFinesforOrg } from "../read/fines";
+import { getCurrentUserData } from "@/firebase/users";
+import { Member } from "@/features/organization/members/types";
 
 
   // Centralized error handler
@@ -62,7 +64,7 @@ export const recalculateFines = async (fineId: string, addedAmount?: number | nu
         const q = query(fineItemsRef, where("isPending", "==", true));
         const fineItemsSnapShot = await getDocs(q);
         
-        if (!fineItemsSnapShot.empty && newBalance > 0) {
+        if (!fineItemsSnapShot.empty) {
             newStatus = FineStatus.PENDING;
          }
 
@@ -74,7 +76,13 @@ export const recalculateFines = async (fineId: string, addedAmount?: number | nu
             "metadata.updatedAt": Timestamp.now(),
         });
         
-        cacheService.invalidateByPrefix('fines:');
+        const currUser = await getCurrentUserData() as unknown as Member;
+        const orgId = currUser.id || '';
+        cacheService.invalidate(CACHE_KEYS.fineDoc(fineId));
+        cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
+        cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
+        cacheService.invalidate(CACHE_KEYS.clearanceDoc(fineData.userId));
+
         // Pre-emptive warming
         getAllFines().catch(console.error);
         getAllUnpaidFinesforOrg().catch(console.error);

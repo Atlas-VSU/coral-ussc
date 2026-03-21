@@ -1,6 +1,7 @@
 // app/admin/fees/roster/components/AllStudentsDisplay.tsx
 import { Eye, PenLine } from "lucide-react";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
+import { Button } from "../local-components/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,10 +38,10 @@ export function AllStudentsTable({
             const config = log?.status ? statusConfig[log.status] : statusConfig["unpaid"];
             const Icon = config.icon;
             return (
-              <TableRow key={student.studentId || student.id}>
-                <TableCell className="text-xs font-mono text-muted-foreground">{student.studentId || "—"}</TableCell>
+              <TableRow key={student?.studentId || student?.id}>
+                <TableCell className="text-xs font-mono text-muted-foreground">{student?.studentId || "—"}</TableCell>
                 <TableCell className="text-sm font-medium text-foreground">
-                  {student.firstName || ""} {student.lastName || ""}
+                  {student?.firstName || ""} {student?.lastName || ""}
                 </TableCell>
                 <TableCell>
                   <Badge variant={config.variant} className="flex items-center gap-1 w-fit text-xs">
@@ -62,7 +63,7 @@ export function AllStudentsTable({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="gap-1.5 border-green-500/40 text-green-700 hover:bg-green-50 hover:text-green-800 dark:text-green-400 dark:border-green-500/30 dark:hover:bg-green-950"
+                      className="gap-1.5 border-green-500/40 text-green-500 hover:text-green-800 dark:border-green-500/30 dark:hover:bg-[#8ff558]"
                       onClick={() => onManualLog(student)}
                     >
                       <PenLine className="size-3" /> Log Payment
@@ -118,7 +119,7 @@ export function AllStudentsCards({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="gap-1.5 border-green-500/40 text-green-700 hover:bg-green-50 hover:text-green-800 dark:text-green-400 dark:border-green-500/30 dark:hover:bg-green-950"
+                    className="gap-1.5 border-green-500/40 !text-green-700 hover:bg-[#7aea55] hover:text-green-800 dark:hover:hover:bg-[#7aea55]"
                     onClick={() => onManualLog(student)}
                   >
                     <PenLine className="size-3" /> Log Payment

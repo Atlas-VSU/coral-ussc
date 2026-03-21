@@ -1,7 +1,9 @@
 import { db } from "@/firebase/firebase.config";
 import { collection, doc, getDocs, query, updateDoc, where, writeBatch } from "firebase/firestore";
-import { cacheService } from "@/services/cacheService";
+import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { getAllFines, getAllUnpaidFinesforOrg } from "../read/fines";
+import { getCurrentUserData } from "@/firebase/users";
+import { Member } from "@/features/organization/members/types";
 
 
 export const markFineItemsAsPaid = async (fineId: string, fineItemId?: string) => {
@@ -12,7 +14,13 @@ export const markFineItemsAsPaid = async (fineId: string, fineItemId?: string) =
                 isPaid: true,
                 isPending: false,
             });
-            cacheService.invalidateByPrefix('fines:');
+            const currUser = await getCurrentUserData() as unknown as Member;
+            const orgId = currUser.id || '';
+            cacheService.invalidate(CACHE_KEYS.fineDoc(fineId));
+            cacheService.invalidate(CACHE_KEYS.fineItems(fineId));
+            cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
+            cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
+
             getAllFines().catch(console.error);
             getAllUnpaidFinesforOrg().catch(console.error);
             console.log(`Marked fine item ${fineItemId} as paid for fine: ${fineId}`);
@@ -38,7 +46,13 @@ export const markFineItemsAsPaid = async (fineId: string, fineItemId?: string) =
             });
 
             await batch.commit();
-            cacheService.invalidateByPrefix('fines:');
+            const currUser = await getCurrentUserData() as unknown as Member;
+            const orgId = currUser.id || '';
+            cacheService.invalidate(CACHE_KEYS.fineDoc(fineId));
+            cacheService.invalidate(CACHE_KEYS.fineItems(fineId));
+            cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
+            cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
+
             getAllFines().catch(console.error);
             getAllUnpaidFinesforOrg().catch(console.error);
             console.log(`Marked ${querySnapshot.size} items as paid for fine: ${fineId}`);
@@ -56,12 +70,19 @@ export const markFineItemsAsNotPending = async (fineId: string, fineItemIds: str
             const batch = writeBatch(db);
         for (const item of fineItemIds) {
             batch.update(doc(db, "fines", fineId, "fineItems", item), {
-                isPaid: true,
+                isPaid: false,
+                isPending: false,
             });
         }
 
             await batch.commit();
-            cacheService.invalidateByPrefix('fines:');
+            const currUser = await getCurrentUserData() as unknown as Member;
+            const orgId = currUser.id || '';
+            cacheService.invalidate(CACHE_KEYS.fineDoc(fineId));
+            cacheService.invalidate(CACHE_KEYS.fineItems(fineId));
+            cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
+            cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
+
             getAllFines().catch(console.error);
             getAllUnpaidFinesforOrg().catch(console.error);
             console.log(`Marked ${fineItemIds.length} items as paid for fine: ${fineId}`);

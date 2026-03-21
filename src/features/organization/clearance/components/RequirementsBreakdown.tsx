@@ -9,6 +9,8 @@ import type { ClearanceStatus } from "../types"
 import { useClearanceActions } from "../hooks/useClearanceAction"
 import { useOnlinePaymentReview } from "../hooks/useOnlinePaymentReview"
 import { ProofOfPayment } from "../../fines/types"
+import { fetchClearanceStatus } from "@/firebase/clearance"
+import { useEffect } from "react"
 
 interface RequirementsBreakdownProps {
   clearance: ClearanceStatus
@@ -21,6 +23,13 @@ export function RequirementsBreakdown({
   onReviewPayment,
   onLogPayment,
 }: RequirementsBreakdownProps) {
+  useEffect(() => {
+    // Trigger a cached fetch for the individual document to show cache hit/miss in console as requested.
+    if (clearance.id) {
+       fetchClearanceStatus(clearance.id).catch(console.error);
+    }
+  }, [clearance.id]);
+
   const groups = buildRequirementGroups(clearance.blockingItems)
   const pendingReviews = Object.entries(clearance.blockingItems)
     .filter(([_, item]) => item.pendingReview)
@@ -61,14 +70,18 @@ export function RequirementsBreakdown({
                 {group.items.map(item => {
                   const ItemIcon = item.status === "cleared" ? Check : item.status === "pending" ? Clock : X
                   return (
-                    <div key={item.referenceId} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <div key={item.referenceId} className="flex items-start justify-between gap-2 text-xs">
+                      <div className="flex min-w-0 flex-1 items-start gap-1.5 text-muted-foreground">
                         <ItemIcon className={cn("size-3 shrink-0", item.status === "cleared" ? "text-success" : item.status === "not_cleared" ? "text-destructive" : "text-warning-foreground")} />
-                        <span>{item.label}</span>
-                        {item.amount != null && <span className="text-muted-foreground/60">₱{item.amount}</span>}
+                        <div className="min-w-0 flex-1">
+                          <span className="break-words">{item.label}</span>
+                          {item.amount != null && (
+                            <span className="ml-1 whitespace-nowrap text-muted-foreground/60 max-[400px]:ml-0 max-[400px]:block">₱{item.amount}</span>
+                          )}
+                        </div>
                       </div>
                       <span className={cn(
-                        "font-medium capitalize",
+                        "shrink-0 whitespace-nowrap pl-2 text-right font-medium capitalize",
                         item.status === "cleared" && "text-success",
                         item.status === "pending" && "text-warning-foreground",
                         item.status === "not_cleared" && "text-destructive",

@@ -1,12 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { useFeesRoster } from "../hooks/useFeesRoster";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { FeesRosterContent } from "./FeesRosterContent";
 import { useFeeAction } from "../hooks/useFeeAction";
-import PaymentReceiptDialog from "@/components/organization/PaymentReceiptDialog";
+import PaymentReceiptDialog from "../local-components/PaymentReceiptDialog";
+
+const ITEMS_PER_PAGE = 10;
 
 interface FeesRosterPageProps {
   title: string;
@@ -17,10 +20,41 @@ export default function FeesRosterPage({
   title,
   academicYear,
 }: FeesRosterPageProps) {
-  const { fee, studentRows, isLoading, error, refetchStudentRow } = useFeesRoster(title, academicYear);
-  const { approvePayment, rejectPayment, addManualPayment, receiptData, receiptOpen, setReceiptOpen, archiveFee, isSubmitting } = useFeeAction(refetchStudentRow);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [dataView, setDataView] = useState<"submissions" | "all-students">("submissions");
 
-  if (isLoading) {
+  const { 
+    fee, 
+    studentRows, 
+    logs, 
+    isLoading, 
+    error, 
+    totalCount,
+    refetchStudentRow, 
+    refetch,
+    stats
+  } = useFeesRoster(title, academicYear, {
+    pageSize: ITEMS_PER_PAGE,
+    currentPage,
+    search,
+    filterStatus,
+    dataView,
+  });
+
+  const { 
+    approvePayment, 
+    rejectPayment, 
+    addManualPayment, 
+    receiptData, 
+    receiptOpen, 
+    setReceiptOpen, 
+    archiveFee, 
+    isSubmitting 
+  } = useFeeAction(refetchStudentRow);
+
+  if (isLoading && !fee) {
     return (
       <div className="flex flex-col gap-4 p-6">
         <Skeleton className="h-8 w-64" />
@@ -59,12 +93,27 @@ export default function FeesRosterPage({
      
     <FeesRosterContent 
       fee={fee as any} 
-      studentRows={studentRows} 
+      studentRows={studentRows}
+      logs={logs}
+      stats={stats}
       onApprovePayment={approvePayment} 
       onManualPaymentAdded={addManualPayment} 
       onRejectPayment={rejectPayment} 
       onArchiveFee={archiveFee}
       isSubmitting={isSubmitting}
+      refetchStudentRow={refetchStudentRow}
+      isLoading={isLoading}
+      refetch={refetch}
+      // Pagination & Search state
+      currentPage={currentPage}
+      setCurrentPage={setCurrentPage}
+      search={search}
+      setSearch={setSearch}
+      filterStatus={filterStatus}
+      setFilterStatus={setFilterStatus}
+      dataView={dataView}
+      setDataView={setDataView}
+      totalCount={totalCount}
     />
     </>
   );

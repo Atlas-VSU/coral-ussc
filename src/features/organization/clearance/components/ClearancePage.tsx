@@ -16,6 +16,7 @@ import { useClearancePage } from "../hooks/useClearancePage"
 import { ClearanceCard } from "./ClearanceCard"
 import { ClearanceTable } from "./ClearanceTable"
 import { LogManualPaymentDialog } from "./LogManualPaymentDialog"
+import { CardGridSkeleton } from "@/components/organization/Skeletons"
 
 interface ClearancePageProps {
   orgId: string | undefined
@@ -28,7 +29,9 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
     filtered,
     paginated,
     totalPages,
+    totalCount,
     reviewData,
+    stats, 
     search,
     setSearch,
     filterStatus,
@@ -52,10 +55,11 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
     handleRejectPayment,
     openLogPayment,
     handleLogPayment,
+    hardRefresh
   } = useClearancePage(orgId)
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 pt-8 pb-24 lg:pb-0">
       <PageHeader
       variant="admin"
         title="Clearance Management"
@@ -63,61 +67,62 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
         description="Review and manage student clearance statuses"
       />
 
-      <ClearanceStats clearances={clearances} />
+      <ClearanceStats stats={stats} />
 
-      {loading && clearances.length === 0 ? (
-        <Card className="border-border bg-card">
-          <CardContent className="flex flex-col items-center justify-center py-20 gap-3">
-            <div className="size-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-            <p className="text-sm text-muted-foreground italic">Fetching clearance records...</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="border-border bg-card">
-          <CardHeader>
-            <ClearanceFilters
-              search={search}
-              onSearchChange={setSearch}
-              filterStatus={filterStatus}
-              onFilterChange={setFilterStatus}
-              onExport={() => toast.success("Export started (mock)")}
-              viewMode={viewMode}
-              onViewChange={setViewMode}
-            />
-          </CardHeader>
-          <CardContent>
-            {viewMode === "card" ? (
-              paginated.length === 0 ? (
-                <p className="py-12 text-center text-sm text-muted-foreground">No clearance records found.</p>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {paginated.map(c => (
-                    <ClearanceCard
-                      key={c.id}
-                      clearance={c}
-                      onReviewPayment={openPaymentReview}
-                      onLogPayment={openLogPayment}
-                    />
-                  ))}
-                </div>
-              )
+      <Card className="border-border bg-card">
+        <CardHeader>
+          <ClearanceFilters
+            search={search}
+            onSearchChange={setSearch}
+            filterStatus={filterStatus}
+            onFilterChange={setFilterStatus}
+            onExport={() => toast.success("Export started (mock)")}
+            viewMode={viewMode}
+            onViewChange={setViewMode}
+            onRefresh={() => {
+              setCurrentPage(1);
+              setFilterStatus("all");
+              setSearch("");
+              hardRefresh();
+            }}
+            isLoading={loading}
+          />
+        </CardHeader>
+        <CardContent>
+          {viewMode === "card" ? (
+            loading && clearances.length === 0 ? (
+              <CardGridSkeleton count={6} />
+            ) : paginated.length === 0 ? (
+              <p className="py-12 text-center text-sm text-muted-foreground">No clearance records found.</p>
             ) : (
-              <ClearanceTable
-                paginated={paginated}
-                onReviewPayment={openPaymentReview}
-                onLogPayment={openLogPayment}
-              />
-            )}
-            <DataPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={filtered.length}
-              itemsPerPage={10}
-              onPageChange={setCurrentPage}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {paginated.map(c => (
+                  <ClearanceCard
+                    key={c.id}
+                    clearance={c}
+                    onReviewPayment={openPaymentReview}
+                    onLogPayment={openLogPayment}
+                  />
+                ))}
+              </div>
+            )
+          ) : (
+            <ClearanceTable
+              paginated={paginated}
+              onReviewPayment={openPaymentReview}
+              onLogPayment={openLogPayment}
+              isLoading={loading && clearances.length === 0}
             />
-          </CardContent>
-        </Card>
-      )}
+          )}
+          <DataPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            itemsPerPage={10}
+            onPageChange={setCurrentPage}
+          />
+        </CardContent>
+      </Card>
 
       <PaymentReviewDialog
         open={paymentReviewOpen}

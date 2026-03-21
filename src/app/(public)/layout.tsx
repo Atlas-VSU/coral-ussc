@@ -1,6 +1,4 @@
 "use client";
-import { SiteHeader } from "@/components/NavBar/site-header";
-import { MobileBottomNav } from "@/components/NavBar/mobile-bottom-nav";
 import { Home as HomeIcon, Info, LogIn, LayoutDashboard } from "lucide-react";
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
@@ -10,6 +8,11 @@ import { LoadingScreen } from "@/components/ui/loading-screen";
 import { cacheUtils } from "@/utils/cacheUtils";
 import { useTheme } from "next-themes";
 import { useRef } from "react";
+import { AdminSidebar } from "@/components/NavBar/app-sidebar/AdminSidebar";
+import { MobileBottomNav } from "@/components/NavBar/mobile-bottom-nav";
+import { SiteHeader } from "@/components/NavBar/site-header";
+
+
 
 // Define mobile icon map
 const mobileIconMap = {
@@ -31,6 +34,9 @@ export default function PublicLayout({
   const router = useRouter();
   const pathname = usePathname();
   const isPublicPaymentPage = pathname.startsWith("/payment");
+  const isHomePage = pathname === "/";
+  const isLoginPage = pathname === "/login";
+  const isFullBleedPage = isHomePage || isLoginPage;
   const { setTheme } = useTheme();
   const previousThemeRef = useRef<string | null>(null);
 
@@ -48,7 +54,11 @@ export default function PublicLayout({
     if (previousThemeRef.current !== null) {
       const previous = previousThemeRef.current;
 
-      if (previous === "light" || previous === "dark" || previous === "system") {
+      if (
+        previous === "light" ||
+        previous === "dark" ||
+        previous === "system"
+      ) {
         setTheme(previous);
       } else {
         window.localStorage.removeItem("theme");
@@ -142,22 +152,30 @@ export default function PublicLayout({
 
   // Always show loading screen while loading
   if (loading) {
-    return <LoadingScreen message="Getting things ready..." />;
+    return (
+      <LoadingScreen message="Loading your student payment portal... Welcome! We're getting everything ready for you." />
+    );
   }
 
   if (isRedirecting) {
     return <LoadingScreen message="Redirecting to dashboard..." />;
   }
 
+  
+
   // Only render children when not loading
   return (
     <div className="flex min-h-screen w-full">
       <div className="flex-1 flex flex-col min-w-0">
-        {!isPublicPaymentPage && <SiteHeader user={null} isAuthenticated={isAuthenticated} />}
-        <main className={`flex-1 p-2 sm:p-4 ${isPublicPaymentPage ? "pb-4" : "pb-16 md:pb-4"}`}>
+        <main
+          className={`flex-1 ${
+            isFullBleedPage
+              ? "p-0"
+              : `p-2 sm:p-4 ${isPublicPaymentPage ? "pb-4" : "pb-16 md:pb-4"}`
+          }`}
+        >
           {children}
         </main>
-        {!isPublicPaymentPage && <MobileBottomNav links={navLinks} iconMap={mobileIconMap} />}
       </div>
     </div>
   );

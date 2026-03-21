@@ -4,20 +4,22 @@ import { DataPagination } from "@/features/organization/fines/components/DataPag
 import { SearchInput } from "@/features/organization/fines/components/SearchInput";
 import { StatCard } from "@/features/organization/fines/components/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/components/ui/select";
+import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/features/organization/fines/local-components/Select";
+
 import { TableHeader, TableRow, TableHead, TableBody, TableCell, Table } from "@/components/ui/table";
+import { TableSkeleton, CardGridSkeleton } from "@/components/organization/Skeletons";
 import { ViewToggle } from "@/features/organization/fines/components/ViewToggle";
 import { BulkGenerationDialog } from "@/features/organization/fines/components/BulkGenerationDialog";
 import { FinesHeader } from "@/features/organization/fines/components/FinesHeader";
 import { FineTypeForm } from "@/features/organization/fines/components/FineTypeForm";
 import { FineType, StudentFines } from "@/features/organization/fines/types";
 import { createFineType, deleteFineType, updateFineType } from "@/firebase/fines/create/fineType";
-import { Users, AlertTriangle, Banknote, CircleDollarSign, ChevronRight, Eye } from "lucide-react";
+import { Users, AlertTriangle, Banknote, CircleDollarSign, ChevronRight, Eye, RefreshCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-
+// import { StatCard } from "@/features/organization/fees/local-components/StatCard";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { countFinesOfStudents, countStudentsWithFines, countUnsettleFinesOfStudents, getAllFines } from "@/firebase/fines/read/fines";
 import { FineBreakdownDialog } from "@/features/organization/fines/components/FineBreakdownDialog";
@@ -50,7 +52,10 @@ export default function FinesPage() {
     handleStatusFilterChange,
     totalStudentsWithFines,
     totalUnsettled,
-    markStatusChanged,
+    totalUnpaidFines,
+    totalCollectedFines,
+    hardRefresh,
+    // markStatusChanged,
   } = useFines({ itemsPerPage: ITEMS_PER_PAGE });
 
   const {
@@ -91,23 +96,25 @@ export default function FinesPage() {
   };
 
   const handleSuccess = async () => {
-    markStatusChanged();
+    // markStatusChanged();
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex flex-col gap-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen">
+      <div className="flex flex-col gap-6 max-w-7xl mx-auto sm:px-6 lg:px-8 py-8">
 
         <FinesHeader
           onAddFineType={handleAddFineType}
           onBulkGenerate={() => setIsBulkGenerateOpen(true)}
+          onRefresh={hardRefresh}
+          isLoading={isLoading}
         />
 
         {/* Stats */}
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-4">
           <StatCard title="Students w/ Fines" value={totalStudentsWithFines} description="Have at least one fine" icon={Users} />
-          {/* <StatCard title="Outstanding Balance" value={`₱${999}`} description="Total unpaid amount" icon={AlertTriangle} />
-          <StatCard title="Total Collected" value={`₱${999}`} description="Total approved payments" icon={Banknote} /> */}
+          <StatCard title="Outstanding Balance" value={`₱${totalUnpaidFines}`} description="Total unpaid amount" icon={AlertTriangle} />
+          <StatCard title="Total Collected" value={`₱${totalCollectedFines}`} description="Total approved payments" icon={Banknote} />
           <StatCard title="Unsettled" value={totalUnsettled} description="Students with outstanding fines" icon={CircleDollarSign} />
         </div>
 
@@ -140,6 +147,10 @@ export default function FinesPage() {
                     {/* <SelectItem value="waived">Waived</SelectItem> */}
                   </SelectContent>
                 </Select>
+                <Button onClick={hardRefresh} variant="outline" size="lg" disabled={isLoading}>
+                  <RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  {isLoading ? 'Refreshing...' : 'Refresh'}
+                </Button>
                 {/* <Select value={filterAppeal} onValueChange={(v: string) => { setFilterAppeal(v); setCurrentPage(1) }}>
                   <SelectTrigger className="w-40">
                     <SelectValue placeholder="Appeals" />
@@ -163,10 +174,12 @@ export default function FinesPage() {
 
           <CardContent>
             {isLoading ? (
-              <div className="py-8 text-center text-sm text-muted-foreground">
-                Loading…
-              </div>
-            ) : viewMode === "table" ? (
+            viewMode === "table" ? (
+              <TableSkeleton columns={7} rows={10} />
+            ) : (
+              <CardGridSkeleton count={6} />
+            )
+          ) : viewMode === "table" ? (
               <>
                 <div className="overflow-x-auto">
                   <Table>

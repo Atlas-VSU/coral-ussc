@@ -5,12 +5,15 @@ interface CacheEntry<T> {
   data: T;
   timestamp: number;
   expiresAt: number;
+  lastAccessedAt?: number;
 }
 
 class CacheService {
   private static instance: CacheService;
   private cache: Map<string, CacheEntry<any>> = new Map();
   private DEFAULT_TTL = 60 * 60 * 1000; // 1 hour default TTL
+  private MAX_STORAGE_SIZE = 4.5 * 1024 * 1024; // 4.5MB threshold for localStorage
+  private MAX_ENTRY_SIZE = 1 * 1024 * 1024; // 1MB threshold for individual entry persistence
 
   // Cache hit/miss metrics for performance monitoring
   private metrics = {
@@ -29,6 +32,8 @@ class CacheService {
           const entry = value as CacheEntry<any>;
           // Hydrate data if it contains timestamps
           entry.data = this.hydrateTimestamps(entry.data);
+          // Set lastAccessedAt if missing
+          if (!entry.lastAccessedAt) entry.lastAccessedAt = Date.now();
           this.cache.set(key, entry);
         });
       }
@@ -84,13 +89,66 @@ class CacheService {
     return CacheService.instance;
   }
 
-  // Save cache to localStorage
+  // Save cache to localStorage with size management
   private saveToStorage(): void {
     try {
-      const cacheObject = Object.fromEntries(this.cache.entries());
-      localStorage.setItem("app-data-cache", JSON.stringify(cacheObject));
+      // 1. Prepare data for persistence
+      const persistableCache: Record<string, CacheEntry<any>> = {};
+      let projectedSize = 0;
+
+      // Filter out expired and excessively large entries
+      const entries = Array.from(this.cache.entries())
+        .filter(([_, entry]) => entry.expiresAt > Date.now())
+        .sort((a, b) => (b[1].lastAccessedAt || 0) - (a[1].lastAccessedAt || 0));
+
+      for (const [key, entry] of entries) {
+        const entryString = JSON.stringify(entry);
+        
+        // Skip individual entries that are too large (will remain in-memory only)
+        if (entryString.length > this.MAX_ENTRY_SIZE) {
+          console.warn(`[Cache] Entry "${key}" is too large (${Math.round(entryString.length / 1024)}KB) to persist. Remaining in memory only.`);
+          continue;
+        }
+
+        if (projectedSize + entryString.length < this.MAX_STORAGE_SIZE) {
+          persistableCache[key] = entry;
+          projectedSize += entryString.length;
+        } else {
+          // Reached the limit of what we want to store in localStorage
+          break;
+        }
+      }
+
+      const jsonString = JSON.stringify(persistableCache);
+      localStorage.setItem("app-data-cache", jsonString);
     } catch (error) {
-      console.error("Failed to save cache to localStorage", error);
+      if (error instanceof Error && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+        console.error("[Cache] QuotaExceededError during save. Clearing old cache entries.");
+        this.emergencyPurge();
+      } else {
+        console.error("Failed to save cache to localStorage", error);
+      }
+    }
+  }
+
+  // Emergency purge when storage is full
+  private emergencyPurge(): void {
+    try {
+      // Clear half of the cache (the oldest entries)
+      const entries = Array.from(this.cache.entries())
+        .sort((a, b) => (a[1].lastAccessedAt || 0) - (b[1].lastAccessedAt || 0));
+      
+      const toRemove = Math.ceil(entries.length / 2);
+      for (let i = 0; i < toRemove; i++) {
+        this.cache.delete(entries[i][0]);
+      }
+      
+      // Try saving the smaller cache
+      this.saveToStorage();
+    } catch (e) {
+      // If even that fails, clear everything to restore functionality
+      console.error("[Cache] Emergency purge failed, clearing entire cache.");
+      this.clear();
     }
   }
 
@@ -113,24 +171,29 @@ class CacheService {
 
     if (cached && cached.expiresAt > now) {
       // Cache hit
+      cached.lastAccessedAt = now; // Update access time
       this.metrics.hits++;
       keyMetrics.hits++;
       const duration = performance.now() - startTime;
+      console.log(`%c[Cache Hit] %c${key} %c(${duration.toFixed(2)}ms)`, 'color: #4CAF50; font-weight: bold', 'color: #2196F3', 'color: #9E9E9E');
       return cached.data as T;
     }
 
     // Cache miss
     this.metrics.misses++;
     keyMetrics.misses++;
+    console.log(`%c[Cache Miss] %c${key}`, 'color: #F44336; font-weight: bold', 'color: #2196F3');
     
     const data = await fetchFn();
     const duration = performance.now() - startTime;
+    console.log(`%c[Cache Populated] %c${key} %c(Fetched in ${duration.toFixed(2)}ms)`, 'color: #FF9800; font-weight: bold', 'color: #2196F3', 'color: #9E9E9E');
 
     // Store in cache
     this.cache.set(key, {
       data,
       timestamp: now,
       expiresAt: now + ttl,
+      lastAccessedAt: now,
     });
 
     this.saveToStorage();
@@ -143,6 +206,7 @@ class CacheService {
     const now = Date.now();
 
     if (cached && cached.expiresAt > now) {
+      cached.lastAccessedAt = now;
       return cached as CacheEntry<T>;
     }
 
@@ -156,6 +220,7 @@ class CacheService {
       data,
       timestamp: now,
       expiresAt: now + ttl,
+      lastAccessedAt: now,
     });
     this.saveToStorage();
   }
@@ -180,6 +245,26 @@ class CacheService {
   public clear(): void {
     this.cache.clear();
     localStorage.removeItem("app-data-cache");
+  }
+
+  /**
+   * Updates a single item within a cached list without re-fetching the entire list.
+   * @param key The cache key for the list
+   * @param id The ID of the item to update
+   * @param updater Function that takes the old item and returns the updated item
+   */
+  public updateInList<T extends { id?: string | number }>(
+    key: string,
+    id: string | number,
+    updater: (item: T) => T
+  ): void {
+    const entry = this.get<T[]>(key);
+    if (entry) {
+      const updatedData = entry.data.map((item) =>
+        (item.id === id || (item as any).uid === id) ? updater(item) : item
+      );
+      this.set(key, updatedData);
+    }
   }
 
   // Clear all application caches and local storage data
@@ -295,11 +380,11 @@ export const CACHE_DURATIONS = {
     RECENT_MEMBERS: 30 * 60 * 1000, // 30 minutes
   },
   UI_STATE: 30 * 1000, // 30 seconds for UI state
-  FEES: 5 * 60 * 1000, // 5 minutes
-  FINES: 5 * 60 * 1000, // 5 minutes
-  PAYMENTS: 2 * 60 * 1000, // 2 minutes (payments change more frequently)
-  PAYMENT_HISTORY: 5 * 60 * 1000, // 5 minutes
-  CLEARANCE: 5 * 60 * 1000, // 5 minutes
+  FEES: 20 * 60 * 1000, // 20 minutes
+  FINES: 20 * 60 * 1000, // 20 minutes
+  PAYMENTS: 10 * 60 * 1000, // 10 minutes (payments change more frequently)
+  PAYMENT_HISTORY: 10 * 60 * 1000, // 10 minutes
+  CLEARANCE: 10 * 60 * 1000, // 10 minutes
 };
 
 // Structured cache key helpers — use these everywhere instead of raw strings
@@ -312,7 +397,7 @@ export const CACHE_KEYS = {
   feeLogs:      (feeId: string) => `fees:logs:${feeId}`,
 
   // Fines
-  finesAll:        (orgId: string, status: string) => `fines:all:${orgId}:${status}`,
+  finesAll:        (orgId: string) => `fines:all:${orgId}`,
   finesUnpaid:     (orgId: string) => `fines:unpaid:${orgId}`,
   fineByStudent:   (studentId: string) => `fines:student:${studentId}`,
   fineDoc:         (fineId: string) => `fines:doc:${fineId}`,
@@ -337,4 +422,7 @@ export const CACHE_KEYS = {
   // Clearance
   clearanceAll:   (orgId: string) => `clearance:all:${orgId}`,
   clearanceDoc:   (userId: string) => `clearance:doc:${userId}`,
+  clearancePage:  (orgId: string, page: number, size: number, search: string, status: string) => 
+    `clearance:page:${orgId}:${page}:${size}:${search}:${status}`,
+  feeStatusForClearance: (userId: string, orgId: string) => `fees:statusForClearance:${userId}:${orgId}`,
 };

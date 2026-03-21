@@ -1,4 +1,5 @@
 import { Loader2Icon } from "lucide-react";
+import { createPortal } from "react-dom";
 
 interface LoginLoadingOverlayProps {
   message?: string;
@@ -7,8 +8,8 @@ interface LoginLoadingOverlayProps {
 export function LoginLoadingOverlay({
   message = "Logging you into the system, please wait...",
 }: LoginLoadingOverlayProps) {
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-900 rounded-lg p-4 sm:p-6 lg:p-8 shadow-xl max-w-sm sm:max-w-md w-full mx-auto text-center">
         <div className="flex flex-col items-center">
           <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-primary/10 flex items-center justify-center mb-3 sm:mb-4">
@@ -28,6 +29,7 @@ export function LoginLoadingOverlay({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

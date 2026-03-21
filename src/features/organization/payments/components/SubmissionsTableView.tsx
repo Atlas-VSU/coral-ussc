@@ -6,14 +6,16 @@ import { ProofOfPayment } from "../../fines/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { TableSkeleton } from "@/components/organization/Skeletons"
 
 interface SubmissionsTableViewProps {
   paginated: ProofOfPayment[]
   filtered: ProofOfPayment[]
   onOpenReview: (p: ProofOfPayment) => void
+  isLoading?: boolean
 }
 
-export function SubmissionsTableView({ paginated, filtered, onOpenReview }: SubmissionsTableViewProps) {
+export function SubmissionsTableView({ paginated, filtered, onOpenReview, isLoading }: SubmissionsTableViewProps) {
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -22,14 +24,20 @@ export function SubmissionsTableView({ paginated, filtered, onOpenReview }: Subm
             <TableHead>Student</TableHead>
             <TableHead className="hidden sm:table-cell">Type</TableHead>
             <TableHead>Amount</TableHead>
-            <TableHead className="hidden md:table-cell">Reference Code</TableHead>
+            <TableHead className="hidden md:table-cell">Receipt ID</TableHead>
             <TableHead className="hidden sm:table-cell">Submitted</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filtered.length === 0 ? (
+          {isLoading ? (
+            <TableRow className="hover:bg-transparent">
+              <TableCell colSpan={7} className="p-0 border-none">
+                <TableSkeleton columns={7} rows={5} />
+              </TableCell>
+            </TableRow>
+          ) : filtered.length === 0 ? (
             <TableRow>
               <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                 No payment submissions found

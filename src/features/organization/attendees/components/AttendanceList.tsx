@@ -12,12 +12,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { CACHE_DURATIONS } from "@/services/cacheService";
 import { batchGetPrograms } from "@/firebase/programBatch";
-
 // Global program cache to prevent redundant fetches
 const programCache = new Map<string, { name: string; timestamp: number }>();
 
+
 // Component to display program name with optimized caching
-function ProgramBadge({ programId }: { programId: string }) {
+function ProgramName({ programId }: { programId: string }) {
   const [programName, setProgramName] = useState(() => {
     // Initialize from global cache if available and not expired
     const cached = programCache.get(programId);
@@ -59,9 +59,9 @@ function ProgramBadge({ programId }: { programId: string }) {
   }, [fetchProgramName]);
 
   return (
-    <Badge variant="outline" className="text-xs py-0 px-1.5 h-5">
-      {programName}
-    </Badge>
+  <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-semibold">
+    {programName}
+  </span>
   );
 }
 
@@ -73,12 +73,9 @@ const prefetchPrograms = async (programIds: string[]) => {
     const now = Date.now();
     return !cached || now - cached.timestamp >= CACHE_DURATIONS.PROGRAMS;
   });
-
   if (uniqueIds.length === 0) return;
-
   try {
     const programsMap = await batchGetPrograms(uniqueIds);
-
     // Update the local cache
     const now = Date.now();
     Object.entries(programsMap).forEach(([id, program]) => {
@@ -118,9 +115,9 @@ const getRemarkStyles = (remark: string) => {
       };
     default:
       return {
-        bg: "bg-gray-50 dark:bg-gray-800",
-        text: "text-gray-700 dark:text-gray-300",
-        border: "border-gray-200 dark:border-gray-700",
+        bg: "",
+        text: "",
+        border: "",
         icon: null,
       };
   }
@@ -193,19 +190,40 @@ export function AttendanceList({
   }, [programIds]);
 
   return (
-    <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 dark:from-gray-800 dark:via-gray-800 dark:to-gray-700/50 rounded-xl border border-gray-200/60 dark:border-gray-700/60 shadow-lg shadow-blue-100/50 dark:shadow-gray-900/20">
-      {/* Enhanced Header */}
-      <div className="px-4 sm:px-6 py-4 sm:py-6 border-b border-gray-200/60 dark:border-gray-700/60">
+    <div
+      className="rounded-xl"
+      style={{
+        background:
+          "linear-gradient(135deg, #ffffff 10%, #EAF3DE 100%, #C0DD97 100%)",
+        boxShadow: "0 4px 24px 0 rgba(5,140,17,0.08)",
+      }}
+    >
+      {/* Header */}
+      <div
+        className="px-4 sm:px-6 py-4 sm:py-6 border-b"
+        style={{ borderColor: "#C0DD97" }}
+      >
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-700 to-green-800 flex items-center justify-center shadow-lg">
+            <div
+              className="h-10 w-10 rounded-xl flex items-center justify-center shadow-sm"
+              style={{
+                background: "linear-gradient(135deg, #058C11, #38B000)",
+              }}
+            >
               <Users className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h3 className="font-nunito text-xl font-bold text-gray-900 dark:text-gray-100">
+              <h3
+                className="font-nunito text-xl font-bold"
+                style={{ color: "#27500A" }}
+              >
                 Attendance Records
               </h3>
-              <div className="flex items-center gap-2 font-nunito-sans text-sm text-gray-600 dark:text-gray-400">
+              <div
+                className="flex items-center gap-2 font-nunito-sans text-sm"
+                style={{ color: "#3B6D11" }}
+              >
                 <span>
                   {attendees.length} of {totalAttendees || attendees.length}{" "}
                   attendees
@@ -213,7 +231,7 @@ export function AttendanceList({
                 {remarkStats.total > 0 && (
                   <>
                     <span>•</span>
-                    <span className="text-red-600 dark:text-red-400 font-medium">
+                    <span className="text-red-600 font-medium">
                       {remarkStats.total} with remarks
                     </span>
                   </>
@@ -230,72 +248,72 @@ export function AttendanceList({
             </div>
           </div>
 
-          {/* Enhanced Legend with Remark Indicators */}
-          <div className="mt-4 p-3 rounded-lg bg-gray-50/80 dark:bg-gray-800/40 border border-gray-200/60 dark:border-gray-700/60">
+          {/* Legend */}
+          <div
+            className="mt-4 p-3 rounded-lg border"
+            style={{ background: "#ffffff", borderColor: "#C0DD97" }}
+          >
             <div className="flex flex-wrap items-center gap-4 text-xs">
               <div className="flex items-center gap-2">
                 <Badge
                   variant="outline"
-                  className="h-5 bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700"
+                  className="h-5"
+                  style={{
+                    background: "#EAF3DE",
+                    color: "#27500A",
+                    borderColor: "#97C459",
+                  }}
                 >
                   <ArrowRight className="h-3 w-3 mr-1" />
                 </Badge>
-                <span className="text-gray-600 dark:text-gray-400">
-                  Time-In
-                </span>
+                <span style={{ color: "#3B6D11" }}>Time-In</span>
               </div>
               <div className="flex items-center gap-2">
                 <Badge
                   variant="outline"
-                  className="h-5 bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700"
+                  className="h-5 bg-amber-50 text-amber-700 border-amber-200"
                 >
                   <ArrowLeft className="h-3 w-3 mr-1" />
                 </Badge>
-                <span className="text-gray-600 dark:text-gray-400">
-                  Time-Out
-                </span>
+                <span style={{ color: "#3B6D11" }}>Time-Out</span>
               </div>
               {remarkStats.programMismatch > 0 && (
                 <div className="flex items-center gap-2">
                   <Badge
                     variant="outline"
-                    className="h-5 bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700"
+                    className="h-5 bg-red-50 text-red-700 border-red-200"
                   >
                     <AlertTriangle className="h-3 w-3 mr-1" />
                   </Badge>
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Program Issue
-                  </span>
+                  <span style={{ color: "#3B6D11" }}>Program Issue</span>
                 </div>
               )}
               {remarkStats.facultyMismatch > 0 && (
                 <div className="flex items-center gap-2">
                   <Badge
                     variant="outline"
-                    className="h-5 bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-700"
+                    className="h-5 bg-orange-50 text-orange-700 border-orange-200"
                   >
                     <UserX className="h-3 w-3 mr-1" />
                   </Badge>
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Faculty Issue
-                  </span>
+                  <span style={{ color: "#3B6D11" }}>Faculty Issue</span>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Remark Statistics */}
+        {/* Remark stats pills */}
         {remarkStats.total > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
             {remarkStats.programMismatch > 0 && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-400 text-xs font-medium">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 text-red-700 text-xs font-medium">
                 <AlertTriangle className="h-3 w-3" />
                 <span>{remarkStats.programMismatch} Program Mismatch</span>
               </div>
             )}
             {remarkStats.facultyMismatch > 0 && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 dark:bg-orange-900/10 text-orange-700 dark:text-orange-400 text-xs font-medium">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 text-orange-700 text-xs font-medium">
                 <UserX className="h-3 w-3" />
                 <span>{remarkStats.facultyMismatch} Faculty Mismatch</span>
               </div>
@@ -304,57 +322,93 @@ export function AttendanceList({
         )}
       </div>
 
-      {/* Attendance List */}
+      {/* List */}
       {attendees.length > 0 ? (
         <div className="px-4 sm:px-6 py-4 sm:py-6">
           <div className="space-y-3">
             {attendees.map(({ id, student, timeIn, timeOut, remark }) => {
               if (!student) return null;
               const remarkStyles = getRemarkStyles(remark!);
+              const hasRemark = Boolean(remark);
 
               return (
                 <div
                   key={id || student.studentId}
-                  className={`group relative p-4 rounded-lg border pb-5 ${
-                    remark
-                      ? `${remarkStyles.bg} ${remarkStyles.border}`
-                      : "border-gray-200/60 dark:border-gray-700/60 bg-white/80 dark:bg-gray-800/40"
-                  } backdrop-blur-sm hover:bg-white/90 dark:hover:bg-gray-800/60 hover:border-gray-300/80 dark:hover:border-gray-600/80 transition-all duration-200 hover:shadow-md`}
+                  className={`group relative p-4 rounded-lg border pb-5 transition-all duration-200 hover:shadow-md ${
+                    hasRemark ? `${remarkStyles.bg} ${remarkStyles.border}` : ""
+                  }`}
+                  style={
+                    !hasRemark
+                      ? {
+                          background: "#ffffff",
+                          borderColor: "#C0DD97",
+                        }
+                      : undefined
+                  }
+                  onMouseEnter={
+                    !hasRemark
+                      ? (e) => {
+                          (e.currentTarget as HTMLElement).style.background =
+                            "#EAF3DE";
+                          (e.currentTarget as HTMLElement).style.borderColor =
+                            "#97C459";
+                        }
+                      : undefined
+                  }
+                  onMouseLeave={
+                    !hasRemark
+                      ? (e) => {
+                          (e.currentTarget as HTMLElement).style.background =
+                            "#ffffff";
+                          (e.currentTarget as HTMLElement).style.borderColor =
+                            "#C0DD97";
+                        }
+                      : undefined
+                  }
                 >
-
                   <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                    {/* Student Info */}
+                    {/* Student info */}
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div className="relative">
-                        <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-semibold">
+                        <Avatar
+                          className="h-10 w-10 border-2 shadow-sm"
+                          style={{ borderColor: "#97C459" }}
+                        >
+                          <AvatarFallback
+                            className="font-semibold text-white"
+                            style={{
+                              background:
+                                "linear-gradient(135deg, #058C11, #38B000)",
+                            }}
+                          >
                             {student.firstName?.[0]}
                             {student.lastName?.[0]}
                           </AvatarFallback>
                         </Avatar>
-                        {remark && (
-                          <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 dark:bg-red-600 border-2 border-white dark:border-gray-800" />
+                        {hasRemark && (
+                          <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 border-2 border-white" />
                         )}
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-nunito font-semibold text-gray-900 dark:text-gray-100 truncate">
-                              {student.firstName} {student.lastName}
-                            </h4>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm text-gray-600 dark:text-gray-400 font-mono">
+                        <h4
+                          className="font-nunito font-semibold truncate"
+                          style={{ color: "#27500A" }}
+                        >
+                          {student.firstName} {student.lastName}
+                        </h4>
+                        <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                          <span
+                            className="text-sm font-mono"
+                            style={{ color: "#3B6D11" }}
+                          >
                             {student.studentId}
                           </span>
                           {student.programId && (
-                            <ProgramBadge programId={student.programId} />
+                            <ProgramName programId={student.programId}/>
                           )}
                         </div>
-                        {remark && (
+                        {hasRemark && (
                           <div className="mt-2 lg:hidden">
                             <Badge
                               variant="outline"
@@ -367,19 +421,14 @@ export function AttendanceList({
                                 </span>
                               </div>
                             </Badge>
-                          </div>                          
-                        )}
-                        {remark && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400 italic lg:hidden">
-                            Requires attention
-                          </span>
+                          </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Time Records */}
+                    {/* Time records */}
                     <div className="flex flex-col gap-2 lg:flex-shrink-0">
-                      {remark && (
+                      {hasRemark && (
                         <div className="hidden lg:block self-end">
                           <Badge
                             variant="outline"
@@ -387,49 +436,52 @@ export function AttendanceList({
                           >
                             <div className="flex items-center gap-1.5">
                               {remarkStyles.icon}
-                              <span className="truncate">
-                                {remark}
-                              </span>
+                              <span className="truncate">{remark}</span>
                             </div>
                           </Badge>
                         </div>
                       )}
                       <div className="flex flex-row gap-3 flex-wrap justify-center">
-                        {/* Check-in Badge */}
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant="outline"
-                            className={`flex items-center h-8 px-3 font-medium ${
-                              timeIn
-                                ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700"
-                                : "bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800/20 dark:text-gray-400 dark:border-gray-700"
-                            }`}
-                          >
-                            <ArrowRight className="h-3 w-3 mr-2 flex-shrink-0" />
-                            <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
-                            <span className="text-xs whitespace-nowrap">
-                              {formatTime(timeIn) || "Not recorded"}
-                            </span>
-                          </Badge>
-                        </div>
+                        {/* Time-in */}
+                        <Badge
+                          variant="outline"
+                          className="flex items-center h-8 px-3 font-medium"
+                          style={
+                            timeIn
+                              ? {
+                                  background: "#EAF3DE",
+                                  color: "#27500A",
+                                  borderColor: "#97C459",
+                                }
+                              : {
+                                  background: "#f9fafb",
+                                  color: "#6b7280",
+                                  borderColor: "#e5e7eb",
+                                }
+                          }
+                        >
+                          <ArrowRight className="h-3 w-3 mr-2 flex-shrink-0" />
+                          <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+                          <span className="text-xs whitespace-nowrap">
+                            {formatTime(timeIn) || "Not recorded"}
+                          </span>
+                        </Badge>
 
-                        {/* Check-out Badge */}
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant="outline"
-                            className={`flex items-center h-8 px-3 font-medium ${
-                              timeOut
-                                ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700"
-                                : "bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800/20 dark:text-gray-400 dark:border-gray-700"
-                            }`}
-                          >
-                            <ArrowLeft className="h-3 w-3 mr-2 flex-shrink-0" />
-                            <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
-                            <span className="text-xs whitespace-nowrap">
-                              {formatTime(timeOut) || "Not recorded"}
-                            </span>
-                          </Badge>
-                        </div>
+                        {/* Time-out */}
+                        <Badge
+                          variant="outline"
+                          className={`flex items-center h-8 px-3 font-medium ${
+                            timeOut
+                              ? "bg-amber-50 text-amber-700 border-amber-200"
+                              : "bg-gray-50 text-gray-500 border-gray-200"
+                          }`}
+                        >
+                          <ArrowLeft className="h-3 w-3 mr-2 flex-shrink-0" />
+                          <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+                          <span className="text-xs whitespace-nowrap">
+                            {formatTime(timeOut) || "Not recorded"}
+                          </span>
+                        </Badge>
                       </div>
                     </div>
                   </div>
@@ -441,14 +493,20 @@ export function AttendanceList({
       ) : (
         <div className="p-12 text-center">
           <div className="flex flex-col items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-              <Users className="h-6 w-6 text-gray-400" />
+            <div
+              className="h-12 w-12 rounded-full flex items-center justify-center"
+              style={{ background: "#EAF3DE" }}
+            >
+              <Users className="h-6 w-6" style={{ color: "#058C11" }} />
             </div>
             <div>
-              <h4 className="font-nunito font-semibold text-gray-900 dark:text-gray-100 mb-1">
+              <h4
+                className="font-nunito font-semibold mb-1"
+                style={{ color: "#27500A" }}
+              >
                 No attendance records
               </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm" style={{ color: "#3B6D11" }}>
                 Attendance data will appear here once students check in
               </p>
             </div>

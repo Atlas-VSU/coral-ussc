@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/ui/theme-provider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
+import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 
 const montserrat = Montserrat({
@@ -18,11 +19,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning> 
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <title>
-          USSC Connect
-        </title>
+        <title>USSC Connect</title>
         <meta
           name="description"
           content="Your platform for modern productivity and collaboration"
@@ -35,7 +34,11 @@ export default function RootLayout({
         className={`${montserrat.variable} antialiased`}
         suppressHydrationWarning
       >
-        <div suppressHydrationWarning style={{ display: 'contents' }}>
+        <NextTopLoader
+          color="var(--accent)"
+          shadow="0 0 10px var(--accent), 0 0 5px var(--accent)"
+        />
+        <div suppressHydrationWarning style={{ display: "contents" }}>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -46,12 +49,7 @@ export default function RootLayout({
               <SidebarProvider>{children}</SidebarProvider>
             </AuthProvider>
           </ThemeProvider>
-          <Toaster 
-            position="top-right"
-            expand={false}
-            richColors
-            closeButton
-          />
+          <Toaster position="top-right" expand={false} richColors closeButton />
         </div>
       </body>
     </html>

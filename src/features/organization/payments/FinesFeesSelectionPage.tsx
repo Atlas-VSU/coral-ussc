@@ -10,6 +10,7 @@ import { ArrowLeft, BookOpen, Building2, Receipt, AlertCircle, CheckCircle2, Use
 import { FeeItem, Fine, FineItem, OrganizationData, StudentData } from "@/app/(public)/payment/page";
 import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
 import { PaymentProgressBar } from "./components/PaymentProgressBar";
+import { ResponsiveProgramText } from "./components/ResponsiveProgramText";
 
 
 interface FinesFeesSelectionPageProps {
@@ -102,8 +103,8 @@ export default function FinesFeesSelectionPage({
   }, [fineItems]);
 
   const payableFees = useMemo(() => fees.filter((fee) => fee.isPayable !== false), [fees]);
-  const payableFines = useMemo(() => fines.filter((fine) => fine.isPayable !== false), [fines]);
   const payableFineItems = useMemo(() => fineItems.filter((fine) => fine.isPending !== true), [fineItems]);
+  const payableFines = useMemo(() => payableFineItems.length>0? fines : [], [fines]);
 
   const feesPayableTotal = useMemo(() => {
     return payableFees.reduce((sum, fee) => sum + fee.amount, 0);
@@ -120,6 +121,7 @@ export default function FinesFeesSelectionPage({
   const grandTotal = (payFees ? feesPayableTotal : 0) + (payFines ? finesPayableTotal : 0);
 
   const handleContinue = () => {
+    console.log("Selected Finessss:", payFines);
     if (payFees || payFines) {
       onNext({
         fees: payFees ? payableFees : [],
@@ -165,7 +167,11 @@ export default function FinesFeesSelectionPage({
                   <span className="text-muted-foreground/50">•</span>
                   <span className="flex items-center gap-1">
                     <BookOpen className="h-3.5 w-3.5 shrink-0" />
-                    {studentData.program}
+                    <ResponsiveProgramText
+                      fullName={studentData.program}
+                      shortName={studentData.programShortName}
+                      acronym={studentData.programAcronym}
+                    />
                   </span>
                 </div>
               </div>

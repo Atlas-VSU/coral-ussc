@@ -7,10 +7,15 @@ import {
   getDashboardUpcomingEvents,
   getDashboardOngoingEvents,
   getDashboardEvents,
+  getDashboardRecentPayments,
+  getDashboardFeesCollected,
+  getDashboardUnpaidFinesAmount,
+  getDashboardClearanceRate,
 } from "@/firebase/dashboard";
 import { Event } from "../types";
 import { Member } from "../../members/types";
-import { set } from "zod";
+import { DashboardPayment } from "../components/RecentPayments";
+
 
 export interface DashboardStats {
   totalStudents: number;
@@ -27,6 +32,11 @@ export function useDashboard() {
   const [ongoingEvents, setOngoingEvents] = useState<Event[]>([]);
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [recentMembers, setRecentMembers] = useState<Member[]>([]);
+  const [recentPayments, setRecentPayments] = useState<DashboardPayment[]>([]);
+  const [feesCollected, setFeesCollected] = useState(0);
+  const [unpaidFinesAmount, setUnpaidFinesAmount] = useState(0);
+  const [clearanceRate, setClearanceRate] = useState(0);
+
   const [stats, setStats] = useState<DashboardStats>({
     totalStudents: 0,
     totalEvents: 0,
@@ -51,12 +61,20 @@ export function useDashboard() {
         ongoingEventsData,
         allEventsData,
         recentMembersData,
+        recentPaymentsData,
+        feesCollectedData,
+        unpaidFinesAmountData,
+        clearanceRateData,
       ] = await Promise.all([
         getDashboardStats(),
         getDashboardUpcomingEvents(5),
         getDashboardOngoingEvents(5),
         getDashboardEvents(5),
-        getDashboardRecentMembers(10),
+        getDashboardRecentMembers(5),
+        getDashboardRecentPayments(5),
+        getDashboardFeesCollected(),
+        getDashboardUnpaidFinesAmount(),
+        getDashboardClearanceRate(),
       ]);
 
       // Update state with fetched data
@@ -65,6 +83,10 @@ export function useDashboard() {
       setOngoingEvents(ongoingEventsData);
       setAllEvents(allEventsData);
       setRecentMembers(recentMembersData);
+      setRecentPayments(recentPaymentsData);
+      setFeesCollected(feesCollectedData);
+      setUnpaidFinesAmount(unpaidFinesAmountData);
+      setClearanceRate(clearanceRateData);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
       setError(
@@ -94,5 +116,9 @@ export function useDashboard() {
     isLoading,
     error,
     refreshDashboard,
+    recentPayments,
+    feesCollected,
+    unpaidFinesAmount,
+    clearanceRate,
   };
 }

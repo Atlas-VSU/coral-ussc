@@ -1,6 +1,6 @@
 "use client"
 
-import { Download } from "lucide-react"
+import { Download, RefreshCcw } from "lucide-react"
 import { SearchInput } from "@/components/organization/SearchInput"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -16,6 +16,8 @@ interface ClearanceFiltersProps {
   onExport: () => void
   viewMode: ViewMode
   onViewChange: (v: ViewMode) => void
+  onRefresh: () => void
+  isLoading?: boolean
 }
 
 export function ClearanceFilters({
@@ -26,6 +28,8 @@ export function ClearanceFilters({
   onExport,
   viewMode,
   onViewChange,
+  onRefresh,
+  isLoading,
 }: ClearanceFiltersProps) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -36,7 +40,7 @@ export function ClearanceFilters({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <SearchInput
-          placeholder="Search student..."
+          placeholder="Search Name or Student ID..."
           value={search}
           onChange={onSearchChange}
           className="w-full sm:w-56"
@@ -52,6 +56,10 @@ export function ClearanceFilters({
             <SelectItem value="not_cleared">Not Cleared</SelectItem>
           </SelectContent>
         </Select>
+        <Button onClick={onRefresh} variant="outline" size="sm" className="gap-1.5" disabled={isLoading}>
+          <RefreshCcw className={`size-4 ${isLoading ? 'animate-spin' : ''}`} />
+          {isLoading ? 'Refreshing...' : 'Refresh'}
+        </Button>
         <Button variant="outline" size="sm" className="gap-1.5" onClick={onExport}>
           <Download className="size-4" /> Export
         </Button>

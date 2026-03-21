@@ -10,7 +10,6 @@ import { UnpaidTab } from "./components/UnpaidTab"
 import { LogPaymentDialog } from "./components/LogPaymentDialog"
 import { usePaymentsPage } from "./hooks/usePaymentsPage"
 import PaymentReceiptDialog, { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
-import { set } from "zod"
 
 export default function PaymentsPage() {
   const {
@@ -23,7 +22,8 @@ export default function PaymentsPage() {
     reviewOpen, setReviewOpen,
     viewMode, setViewMode,
     filtered, totalPages, paginated,
-    handleApprove, handleDecline, openReview, isLoading, loading,
+    handleApprove, handleDecline, openReview, isLoading, loading  , isLoadingUnpaid,
+    refetchPayments,
     // unpaid
     unpaidSearch, setUnpaidSearch,
     unpaidPage, setUnpaidPage,
@@ -38,7 +38,7 @@ export default function PaymentsPage() {
     studentProgram,
     // receipt
     receiptOpen, setReceiptOpen, receiptData, setReceiptData,
-    stats,
+    stats, totalUnpaidCount
   } = usePaymentsPage()
 
   const handleViewReceipt = () => {
@@ -50,14 +50,14 @@ export default function PaymentsPage() {
       total: selectedPayment?.amount || 0,
       date: selectedPayment?.submittedAt.toDate().toLocaleDateString() || "N/A",
       verifiedByName: selectedPayment?.verifiedByName || "N/A",
-      paymentMethod: selectedPayment?.paymentMethod || "N/A",
+      paymentMethod: selectedPayment?.paymentMethod || "Cash (Manual)",
     });
     setReceiptOpen(true)
     
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 pt-8 pb-24 lg:pb-0">
 
       <PageHeader
         variant="admin"
@@ -66,17 +66,25 @@ export default function PaymentsPage() {
         description="Review and manage student payment submissions"
       />
 
-      <PaymentStats {...stats} />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <PaymentStats {...stats} />
+        
+      </div>
 
       {/* ── Main Card ── */}
       <Card className="border-border bg-card">
         <div className="px-6 pt-6">
           <Tabs value={dataView} onValueChange={v => handleTabChange(v as "submissions" | "unpaid")}>
-            <TabsList className="w-full flex-1">
-              <TabsTrigger value="submissions">Payment Submissions</TabsTrigger>
-              <TabsTrigger value="unpaid">Log Payments Manually</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 max-[510px]:h-auto max-[510px]:grid-cols-1">
+              <TabsTrigger value="submissions" className="w-full max-[510px]:justify-center">
+                Payment Submissions
+              </TabsTrigger>
+              <TabsTrigger value="unpaid" className="w-full max-[510px]:justify-center">
+                Log Payments Manually
+              </TabsTrigger>
             </TabsList>
           </Tabs>
+        
         </div>
 
         {dataView === "submissions" ? (
@@ -93,6 +101,9 @@ export default function PaymentsPage() {
             onStatusChange={setFilterStatus}
             onViewChange={setViewMode}
             onOpenReview={openReview}
+            isLoading={isLoading}
+            refetchPayments={refetchPayments}
+            isLoadingUnpaid={isLoadingUnpaid}
           />
         ) : (
           <UnpaidTab
@@ -106,6 +117,10 @@ export default function PaymentsPage() {
             onSearchChange={setUnpaidSearch}
             onViewChange={setUnpaidViewMode}
             onOpenDetail={openUnpaidDetail}
+            isLoading={isLoadingUnpaid}
+            refetchPayments={refetchPayments}
+            isLoadingUnpaid={isLoadingUnpaid}
+            totalCount={totalUnpaidCount}
           />
         )}
       </Card>
@@ -123,6 +138,7 @@ export default function PaymentsPage() {
           amountPaid:   selectedPayment.amount,
           referenceNo:  selectedPayment.referenceNumber,
           submittedAt:  selectedPayment.submittedAt.toDate().toLocaleDateString(),
+          notes: selectedPayment.notes,
           receiptContent: selectedPayment.imageUrl,
           declineRemarks: selectedPayment.rejectionReason,
           reviewedBy:   selectedPayment.verifiedByName,
@@ -133,6 +149,7 @@ export default function PaymentsPage() {
         onReject={selectedPayment?.status === "pending" ? (async (reason: string) => await handleDecline(selectedPayment, reason)) : undefined}
         onViewReceipt={handleViewReceipt}
         isProcessing={isLoading}
+        isLoading={loading}
       />
 
       {/* ── Log Payment Dialog ── */}
@@ -149,7 +166,8 @@ export default function PaymentsPage() {
         onToggleAll={toggleAllDues}
         onLogPayment={handleLogPayment}
         studentProgram={studentProgram}
-        isLoading = {loading}
+        isLoading = {isLoading}
+        isSubmitting={loading}
       />
 
       {/* ── Receipt Dialog ── */}

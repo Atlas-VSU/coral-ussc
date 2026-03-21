@@ -50,6 +50,7 @@ export interface PaymentReviewData {
   paymentMethod?: string
   referenceNo?: string
   submittedAt: string
+  notes?: string
   /** Text shown inside the receipt placeholder box */
   receiptContent?: string
 
@@ -78,6 +79,7 @@ interface PaymentReviewDialogProps {
   onReject?: (reason: string) => Promise<void>
   onViewReceipt?: (bool: boolean) => void
   isProcessing?: boolean
+  isLoading?: boolean
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -92,6 +94,7 @@ export function PaymentReviewDialog({
   onReject,
   isProcessing = false,
   onViewReceipt,
+  isLoading,
 }: PaymentReviewDialogProps) {
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false)
   const [rejectOpen, setRejectOpen] = useState(false)
@@ -99,7 +102,6 @@ export function PaymentReviewDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
  
   const isPending = Boolean(onApprove && onReject)
-
   async function handleApproveConfirmed() {
     setIsSubmitting(true)
     await onApprove?.()
@@ -109,9 +111,9 @@ export function PaymentReviewDialog({
   }
 
   async function handleRejectConfirmed() {
-    if (!rejectReason.trim()) return
+    if (!rejectReason.trim() || isLoading) return
     setIsSubmitting(true)
-    onReject?.(rejectReason)
+    await onReject?.(rejectReason)
     setRejectOpen(false)
     setRejectReason("")
     onOpenChange(false)
@@ -262,6 +264,15 @@ export function PaymentReviewDialog({
                 </div>
               </div>
 
+              {data.notes && (
+                <div>
+                  <Label className="text-muted-foreground">Payment Notes</Label>
+                  <p className="mt-1 rounded-md border border-border bg-muted/30 p-3 text-sm text-foreground">
+                    {data.notes}
+                  </p>
+                </div>
+              )}
+
               {/* Decline remarks (read-only, shown for declined payments) */}
               {data.declineRemarks && (
                 <div>
@@ -301,7 +312,7 @@ export function PaymentReviewDialog({
                   </>
                 ) : (
                     <>
-                  {!data.declineRemarks && (
+                  {!data.declineRemarks && onViewReceipt && (
                     <Button variant="outline" className="gap-1.5" onClick={()=>handleViewReceipt(true)}>
                       View Receipt
                     </Button>
@@ -364,17 +375,17 @@ export function PaymentReviewDialog({
             <Button
               variant="outline"
               onClick={() => { setRejectOpen(false); setRejectReason("") }}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLoading}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
-              disabled={!rejectReason.trim() || isSubmitting}
+              disabled={!rejectReason.trim() || isSubmitting || isLoading}
               onClick={handleRejectConfirmed}
               className="gap-2"
             >
-              {isSubmitting && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+              {isSubmitting || isLoading && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
               Reject
             </Button>
           </DialogFooter>

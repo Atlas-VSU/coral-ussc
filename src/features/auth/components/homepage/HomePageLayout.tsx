@@ -3,10 +3,15 @@ import { MobileHeader } from "./components/MobileHeader";
 import { TemporaryLogin } from "./components/TemporaryLogin";
 
 import LoginCard from "./components/LoginCard";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { useState } from "react";
+import { MakePaymentButton } from "./components/MakePaymentButton";
 
 export function HomePageLayout() {
+  const [loading, setLoading] = useState(false);
   return (
-    <div className="flex min-h-svh flex-col relative">
+    <div className="flex min-h-svh flex-col relative bg-white">
       <div>
         {/*Desktop layout*/}
         <div
@@ -21,20 +26,22 @@ export function HomePageLayout() {
             {/* Left Side */}
             <div className="hero-left-clip flex-1 relative overflow-hidden lg:flex-none lg:w-[50%] flex items-center min-h-[65vh] lg:min-h-screen">
               <div className="relative z-10 w-full pt-28 pb-16 pl-6 pr-0 sm:px-10 lg:pt-0 lg:pb-0 lg:pl-16 lg:pr-10 lg:ml-10 mx-auto mr-0">
-                <h1 className="text-4xl lg:text-[2.5rem] xl:text-[3.3rem] font-bold tracking-tight text-[#1F7700] leading-[1.1] animate-fade-in-up text-center lg:text-left">
+                <h1 className="mb-4 text-4xl lg:text-[2.5rem] xl:text-[3.3rem] font-bold tracking-tight text-[#1F7700] leading-[1.1] animate-fade-in-up text-center lg:text-left">
                   Real-Time Eligibility.
                   <span className="block text-[#1F7700] font-bold">
                     Effortless Settlement.
                   </span>
-                  <span className="block text-[#1F7700] font-bold ">
+                  <span className="block text-[#1F7700] font-bold">
                     Total Clarity.
                   </span>
                 </h1>
-                <p className="mt-5 mr-10 sm:mt-6 lg:mt-8 text-md sm:text-base lg:text-md leading-snug text-[#1F7700] animate-fade-in-up delay-300 text-center font-medium lg:text-left">
+                
+                <p className="mt-5 mb-xl mr-10 sm:mt-6 lg:mt-8 text-md sm:text-base lg:text-md leading-snug text-[#1F7700] animate-fade-in-up delay-300 text-center font-medium lg:text-left">
                   Streamline your semestral clearance process by tracking your
                   organizational fees and fines, settle payments online, and
                   monitor your clearance status in real-time.
                 </p>
+                <MakePaymentButton />
               </div>
             </div>
 
@@ -57,7 +64,7 @@ export function HomePageLayout() {
                 {/* Main Sign-in Card */}
                 {/* When login card is uncommented change top-0 */}
                 <div
-                  className="absolute w-full h-full top-8 left-0 right-[30] z-3 animate-fade-in-up"
+                  className="absolute w-full h-full top-5 left-0 right-[30] z-3 animate-fade-in-up"
                   style={{
                     backgroundImage: `url('/images/searchfortruth-2.png')`,
                     backgroundSize: "contain",
@@ -92,18 +99,21 @@ export function HomePageLayout() {
             <div className="absolute top-1/2 right-20 w-16 h-16 bg-white/3 rounded-full blur-lg animate-gentle-rotate" />
 
             <div className="relative z-10 w-full pt-30 pb-20 px-6 sm:px-10 max-w-xl mx-auto">
-              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1F7700] leading-[0.95] animate-fade-in-up text-center whitespace-now">
+              <h1 className="mb-8 text-4xl lg:text-[2.5rem] xl:text-[3.3rem] font-bold tracking-tight text-[#1F7700] leading-[1.1] animate-fade-in-up text-center lg:text-left">
                 Real-Time Eligibility.
-                <span className="block text-[#1F7700]">
+                <span className="block text-[#1F7700] font-bold">
                   Effortless Settlement.
                 </span>
-                <span className="block text-[#1F7700]">Total Clarity.</span>
+                <span className="block text-[#1F7700] font-bold">
+                  Total Clarity.
+                </span>
               </h1>
-              <p className="mt-5 sm:mt-6 text-md sm:text-base leading-relaxed text-[#1F7700] animate-fade-in-up delay-300 text-center">
+              <p className="mt-5 mb-xl mr-10 sm:mt-6 lg:mt-8 text-md sm:text-base lg:text-md leading-snug text-[#1F7700] animate-fade-in-up delay-300 text-center font-medium lg:text-left">
                 Streamline your semestral clearance process by tracking your
                 organizational fees and fines, settle payments online, and
                 monitor your clearance status in real-time.
               </p>
+              <MakePaymentButton />
             </div>
           </div>
 

@@ -7,6 +7,7 @@ interface UseFeesRosterUIProps {
   fee: Fee;
   router: ReturnType<typeof useRouter>;
   studentRows: StudentFeeRow[];
+  logs: PaymentLog[];
   onApprovePayment: (proofId: string) => Promise<void>;
   onRejectPayment: (proofId: string ,reason: string) => Promise<void>;
   onManualPaymentAdded: (
@@ -18,27 +19,41 @@ interface UseFeesRosterUIProps {
   ) => Promise<void>;
   onArchiveFee: (feeTitle: string, academicYear: string, semester: string) => Promise<void>;
   itemsPerPage?: number;
+  isLoading?: boolean;
+  // External state
+  search: string;
+  setSearch: (s: string) => void;
+  filterStatus: string;
+  setFilterStatus: (s: string) => void;
+  currentPage: number;
+  setCurrentPage: (p: number) => void;
+  dataView: "submissions" | "all-students";
+  setDataView: (v: "submissions" | "all-students") => void;
 }
 
 export function useFeesRosterUI({
   fee,
   router,
   studentRows,
+  logs,
   onApprovePayment,
   onRejectPayment,
   onManualPaymentAdded,
   onArchiveFee,
   itemsPerPage = 10,
+  isLoading = false,
+  search,
+  setSearch,
+  filterStatus,
+  setFilterStatus,
+  currentPage,
+  setCurrentPage,
+  dataView,
+  setDataView,
 }: UseFeesRosterUIProps) {
-  const allLogs = useMemo(() => studentRows.flatMap((row) => row.logs), [studentRows]);
-
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
-  const [dataView, setDataView] = useState<"submissions" | "all-students">("submissions");
-  const [currentPage, setCurrentPage] = useState(1);
 
   const [selectedLog, setSelectedLog] = useState<PaymentLog | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -47,52 +62,14 @@ export function useFeesRosterUI({
   const [manualLogOpen, setManualLogOpen] = useState(false);
   const [studentRowFee, setStudentRowFee] = useState<StudentFeeRow | null>(null);
 
-  const allStudentRows = useMemo(() => {
-    return studentRows.map((s) => {
-      const latestLog = s.logs.length > 0 ? s.logs[s.logs.length - 1] : null;
-      return {
-        student: s.memberInfo,
-        log: latestLog,
-        status: s.status || "unpaid",
-      };
-    });
-  }, [studentRows]);
-
-  const filteredLogs = useMemo(() => {
-    return allLogs.filter((l) => filterStatus === "all" || l.status === filterStatus);
-  }, [allLogs, filterStatus]);
-
-  const filteredRows = useMemo(() => {
-    return allStudentRows.filter((r) => {
-      const matchesSearch =
-        (r.student.firstName || "").toLowerCase().includes(search.toLowerCase()) ||
-        (r.student.lastName || "").toLowerCase().includes(search.toLowerCase()) ||
-        (r.student.studentId || "").toLowerCase().includes(search.toLowerCase());
-      const matchesStatus = filterStatus === "all" || (r.log?.status === filterStatus || r.status === filterStatus);
-      return matchesSearch && matchesStatus;
-    });
-  }, [allStudentRows, search, filterStatus]);
-
-  const totalPages = Math.ceil(
-    (dataView === "submissions" ? filteredLogs.length : filteredRows.length) / itemsPerPage
-  );
-
-  const paginatedLogs = useMemo(
-    () => filteredLogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()),
-    [filteredLogs, currentPage, itemsPerPage]
-  );
-
-  const paginatedRows = useMemo(
-    () => filteredRows.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage),
-    [filteredRows, currentPage, itemsPerPage]
-  );
-
+  // Stats - Ideally these would be fetched server-side for accurate 9k counts
+  // For now, we calculate from current page or use a placeholder
   const stats = useMemo(() => ({
-    pending: allLogs.filter((l) => l.status === "pending").length,
-    verified: allLogs.filter((l) => l.status === "verified").length,
-    rejected: allLogs.filter((l) => l.status === "rejected").length,
-    unpaid: allStudentRows.filter((r) => r.status === "unpaid").length,
-  }), [allLogs, allStudentRows]);
+    pending: 0,
+    verified: 0,
+    rejected: 0,
+    unpaid: 0,
+  }), []);
 
   const handleApprove = async (proofId: string) => {
     await onApprovePayment(proofId);
@@ -100,9 +77,9 @@ export function useFeesRosterUI({
     setSelectedLog(null);
   };
 
-  const handleReject = async (proofId: string) => {
-    if (!rejectionReason.trim()) return;
-    await onRejectPayment(proofId, rejectionReason);
+  const handleReject = async (proofId: string, reason: string) => {
+    if (!reason.trim()) return;
+    await onRejectPayment(proofId, reason);
     setRejectOpen(false);
     setDetailOpen(false);
     setSelectedLog(null);
@@ -126,13 +103,14 @@ export function useFeesRosterUI({
   };
 
   const handleManualLogRequest = (studentId: string) => {
-    const matchedRow = studentRows.find((row) => row.memberInfo.id === studentId);
+    // studentId here is actually the userId (from student.id)
+    const matchedRow = studentRows.find((row) => row.userId === studentId);
     setStudentRowFee(matchedRow || null);
     setManualLogOpen(true);
   };
 
   const handleDataViewChange = (v: string): void => {
-    setDataView(v as typeof dataView);
+    setDataView(v as "submissions" | "all-students");
     setFilterStatus("all");
     setCurrentPage(1);
   };
@@ -151,7 +129,6 @@ export function useFeesRosterUI({
     try {
       setIsArchiving(true);
       await onArchiveFee(fee.title, fee.academicYear, fee.semester!);
-      console.log("archive");
       router.back(); 
     } catch (error) {
       console.error('Failed to archive fee:', error);
@@ -178,12 +155,9 @@ export function useFeesRosterUI({
       studentRowFee,
     },
     computed: {
-      paginatedLogs,
-      paginatedRows,
-      totalPages,
+      paginatedLogs: logs,
+      paginatedRows: studentRows,
       stats,
-      filteredLogsCount: filteredLogs.length,
-      filteredRowsCount: filteredRows.length,
     },
     actions: {
       setArchiveDialogOpen,

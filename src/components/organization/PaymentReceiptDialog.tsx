@@ -71,7 +71,7 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
         <body>
           <div class="receipt">
             <div class="header">
-              <img src="/ussc-logo-1.webp" alt="Org Logo" />
+              <img src="/images/ussc-logo-1.webp" alt="Org Logo" />
               <p class="org-name">University Supreme Student Council</p>
               <p class="university">Visayas State University Main Campus</p>
               <p class="subtitle">Official Payment Receipt</p>
@@ -124,7 +124,7 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
           {/* Header */}
           <div className="text-center mb-4">
             <Image
-              src="/ussc-logo-1.webp"
+              src="/images/ussc-logo-1.webp"
               alt="Org Logo"
               width={40}
               height={40}
@@ -184,7 +184,7 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
 
           {/* Footer */}
           <div className="text-center text-xs space-y-1">
-            <p>Payment Method: {data.paymentMethod}</p>
+            <p>Payment Method: {data.paymentMethod === "N/A" || data.paymentMethod === "" ? "Cash (Manual)" : data.paymentMethod.toUpperCase()}</p>
             <p>Verified by {data.verifiedByName}</p>
           </div>
 
