@@ -1,33 +1,20 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { CircleDollarSign, DollarSign, Plus, Users, Zap } from "lucide-react";
-
+import { CircleDollarSign, DollarSign, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getUsers } from "@/firebase/users";
-import { Member } from "@/features/organization/members/types";
-// import { FeeGenerationDialog } from "@/features/organization/fees/components/AddFeeDialog";
-// import FeeListPage from "@/features/organization/fees/components//FeeList";
-// import { PageHeader } from "@/components/organization/PageHeader";
-// import { StatCard } from "@/components/organization/StatCard";
+import { PageHeader } from "@/components/organization/PageHeader";
+import { StatCard } from "@/components/organization/StatCard";
 import { useFeeList } from "@/features/organization/fees/hooks/useFeeList";
-import { Fee } from "@/features/organization/fees/types";
 import { usePaginatedMembers } from "@/features/organization/members/hooks/usePaginatedMembers";
-import { SearchInput } from "@/components/organization/SearchInput";
-import { ViewToggle } from "@/components/organization/ViewToggle";
-import { SearchFilterFee } from "@/features/organization/fees/components/SearchFilterFee";
-import { useFeeListUI } from "@/features/organization/fees/hooks/useFeeListUI";
-import { PageHeader } from "./PageHeader";
-import { StatCard } from "./StatCard";
-import FeeListPage from "./FeeListPage";
-import { FeeGenerationDialog } from "./AddFeeDialog";
+import FeeListPage from "@/features/organization/fees/local-components/FeeListPage";
+import { FeeGenerationDialog } from "@/features/organization/fees/components/AddFeeDialog";
+import { useState } from "react";
+
 export function FeesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const { aggregatedFees } = useFeeList()
     const { totalMembers } = usePaginatedMembers()
-   
     
     const totalCollected = aggregatedFees.reduce((sum, f) => sum + f.paidCount * f.amount, 0)
     const avgCompletion = aggregatedFees.length > 0
@@ -35,17 +22,38 @@ export function FeesPage() {
       : 0
 
   return (
-    <div className="space-y-6 py-8 pb-24 lg:pb-0">
+    <div className="flex flex-col gap-6 pb-24 lg:pb-0">
       <PageHeader
+        variant="admin"
         title="Fees"
         context="2nd Semester · A.Y. 2025–2026"
         description="Management and tracking of Council/Organization Fees"
+        action={
+          <Button size="sm" onClick={() => setIsDialogOpen(true)}>
+            Add Fee
+          </Button>
+        }
       />
-      
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard title="Total Fees" value={aggregatedFees.length} description="Active fee categories" icon={CircleDollarSign} />
-        <StatCard title="Total Collected" value={`₱${totalCollected.toLocaleString()}`} description="Across all fees" icon={DollarSign} />
-        <StatCard title="Avg. Collection Rate" value={`${avgCompletion}%`} description="Overall completion" icon={Users} />
+
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+        <StatCard
+          title="Total Fees"
+          value={aggregatedFees.length}
+          description="Active fee categories"
+          icon={CircleDollarSign}
+        />
+        <StatCard
+          title="Total Collected"
+          value={`₱${totalCollected.toLocaleString()}`}
+          description="Across all fees"
+          icon={DollarSign}
+        />
+        <StatCard
+          title="Avg. Collection Rate"
+          value={`${avgCompletion}%`}
+          description="Overall completion"
+          icon={Users}
+        />
       </div>
 
       <FeeListPage />

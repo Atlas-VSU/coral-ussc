@@ -25,12 +25,19 @@ export function DashboardLayout() {
 
   const isMobile = useIsMobile();
 
+
+  // deduplicate events by id
+  const dedupedEvents = [...ongoingEvents, ...allEvents].filter(
+    (event, index, self) =>
+      self.findIndex(e => e.id === event.id) === index
+  );
+
   if (isMobile) {
     return (
       <MobileDashboard
         isLoading={isLoading}
         studentStats={stats}
-        eventAttendance={[...ongoingEvents, ...allEvents]}
+        eventAttendance={dedupedEvents}
         upcomingEvents={upcomingEvents}
         ongoingEvents={ongoingEvents}
         recentMembers={recentMembers}
@@ -54,7 +61,7 @@ export function DashboardLayout() {
       <MembersStats
         isLoading={isLoading}
         studentStats={stats}
-        eventAttendance={[...ongoingEvents, ...allEvents]}
+        eventAttendance={dedupedEvents}
         feesCollected={feesCollected}
         unpaidFinesAmount={unpaidFinesAmount}
         clearanceRate={clearanceRate}

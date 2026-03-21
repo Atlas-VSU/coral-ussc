@@ -25,12 +25,12 @@ export default function FeesRosterPage({
   const [filterStatus, setFilterStatus] = useState("all");
   const [dataView, setDataView] = useState<"submissions" | "all-students">("submissions");
 
-  const { 
-    fee, 
-    studentRows, 
-    logs, 
-    isLoading, 
-    error, 
+  const {
+    fee,
+    studentRows,
+    logs,
+    isLoading,
+    error,
     totalCount,
     refetchStudentRow, 
     refetch,
@@ -43,23 +43,26 @@ export default function FeesRosterPage({
     dataView,
   });
 
-  const { 
-    approvePayment, 
-    rejectPayment, 
-    addManualPayment, 
-    receiptData, 
-    receiptOpen, 
-    setReceiptOpen, 
-    archiveFee, 
-    isSubmitting 
+  const {
+    approvePayment,
+    rejectPayment,
+    addManualPayment,
+    receiptData,
+    receiptOpen,
+    setReceiptOpen,
+    archiveFee,
+    isSubmitting,
   } = useFeeAction(refetchStudentRow);
 
   if (isLoading && !fee) {
     return (
-      <div className="flex flex-col gap-4 p-6">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-4 w-96" />
-        <div className="grid gap-4 sm:grid-cols-4">
+      <div className="flex flex-col gap-6 pb-24 lg:pb-0">
+        <div className="flex flex-col gap-1">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
             <Skeleton key={i} className="h-24 w-full" />
           ))}
@@ -71,50 +74,54 @@ export default function FeesRosterPage({
 
   if (error || !fee) {
     return (
-      <Alert variant="destructive" className="m-6">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>
-          {error?.message || "Fee not found. Please check the title and academic year."}
-        </AlertDescription>
-      </Alert>
+      <div className="flex flex-col gap-6 pb-24 lg:pb-0">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            {error?.message || "Fee not found. Please check the title and academic year."}
+          </AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
   return (
     <>
-    { receiptOpen && (
-      <PaymentReceiptDialog
-        open={receiptOpen}
-        onOpenChange={setReceiptOpen}
-        data={receiptData}
-      />
-    )}
-     
-    <FeesRosterContent 
-      fee={fee as any} 
-      studentRows={studentRows}
-      logs={logs}
-      stats={stats}
-      onApprovePayment={approvePayment} 
-      onManualPaymentAdded={addManualPayment} 
-      onRejectPayment={rejectPayment} 
-      onArchiveFee={archiveFee}
-      isSubmitting={isSubmitting}
-      refetchStudentRow={refetchStudentRow}
-      isLoading={isLoading}
-      refetch={refetch}
-      // Pagination & Search state
-      currentPage={currentPage}
-      setCurrentPage={setCurrentPage}
-      search={search}
-      setSearch={setSearch}
-      filterStatus={filterStatus}
-      setFilterStatus={setFilterStatus}
-      dataView={dataView}
-      setDataView={setDataView}
-      totalCount={totalCount}
-    />
-    </>
+      {receiptOpen && (
+        <PaymentReceiptDialog
+          open={receiptOpen}
+          onOpenChange={setReceiptOpen}
+          data={receiptData}
+        />
+      )}
+
+      <FeesRosterContent
+        fee={fee as any}
+        studentRows={studentRows}
+        logs={logs}
+        onApprovePayment={approvePayment}
+        onManualPaymentAdded={addManualPayment}
+        onRejectPayment={rejectPayment}
+        onArchiveFee={archiveFee}
+        isSubmitting={isSubmitting}
+        refetchStudentRow={refetchStudentRow}
+        isLoading={isLoading}
+        refetch={refetch}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        search={search}
+        setSearch={setSearch}
+        filterStatus={filterStatus}
+        setFilterStatus={setFilterStatus}
+        dataView={dataView}
+        setDataView={setDataView}
+        totalCount={totalCount} stats={{
+          pending: 0,
+          verified: 0,
+          rejected: 0,
+          unpaid: 0
+        }}      />
+     </>
   );
 }
