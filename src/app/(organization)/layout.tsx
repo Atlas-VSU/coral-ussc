@@ -151,10 +151,8 @@ export default function OrganizationLayout({
 
     // Check initially
     checkSigningOutState();
-
     // Set up an interval to check regularly
     const interval = setInterval(checkSigningOutState, 200);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -198,14 +196,9 @@ export default function OrganizationLayout({
         className="z-50"
       />
       <div className="flex-1 flex flex-col min-w-0">
-        {/* <SiteHeader
-          user={userData}
-          isAuthenticated={isAuthenticated}
-          showSidebarTrigger={true}
-        /> */}
         <main className="flex-1">
-          <div className="mx-auto max-w-7xl px-2 py-10 sm:px-6 lg:px-8">
-          {children}
+          <div className="mx-auto max-w-7xl px-2 pb-0 pt-18 px-5 sm:px-6 lg:px-8 lg:pt-10">
+            {children}
           </div>
         </main>
         <MobileBottomNav

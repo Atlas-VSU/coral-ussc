@@ -3,8 +3,6 @@
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/organization/PageHeader"
-import { RefreshCcw } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog"
 import { PaymentStats } from "./components/PaymentStats"
 import { SubmissionsTab } from "./components/SubmissionsTab"
@@ -12,7 +10,6 @@ import { UnpaidTab } from "./components/UnpaidTab"
 import { LogPaymentDialog } from "./components/LogPaymentDialog"
 import { usePaymentsPage } from "./hooks/usePaymentsPage"
 import PaymentReceiptDialog, { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
-import { set } from "zod"
 
 export default function PaymentsPage() {
   const {
@@ -25,7 +22,7 @@ export default function PaymentsPage() {
     reviewOpen, setReviewOpen,
     viewMode, setViewMode,
     filtered, totalPages, paginated,
-    handleApprove, handleDecline, openReview, isLoading, loading  , isLoadingUnpaid,
+    handleApprove, handleDecline, openReview, isLoading, loading, isLoadingUnpaid,
     refetchPayments,
     // unpaid
     unpaidSearch, setUnpaidSearch,
@@ -49,19 +46,17 @@ export default function PaymentsPage() {
       receiptId: selectedPayment?.receiptCode || "N/A",
       studentName: selectedPayment?.userName || "N/A",
       studentId: selectedPayment?.studentId || "N/A",
-      items: selectedPayment?.metadata.items?.map(d => ({ name: d.title, type: d.paymentType as "fees" | "fines", amount: d.amount }))?? [],
+      items: selectedPayment?.metadata.items?.map(d => ({ name: d.title, type: d.paymentType as "fees" | "fines", amount: d.amount })) ?? [],
       total: selectedPayment?.amount || 0,
       date: selectedPayment?.submittedAt.toDate().toLocaleDateString() || "N/A",
       verifiedByName: selectedPayment?.verifiedByName || "N/A",
       paymentMethod: selectedPayment?.paymentMethod || "Cash (Manual)",
     });
     setReceiptOpen(true)
-    
   }
 
   return (
-    <div className="flex flex-col gap-6 pt-8 pb-24 lg:pb-0">
-
+    <div className="flex flex-col gap-6 pb-24 lg:pb-0">
       <PageHeader
         variant="admin"
         title="Payment Submissions"
@@ -69,10 +64,7 @@ export default function PaymentsPage() {
         description="Review and manage student payment submissions"
       />
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <PaymentStats {...stats} />
-        
-      </div>
+      <PaymentStats {...stats} />
 
       {/* ── Main Card ── */}
       <Card className="border-border bg-card">
@@ -87,7 +79,6 @@ export default function PaymentsPage() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-        
         </div>
 
         {dataView === "submissions" ? (
@@ -132,20 +123,20 @@ export default function PaymentsPage() {
         open={reviewOpen}
         onOpenChange={open => { setReviewOpen(open); if (!open) setSelectedPayment(null) }}
         data={selectedPayment ? {
-          studentName:  selectedPayment.userName,
-          studentId:    selectedPayment.studentId,
+          studentName: selectedPayment.userName,
+          studentId: selectedPayment.studentId,
           typeLabel: selectedPayment.paymentType,
-          lineItems: selectedPayment.metadata?.items?.map(i => ({ label: i.title, sublabel: i.paymentType, amount: i.amount, group:i.paymentType }))?? [],
+          lineItems: selectedPayment.metadata?.items?.map(i => ({ label: i.title, sublabel: i.paymentType, amount: i.amount, group: i.paymentType })) ?? [],
           showLineItemsTotal: !!(selectedPayment.metadata?.items?.length),
-          amountPaid:   selectedPayment.amount,
-          referenceNo:  selectedPayment.referenceNumber,
-          submittedAt:  selectedPayment.submittedAt.toDate().toLocaleDateString(),
+          amountPaid: selectedPayment.amount,
+          referenceNo: selectedPayment.referenceNumber,
+          submittedAt: selectedPayment.submittedAt.toDate().toLocaleDateString(),
           notes: selectedPayment.notes,
           receiptContent: selectedPayment.imageUrl,
           declineRemarks: selectedPayment.rejectionReason,
-          reviewedBy:   selectedPayment.verifiedByName,
+          reviewedBy: selectedPayment.verifiedByName,
           reviewedAt: selectedPayment.verifiedAt?.toDate().toLocaleDateString(),
-          paymentMethod:selectedPayment.paymentMethod,
+          paymentMethod: selectedPayment.paymentMethod,
         } : null}
         onApprove={selectedPayment?.status === "pending" ? (async () => await handleApprove(selectedPayment)) : undefined}
         onReject={selectedPayment?.status === "pending" ? (async (reason: string) => await handleDecline(selectedPayment, reason)) : undefined}
@@ -168,7 +159,7 @@ export default function PaymentsPage() {
         onToggleAll={toggleAllDues}
         onLogPayment={handleLogPayment}
         studentProgram={studentProgram}
-        isLoading = {isLoading}
+        isLoading={isLoading}
         isSubmitting={loading}
       />
 
@@ -178,7 +169,6 @@ export default function PaymentsPage() {
         onOpenChange={setReceiptOpen}
         data={receiptData}
       />
-
     </div>
   )
 }
