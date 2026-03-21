@@ -128,9 +128,9 @@ export const countFinesOfStudents = async (status: string) => {
 
 export const countUnsettleFinesOfStudents = async () => { 
   const currUser = await getCurrentUserData() as unknown as Member;
-  return cacheService.getOrFetch(
-    `fines:countUnsettled:${currUser.id}`,
-    async () => {
+  // return cacheService.getOrFetch(
+  //   `fines:countUnsettled:${currUser.id}`,
+    // async () => {
       const coll = collection(db, "fines");
       let q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("status", "==", "unpaid"), where("accumulatedAmount", ">", 0));
       let snapshot = await getCountFromServer(q);
@@ -144,23 +144,23 @@ export const countUnsettleFinesOfStudents = async () => {
       snapshot = await getCountFromServer(q);
       total += snapshot.data().count;
       return total;
-    },
-    CACHE_DURATIONS.FINES
-  );
+  //   },
+  //   CACHE_DURATIONS.FINES
+  // );
 }
 
 export const countStudentsWithFines = async () => { 
   const currUser = await getCurrentUserData() as unknown as Member;
-  return cacheService.getOrFetch(
-    `fines:countWithFines:${currUser.id}`,
-    async () => {
+  // return cacheService.getOrFetch(
+  //   `fines:countWithFines:${currUser.id}`,
+    // async () => {
       const coll = collection(db, "fines");
       const q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("accumulatedAmount", ">", 0));
       const snapshot = await getCountFromServer(q);
       return snapshot.data().count;
-    },
-    CACHE_DURATIONS.FINES
-  );
+    // },
+  //   CACHE_DURATIONS.FINES
+  // );
 }
 
 export const getFineItemsByFineId = async (fineId: string) => {
