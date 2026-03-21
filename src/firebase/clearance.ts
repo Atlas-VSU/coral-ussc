@@ -30,7 +30,8 @@ export const fetchClearanceDocumentsPaginated = async (
   lastVisibleDoc: any = null,
   searchTerm: string = "",
   statusFilter: string = "all",
-  needCount: boolean = false
+  needCount: boolean = false,
+  forManualPayment: boolean = false
 ) => {
   const clearanceRef = collection(db, "clearanceStatus");
   let constraints: QueryConstraint[] = [
@@ -53,7 +54,10 @@ export const fetchClearanceDocumentsPaginated = async (
     constraints.push(where(searchField, ">=", normalizedSearch));
     constraints.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
     constraints.push(orderBy(searchField));
-  } else {
+  }else if(forManualPayment) {
+    constraints.push(orderBy("userName", "asc"));
+  }
+  else {
     constraints.push(orderBy("updatedAt", "desc"));
   }
 
@@ -581,7 +585,7 @@ export const seedClearanceDocuments = async (orgId: string) => {
   try {
     // IMPROVEMENT 1: Only fetch students to save read costs and skip manual filtering
     const usersRef = collection(db, 'users');
-    const studentQuery = query(usersRef, where('role', '==', 'user'));
+    const studentQuery = query(usersRef, where('role', '==', 'user'), where('isDeleted', '==', false));
     const usersSnapshot = await getDocs(studentQuery);
 
     if (usersSnapshot.empty) {

@@ -393,7 +393,7 @@ export default function FinesFeesSelectionPage({
                             Status: Pending verification (not selectable)
                           </p>
                         )}
-                        {parentFine?.latestRejectionReason && (
+                        {parentFine?.latestRejectionReason && !fine.isPending && (
                           <p className="text-xs text-red-600 dark:text-red-400">
                             Last rejected reason: {parentFine.latestRejectionReason}
                           </p>
