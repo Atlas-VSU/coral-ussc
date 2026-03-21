@@ -173,6 +173,15 @@ body {
   font-family: var(--font-montserrat), system-ui, sans-serif;
 }
 
+body[data-scroll-locked] {
+  overflow: hidden !important;
+  pointer-events: none;
+}
+
+body[data-scroll-locked] > * {
+  pointer-events: auto;
+}
+
 /* Custom Fade Animations */
 @layer utilities {
   .animate-fade-in {
