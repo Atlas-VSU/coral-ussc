@@ -41,17 +41,17 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
         if (isMounted) setTotalCount(count);
 
         // 2. Fetch stats (these could be optimized with a single server-side call)
-        const [studentsCount, unsettledCount, unpaidTotal, collectedTotal] = await Promise.all([
+        const [studentsCount, unsettledCount, unpaidTotal, /*collectedTotal*/] = await Promise.all([
           countStudentsWithFines(),
           countUnsettleFinesOfStudents(),
           getDashboardUnpaidFinesAmount(),
-          getDashboardFeesCollected()
+          // getDashboardFeesCollected()
         ]);
         if (isMounted) {
           setTotalStudentsWithFines(studentsCount);
           setTotalUnsettled(unsettledCount);
           setTotalUnpaidFines(unpaidTotal);
-          setTotalCollectedFines(collectedTotal);
+          // setTotalCollectedFines(collectedTotal);
         }
 
         // 3. Fetch paginated data
