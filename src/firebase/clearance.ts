@@ -585,7 +585,7 @@ export const seedClearanceDocuments = async (orgId: string) => {
   try {
     // IMPROVEMENT 1: Only fetch students to save read costs and skip manual filtering
     const usersRef = collection(db, 'users');
-    const studentQuery = query(usersRef, where('role', '==', 'user'));
+    const studentQuery = query(usersRef, where('role', '==', 'user'), where('isDeleted', '==', false));
     const usersSnapshot = await getDocs(studentQuery);
 
     if (usersSnapshot.empty) {
