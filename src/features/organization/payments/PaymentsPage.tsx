@@ -101,7 +101,7 @@ export default function PaymentsPage() {
             onViewChange={setViewMode}
             onOpenReview={openReview}
             isLoading={isLoading}
-            refetchPayments={refetchPayments}
+            refetchPayments={refreshAll}
             isLoadingUnpaid={isLoadingUnpaid}
             totalCount={totalSubmissionCount}
           />
