@@ -130,10 +130,10 @@ export async function POST(request: NextRequest) {
         metadata:        { source: "public_payment_portal", submittedBy: "student" },
         createdAt:       now,
       });
-
+      let updated = due.paymentType === "fines"? "metadata.updatedAt" : "updatedAt";
       batch.update(adminDb.collection(due.paymentType).doc(parentId), {
         status:    "pending",
-        updatedAt: now,
+        [updated]: now,
       });
 
       // Mark clearance item as pending review
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
 
       if (due.paymentType === "fines") { 
         batch.update(adminDb.collection("fines").doc(due.parentFineId).collection("fineItems").doc(due.refId), {
-          isPending: true
+          isPending: true,
         });
       }
 
