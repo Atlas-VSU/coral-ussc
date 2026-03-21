@@ -3,19 +3,12 @@ import { db } from "./firebase.config";
 import { BlockingItem, ClearanceStatus } from "@/features/organization/clearance/types";
 import { approvePaymentTransaction, checkFeeStatusForClearance, fetchFee, recordBulkManualPaymentAndUpdateClearance, recordManualPaymentAndUpdateClearance, rejectPaymentTransaction } from "./fees";
 import { Fee, FeeWithPaymentHistory, PaymentMethod } from "@/features/organization/fees/types";
-import { getFineById, getFineByStudentId } from "./fines/read/fines";
-import { ProofOfPayment, StudentFines } from "@/features/organization/fines/types";
+import {  getFineByStudentId } from "./fines/read/fines";
 import { PaymentType } from "@/constants/types";
-import { rejectPaymentHistory, verifyPaymentHistory } from "./payment/update/paymentHistory";
-import { PaymentStatus } from "@/constants/status";
-import { addOfflineFinesPayment } from "./payment/create/paymentHistory";
 import { toast } from "sonner";
 import { getProofOfPaymentByUserId } from "./payment/read/proofOfPayment";
-import { use } from "react";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 import { usePaymentApproval } from "@/features/organization/payments/hooks/usePaymentApproval";
-import { getCurrentUserData } from "./users";
-import { Member } from "@/features/organization/members/types";
 
 
 export const getClearanceStats = async (orgId: string, statusFilter: string = "all") => {
@@ -36,7 +29,8 @@ export const fetchClearanceDocumentsPaginated = async (
   pageSize: number = 10,
   lastVisibleDoc: any = null,
   searchTerm: string = "",
-  statusFilter: string = "all"
+  statusFilter: string = "all",
+  needCount: boolean = false
 ) => {
   const clearanceRef = collection(db, "clearanceStatus");
   let constraints: QueryConstraint[] = [
@@ -62,6 +56,12 @@ export const fetchClearanceDocumentsPaginated = async (
   } else {
     constraints.push(orderBy("updatedAt", "desc"));
   }
+
+  let count = 0;
+  if (needCount) {
+    const countSnapshot = await getCountFromServer(query(clearanceRef, ...constraints));
+    count =  countSnapshot.data().count; //This is for total count of searched item
+}
 
   // Apply pagination
   constraints.push(limit(pageSize));
@@ -102,6 +102,7 @@ export const fetchClearanceDocumentsPaginated = async (
     lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
     allSnapshots: snapshot.docs,
     hasMore: snapshot.docs.length === pageSize,
+    count: count, // Return total count of searched items for pagination controls
   };
 };
 

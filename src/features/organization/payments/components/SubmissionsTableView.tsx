@@ -10,12 +10,12 @@ import { TableSkeleton } from "@/components/organization/Skeletons"
 
 interface SubmissionsTableViewProps {
   paginated: ProofOfPayment[]
-  filtered: ProofOfPayment[]
+  totalCount: number
   onOpenReview: (p: ProofOfPayment) => void
   isLoading?: boolean
 }
 
-export function SubmissionsTableView({ paginated, filtered, onOpenReview, isLoading }: SubmissionsTableViewProps) {
+export function SubmissionsTableView({ paginated, totalCount, onOpenReview, isLoading }: SubmissionsTableViewProps) {
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -37,7 +37,7 @@ export function SubmissionsTableView({ paginated, filtered, onOpenReview, isLoad
                 <TableSkeleton columns={7} rows={5} />
               </TableCell>
             </TableRow>
-          ) : filtered.length === 0 ? (
+          ) : totalCount === 0 ? (
             <TableRow>
               <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                 No payment submissions found
