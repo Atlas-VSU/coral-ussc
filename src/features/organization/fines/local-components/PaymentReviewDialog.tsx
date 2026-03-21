@@ -110,7 +110,7 @@ export function PaymentReviewDialog({
   async function handleRejectConfirmed() {
     if (!rejectReason.trim()) return
     setIsSubmitting(true)
-    onReject?.(rejectReason)
+    await onReject?.(rejectReason)
     setRejectOpen(false)
     setRejectReason("")
     onOpenChange(false)

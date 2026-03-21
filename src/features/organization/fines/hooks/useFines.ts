@@ -55,21 +55,34 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
         }
 
         // 3. Fetch paginated data
-        const cursor = currentPage > 1 ? lastVisibleDocs[currentPage - 2] : null;
-        const { docs, lastVisible } = await fetchFinesPaginated(
+        const isJump = currentPage > 1 && !lastVisibleDocs[currentPage - 2];
+        const effectivePageSize = isJump ? (currentPage * itemsPerPage) : itemsPerPage;
+        const effectiveCursor = isJump ? null : (currentPage > 1 ? lastVisibleDocs[currentPage - 2] : null);
+
+        const { docs: fetchedDocs, lastVisible, allSnapshots } = await fetchFinesPaginated(
           currUser.id,
-          itemsPerPage,
-          cursor,
+          effectivePageSize,
+          effectiveCursor,
           search,
           filterStatus
         );
 
         if (isMounted) {
+          const docs = isJump ? fetchedDocs.slice((currentPage - 1) * itemsPerPage) : fetchedDocs;
           setPaginatedFines(docs);
-          if (lastVisible) {
+          if (allSnapshots && allSnapshots.length > 0) {
             setLastVisibleDocs(prev => {
               const next = [...prev];
-              next[currentPage - 1] = lastVisible;
+              allSnapshots.forEach((snap, index) => {
+                const absoluteIndex = isJump ? index : ((currentPage - 1) * itemsPerPage + index);
+                if ((absoluteIndex + 1) % itemsPerPage === 0) {
+                  const pageNum = (absoluteIndex + 1) / itemsPerPage;
+                  next[pageNum - 1] = snap;
+                }
+              });
+              const finalAbsoluteIndex = isJump ? (allSnapshots.length - 1) : ((currentPage - 1) * itemsPerPage + allSnapshots.length - 1);
+              const finalPageNum = Math.ceil((finalAbsoluteIndex + 1) / itemsPerPage);
+              next[finalPageNum - 1] = allSnapshots[allSnapshots.length - 1];
               return next;
             });
           }
@@ -101,6 +114,7 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
   };
 
   const hardRefresh = async () => {
+    setIsLoading(true);
     const currUser = await getCurrentUserData() as unknown as Member;
     if (currUser?.id) {
         cacheService.invalidateByPrefix('fines:doc:');
@@ -109,7 +123,9 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
         cacheService.invalidateByPrefix('fines:student:');
     }
     setCurrentPage(1);
+    setFilterStatus("all");
     setLastVisibleDocs([]);
+    setIsLoading(false);
     // The useEffect will trigger fetchData
   };
 
@@ -130,4 +146,4 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
     totalCollectedFines, // Note: Collected total sum across 9,000 needs aggregation doc
     hardRefresh,
   };
-}
+}

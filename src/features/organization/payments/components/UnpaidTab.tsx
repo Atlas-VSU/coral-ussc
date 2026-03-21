@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button"
 import { RefreshCcw } from "lucide-react"
 
 interface UnpaidTabProps {
-  filteredUnpaid: StudentUnpaidRecord[]
   paginatedUnpaid: StudentUnpaidRecord[]
   unpaidTotalPages: number
   unpaidPage: number
@@ -23,12 +22,13 @@ interface UnpaidTabProps {
   isLoading: boolean
   refetchPayments: () => void
   isLoadingUnpaid: boolean
+  totalCount: number
 }
 
 export function UnpaidTab({
-  filteredUnpaid, paginatedUnpaid, unpaidTotalPages, unpaidPage,
+  paginatedUnpaid, unpaidTotalPages, unpaidPage,
   unpaidSearch, unpaidViewMode,
-  onPageChange, onSearchChange, onViewChange, onOpenDetail, isLoading, refetchPayments, isLoadingUnpaid
+  onPageChange, onSearchChange, onViewChange, onOpenDetail, isLoading, refetchPayments, isLoadingUnpaid, totalCount
 }: UnpaidTabProps) {
   
   return (
@@ -39,7 +39,7 @@ export function UnpaidTab({
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">
               Students with Unpaid Dues
             </CardTitle>
-            <CardDescription>{filteredUnpaid.length} student(s) found</CardDescription>
+            <CardDescription>{totalCount} student(s) found</CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <SearchInput
@@ -61,12 +61,12 @@ export function UnpaidTab({
         {unpaidViewMode === "card" ? (
           <UnpaidCardView paginatedUnpaid={paginatedUnpaid} onOpenDetail={onOpenDetail} isLoading={isLoading} />
         ) : (
-          <UnpaidTableView filteredUnpaid={filteredUnpaid} paginatedUnpaid={paginatedUnpaid} onOpenDetail={onOpenDetail} isLoading={isLoading} />
+          <UnpaidTableView totalCount={totalCount} paginatedUnpaid={paginatedUnpaid} onOpenDetail={onOpenDetail} isLoading={isLoading} />
         )}
         <DataPagination
           currentPage={unpaidPage}
           totalPages={unpaidTotalPages}
-          totalItems={filteredUnpaid.length}
+          totalItems={totalCount}
           itemsPerPage={ITEMS_PER_PAGE}
           onPageChange={onPageChange}
         />

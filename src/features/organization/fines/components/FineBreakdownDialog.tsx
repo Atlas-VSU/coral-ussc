@@ -38,6 +38,8 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
     const [receiptOpen, setReceiptOpen] = useState(false);
     const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
     
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const {
         pendingPayment,
         paymentCoveredFineItems,
@@ -116,13 +118,18 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
 
     const handleRejectSucceed = async (payment: ProofOfPayment, reason: string) => {
         try {
+            setIsSubmitting(true);
             await _rejectPayment(payment, reason);
-            if (onSuccess && fines) onSuccess(fines);
-            onOpenChange(false);
-            toast.success("The payment was rejected.");
+            if (onSuccess && fines) {
+                onSuccess(fines);
+                onOpenChange(false);
+                toast.success("The payment was rejected.");
+            }
         } catch(error) {
             console.error("Payment rejection failed:", error);
             toast.error("Failed to reject payment. Please try again or contact the developer.");
+        } finally {
+            setIsSubmitting(false);
         }
     }
 
@@ -459,8 +466,9 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                             if (pendingPayment) await handleApprovalSucceed(pendingPayment);
                         }}
                         onReject={async (reason) => {
-                            if (pendingPayment) handleRejectSucceed(pendingPayment, reason);
+                            if (pendingPayment) await handleRejectSucceed(pendingPayment, reason);
                         }}
+                        isProcessing={isSubmitting}
                     />
             
                 </DialogContent>

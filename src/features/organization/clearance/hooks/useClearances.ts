@@ -33,29 +33,47 @@ export function useClearances(
         const count = await getClearanceCount(orgId, statusFilter, searchTerm)
         if (isMounted) setTotalCount(count)
 
-        // 2. Determine the cursor for the current page
-        // page 1 -> null cursor
-        // page 2 -> cursor from end of page 1
-        const cursor = currentPage > 1 ? lastVisibleDocs[currentPage - 2] : null
+        // 2. Determine if we need to "jump" (fetch from start because we lack a cursor)
+        const isJump = currentPage > 1 && !lastVisibleDocs[currentPage - 2];
+        const effectivePageSize = isJump ? (currentPage * pageSize) : pageSize;
+        const effectiveCursor = isJump ? null : (currentPage > 1 ? lastVisibleDocs[currentPage - 2] : null);
 
         // 3. Fetch paginated data
-        const { docs, lastVisible } = await fetchClearanceDocumentsPaginated(
+        const { docs: fetchedDocs, lastVisible, allSnapshots } = await fetchClearanceDocumentsPaginated(
           orgId,
-          pageSize,
-          cursor,
+          effectivePageSize,
+          effectiveCursor,
           searchTerm,
           statusFilter
         )
 
         if (isMounted) {
-          setClearances(docs)
-          // Update the cursor for this page so we can go to next page
-          if (lastVisible) {
+          // If jumping, slice the results to get only the current page
+          const displayDocs = isJump ? fetchedDocs.slice((currentPage - 1) * pageSize) : fetchedDocs;
+          setClearances(displayDocs)
+
+          // 4. Update cursors for all pages we just fetched/passed
+          if (allSnapshots && allSnapshots.length > 0) {
             setLastVisibleDocs(prev => {
-              const next = [...prev]
-              next[currentPage - 1] = lastVisible
-              return next
-            })
+              const next = [...prev];
+              allSnapshots.forEach((snap, index) => {
+                // Calculate the absolute position in the full result set
+                const absoluteIndex = isJump ? index : ((currentPage - 1) * pageSize + index);
+                
+                // If this is the end of a page, store it as the cursor for the NEXT page
+                if ((absoluteIndex + 1) % pageSize === 0) {
+                  const pageNum = (absoluteIndex + 1) / pageSize;
+                  next[pageNum - 1] = snap;
+                }
+              });
+              
+              // Ensure the last document is always stored as the cursor for its corresponding page
+              const finalAbsoluteIndex = isJump ? (allSnapshots.length - 1) : ((currentPage - 1) * pageSize + allSnapshots.length - 1);
+              const finalPageNum = Math.ceil((finalAbsoluteIndex + 1) / pageSize);
+              next[finalPageNum - 1] = allSnapshots[allSnapshots.length - 1];
+              
+              return next;
+            });
           }
           setLoading(false)
           setError(null)

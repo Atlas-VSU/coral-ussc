@@ -14,6 +14,8 @@ import { Timestamp } from "firebase/firestore"
 import { recalculateClearanceStatus } from "@/firebase"
 import { recalculateFines } from "@/firebase/fines/update/recalculate"
 import { recalculateFees } from "@/firebase/fees/update/recalculate"
+import { cacheService, CACHE_KEYS } from "@/services/cacheService"
+
 
 export const usePaymentApproval = () => {
 
@@ -52,7 +54,11 @@ export const usePaymentApproval = () => {
                 }
                 await recalculateClearanceStatus(paymentOwner.id!);
                 
+                // Invalidate proof-of-payment cache for the owner
+                cacheService.invalidate(CACHE_KEYS.proofOfPaymentByUser(paymentOwner.id!, payment.orgId));
+
                 const newReceiptData: ReceiptData = {
+
                     receiptId: receipt,
                     studentName: payment.userName,
                     studentId: payment.studentId,
@@ -110,7 +116,11 @@ export const usePaymentApproval = () => {
                 }
                 await recalculateClearanceStatus(paymentOwner.id!);
                 
+                // Invalidate proof-of-payment cache for the owner
+                cacheService.invalidate(CACHE_KEYS.proofOfPaymentByUser(paymentOwner.id!, payment.orgId));
+
                 return {
+
                     success: true,
                     message: "Payment was rejected"
                 }

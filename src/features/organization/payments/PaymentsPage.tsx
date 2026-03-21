@@ -18,17 +18,17 @@ export default function PaymentsPage() {
     // submissions
     search, setSearch, filterStatus, setFilterStatus,
     selectedPayment, setSelectedPayment,
-    currentPage, setCurrentPage,
     reviewOpen, setReviewOpen,
     viewMode, setViewMode,
-    filtered, totalPages, paginated,
-    handleApprove, handleDecline, openReview, isLoading, loading, isLoadingUnpaid,
-    refetchPayments,
+    totalSubmissionCount, totalPages, paginated,
+    handleApprove, handleDecline, openReview, isLoading, loading  , isLoadingUnpaid,
+    refetchPayments, submissionPage, setSubmissionPage,
     // unpaid
     unpaidSearch, setUnpaidSearch,
     unpaidPage, setUnpaidPage,
     unpaidViewMode, setUnpaidViewMode,
-    filteredUnpaid, unpaidTotalPages, paginatedUnpaid,
+    unpaidTotalPages, paginatedUnpaid,
+    refreshAll,
     // unpaid detail
     detailOpen, setDetailOpen,
     liveSelectedUnpaid,
@@ -38,7 +38,7 @@ export default function PaymentsPage() {
     studentProgram,
     // receipt
     receiptOpen, setReceiptOpen, receiptData, setReceiptData,
-    stats,
+    stats, totalUnpaidCount
   } = usePaymentsPage()
 
   const handleViewReceipt = () => {
@@ -83,14 +83,13 @@ export default function PaymentsPage() {
 
         {dataView === "submissions" ? (
           <SubmissionsTab
-            filtered={filtered}
             paginated={paginated}
             totalPages={totalPages}
-            currentPage={currentPage}
+            currentPage={submissionPage}
             search={search}
             filterStatus={filterStatus}
             viewMode={viewMode}
-            onPageChange={setCurrentPage}
+            onPageChange={setSubmissionPage}
             onSearchChange={setSearch}
             onStatusChange={setFilterStatus}
             onViewChange={setViewMode}
@@ -98,10 +97,10 @@ export default function PaymentsPage() {
             isLoading={isLoading}
             refetchPayments={refetchPayments}
             isLoadingUnpaid={isLoadingUnpaid}
+            totalCount={totalSubmissionCount}
           />
         ) : (
           <UnpaidTab
-            filteredUnpaid={filteredUnpaid}
             paginatedUnpaid={paginatedUnpaid}
             unpaidTotalPages={unpaidTotalPages}
             unpaidPage={unpaidPage}
@@ -112,8 +111,9 @@ export default function PaymentsPage() {
             onViewChange={setUnpaidViewMode}
             onOpenDetail={openUnpaidDetail}
             isLoading={isLoadingUnpaid}
-            refetchPayments={refetchPayments}
+            refetchPayments={refreshAll}
             isLoadingUnpaid={isLoadingUnpaid}
+            totalCount={totalUnpaidCount}
           />
         )}
       </Card>

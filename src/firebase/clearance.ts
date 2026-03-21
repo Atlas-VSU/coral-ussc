@@ -1,19 +1,26 @@
-import { collection, doc, getDoc, getDocs, orderBy, query, serverTimestamp, Timestamp, updateDoc, where, writeBatch, limit, startAfter, getCountFromServer, queryEqual, QueryConstraint } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, orderBy, query, serverTimestamp, Timestamp, updateDoc, where, writeBatch, limit, startAfter, getCountFromServer, queryEqual, QueryConstraint, DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { BlockingItem, ClearanceStatus } from "@/features/organization/clearance/types";
 import { approvePaymentTransaction, checkFeeStatusForClearance, fetchFee, recordBulkManualPaymentAndUpdateClearance, recordManualPaymentAndUpdateClearance, rejectPaymentTransaction } from "./fees";
 import { Fee, FeeWithPaymentHistory, PaymentMethod } from "@/features/organization/fees/types";
-import { getFineById, getFineByStudentId } from "./fines/read/fines";
-import { ProofOfPayment, StudentFines } from "@/features/organization/fines/types";
+import {  getFineByStudentId } from "./fines/read/fines";
 import { PaymentType } from "@/constants/types";
-import { rejectPaymentHistory, verifyPaymentHistory } from "./payment/update/paymentHistory";
-import { PaymentStatus } from "@/constants/status";
-import { addOfflineFinesPayment } from "./payment/create/paymentHistory";
 import { toast } from "sonner";
 import { getProofOfPaymentByUserId } from "./payment/read/proofOfPayment";
-import { use } from "react";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 import { usePaymentApproval } from "@/features/organization/payments/hooks/usePaymentApproval";
+
+
+export const getClearanceStats = async (orgId: string, statusFilter: string = "all") => {
+  const snapshot = await getCountFromServer(query(
+    collection(db, 'clearanceStatus'),
+    where('orgId', '==', orgId),
+    where('isArchived', '==', false),
+    where('status', '==', statusFilter)
+  ));
+  return snapshot.data().count;
+}
+
 /**
  * Fetches clearance documents with server-side pagination and searching.
  */
@@ -22,7 +29,8 @@ export const fetchClearanceDocumentsPaginated = async (
   pageSize: number = 10,
   lastVisibleDoc: any = null,
   searchTerm: string = "",
-  statusFilter: string = "all"
+  statusFilter: string = "all",
+  needCount: boolean = false
 ) => {
   const clearanceRef = collection(db, "clearanceStatus");
   let constraints: QueryConstraint[] = [
@@ -49,6 +57,12 @@ export const fetchClearanceDocumentsPaginated = async (
     constraints.push(orderBy("updatedAt", "desc"));
   }
 
+  let count = 0;
+  if (needCount) {
+    const countSnapshot = await getCountFromServer(query(clearanceRef, ...constraints));
+    count =  countSnapshot.data().count; //This is for total count of searched item
+}
+
   // Apply pagination
   constraints.push(limit(pageSize));
   if (lastVisibleDoc) {
@@ -60,15 +74,35 @@ export const fetchClearanceDocumentsPaginated = async (
 
   const docs = snapshot.docs.map((doc) => {
     const data = { id: doc.id, ...doc.data() } as ClearanceStatus;
-    // Granular caching: Cache each document individually
-    cacheService.set(CACHE_KEYS.clearanceDoc(doc.id), data, CACHE_DURATIONS.CLEARANCE);
+    const key = CACHE_KEYS.clearanceDoc(doc.id);
+    
+    // Check if it already exists to determine if it's a "hit" or "miss" for visibility
+    const cached = cacheService.get(key);
+    if (cached) {
+      // Color-coded logs matching cacheService.ts for a professional feel
+      console.log(
+        `%c[Cache Hit]%c ${key}`,
+        "color: #10b981; font-weight: bold;",
+        "color: inherit;"
+      );
+    } else {
+      console.log(
+        `%c[Cache Miss]%c ${key}`,
+        "color: #f59e0b; font-weight: bold;",
+        "color: inherit;"
+      );
+      cacheService.set(key, data, CACHE_DURATIONS.CLEARANCE);
+    }
+    
     return data;
   });
 
   return {
     docs,
     lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
+    allSnapshots: snapshot.docs,
     hasMore: snapshot.docs.length === pageSize,
+    count: count, // Return total count of searched items for pagination controls
   };
 };
 
@@ -108,6 +142,17 @@ export const fetchClearanceDocuments = async (orgId: string) => {
     const { docs } = await fetchClearanceDocumentsPaginated(orgId, 100); // Fetch first 100 as fallback
     return docs;
 }
+
+export const getCountOfUnclearedDocuments = async (orgId: string) => {
+  const snapshot = await getCountFromServer(query(
+    collection(db, 'clearanceStatus'),
+    where('orgId', '==', orgId),
+    where('isArchived', '==', false),
+    where('status', '==', 'not_cleared')
+  ));
+  return snapshot.data().count;
+ }
+
 
 export const fetchClearanceStatus = async (userId: string) => {
     return cacheService.getOrFetch(
