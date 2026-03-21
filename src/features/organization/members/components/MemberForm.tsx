@@ -35,8 +35,7 @@ import {
 import { useMemberForm } from "../hooks/userMemberForm";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { getCurrentUserFacultyId } from "@/firebase/users";
-import { getAuth } from "firebase/auth";
+import { getCurrentUserData } from "@/firebase/users";
 
 interface MemberFormProps {
   open: boolean;
@@ -59,6 +58,13 @@ export function MemberForm({
 }: MemberFormProps) {
   const form = useMemberForm();
   const [agreed, setAgreed] = useState(false);
+  const lightInputClass =
+    "!bg-white !text-black placeholder:!text-gray-600 !border-[#2E7D32]/30 !focus:border-[#1B5E20] focus-visible:!ring-green-100";
+  const lightSelectTriggerClass =
+    "!bg-white !text-black placeholder:!text-gray-600 !border-[#2E7D32]/30 hover:bg-green-50 !focus:border-[#1B5E20] focus-visible:!ring-green-100";
+  const lightSelectContentClass = "bg-white text-black !border-[#2E7D32]/30";
+  const lightSelectItemClass =
+    "text-black focus:bg-[#8BC34A]/10 focus:text-black";
 
   useEffect(() => {
     if (open && member) {
@@ -85,10 +91,8 @@ export function MemberForm({
 
   const handleFormSubmit = async (data: MemberFormData) => {
     if (!agreed || isSubmitting) return;
-    data.facultyId = (await getCurrentUserFacultyId(
-      getAuth().currentUser?.uid || ""
-    )) as string;
-    console.log("Form Data Submitted:", data);
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    data.facultyId = currentUser.facultyId;
     const memberToSubmit: Member = {
       ...data,
       role: "user", // Always set role to "user"
@@ -99,14 +103,16 @@ export function MemberForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-[90vw] max-h-[80vh] overflow-y-auto py-8">
-        <DialogHeader className="pb-2">
-          <DialogTitle>{member ? "Edit Member" : "Add Member"}</DialogTitle>
+      <DialogContent className="max-w-4xl w-[90vw] max-h-[80vh] overflow-y-auto py-8 bg-white text-black border !border-[#2E7D32]/30 shadow-lg">
+        <DialogHeader className="pb-2 border-b !border-[#2E7D32]/20">
+          <DialogTitle className="text-[#1B5E20]">
+            {member ? "Edit Member" : "Add Member"}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleFormSubmit)}
-            className="space-y-4 overflow-y-auto"
+            className="space-y-4"
           >
             <div className="space-y-3">
               <FormField
@@ -114,9 +120,11 @@ export function MemberForm({
                 name="studentId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Student ID</FormLabel>
+                    <FormLabel className="text-[#1B5E20] font-semibold">
+                      Student ID
+                    </FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} className={lightInputClass} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -127,9 +135,11 @@ export function MemberForm({
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel className="text-[#1B5E20] font-semibold">
+                      Email
+                    </FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} className={lightInputClass} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -140,9 +150,11 @@ export function MemberForm({
                 name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>First Name</FormLabel>
+                    <FormLabel className="text-[#1B5E20] font-semibold">
+                      First Name
+                    </FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} className={lightInputClass} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -153,9 +165,11 @@ export function MemberForm({
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Last Name</FormLabel>
+                    <FormLabel className="text-[#1B5E20] font-semibold">
+                      Last Name
+                    </FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} className={lightInputClass} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -166,16 +180,22 @@ export function MemberForm({
                 name="programId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Program</FormLabel>
+                    <FormLabel className="text-[#1B5E20] font-semibold">
+                      Program
+                    </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className={lightSelectTriggerClass}>
                           <SelectValue placeholder="Select a program" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className={lightSelectContentClass}>
                         {programData.map((program: Program) => (
-                          <SelectItem key={program.id} value={program.id}>
+                          <SelectItem
+                            key={program.id}
+                            value={program.id}
+                            className={lightSelectItemClass}
+                          >
                             {program.name}
                           </SelectItem>
                         ))}
@@ -190,7 +210,10 @@ export function MemberForm({
                 name="yearLevel"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Year Level (Optional)</FormLabel>
+                    <FormLabel className="text-[#1B5E20] font-semibold">
+                      Year Level{" "}
+                      <span className="text-[#2E7D32]/60">(Optional)</span>
+                    </FormLabel>
                     <Select
                       onValueChange={(value) => {
                         if (value === "0") {
@@ -202,17 +225,32 @@ export function MemberForm({
                       value={field.value?.toString() || "0"}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className={lightSelectTriggerClass}>
                           <SelectValue placeholder="Select year level" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="0">None</SelectItem>
-                        <SelectItem value="1">1st Year</SelectItem>
-                        <SelectItem value="2">2nd Year</SelectItem>
-                        <SelectItem value="3">3rd Year</SelectItem>
-                        <SelectItem value="4">4th Year</SelectItem>
-                        <SelectItem value="5">5th Year</SelectItem>
+                      <SelectContent className={lightSelectContentClass}>
+                        <SelectItem value="0" className={lightSelectItemClass}>
+                          None
+                        </SelectItem>
+                        <SelectItem value="1" className={lightSelectItemClass}>
+                          1st Year
+                        </SelectItem>
+                        <SelectItem value="2" className={lightSelectItemClass}>
+                          2nd Year
+                        </SelectItem>
+                        <SelectItem value="3" className={lightSelectItemClass}>
+                          3rd Year
+                        </SelectItem>
+                        <SelectItem value="4" className={lightSelectItemClass}>
+                          4th Year
+                        </SelectItem>
+                        <SelectItem value="5" className={lightSelectItemClass}>
+                          5th Year
+                        </SelectItem>
+                        <SelectItem value="6" className={lightSelectItemClass}>
+                          6th Year
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -222,7 +260,7 @@ export function MemberForm({
             </div>
 
             {/* Terms agreement */}
-            <div className="bg-muted/50 p-4 rounded-md border">
+            <div className="bg-[#8BC34A]/5 p-4 rounded-md border !border-[#2E7D32]/30">
               <div className="flex items-start gap-3">
                 <Checkbox
                   id="terms"
@@ -230,11 +268,11 @@ export function MemberForm({
                   onCheckedChange={(checked) => {
                     setAgreed(checked === true);
                   }}
-                  className="mt-0.5"
+                  className="mt-0.5 !bg-white !border-[#2E7D32]/40 data-[state=checked]:!bg-white data-[state=checked]:!text-[#1B5E20] data-[state=checked]:!border-[#1B5E20]"
                 />
                 <Label
                   htmlFor="terms"
-                  className="text-xs text-justify leading-relaxed"
+                  className="text-xs text-[#2E7D32]/80 text-justify leading-relaxed"
                 >
                   I confirm that I have obtained explicit permission from this
                   student to store their personal information for the purpose of
@@ -250,14 +288,29 @@ export function MemberForm({
             </div>
 
             <DialogFooter>
-              <Button type="submit" disabled={!agreed || isSubmitting}>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
+                className="!bg-white !border-[#2E7D32]/30 text-[#1B5E20] hover:!bg-white hover:text-[#1B5E20]"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={!agreed || isSubmitting}
+                className="!bg-[#1B5E20] !text-white hover:!bg-[#0d4017] disabled:!bg-gray-300 disabled:!text-gray-600"
+              >
                 {isSubmitting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
                     {member ? "Saving..." : "Adding..."}
                   </>
+                ) : member ? (
+                  "Save Changes"
                 ) : (
-                  member ? "Save Changes" : "Add Member"
+                  "Add Member"
                 )}
               </Button>
             </DialogFooter>

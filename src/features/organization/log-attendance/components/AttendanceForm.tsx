@@ -18,7 +18,6 @@ import {
 import { isValidStudentId } from "../utils";
 import { AddStudentDialog } from "./AddStudentDialog";
 
-// Search related components and elements
 import { AlternativeCheckInMethods } from "./Search/AlternativeCheckInMethods";
 import { LoadingOverlay } from "./Search/LoadingOverlay";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -35,7 +34,7 @@ import { useStudentSearch } from "../hooks/useStudentSearch";
 import { useAuthState } from "@/hooks/useAuthState";
 import { cn } from "@/lib/utils";
 import { StudentDetailsOutsideOrg } from "./Search/StudentDetailsOutsideOrg";
-import { getCurrentUserData, searchUserByStudentId } from "@/firebase";
+import { searchUserByStudentId } from "@/firebase";
 import { WarningDialog } from "./WarningDialog";
 
 interface AttendanceFormProps {
@@ -85,48 +84,37 @@ export function AttendanceForm({
     resetSearch,
   } = useStudentSearch(event.id.toString(), type);
 
-  // Handle ID search
   const handleIdSearch = async () => {
     if (!currentUser) {
-      console.error("User not authenticated.");
       toast.error("You must be signed in to perform this action.");
       return;
     }
-
     if (!studentId.trim()) {
       toast.error("Please enter a student ID");
       return;
     }
-
     if (!isValidStudentId(studentId)) {
       setSearchResult({ status: "invalid-format", student: null });
       return;
     }
-
     setIsLoading(true);
     const result = await searchById(studentId, currentUser, true);
     setSearchResult(result);
     setIsLoading(false);
   };
 
-  // Handle auto-complete search (disabled)
   const handleAutoSearch = async () => {
-    // This is kept as a placeholder for compatibility
-    // Auto-search has been disabled to prevent unwanted loading states
     return;
   };
 
-  // Handle name search
   const handleNameSearch = async () => {
     if (!searchName.trim()) {
       setNameSearchResults([]);
       setHasPerformedNameSearch(false);
       return;
     }
-
     setIsSearching(true);
     setHasPerformedNameSearch(true);
-
     const results = await searchByName(searchName, currentUser, true);
     setNameSearchResults(results);
     setIsSearching(false);
@@ -151,12 +139,9 @@ export function AttendanceForm({
         setIsSubmitting(false);
         return;
       }
-
-      // Simulate network delay but reduce from 2000ms to 1000ms
       await new Promise((resolve) => setTimeout(resolve, 1000));
       await onSubmit(student.studentId);
 
-      // Show success toast
       const studentName = showNames
         ? student.firstName + " " + student.lastName
         : "Student";
@@ -171,8 +156,6 @@ export function AttendanceForm({
       };
 
       toast.success(getMessage());
-
-      // Reset form after successful submission (reduced timeout)
       setTimeout(() => {
         resetSearch();
         setIsProcessing(false);
@@ -201,31 +184,32 @@ export function AttendanceForm({
   };
 
   const [warningDialog, setWarningDialog] = useState<{
-  open: boolean;
-  title: string;
-  description: string;
-  type: "program" | "faculty";
-  studentName?: string;
-  onConfirm: () => void | Promise<void>;
+    open: boolean;
+    title: string;
+    description: string;
+    type: "program" | "faculty";
+    studentName?: string;
+    onConfirm: () => void | Promise<void>;
   }>({
     open: false,
     title: "",
     description: "",
     type: "program",
-    onConfirm: () => {}
+    onConfirm: () => {},
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (searchResult.status !== "success" && 
-        searchResult.status !== "success-different-organization" && 
-        searchResult.status !== "success-different-faculty" || 
-        !searchResult.student) {
+    if (
+      (searchResult.status !== "success" &&
+        searchResult.status !== "success-different-organization" &&
+        searchResult.status !== "success-different-faculty") ||
+      !searchResult.student
+    ) {
       return;
     }
 
-    // set submitting state immediately to disable button
     setIsSubmitting(true);
     setIsLoading(true);
 
@@ -242,7 +226,6 @@ export function AttendanceForm({
       const studentName = showNames
         ? `${student?.firstName} ${student?.lastName}`
         : "This student";
-
       // Determine if warning is needed
       if (currentUserData?.accessLevel === 1 && currentUserData.programId !== student?.programId) {
         setWarningDialog({
@@ -252,13 +235,12 @@ export function AttendanceForm({
           type: "program",
           studentName: showNames ? `${student?.firstName} ${student?.lastName}` : undefined,
           onConfirm: async () => {
-            setWarningDialog(prev => ({ ...prev, open: false }));
+            setWarningDialog((prev) => ({ ...prev, open: false }));
             await proceedWithSubmission(studentId);
-          }
+          },
         });
         return;
-      } 
-      else if (currentUserData?.accessLevel === 2 && currentUserData.facultyId !== student?.facultyId) {
+      } else if (currentUserData?.accessLevel === 2 && currentUserData.facultyId !== student?.facultyId) {
         setWarningDialog({
           open: true,
           title: "Faculty Mismatch Detected",
@@ -266,15 +248,14 @@ export function AttendanceForm({
           type: "faculty",
           studentName: showNames ? `${student?.firstName} ${student?.lastName}` : undefined,
           onConfirm: async () => {
-            setWarningDialog(prev => ({ ...prev, open: false }));
+            setWarningDialog((prev) => ({ ...prev, open: false }));
             await proceedWithSubmission(studentId);
-          }
+          },
         });
         return;
       } else {
         await proceedWithSubmission(studentId);
       }
-
     } catch (error) {
       console.error("Error logging attendance:", error);
       toast.error("Failed to record attendance");
@@ -286,7 +267,6 @@ export function AttendanceForm({
 
   const proceedWithSubmission = async (studentId: string) => {
     setIsProcessing(true);
-    
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       await onSubmit(studentId);
@@ -305,7 +285,6 @@ export function AttendanceForm({
       };
 
       toast.success(getMessage());
-
       setTimeout(() => {
         resetSearch();
         setIsProcessing(false);
@@ -319,37 +298,67 @@ export function AttendanceForm({
     }
   };
 
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-      if (searchMethod === "id" && searchResult.status !== "success" && searchResult.status !== "success-different-organization" && searchResult.status !== "success-different-faculty") {
+      if (
+        searchMethod === "id" &&
+        searchResult.status !== "success" &&
+        searchResult.status !== "success-different-organization" &&
+        searchResult.status !== "success-different-faculty"
+      ) {
         handleIdSearch();
       } else if (searchMethod === "name") {
         handleNameSearch();
-      } else if (searchResult.status === "success" || searchResult.status === "success-different-organization" || searchResult.status === "success-different-faculty") {
+      } else if (
+        searchResult.status === "success" ||
+        searchResult.status === "success-different-organization" ||
+        searchResult.status === "success-different-faculty"
+      ) {
         handleSubmit(e as unknown as React.FormEvent);
       }
     }
   };
 
-  // Determine color scheme based on attendance type
-  const colorScheme =
-    type === "time-in"
-      ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
-      : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800";
+  const isTimeIn = type === "time-in";
+  const ModeIcon = isTimeIn ? LogInIcon : LogOutIcon;
 
-  // Get mode-specific icon
-  const ModeIcon = type === "time-in" ? LogInIcon : LogOutIcon;
-  const modeIconColor =
-    type === "time-in"
-      ? "text-green-600 dark:text-green-400"
-      : "text-amber-600 dark:text-amber-400";
+  // Banner: time-in uses green system, time-out stays amber (intentional semantic contrast)
+  const bannerStyle = isTimeIn
+    ? { background: "#C0DD97", color: "#27500A" }
+    : undefined;
+  const bannerClass = isTimeIn
+    ? ""
+    : "bg-amber-100 text-amber-800";
+
+  const outerBorderStyle = isTimeIn
+    ? { borderColor: "#97C459" }
+    : undefined;
+  const outerBorderClass = isTimeIn ? "" : "border-amber-200";
+
+  const modeNoticeStyle = isTimeIn
+    ? { background: "#EAF3DE", color: "#3B6D11", borderColor: "#C0DD97" }
+    : undefined;
+  const modeNoticeClass = isTimeIn ? "" : "bg-amber-50 text-amber-700 border-amber-200";
+
+  const iconContainerStyle = isTimeIn
+    ? { background: "#EAF3DE" }
+    : undefined;
+  const iconContainerClass = isTimeIn ? "" : "bg-amber-100";
+
+  const iconStyle = isTimeIn ? { color: "#058C11" } : undefined;
+  const iconClass = isTimeIn ? "" : "text-amber-700";
+
+  const switchBtnClass = isTimeIn
+    ? "bg-amber-600 hover:bg-amber-700 text-white"
+    : "";
+  const switchBtnStyle = !isTimeIn
+    ? { background: "#058C11", color: "#ffffff" }
+    : undefined;
 
   return (
     <>
       {/* Search loading overlay - only for form submission, not for searching */}
       {isLoading && <LoadingOverlay />}
-
       {/* Processing check-in/out overlay */}
       {isProcessing && (
         <ProcessingOverlay
@@ -366,8 +375,8 @@ export function AttendanceForm({
       <WarningDialog
         open={warningDialog.open}
         onOpenChange={(open) => {
-          setWarningDialog(prev => ({ ...prev, open }));
           // reset states when dialog is closed without confirming
+          setWarningDialog((prev) => ({ ...prev, open }));
           if (!open) {
             setIsProcessing(false);
             setIsLoading(false);
@@ -388,233 +397,169 @@ export function AttendanceForm({
     />
 
       <div
-        className={cn(
-          "space-y-6 rounded-lg border transition-colors",
-          colorScheme
-        )}
+        className={cn("space-y-0 rounded-xl border transition-colors overflow-hidden", outerBorderClass)}
+        style={outerBorderStyle}
       >
         {/* Status Banner - Always visible to prevent mode confusion */}
         <div
-          className={cn(
-            "px-4 py-3 rounded-t-lg flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between",
-            type === "time-in"
-              ? "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200"
-              : "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200"
-          )}
+          className={cn("px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between", bannerClass)}
+          style={bannerStyle}
         >
-          <div className="flex items-center">
-            <ModeIcon className="h-5 w-5 mr-2" />
-            <span className="font-nunito font-bold text-lg tracking-wide">
-              {type === "time-in" ? "CHECK-IN MODE" : "CHECK-OUT MODE"}
+          <div className="flex items-center gap-2">
+            <ModeIcon className="h-5 w-5" />
+            <span className="font-nunito font-bold text-base tracking-wide">
+              {isTimeIn ? "CHECK-IN MODE" : "CHECK-OUT MODE"}
             </span>
           </div>
 
           {hasTimeIn && hasTimeOut && onTabChange && (
-            <div className="w-full sm:w-auto">
-              <Button
-                variant="secondary"
-                size="lg"
-                onClick={() =>
-                  onTabChange(type === "time-in" ? "time-out" : "time-in")
-                }
-                className={cn(
-                  "w-full sm:w-auto mt-2 sm:mt-0 font-nunito-sans font-bold rounded-md shadow focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all",
-                  type === "time-in"
-                    ? "bg-amber-600 hover:bg-amber-700 text-white focus:ring-amber-600"
-                    : "bg-green-600 hover:bg-green-700 text-white focus:ring-green-600"
-                )}
-                aria-label={`Switch to ${
-                  type === "time-in" ? "Check-Out" : "Check-In"
-                } mode`}
-              >
-                {type === "time-in" ? (
-                  <>
-                    <TimerIcon className="h-5 w-5 mr-2" />
-                    Switch to Check-Out
-                  </>
-                ) : (
-                  <>
-                    <ClockIcon className="h-5 w-5 mr-2" />
-                    Switch to Check-In
-                  </>
-                )}
-              </Button>
-            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => onTabChange(isTimeIn ? "time-out" : "time-in")}
+              className={cn("w-full sm:w-auto mt-1 sm:mt-0 font-bold rounded-lg text-xs shadow transition-all", switchBtnClass)}
+              style={switchBtnStyle}
+            >
+              {isTimeIn ? (
+                <><TimerIcon className="h-4 w-4 mr-1.5" />Switch to Check-Out</>
+              ) : (
+                <><ClockIcon className="h-4 w-4 mr-1.5" />Switch to Check-In</>
+              )}
+            </Button>
           )}
         </div>
 
-        <div className="px-4 sm:px-6 pt-2 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div className="flex-1">
-              <h3 className="flex items-center gap-3 text-xl font-nunito font-bold text-gray-900 dark:text-gray-100">
-                <div
-                  className={cn(
-                    "w-10 h-10 rounded-lg flex items-center justify-center",
-                    type === "time-in"
-                      ? "bg-green-100 dark:bg-green-900/30"
-                      : "bg-amber-100 dark:bg-amber-900/30"
-                  )}
+        <div className="px-4 sm:px-6 pt-5 pb-5 sm:pb-6 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div
+                className={cn("w-9 h-9 rounded-lg flex items-center justify-center shrink-0", iconContainerClass)}
+                style={iconContainerStyle}
+              >
+                <ModeIcon
+                  className={cn("h-5 w-5", iconClass)}
+                  style={iconStyle}
+                />
+              </div>
+              <div>
+                <h3
+                  className="font-nunito text-base font-bold"
+                  style={{ color: "#27500A" }}
                 >
-                  <ModeIcon className={cn("h-5 w-5", modeIconColor)} />
-                </div>
-                {type === "time-in" ? "Check-In" : "Check-Out"} Station
-              </h3>
-              <p className="font-nunito-sans text-base text-gray-600 dark:text-gray-400 mt-2">
-                {type === "time-in"
-                  ? "Record student attendance for this event"
-                  : "Record student departure from this event"}
-              </p>
+                  {isTimeIn ? "Check-In" : "Check-Out"} Station
+                </h3>
+                <p className="font-nunito-sans text-xs mt-0.5" style={{ color: "#3B6D11" }}>
+                  {isTimeIn
+                    ? "Record student attendance for this event"
+                    : "Record student departure from this event"}
+                </p>
+              </div>
             </div>
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => setShowNames(!showNames)}
-              className="h-9 px-4 font-nunito-sans font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 w-full sm:w-auto"
+              className="h-9 px-3 font-medium text-xs w-full sm:w-auto shadow-sm transition-all duration-200 hover:scale-[1.02]"
+              style={{
+                borderColor: "#97C459",
+                color: "#27500A",
+                background: "#ffffff",
+              }}
             >
               {showNames ? (
-                <>
-                  <EyeOffIcon className="h-4 w-4 mr-2" />
-                  Hide Names
-                </>
+                <><EyeOffIcon className="h-3.5 w-3.5 mr-1.5" />Hide Names</>
               ) : (
-                <>
-                  <EyeIcon className="h-4 w-4 mr-2" />
-                  Show Names
-                </>
+                <><EyeIcon className="h-3.5 w-3.5 mr-1.5" />Show Names</>
               )}
             </Button>
           </div>
 
-          {/* Type Selection - Only show if both are available */}
-          {/* {hasTimeIn && hasTimeOut && onTabChange && (
-            <div className="mt-6 flex flex-wrap gap-2">
-              <Button
-                variant={activeTab === "time-in" ? "default" : "outline"}
-                size="sm"
-                onClick={() => onTabChange("time-in")}
-                className={cn(
-                  "font-nunito-sans font-semibold",
-                  activeTab === "time-in" && "bg-green-600 hover:bg-green-700"
-                )}
-              >
-                <ClockIcon className="h-4 w-4 mr-2" />
-                Check-In
-              </Button>
-              <Button
-                variant={activeTab === "time-out" ? "default" : "outline"}
-                size="sm"
-                onClick={() => onTabChange("time-out")}
-                className={cn(
-                  "font-nunito-sans font-semibold",
-                  activeTab === "time-out" && "bg-amber-600 hover:bg-amber-700"
-                )}
-              >
-                <TimerIcon className="h-4 w-4 mr-2" />
-                Check-Out
-              </Button>
-            </div>
-          )} */}
 
-          {/* Current mode notice - reinforcement */}
+          {/* Mode notice */}
           <div
-            className={cn(
-              "rounded-md p-3 flex items-center",
-              type === "time-in"
-                ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
-                : "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200"
-            )}
+            className={cn("rounded-lg px-4 py-3 flex items-center gap-2 text-sm font-medium border", modeNoticeClass)}
+            style={modeNoticeStyle}
           >
-            {type === "time-in" ? (
-              <CheckCircle2Icon className="h-5 w-5 mr-2 flex-shrink-0" />
+            {isTimeIn ? (
+              <CheckCircle2Icon className="h-4 w-4 shrink-0" />
             ) : (
-              <CircleAlertIcon className="h-5 w-5 mr-2 flex-shrink-0" />
+              <CircleAlertIcon className="h-4 w-4 shrink-0" />
             )}
-            <p className="text-sm font-medium">
-              {type === "time-in"
+            <p className="font-nunito-sans">
+              {isTimeIn
                 ? "You are recording student arrivals (check-ins) for this event."
                 : "You are recording student departures (check-outs) for this event."}
             </p>
           </div>
 
           {/* Search form */}
-          <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
+          <div
+            className="rounded-xl border p-5"
+            style={{ background: "#ffffff", borderColor: "#C0DD97" }}
+          >
             <Tabs
               defaultValue="id"
               onValueChange={(value) => setSearchMethod(value as "id" | "name")}
             >
-              <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100 dark:bg-gray-700">
-                <TabsTrigger
-                  value="id"
-                  className="flex items-center gap-1.5 font-nunito-sans font-semibold"
-                >
+              <TabsList className="grid w-full grid-cols-2 mb-5">
+                <TabsTrigger value="id" className="font-nunito-sans font-semibold text-xs">
                   By Student ID
                 </TabsTrigger>
-                <TabsTrigger
-                  value="name"
-                  disabled={true}
-                  className="flex items-center gap-1.5 font-nunito-sans font-semibold"
-                >
+                <TabsTrigger value="name" disabled className="font-nunito-sans font-semibold text-xs">
                   By Name
-                  <span className="text-xs ml-1 text-muted-foreground">(Soon)</span>
+                  <span className="text-[10px] ml-1 text-muted-foreground">(Soon)</span>
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="id">
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-4">
-                    <SearchByIdForm
-                      studentId={studentId}
-                      setStudentId={setStudentId}
-                      handleSearch={handleIdSearch}
-                      handleAutoSearch={handleAutoSearch}
+                  <SearchByIdForm
+                    studentId={studentId}
+                    setStudentId={setStudentId}
+                    handleSearch={handleIdSearch}
+                    handleAutoSearch={handleAutoSearch}
+                    isSubmitting={isSubmitting}
+                    searchStatus={searchResult.status}
+                    successMessage={null}
+                    showLabel={true}
+                    handleKeyDown={handleKeyDown}
+                  />
+
+                  {searchResult.status === "success-different-organization" && searchResult.student && (
+                    <StudentDetailsOutsideOrg
+                      student={searchResult.student}
+                      showNames={showNames}
                       isSubmitting={isSubmitting}
-                      searchStatus={searchResult.status}
-                      successMessage={null}
-                      showLabel={true}
-                      handleKeyDown={handleKeyDown}
+                      type={type}
+                      level="Organization"
+                      buttonVariant="warning"
+                      onCancel={handleCancelSearch}
                     />
-                  </div>
-
-                  {searchResult.status == "success-different-organization" && searchResult.student && (
-                 
-                        <StudentDetailsOutsideOrg
-                          student={searchResult.student}
-                          showNames={showNames}
-                          isSubmitting={isSubmitting}
-                          type={type}
-                          level="Organization"
-                          buttonVariant="warning"
-                          onCancel={handleCancelSearch}
-                        />
                   )}
 
-                  {searchResult.status == "success-different-faculty" && searchResult.student && (
-                     
-                        <StudentDetailsOutsideOrg
-                          student={searchResult.student}
-                          showNames={showNames}
-                          isSubmitting={isSubmitting}
-                          type={type}
-                          level="Faculty"
-                          buttonVariant="warning"
-                          onCancel={handleCancelSearch}
-                        />
-                     
+                  {searchResult.status === "success-different-faculty" && searchResult.student && (
+                    <StudentDetailsOutsideOrg
+                      student={searchResult.student}
+                      showNames={showNames}
+                      isSubmitting={isSubmitting}
+                      type={type}
+                      level="Faculty"
+                      buttonVariant="warning"
+                      onCancel={handleCancelSearch}
+                    />
                   )}
 
-                  {searchResult.status === "success" &&
-                    searchResult.student && (
-                      
-                        <StudentDetails
-                          student={searchResult.student}
-                          showNames={showNames}
-                          isSubmitting={isSubmitting}
-                          type={type}
-                          buttonVariant="success"
-                          onCancel={handleCancelSearch}
-                        />
-                    )}
+                  {searchResult.status === "success" && searchResult.student && (
+                    <StudentDetails
+                      student={searchResult.student}
+                      showNames={showNames}
+                      isSubmitting={isSubmitting}
+                      type={type}
+                      buttonVariant="success"
+                      onCancel={handleCancelSearch}
+                    />
+                  )}
 
                   {/* Use NoStudentFound component */}
                   {searchResult.status === "not-found" && (
@@ -630,8 +575,7 @@ export function AttendanceForm({
                     <Alert variant="destructive">
                       <AlertCircleIcon className="h-4 w-4" />
                       <AlertDescription>
-                        An error occurred while searching for the student.
-                        Please try again.
+                        An error occurred while searching for the student. Please try again.
                       </AlertDescription>
                     </Alert>
                   )}
@@ -677,8 +621,9 @@ export function AttendanceForm({
                       size="sm"
                       onClick={handleCancelSearch}
                       className="h-9"
+                      style={{ borderColor: "#97C459", color: "#27500A" }}
                     >
-                      <XCircleIcon className="h-4 w-4 mr-2" />
+                      <XCircleIcon className="h-4 w-4 mr-2" style={{ color: "#058C11" }} />
                       Clear Results
                     </Button>
                   </div>
@@ -686,7 +631,6 @@ export function AttendanceForm({
               </TabsContent>
             </Tabs>
           </div>
-
           {/* Alternative check-in methods */}
           <AlternativeCheckInMethods />
 

@@ -1,6 +1,7 @@
 import { Timestamp } from "firebase/firestore";
 
 export type Member = {
+  id?: string;
   firstName: string;
   lastName: string;
   programId: string;
@@ -10,6 +11,7 @@ export type Member = {
   role: "admin" | "user" | "super-admin";
   accessLevel?: number;
   createdAt?: Timestamp;
+  isDeleted?: boolean;
   yearLevel?: number; // Adding year level
 };
 

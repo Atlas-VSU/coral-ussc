@@ -1,20 +1,15 @@
 "use client"
 
-import { AppSidebar } from "@/components/NavBar/app-sidebar";
+import { AdminSidebar } from "@/components/NavBar/app-sidebar/AdminSidebar";
 import { MobileBottomNav } from "@/components/NavBar/mobile-bottom-nav";
 import { SiteHeader } from "@/components/NavBar/site-header";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { useAuth } from "@/hooks/useAuth";
 import { cacheUtils } from "@/utils/cacheUtils";
-import { Building, LayoutDashboard, LogOut, Users } from "lucide-react";
+import { LogOut, LayoutDashboard, Building, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const iconMap = {
-    "layout-dashboard": LayoutDashboard,
-    "building": Building,
-    "users": Users,
-}
 const mobileIconMap = {
   dashboard: LayoutDashboard,
   building: Building,
@@ -23,23 +18,6 @@ const mobileIconMap = {
 };
 
 const adminData = {
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/admin-dashboard",
-      icon: "layout-dashboard",
-    },
-    {
-      title: "Orfganization",
-      url: "/admin-organization",
-      icon: "building",
-    },
-    {
-      title: "Members",
-      url: "/admin-students",
-      icon: "users",
-    },
-  ],
   mobileNavLinks: [
     {
       label: "Dashboard",
@@ -96,7 +74,7 @@ export default function AdminLayout({
         <LoadingScreen
             message={
             isSigningOut
-                ? "Signing out... Please come back soon! Your coral will miss you."
+                ? "Signing out... Please come back soon!"
                 : "Loading your organization dashboard... Welcome! We're getting everything ready for you."
             }
             className="bg-primary/5"
@@ -117,25 +95,24 @@ export default function AdminLayout({
     };
 
     return (
-        <div className="flex min-h-screen w-full">
-            <AppSidebar
-                user={userData}
-                navMain={adminData.navMain}
-                iconMap={iconMap}
-                className="z-50"
-            />
-            <div className="flex-1 flex flex-col min-w-0">
-                <SiteHeader
-                    user={userData}
-                    isAuthenticated={isAuthenticated}
-                    showSidebarTrigger={true}
-                />
-                <main className="flex-1 p-4 pb-16 md:pb-4">{children}</main>
-                <MobileBottomNav
-                    links={adminData.mobileNavLinks}
-                    iconMap={mobileIconMap}
-                />
+      <div className="flex min-h-screen w-full bg-app">
+        <AdminSidebar user={userData} className="z-50" />
+        <div className="flex-1 flex flex-col min-w-0">
+          <SiteHeader
+            user={userData}
+            isAuthenticated={isAuthenticated}
+            showSidebarTrigger={true}
+          />
+          <main className="flex-1">
+            <div className="mx-auto max-w-7xl px-2 py-10 sm:px-6 lg:px-8">
+              {children}
             </div>
+          </main>
+          <MobileBottomNav
+            links={adminData.mobileNavLinks}
+            iconMap={mobileIconMap}
+          />
         </div>
+      </div>
     );
 }

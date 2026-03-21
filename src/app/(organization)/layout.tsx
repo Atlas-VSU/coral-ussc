@@ -1,6 +1,5 @@
 "use client";
-import { AppSidebar } from "@/components/NavBar/app-sidebar";
-import { SiteHeader } from "@/components/NavBar/site-header";
+import { AdminSidebar } from "@/components/NavBar/app-sidebar/AdminSidebar";
 import { MobileBottomNav } from "@/components/NavBar/mobile-bottom-nav";
 import {
   LayoutDashboard,
@@ -9,6 +8,10 @@ import {
   BarChart,
   Settings,
   LogOut,
+  AlertTriangle,
+  Banknote,
+  ShieldCheck,
+  CreditCard,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,8 +24,12 @@ const iconMap = {
   "layout-dashboard": LayoutDashboard,
   calendar: Calendar,
   users: Users,
+  alert: AlertTriangle,
   "bar-chart": BarChart,
   settings: Settings,
+  fee: Banknote,
+  clearance: ShieldCheck,
+  payments: CreditCard
 };
 
 // Define mobile icon map
@@ -31,6 +38,10 @@ const mobileIconMap = {
   calendar: Calendar,
   users: Users,
   logout: LogOut,
+  fee: Banknote,
+  clearance: ShieldCheck,
+  alert: AlertTriangle,
+  payments: CreditCard
 };
 
 // Organization navigation data
@@ -50,7 +61,27 @@ const organizationData = {
       title: "Members",
       url: "/org-members",
       icon: "users",
-    }
+    },
+    {
+      title: "Fees",
+      url: "/org-fees",
+      icon: "fee"
+    },
+    {
+      title: "Fines",
+      url: "/org-fines",
+      icon: "alert",
+    },
+    {
+      title: "Payments",
+      url: "/org-payments",
+      icon: "payments",
+    },
+    {
+      title: "Clearance",
+      url: "/org-clearance",
+      icon: "clearance"
+    },
     // {
     //   title: "Reports",
     //   url: "/organization/reports",
@@ -78,6 +109,26 @@ const organizationData = {
       icon: "users",
       href: "/org-members",
     },
+    {
+      label: "Fees",
+      icon: "fee",
+      href: "/org-fees",
+    },
+    {
+      label: "Fines",
+      icon: "alert",
+      href: "/org-fines",
+    },
+    {
+      label: "Payments",
+      icon: "payments",
+      href: "/org-payments",
+    },
+    {
+      label: "Clearance",
+      icon: "clearance",
+      href: "/org-clearance",
+    },
   ],
 };
 
@@ -100,10 +151,8 @@ export default function OrganizationLayout({
 
     // Check initially
     checkSigningOutState();
-
     // Set up an interval to check regularly
     const interval = setInterval(checkSigningOutState, 200);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -120,7 +169,7 @@ export default function OrganizationLayout({
       <LoadingScreen
         message={
           isSigningOut
-            ? "Signing out... Please come back soon! Your coral will miss you."
+            ? "Signing out... Please come back soon!"
             : "Loading your organization dashboard... Welcome! We're getting everything ready for you."
         }
         className="bg-primary/5"
@@ -141,20 +190,17 @@ export default function OrganizationLayout({
   };
 
   return (
-    <div className="flex min-h-screen w-full">
-      <AppSidebar
+    <div className="flex min-h-screen w-full organization-bg">
+      <AdminSidebar
         user={userData}
-        navMain={organizationData.navMain}
-        iconMap={iconMap}
         className="z-50"
       />
       <div className="flex-1 flex flex-col min-w-0">
-        <SiteHeader
-          user={userData}
-          isAuthenticated={isAuthenticated}
-          showSidebarTrigger={true}
-        />
-        <main className="flex-1 p-4 pb-16 md:pb-4">{children}</main>
+        <main className="flex-1">
+          <div className="mx-auto max-w-7xl px-2 pb-0 pt-18 px-5 sm:px-6 lg:px-8 lg:pt-10">
+            {children}
+          </div>
+        </main>
         <MobileBottomNav
           links={organizationData.mobileNavLinks}
           iconMap={mobileIconMap}

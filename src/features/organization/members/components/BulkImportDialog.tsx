@@ -25,7 +25,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FileSpreadsheet, Upload, Info, CheckCircle2, Clock } from "lucide-react";
+import {
+  FileSpreadsheet,
+  Upload,
+  Info,
+  CheckCircle2,
+  Clock,
+} from "lucide-react";
 import { downloadCSVTemplate } from "../csv.utils";
 
 interface BulkImportDialogProps {
@@ -34,11 +40,11 @@ interface BulkImportDialogProps {
   onImport: (file: File) => void;
   isImporting?: boolean;
   // Progress details for batch processing
-  totalStudents?: number;           // e.g., 9000
-  batchSize?: number;               // e.g., 400
-  importProgress?: number;           // 0-100
-  currentBatch?: number;             // current batch index (1-based)
-  totalBatches?: number;             // total batches (derived or passed)
+  totalStudents?: number; // e.g., 9000
+  batchSize?: number; // e.g., 400
+  importProgress?: number; // 0-100
+  currentBatch?: number; // current batch index (1-based)
+  totalBatches?: number; // total batches (derived or passed)
 }
 
 export function BulkImportDialog({
@@ -47,7 +53,7 @@ export function BulkImportDialog({
   onImport,
   isImporting = false,
   totalStudents = 9000,
-  batchSize = 400,
+  batchSize = 200,
   importProgress = 0,
   currentBatch = 0,
   totalBatches = Math.ceil(totalStudents / batchSize),
@@ -140,12 +146,14 @@ export function BulkImportDialog({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
-        className="max-w-5xl w-[90vw] overflow-y-auto max-h-[90vh] py-8"
+        className="!w-[min(90vw,1200px)] md:!w-[min(70vw,1200px)] lg:!w-[min(50vw,1200px)] !max-w-[min(96vw,1200px)] sm:!max-w-[min(96vw,1200px)] overflow-y-auto max-h-[90vh] py-6 px-5 bg-white text-black border !border-[#2E7D32]/30 shadow-lg"
         showCloseButton={!isImporting}
       >
-        <DialogHeader>
-          <DialogTitle>Bulk Import Members</DialogTitle>
-          <DialogDescription>
+        <DialogHeader className="border-b !border-[#2E7D32]/20 pb-3">
+          <DialogTitle className="text-[#1B5E20]">
+            Bulk Import Members
+          </DialogTitle>
+          <DialogDescription className="text-[#2E7D32]/70">
             {isImporting
               ? "Processing your file in batches. Please wait..."
               : "Upload a CSV file containing member information."}
@@ -155,36 +163,42 @@ export function BulkImportDialog({
         {isImporting ? (
           // Progress view during import
           <div className="space-y-6 py-4">
-            <Card>
+            <Card className="bg-white border !border-[#2E7D32]/30 shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-[#1B5E20]">
+                  <Clock className="h-5 w-5 text-[#1B5E20]" />
                   Import in Progress
                 </CardTitle>
-                <CardDescription>
-                  Processing {totalStudents.toLocaleString()} students in batches of {batchSize}.
-                  This may take a few minutes. Please do not close this dialog.
+                <CardDescription className="text-[#2E7D32]/70">
+                  Processing {totalStudents.toLocaleString()} students in
+                  batches of {batchSize}. This may take a few minutes. Please do
+                  not close this dialog.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{file?.name}</span>
-                  <span className="text-muted-foreground">
+                  <span className="font-medium text-[#1B5E20]">
+                    {file?.name}
+                  </span>
+                  <span className="text-[#2E7D32]/70">
                     {importProgress.toFixed(0)}% complete
                   </span>
                 </div>
 
                 {/* Progress bar */}
-                <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
                   <div
-                    className="bg-primary h-2.5 rounded-full transition-all duration-300"
-                    style={{ width: `${importProgress}%` }}
+                    className="h-2.5 rounded-full transition-all duration-300"
+                    style={{
+                      width: `${importProgress}%`,
+                      backgroundColor: "#1B5E20",
+                    }}
                   ></div>
                 </div>
 
                 {/* Batch info */}
                 {currentBatch > 0 && totalBatches > 0 && (
-                  <div className="flex justify-between text-sm text-muted-foreground">
+                  <div className="flex justify-between text-sm text-[#2E7D32]/70">
                     <span>
                       Batch {currentBatch} of {totalBatches}
                     </span>
@@ -193,14 +207,16 @@ export function BulkImportDialog({
                 )}
 
                 {/* Optional: detailed stats */}
-                <div className="grid grid-cols-2 gap-4 text-sm border-t pt-4 mt-2">
+                <div className="grid grid-cols-2 gap-4 text-sm border-t !border-[#2E7D32]/20 pt-4 mt-2">
                   <div>
-                    <span className="text-muted-foreground">Total students</span>
-                    <p className="font-medium">{totalStudents.toLocaleString()}</p>
+                    <span className="text-[#2E7D32]/70">Total students</span>
+                    <p className="font-medium text-[#1B5E20]">
+                      {totalStudents.toLocaleString()}
+                    </p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Batch size</span>
-                    <p className="font-medium">{batchSize}</p>
+                    <span className="text-[#2E7D32]/70">Batch size</span>
+                    <p className="font-medium text-[#1B5E20]">{batchSize}</p>
                   </div>
                 </div>
               </CardContent>
@@ -210,13 +226,13 @@ export function BulkImportDialog({
           // Upload view (existing)
           <div className="space-y-4 py-4">
             {/* File template info */}
-            <Card className="bg-muted/30 py-4">
+            <Card className="bg-white border !border-[#2E7D32]/30 py-4 shadow-sm">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center">
-                  <Info className="h-4 w-4 mr-2" />
+                <CardTitle className="text-sm font-semibold text-[#1B5E20] flex items-center">
+                  <Info className="h-4 w-4 mr-2 text-green-800" />
                   Required File Format
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-[#2E7D32]/70">
                   Your file must contain the following columns. Download our
                   template for reference.
                 </CardDescription>
@@ -249,16 +265,21 @@ export function BulkImportDialog({
                         required: false,
                       },
                     ].map((field) => (
-                      <div key={field.name} className="border rounded-md p-3">
+                      <div
+                        key={field.name}
+                        className="border !border-[#2E7D32]/30 rounded-md p-3 bg-white"
+                      >
                         <div className="flex justify-between items-center">
-                          <div className="font-medium text-xs">{field.name}</div>
+                          <div className="font-medium text-xs">
+                            {field.name}
+                          </div>
                           {field.required && (
-                            <span className="inline-flex items-center text-xs text-green-600">
+                            <span className="inline-flex items-center text-xs text-green-800">
                               <CheckCircle2 className="h-3 w-3 mr-1" /> Required
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-muted-foreground mt-1">
+                        <div className="text-xs text-[#2E7D32]/70 mt-1">
                           {field.desc}
                         </div>
                       </div>
@@ -269,60 +290,90 @@ export function BulkImportDialog({
                 <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-40">Column Name</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead className="w-20 text-center">
+                      <TableRow className="bg-white hover:bg-[#8BC34A]/10">
+                        <TableHead className="w-40 text-[#1B5E20] font-semibold">
+                          Column Name
+                        </TableHead>
+                        <TableHead className="text-[#1B5E20] font-semibold">
+                          Description
+                        </TableHead>
+                        <TableHead className="w-20 text-center text-[#1B5E20] font-semibold">
                           Required
                         </TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody className="text-xs">
-                      <TableRow>
-                        <TableCell>studentId</TableCell>
-                        <TableCell>Student ID number</TableCell>
+                    <TableBody className="text-xs [&_td]:text-[#2E7D32]/80">
+                      <TableRow className="hover:bg-[#8BC34A]/10">
+                        <TableCell className="text-[#1B5E20]">
+                          studentId
+                        </TableCell>
+                        <TableCell className="text-[#2E7D32]/80">
+                          Student ID number
+                        </TableCell>
                         <TableCell className="text-center">
-                          <CheckCircle2 className="h-3 w-3 text-green-600 inline" />
+                          <CheckCircle2 className="h-3 w-3 text-green-800 inline" />
                         </TableCell>
                       </TableRow>
-                      <TableRow>
-                        <TableCell>firstName</TableCell>
-                        <TableCell>First name</TableCell>
+                      <TableRow className="hover:bg-[#8BC34A]/10">
+                        <TableCell className="text-[#1B5E20]">
+                          firstName
+                        </TableCell>
+                        <TableCell className="text-[#2E7D32]/80">
+                          First name
+                        </TableCell>
                         <TableCell className="text-center">
-                          <CheckCircle2 className="h-3 w-3 text-green-600 inline" />
+                          <CheckCircle2 className="h-3 w-3 text-green-800 inline" />
                         </TableCell>
                       </TableRow>
-                      <TableRow>
-                        <TableCell>lastName</TableCell>
-                        <TableCell>Last name</TableCell>
+                      <TableRow className="hover:bg-[#8BC34A]/10">
+                        <TableCell className="text-[#1B5E20]">
+                          lastName
+                        </TableCell>
+                        <TableCell className="text-[#2E7D32]/80">
+                          Last name
+                        </TableCell>
                         <TableCell className="text-center">
-                          <CheckCircle2 className="h-3 w-3 text-green-600 inline" />
+                          <CheckCircle2 className="h-3 w-3 text-green-800 inline" />
                         </TableCell>
                       </TableRow>
-                      <TableRow>
-                        <TableCell>email</TableCell>
-                        <TableCell>Email address</TableCell>
+                      <TableRow className="hover:bg-[#8BC34A]/10">
+                        <TableCell className="text-[#1B5E20]">email</TableCell>
+                        <TableCell className="text-[#2E7D32]/80">
+                          Email address
+                        </TableCell>
                         <TableCell className="text-center">
-                          <CheckCircle2 className="h-3 w-3 text-green-600 inline" />
+                          <CheckCircle2 className="h-3 w-3 text-green-800 inline" />
                         </TableCell>
                       </TableRow>
-                      <TableRow>
-                        <TableCell>programId</TableCell>
-                        <TableCell>Program Name (see list of programs)</TableCell>
+                      <TableRow className="hover:bg-[#8BC34A]/10">
+                        <TableCell className="text-[#1B5E20]">
+                          programId
+                        </TableCell>
+                        <TableCell className="text-[#2E7D32]/80">
+                          Program Name (see list of programs)
+                        </TableCell>
                         <TableCell className="text-center">
-                          <CheckCircle2 className="h-3 w-3 text-green-600 inline" />
+                          <CheckCircle2 className="h-3 w-3 text-green-800 inline" />
                         </TableCell>
                       </TableRow>
-                      <TableRow>
-                        <TableCell>facultyId</TableCell>
-                        <TableCell>Faculty Name (see list of faculties)</TableCell>
+                      <TableRow className="hover:bg-[#8BC34A]/10">
+                        <TableCell className="text-[#1B5E20]">
+                          facultyId
+                        </TableCell>
+                        <TableCell className="text-[#2E7D32]/80">
+                          Faculty Name (see list of faculties)
+                        </TableCell>
                         <TableCell className="text-center">
-                          <CheckCircle2 className="h-3 w-3 text-green-600 inline" />
+                          <CheckCircle2 className="h-3 w-3 text-green-800 inline" />
                         </TableCell>
                       </TableRow>
-                      <TableRow>
-                        <TableCell>yearLevel</TableCell>
-                        <TableCell>Year level (1-6, optional)</TableCell>
+                      <TableRow className="hover:bg-[#8BC34A]/10">
+                        <TableCell className="text-[#1B5E20]">
+                          yearLevel
+                        </TableCell>
+                        <TableCell className="text-[#2E7D32]/80">
+                          Year level (1-6, optional)
+                        </TableCell>
                         <TableCell></TableCell>
                       </TableRow>
                     </TableBody>
@@ -332,7 +383,7 @@ export function BulkImportDialog({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-xs"
+                    className="text-xs !bg-[#1B5E20] !text-white hover:!bg-[#0d4017] !border-[#1B5E20]"
                     onClick={handleDownloadTemplate}
                   >
                     <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" />
@@ -346,10 +397,10 @@ export function BulkImportDialog({
             <div
               className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                 dragActive
-                  ? "border-primary bg-primary/5"
+                  ? "border-[#2E7D32]/50 bg-[#8BC34A]/10"
                   : file
-                  ? "border-green-500 bg-green-50 dark:bg-green-900/30"
-                  : "border-border"
+                    ? "border-[#2E7D32]/40 bg-[#8BC34A]/5"
+                    : "border-[#2E7D32]/30 bg-white"
               }`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -366,15 +417,15 @@ export function BulkImportDialog({
 
               {file ? (
                 <div className="flex flex-col items-center">
-                  <FileSpreadsheet className="h-8 w-8 text-green-500 mb-2" />
-                  <p className="font-medium text-blue-500">{file.name}</p>
-                  <p className="text-sm text-muted-foreground">
+                  <FileSpreadsheet className="h-8 w-8 text-[#1B5E20] mb-2" />
+                  <p className="font-medium text-[#1B5E20]">{file.name}</p>
+                  <p className="text-sm text-[#2E7D32]/70">
                     {(file.size / 1024).toFixed(1)} KB
                   </p>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="mt-2 bg-gray-200 hover:bg-gray-300 text-dark dark:text-blue-400 dark:hover:text-white-300"
+                    className="mt-2 !bg-[#1B5E20] !text-white hover:!bg-[#0d4017] !border !border-[#1B5E20]"
                     onClick={() => setFile(null)}
                   >
                     Change File
@@ -382,13 +433,20 @@ export function BulkImportDialog({
                 </div>
               ) : (
                 <div className="flex flex-col items-center">
-                  <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                  <p className="font-medium">Drag & drop your file here</p>
-                  <p className="text-sm text-muted-foreground mb-3">
+                  <Upload className="h-8 w-8 text-[#1B5E20] mb-2" />
+                  <p className="font-medium text-[#1B5E20]">
+                    Drag & drop your file here
+                  </p>
+                  <p className="text-sm text-[#2E7D32]/70 mb-3">
                     Supported formats: CSV
                   </p>
                   <Label htmlFor="file-upload" asChild>
-                    <Button variant="secondary" size="sm" onClick={handleBrowseFile}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="!bg-[#1B5E20] !text-white hover:!bg-[#0d4017] !border-[#1B5E20]"
+                      onClick={handleBrowseFile}
+                    >
                       Browse Files
                     </Button>
                   </Label>
@@ -397,21 +455,26 @@ export function BulkImportDialog({
             </div>
 
             {/* Terms agreement */}
-            <div className="bg-muted/50 p-4 rounded-md border">
+            <div className="bg-[#8BC34A]/5 p-4 rounded-md border !border-[#2E7D32]/30">
               <div className="flex items-start gap-3">
                 <Checkbox
                   id="terms"
                   checked={agreed}
-                  onCheckedChange={(checked) => setAgreed(checked === true)}
-                  className="mt-0.5"
+                  onCheckedChange={(checked: boolean) =>
+                    setAgreed(checked === true)
+                  }
+                  className="mt-0.5 !bg-white !border-[#2E7D32]/40 data-[state=checked]:!bg-white data-[state=checked]:!text-[#1B5E20] data-[state=checked]:!border-[#1B5E20]"
                 />
                 <div>
-                  <Label htmlFor="terms" className="text-xs leading-relaxed">
+                  <Label
+                    htmlFor="terms"
+                    className="text-xs text-[#2E7D32]/80 leading-relaxed"
+                  >
                     I confirm that I have obtained consent from all individuals
-                    whose personal information is included in this file and that I
-                    am authorized to share this data. I understand that I am
-                    responsible for the accuracy of this data and any implications
-                    of importing incorrect information.
+                    whose personal information is included in this file and that
+                    I am authorized to share this data. I understand that I am
+                    responsible for the accuracy of this data and any
+                    implications of importing incorrect information.
                   </Label>
                 </div>
               </div>
@@ -420,16 +483,25 @@ export function BulkImportDialog({
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={isImporting}>
+          <Button
+            variant="outline"
+            onClick={handleClose}
+            disabled={isImporting}
+            className="!bg-white !border-[#2E7D32]/30 text-[#1B5E20] hover:!bg-white hover:text-[#1B5E20] focus-visible:!ring-0 focus-visible:!ring-transparent focus-visible:!ring-offset-0 focus-visible:!outline-none disabled:!bg-white disabled:!text-[#2E7D32]/40"
+          >
             Cancel
           </Button>
           {!isImporting ? (
-            <Button onClick={handleImport} disabled={!file || !agreed}>
+            <Button
+              onClick={handleImport}
+              disabled={!file || !agreed}
+              className="!bg-[#1B5E20] !text-white hover:!bg-[#0d4017] disabled:!bg-gray-300 disabled:!text-gray-600"
+            >
               <Upload className="h-4 w-4 mr-2" />
               Import Members
             </Button>
           ) : (
-            <Button disabled>
+            <Button disabled className="!bg-[#1B5E20] !text-white">
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
               Importing...
             </Button>

@@ -97,7 +97,6 @@ export const getPaginatedEvents = async (
         if (levelAccess === 1) {
           baseQuery = query(baseQuery, where("accessLevelEvent", "==", 1), where("programId", "==", currentUser.programId));
         } else if (levelAccess === 2) {
-          console.log(levelAccess)
           baseQuery = query(baseQuery, where("accessLevelEvent", "==", 2), where("facultyId", "==", currentUser.facultyId));
         } else if (levelAccess === 3) {
           baseQuery = query(baseQuery, where("accessLevelEvent", "==", 3));
@@ -249,19 +248,23 @@ export const addEvent = async (eventData: EventFormData) => {
       }
     }
 
-    // 2. Time Out Start should be before Time Out End
     if (eventData.timeOutStart && eventData.timeOutEnd) {
-      if (eventData.timeOutStart >= eventData.timeOutEnd) {
-        throw new Error("Time Out Start must be earlier than Time Out End");
+      // 2. Time Out Start should be before Time Out End
+      if (eventData.timeOutStart && eventData.timeOutEnd) {
+        if (eventData.timeOutStart >= eventData.timeOutEnd) {
+          throw new Error("Time Out Start must be earlier than Time Out End");
+        }
       }
     }
 
-    // 3. Time In End should be before Time Out Start (Time In period should complete before Time Out begins)
-    if (eventData.timeInEnd && eventData.timeOutStart) {
-      if (eventData.timeInEnd > eventData.timeOutStart) {
-        throw new Error(
-          "Time In period must complete before Time Out period begins"
-        );
+    if(eventData.timeInEnd && eventData.timeOutStart){
+      // 3. Time In End should be before Time Out Start (Time In period should complete before Time Out begins)
+      if (eventData.timeInEnd && eventData.timeOutStart) {
+        if (eventData.timeInEnd > eventData.timeOutStart) {
+          throw new Error(
+            "Time In period must complete before Time Out period begins"
+          );
+        }
       }
     }
 
@@ -286,7 +289,9 @@ export const addEvent = async (eventData: EventFormData) => {
       attendees: 0,
       status,
       isDeleted: false,
+      finesGenerated: false,  
       accessLevelEvent: levelAccess,
+      manuallyCompleted: false,
       ...dynamicFields,
 
     });
@@ -313,19 +318,22 @@ export const updateEvent = async (
       }
     }
 
-    // 2. Time Out Start should be before Time Out End
     if (eventData.timeOutStart && eventData.timeOutEnd) {
-      if (eventData.timeOutStart >= eventData.timeOutEnd) {
-        throw new Error("Time Out Start must be earlier than Time Out End");
+      // 2. Time Out Start should be before Time Out End
+      if (eventData.timeOutStart && eventData.timeOutEnd) {
+        if (eventData.timeOutStart >= eventData.timeOutEnd) {
+          throw new Error("Time Out Start must be earlier than Time Out End");
+        }
       }
     }
-
+    if(eventData.timeInEnd && eventData.timeOutStart){
     // 3. Time In End should be before Time Out Start (Time In period should complete before Time Out begins)
-    if (eventData.timeInEnd && eventData.timeOutStart) {
-      if (eventData.timeInEnd > eventData.timeOutStart) {
-        throw new Error(
-          "Time In period must complete before Time Out period begins"
-        );
+      if (eventData.timeInEnd && eventData.timeOutStart) {
+        if (eventData.timeInEnd > eventData.timeOutStart) {
+          throw new Error(
+            "Time In period must complete before Time Out period begins"
+          );
+        }
       }
     }
 
@@ -365,6 +373,27 @@ export const updateEvent = async (
   }
 };
 
+
+export const disableFineGeneration = async (eventId: string) => {
+  try {
+    const eventDoc = doc(db, "events", eventId);
+    await updateDoc(eventDoc, {
+      finesGenerated: true,
+    });
+
+    console.log(`-------Fine generation disabled for event with ID ${eventId}-----------`);
+
+    // Invalidate specific event cache and any paginated events
+    cacheService.invalidate(`event:${eventId}`);
+    cacheService.invalidateByPrefix("events:");
+  } catch (error) {
+    handleFirestoreError(
+      error,
+      `disable fine generation for event with ID ${eventId}`
+    );
+  }
+ }
+
 export const incrementEventAttendees = async (eventId: string) => {
   try {
     const eventDoc = doc(db, "events", eventId);
@@ -393,6 +422,7 @@ export const updateEventStatuses = async (
     events.forEach((event) => {
       // Skip archived events - they stay archived
       if (event.status === "archived") return;
+      if (event.manuallyCompleted) return; // Skip events manually marked as completed
 
       // Convert ID to string if it's a number
       const eventId =
@@ -597,6 +627,19 @@ export const deleteEvent = async (eventId: string) => {
   }
 };
 
+export const completeEvent = async (eventId: string) => { 
+  try {
+    const eventDoc = doc(db, "events", eventId);
+    await updateDoc(eventDoc, { status: "completed", manuallyCompleted: true });
+
+    // Invalidate specific event cache and all paginated events
+    cacheService.invalidate(`event:${eventId}`);
+    cacheService.invalidateByPrefix("events:");
+  } catch (error) {
+    console.error(`Error updating status for event ${eventId}:`, error);
+  }
+}
+
 // Convenience methods with caching
 export const getOngoingEvents = async (): Promise<Event[]> => {
   return (await getEvents("ongoing")) as Event[];
@@ -605,3 +648,10 @@ export const getOngoingEvents = async (): Promise<Event[]> => {
 export const getUpcomingEvents = async (): Promise<Event[]> => {
   return (await getEvents("upcoming")) as Event[];
 };
+
+interface ProgramData {
+  name: string;
+  shortName: string;
+  acronym: string;
+  facultyId: string;
+}
