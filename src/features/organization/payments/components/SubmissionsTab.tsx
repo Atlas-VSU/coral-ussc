@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button"
 import { RefreshCcw } from "lucide-react"
 
 interface SubmissionsTabProps {
-  filtered: ProofOfPayment[]
   paginated: ProofOfPayment[]
   totalPages: number
   currentPage: number
@@ -26,13 +25,14 @@ interface SubmissionsTabProps {
   isLoading?: boolean
   refetchPayments: () => void
   isLoadingUnpaid: boolean
+  totalCount: number
 }
 
 export function SubmissionsTab({
-  filtered, paginated, totalPages, currentPage,
+  paginated, totalPages, currentPage,
   search, filterStatus, viewMode,
   onPageChange, onSearchChange, onStatusChange, onViewChange, onOpenReview,
-  isLoading, refetchPayments, isLoadingUnpaid
+  isLoading, refetchPayments, isLoadingUnpaid, totalCount
 }: SubmissionsTabProps) {
   return (
     <>
@@ -42,7 +42,7 @@ export function SubmissionsTab({
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">
               All Payment Submissions
             </CardTitle>
-            <CardDescription>{filtered.length} records found</CardDescription>
+            <CardDescription>{totalCount} records found</CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <SearchInput
@@ -75,12 +75,12 @@ export function SubmissionsTab({
         {viewMode === "card" ? (
           <SubmissionsCardView paginated={paginated} onOpenReview={onOpenReview} isLoading={isLoading} />
         ) : (
-          <SubmissionsTableView paginated={paginated} filtered={filtered} onOpenReview={onOpenReview} isLoading={isLoading} />
+          <SubmissionsTableView paginated={paginated} totalCount={totalCount} onOpenReview={onOpenReview} isLoading={isLoading} />
         )}
         <DataPagination
           currentPage={currentPage}
           totalPages={totalPages}
-          totalItems={filtered.length}
+          totalItems={totalCount}
           itemsPerPage={ITEMS_PER_PAGE}
           onPageChange={onPageChange}
         />

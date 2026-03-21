@@ -1,4 +1,4 @@
-// usePaymentsPage.ts
+
 "use client"
 import { useState, useMemo, useEffect, useCallback } from "react"
 import { toast } from "sonner"
@@ -17,20 +17,33 @@ import { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
 import { PaymentMethods, PaymentType } from "@/constants/types"
 import { usePaymentApproval } from "./usePaymentApproval"
 import { useDebounce } from "@/hooks/useDebounce"
+import { getProofOfPaymentsCount } from "@/firebase/payment/read/proofOfPayment"
 
 export function usePaymentsPage() {
   const {
     payments,
     unpaidPayments,
     setUnpaidPayments,
-    unpaidHasMore,
-    isFetchingMore,
-    loadMoreUnpaid,
-    fetchUnpaid,
+    search,
+    setSearch,
+    unpaidSearch,
+    setUnpaidSearch,
     isLoading,
     isLoadingUnpaid,
     refetchPayments,
+    refetchUnpaids,
+    setTotalUnpaidCount,
     totalUnpaidCount,
+    unpaidPage,
+    setUnpaidPage,
+    searchCount,
+    submissionPage,
+    setSubmissionPage,
+    totalSubmissionCount,
+    currentOrgIdRef,
+    filterStatus,
+    setFilterStatus,
+    stats,
   } = usePayments()
 
   // ── Tab ───────────────────────────────────────────────────────────────────
@@ -38,17 +51,13 @@ export function usePaymentsPage() {
 
   // ── Submissions ───────────────────────────────────────────────────────────
   const [paymentsList, setPaymentsList] = useState<ProofOfPayment[]>([])
-  const [search, setSearch] = useState("")
-  const [filterStatus, setFilterStatus] = useState<string>("all")
   const [selectedPayment, setSelectedPayment] = useState<ProofOfPayment | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
   const [reviewOpen, setReviewOpen] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>("table")
   const [loading, setLoading] = useState(false)
 
   // ── Unpaid ────────────────────────────────────────────────────────────────
-  const [unpaidSearch, setUnpaidSearch] = useState("")
-  const [unpaidPage, setUnpaidPage] = useState(1)
+  // const [unpaidSearch, setUnpaidSearch] = useState("")
   const [unpaidViewMode, setUnpaidViewMode] = useState<ViewMode>("table")
 
   // ── Unpaid detail modal ───────────────────────────────────────────────────
@@ -70,13 +79,23 @@ export function usePaymentsPage() {
   useEffect(() => { setPaymentsList(payments) }, [payments])
 
   // ── Debounced search → triggers server fetch ──────────────────────────────
-  const debouncedUnpaidSearch = useDebounce(unpaidSearch, 400)
+  const [unpaidSearchInput, setUnpaidSearchInput] = useState("")
+  const [submissionSearchInput, setSubmissionSearchInput] = useState("")
+  const debouncedUnpaidSearch = useDebounce(unpaidSearchInput, 400)
+  const debouncedPaymentSearch = useDebounce(submissionSearchInput, 400)
 
   useEffect(() => {
     // Reset to page 1 and fetch with new search term
     setUnpaidPage(1)
-    fetchUnpaid(debouncedUnpaidSearch, true)
-  }, [debouncedUnpaidSearch, fetchUnpaid])
+    setUnpaidSearch(debouncedUnpaidSearch)
+  }, [debouncedUnpaidSearch])
+
+    useEffect(() => {
+    // Reset to page 1 and fetch with new search term
+    setSubmissionPage(1)
+    setSearch(debouncedPaymentSearch)
+  }, [debouncedPaymentSearch])
+
 
   // Fetch student program when selected unpaid changes
   useEffect(() => {
@@ -91,42 +110,13 @@ export function usePaymentsPage() {
     return () => { cancelled = true }
   }, [selectedUnpaid])
 
-  // ── Derived: submissions ──────────────────────────────────────────────────
-  const filtered = useMemo(() => paymentsList.filter(p => {
-    const q = search.toLowerCase()
-    const matchesSearch = p.userName.toLowerCase().includes(q) || p.studentId.toLowerCase().includes(q)
-    const matchesStatus = filterStatus === "all" || p.status === filterStatus
-    return matchesSearch && matchesStatus
-  }), [paymentsList, search, filterStatus])
-
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
-  const paginated = useMemo(
-    () => filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE),
-    [filtered, currentPage]
-  )
+  const totalPages = Math.ceil(totalSubmissionCount / ITEMS_PER_PAGE)
+  const paginated = payments;
+  
 
   // ── Derived: unpaid — server already filtered, just paginate in memory ────
-  const unpaidTotalPages = Math.ceil(unpaidPayments.length / ITEMS_PER_PAGE)
-  const paginatedUnpaid = useMemo(
-    () => unpaidPayments.slice((unpaidPage - 1) * ITEMS_PER_PAGE, unpaidPage * ITEMS_PER_PAGE),
-    [unpaidPayments, unpaidPage]
-  )
-
-  // ── Auto load more when user reaches last page ────────────────────────────
-  useEffect(() => {
-    const onLastPage = unpaidPage === unpaidTotalPages && unpaidTotalPages > 0
-    if (onLastPage && unpaidHasMore && !isFetchingMore) {
-      loadMoreUnpaid()
-    }
-  }, [unpaidPage, unpaidTotalPages, unpaidHasMore, isFetchingMore, loadMoreUnpaid])
-
-  // ── Stats ─────────────────────────────────────────────────────────────────
-  const stats = useMemo(() => ({
-    pending:  paymentsList.filter(p => p.status === "pending").length,
-    approved: paymentsList.filter(p => p.status === "verified").length,
-    declined: paymentsList.filter(p => p.status === "rejected").length,
-    unpaid:   totalUnpaidCount,
-  }), [paymentsList, unpaidPayments])
+  const unpaidTotalPages = Math.ceil(totalUnpaidCount / ITEMS_PER_PAGE)
+  const paginatedUnpaid = unpaidPayments;
 
   // ── Live unpaid record (keeps modal in sync after mutations) ──────────────
   const liveSelectedUnpaid = useMemo(
@@ -151,6 +141,7 @@ export function usePaymentsPage() {
       const result = await _approvePayment(payment)
       setReceiptData(result?.receipt!)
       setReceiptOpen(true)
+      refetchPayments()
       setDetailOpen(false)
       toast.success("Payment approved successfully")
     } catch (error) {
@@ -179,6 +170,7 @@ export function usePaymentsPage() {
         reviewedBy: "Admin",
         remarks: reason,
       }))
+      refetchPayments()
       setDetailOpen(false)
       setSelectedPayment(null)
       toast.success("Payment declined successfully")
@@ -252,6 +244,7 @@ export function usePaymentsPage() {
     }
 
     refetchPayments()
+    refetchUnpaids()
 
     // Optimistic update — remove settled dues from local state
     const settledIds = new Set(selectedDues.map(d => d.id))
@@ -263,6 +256,7 @@ export function usePaymentsPage() {
       })
       .filter(Boolean) as StudentUnpaidRecord[]
     )
+    setTotalUnpaidCount(prev => prev -1 )
 
     const currentUser = await getCurrentUserData() as unknown as Member
     setReceiptData({
@@ -276,31 +270,40 @@ export function usePaymentsPage() {
       paymentMethod: "Cash (Manual)",
     })
 
-    setDetailOpen(false)
     setReceiptOpen(true)
+    setDetailOpen(false)
     setLoading(false)
     toast.success("Payment logged successfully")
-  }, [liveSelectedUnpaid, selectedDues, selectedTotal, paymentDate, refetchPayments, setUnpaidPayments])
+  }, [liveSelectedUnpaid, selectedDues, selectedTotal, paymentDate, setUnpaidPayments])
 
   // ── Tab change ────────────────────────────────────────────────────────────
   const handleTabChange = useCallback((value: "submissions" | "unpaid") => {
     setDataView(value)
-    setCurrentPage(1)
     setUnpaidPage(1)
+    setSubmissionPage(1)
     setFilterStatus("all")
+    setSearch("")
+    setUnpaidSearch("")
   }, [])
+
+  const refreshAll = useCallback(() => {
+    refetchPayments()
+    refetchUnpaids()
+   },[])
 
   return {
     dataView, handleTabChange,
     isLoading, loading, isLoadingUnpaid,
-    paymentsList, search, setSearch, filterStatus, setFilterStatus,
+    paymentsList, filterStatus, setFilterStatus,
     selectedPayment, setSelectedPayment,
-    currentPage, setCurrentPage,
     reviewOpen, setReviewOpen,
     viewMode, setViewMode,
-    filtered, totalPages, paginated,
+    totalPages, paginated,
     handleApprove, handleDecline, openReview,
-    unpaidSearch, setUnpaidSearch,
+    unpaidSearch: unpaidSearchInput,       
+    setUnpaidSearch: setUnpaidSearchInput,  
+    search: submissionSearchInput,          
+    setSearch: setSubmissionSearchInput, 
     unpaidPage, setUnpaidPage,
     unpaidViewMode, setUnpaidViewMode,
     filteredUnpaid: unpaidPayments,
@@ -313,6 +316,7 @@ export function usePaymentsPage() {
     studentProgram,
     receiptOpen, setReceiptOpen, receiptData, setReceiptData,
     stats,
-    refetchPayments, totalUnpaidCount,
+    refetchPayments,refetchUnpaids, refreshAll, totalUnpaidCount, totalSubmissionCount,
+    submissionPage, setSubmissionPage, searchCount
   }
 }

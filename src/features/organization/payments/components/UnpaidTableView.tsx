@@ -7,13 +7,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { TableSkeleton } from "@/components/organization/Skeletons"
 
 interface UnpaidTableViewProps {
-  filteredUnpaid: StudentUnpaidRecord[]
+  totalCount: number
   paginatedUnpaid: StudentUnpaidRecord[]
   onOpenDetail: (r: StudentUnpaidRecord) => void
   isLoading?: boolean
 }
 
-export function UnpaidTableView({ filteredUnpaid, paginatedUnpaid, onOpenDetail, isLoading }: UnpaidTableViewProps) {
+export function UnpaidTableView({ totalCount, paginatedUnpaid, onOpenDetail, isLoading }: UnpaidTableViewProps) {
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -32,7 +32,7 @@ export function UnpaidTableView({ filteredUnpaid, paginatedUnpaid, onOpenDetail,
                 <TableSkeleton columns={4} rows={5} />
               </TableCell>
             </TableRow>
-          ) : filteredUnpaid.length === 0  ? (
+          ) : totalCount === 0  ? (
             <TableRow>
               <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                 No unpaid records found
