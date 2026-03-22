@@ -66,7 +66,7 @@ export const getProofOfPaymentsPaginated = async (
     constraints.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
     constraints.push(orderBy(searchField));
   } else {
-    // constraints.push(orderBy("updatedAt", "desc"));
+    constraints.push(orderBy("updatedAt", "desc"));
   }
 
   let count = 0;

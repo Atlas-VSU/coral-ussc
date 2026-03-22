@@ -709,6 +709,7 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                 metadata: { items },
                 receiptCode: receipt,
                 isArchived: false,
+                updatedAd: Timestamp.now(),
             });
 
             const clearanceUpdates: Record<string, any> = {};
@@ -870,6 +871,7 @@ export const recordManualPaymentAndUpdateClearance = async (
                 },
                 receiptCode: receipt,
                 isArchived: false,
+                updatedAt: Timestamp.now(),
             })
 
             transaction.update(feeRef, {
