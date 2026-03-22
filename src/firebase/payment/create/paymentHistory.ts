@@ -37,7 +37,6 @@ export const addOnlineFinesPayment = async (fines: StudentFines, type:string, me
             rejectionReason: "",
             notes: "",
         } as PaymentFormData;
-        console.log("Creating proof of payment with data:--", proof);
         const proofId = await createOfflineFinesProofOfPayment(proof, type,fines,fineItems);
 
         const paymentHist = await addDoc(subColRef, {
