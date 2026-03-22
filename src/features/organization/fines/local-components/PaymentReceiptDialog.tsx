@@ -95,8 +95,8 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
 
             <hr />
             <div class="footer">
-              <p>Payment Method: Cash (Manual)</p>
-              <p>Verified by Admin</p>
+              <p>Payment Method: ${data.paymentMethod.toLocaleUpperCase()} </p>
+              <p>Verified by ${data.verifiedByName}</p>
             </div>
             <p class="footer-note">This serves as an official proof of payment.</p>
           </div>
