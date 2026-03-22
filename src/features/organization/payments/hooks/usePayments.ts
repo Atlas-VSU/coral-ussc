@@ -107,7 +107,6 @@ export function usePayments() {
           const isJump = submissionPage > 1 && !lastVisibleDocs[submissionPage - 2];
           const effectivePageSize = isJump ? (submissionPage * itemsPerPage) : itemsPerPage;
           const effectiveCursor = isJump ? null : (submissionPage > 1 ? lastVisibleDocs[submissionPage - 2] : null);
-          
           const { docs, count, allSnapshots } = await getProofOfPaymentsPaginated(
             currentUser.id!,
             effectivePageSize,
@@ -119,7 +118,6 @@ export function usePayments() {
           
           if (isMounted) {
           setTotalSubmissionCount(search ? count : await getProofOfPaymentsCount(currentUser.id!, filterStatus));
-          
           const records = isJump?docs.slice((submissionPage - 1) * itemsPerPage) : docs
           setPayments(records)
           setSearchCount(count)

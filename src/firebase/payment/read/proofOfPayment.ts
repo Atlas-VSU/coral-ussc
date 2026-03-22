@@ -66,7 +66,7 @@ export const getProofOfPaymentsPaginated = async (
     constraints.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
     constraints.push(orderBy(searchField));
   } else {
-    constraints.push(orderBy("updatedAt", "desc"));
+    // constraints.push(orderBy("updatedAt", "desc"));
   }
 
   let count = 0;
@@ -105,7 +105,6 @@ export const getProofOfPaymentsPaginated = async (
       );
       cacheService.set(key, data, CACHE_DURATIONS.PAYMENTS);
     }
-    
     return data;
   });
 
@@ -178,7 +177,6 @@ export const getProofOfPaymentsCount = async (orgId: string, statusFilter: strin
       where("orgId", "==", orgId),
       where("isArchived", "==", false),
   ];
-  console.log("Counting proof of payments with constraints:", constraints, "Status Filter:", statusFilter);
   if (statusFilter !== "all") {
     constraints.push(where("status", "==", statusFilter));
   }
