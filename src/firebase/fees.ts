@@ -188,11 +188,13 @@ export const generateFeesForAllStudentsInAnOrg = async (
     cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
     cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
     cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+    cacheService.invalidateByPrefix(`fees:count:${orgId}`);
+    cacheService.invalidateByPrefix(`clearance:stats:${orgId}`);
+    cacheService.invalidateByPrefix(`clearance:count:${orgId}`);
     
-    // Refresh broad collections background
+    // Refresh fee caches in background (not clearance — paginated fetcher handles that on next load)
     fetchFeesForOrg(orgId).catch(console.error);
     fetchUnpaidFeesForOrg().catch(console.error);
-    fetchClearanceDocuments(orgId).catch(console.error);
 }
 export const fetchFeesForOrg = async(orgId: string): Promise<Fee[]> => {
     return cacheService.getOrFetch(
@@ -312,31 +314,37 @@ export const getFeesCount = async (
   statusFilter: string = "all",
   searchTerm: string = ""
 ) => {
-  let constraints: any[] = [
-    where("orgId", "==", orgId),
-    where("title", "==", title),
-    where("academicYear", "==", academicYear),
-    where("isArchived", "==", false),
-  ];
+  return cacheService.getOrFetch(
+    CACHE_KEYS.feesCount(orgId, title, academicYear, statusFilter, searchTerm),
+    async () => {
+      const constraints: any[] = [
+        where("orgId", "==", orgId),
+        where("title", "==", title),
+        where("academicYear", "==", academicYear),
+        where("isArchived", "==", false),
+      ];
 
-  if (statusFilter !== "all" && statusFilter !== "") {
-    constraints.push(where("status", "==", statusFilter));
-  }
+      if (statusFilter !== "all" && statusFilter !== "") {
+        constraints.push(where("status", "==", statusFilter));
+      }
 
-  const isIdSearch = /\d/.test(searchTerm);
-  const normalizedSearch = isIdSearch 
-    ? searchTerm.trim() 
-    : searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+      const isIdSearch = /\d/.test(searchTerm);
+      const normalizedSearch = isIdSearch 
+        ? searchTerm.trim() 
+        : searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
 
-  if (normalizedSearch) {
-    const searchField = isIdSearch ? "studentId" : "userName";
-    constraints.push(where(searchField, ">=", normalizedSearch));
-    constraints.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
-  }
+      if (normalizedSearch) {
+        const searchField = isIdSearch ? "studentId" : "userName";
+        constraints.push(where(searchField, ">=", normalizedSearch));
+        constraints.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
+      }
 
-  const q = query(collection(db, "fees"), ...constraints);
-  const snapshot = await getCountFromServer(q);
-  return snapshot.data().count;
+      const q = query(collection(db, "fees"), ...constraints);
+      const snapshot = await getCountFromServer(q);
+      return snapshot.data().count;
+    },
+    CACHE_DURATIONS.COUNTS
+  );
 };
 
 /**
@@ -556,10 +564,12 @@ export const archiveFeeDocuments = async (feeTitle: string, academicYear: string
         cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
         cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
         cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+        cacheService.invalidateByPrefix(`fees:count:${orgId}`);
+        cacheService.invalidateByPrefix(`clearance:stats:${orgId}`);
+        cacheService.invalidateByPrefix(`clearance:count:${orgId}`);
         
         fetchFeesForOrg(orgId).catch(console.error);
         fetchUnpaidFeesForOrg().catch(console.error);
-        fetchClearanceDocuments(orgId).catch(console.error);
     } catch (error) {
         console.error("Error archiving fee:", error);
         throw error;
@@ -764,11 +774,13 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
         cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
         cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
         cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+        cacheService.invalidateByPrefix(`fees:count:${orgId}`);
+        cacheService.invalidateByPrefix(`clearance:stats:${orgId}`);
+        cacheService.invalidateByPrefix(`clearance:count:${orgId}`);
+        cacheService.invalidateByPrefix(`payments:count:${orgId}`);
 
         fetchFeesForOrg(orgId).catch(console.error);
         fetchUnpaidFeesForOrg().catch(console.error);
-        fetchClearanceDocuments(orgId).catch(console.error);
-
     } catch (error) {
         console.error("Error processing bulk manual payment and clearance:", error);
         throw error;
