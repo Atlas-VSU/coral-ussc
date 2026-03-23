@@ -39,11 +39,9 @@ export function useFeesRoster(
       } catch {}
       return null
     })
-    const feeRef = useRef<BaseFeeData | null>(null)
-    // Sync ref with any prefetched value so fetchData skips the fee doc fetch
-    useEffect(() => {
-      if (fee && !feeRef.current) feeRef.current = fee
-    }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    const feeRef = useRef<BaseFeeData | null>(fee)
+    // Keep feeRef in sync with fee state AND with any prefetched value
+    useEffect(() => { feeRef.current = fee }, [fee])
     const [studentRows, setStudentRows] = useState<StudentFeeRow[]>([]);
     const [logs, setLogs] = useState<PaymentLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -71,11 +69,12 @@ export function useFeesRoster(
             if (!user?.uid) return;
             const orgId = user.uid;
 
-            // 1. Fetch the reference fee document if not already set
-            if (!fee) {
+            // 1. Fetch the reference fee document if not already set (use ref to avoid re-render loop)
+            if (!feeRef.current) {
               const { docs: feeDocs } = await fetchFeesPaginated(orgId, title, academicYear, 1);
               if (feeDocs.length > 0) {
-                setFee(feeDocs[0]);
+                feeRef.current = feeDocs[0];  // update ref immediately
+                setFee(feeDocs[0]);            // update state for display
               }
             }
 
@@ -205,7 +204,7 @@ export function useFeesRoster(
         } finally {
             setIsLoading(false);
         }
-    }, [title, academicYear, dataView, currentPage, pageSize, search, filterStatus, fee]);
+    }, [title, academicYear, dataView, currentPage, pageSize, search, filterStatus]);
 
     useEffect(() => {
         fetchData();
