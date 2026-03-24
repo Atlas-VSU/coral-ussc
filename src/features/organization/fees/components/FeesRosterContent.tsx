@@ -377,7 +377,7 @@ export function FeesRosterContent({
           amountPaid: selectedLog?.amount || 0,
           paymentMethod: selectedLog?.paymentMethod || "Cash (Manual)",
           submittedAt: selectedLog?.paidAt
-            ? (selectedLog as any)!.paidAt.toDate().toISOString().slice(0, 10)
+            ? (selectedLog as any)!.paidAt.toDate().toLocaleString().slice(0, 10)
             : "",
           receiptContent: (selectedLog as any)?.receiptContent || "",
           referenceNo: selectedLog?.gcashReference || "",
