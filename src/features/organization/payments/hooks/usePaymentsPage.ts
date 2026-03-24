@@ -18,6 +18,7 @@ import { PaymentMethods, PaymentType } from "@/constants/types"
 import { usePaymentApproval } from "./usePaymentApproval"
 import { useDebounce } from "@/hooks/useDebounce"
 import { getProofOfPaymentsCount } from "@/firebase/payment/read/proofOfPayment"
+import { Timestamp } from "firebase/firestore"
 
 export function usePaymentsPage() {
   const {
@@ -64,7 +65,7 @@ export function usePaymentsPage() {
   const [selectedUnpaid, setSelectedUnpaid] = useState<StudentUnpaidRecord | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [checkedDues, setCheckedDues] = useState<Set<string>>(new Set())
-  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10))
+  const [paymentDate, setPaymentDate] = useState(Timestamp.now())
 
   // ── Receipt ───────────────────────────────────────────────────────────────
   const [receiptOpen, setReceiptOpen] = useState(false)
@@ -191,7 +192,7 @@ export function usePaymentsPage() {
   const openUnpaidDetail = useCallback((record: StudentUnpaidRecord) => {
     setSelectedUnpaid(record)
     setCheckedDues(new Set())
-    setPaymentDate(new Date().toISOString().slice(0, 10))
+    setPaymentDate(Timestamp.now())
     setDetailOpen(true)
   }, [])
 
@@ -236,7 +237,7 @@ export function usePaymentsPage() {
     }
 
     try {
-      await createBulkOfflineProofOfPayment(lineItems, receiptId, selectedDues, liveSelectedUnpaid.student.id!)
+      await createBulkOfflineProofOfPayment(lineItems, receiptId, selectedDues, liveSelectedUnpaid.student.id!, paymentDate)
     } catch (error) {
       toast.error("Failed to log payment. Please try again.")
       setLoading(false)
@@ -265,7 +266,7 @@ export function usePaymentsPage() {
       studentId: liveSelectedUnpaid.student.studentId,
       items: selectedDues.map(d => ({ name: d.name, type: d.type as "fees" | "fines", amount: d.balance })),
       total: selectedTotal,
-      date: paymentDate,
+      date: paymentDate.toDate().toLocaleString(),
       verifiedByName: `${currentUser.firstName} ${currentUser.lastName}`,
       paymentMethod: "Cash (Manual)",
     })

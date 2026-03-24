@@ -204,6 +204,7 @@ export const createBulkOfflineProofOfPayment = async (
   receipt: string,
   dues: UnpaidDue[],
   userId: string,
+  date?: Timestamp,
 ) => {
   const currentUser = await getCurrentUserData() as unknown as Member;
   const verifierName = `${currentUser.firstName} ${currentUser.lastName}`;
@@ -217,7 +218,7 @@ export const createBulkOfflineProofOfPayment = async (
     metadata: {},
     verifiedBy: currentUser.id!,
     verifiedByName: verifierName,
-    verifiedAt: Timestamp.now(),
+    verifiedAt: date? date : Timestamp.now(),
     receiptCode: receipt,
     isArchived: false,
     updatedAt: Timestamp.now(),
