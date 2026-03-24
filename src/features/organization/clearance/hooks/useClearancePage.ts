@@ -233,7 +233,7 @@ export function useClearancePage(orgId: string | undefined) {
           amount: i.amount,
         })),
         total: selection.total,
-        date: new Date().toISOString().slice(0, 10),
+        date: new Date().toLocaleString(),
         verifiedByName: currentUser.firstName + " " + currentUser.lastName,
         paymentMethod: "Cash (Manual)",
       })

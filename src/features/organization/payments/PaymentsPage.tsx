@@ -10,6 +10,7 @@ import { UnpaidTab } from "./components/UnpaidTab"
 import { LogPaymentDialog } from "./components/LogPaymentDialog"
 import { usePaymentsPage } from "./hooks/usePaymentsPage"
 import PaymentReceiptDialog, { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
+import { Timestamp } from "firebase/firestore"
 
 export default function PaymentsPage() {
   const {
@@ -48,7 +49,7 @@ export default function PaymentsPage() {
       studentId: selectedPayment?.studentId || "N/A",
       items: selectedPayment?.metadata.items?.map(d => ({ name: d.title, type: d.paymentType as "fees" | "fines", amount: d.amount })) ?? [],
       total: selectedPayment?.amount || 0,
-      date: selectedPayment?.submittedAt.toDate().toLocaleDateString() || "N/A",
+      date: selectedPayment?.verifiedAt!.toDate().toLocaleString() || "N/A",
       verifiedByName: selectedPayment?.verifiedByName || "N/A",
       paymentMethod: selectedPayment?.paymentMethod || "Cash (Manual)",
     });
@@ -130,7 +131,7 @@ export default function PaymentsPage() {
           showLineItemsTotal: !!(selectedPayment.metadata?.items?.length),
           amountPaid: selectedPayment.amount,
           referenceNo: selectedPayment.referenceNumber,
-          submittedAt: selectedPayment.submittedAt.toDate().toLocaleDateString(),
+          submittedAt: selectedPayment.submittedAt.toDate().toLocaleString(),
           notes: selectedPayment.notes,
           receiptContent: selectedPayment.imageUrl,
           declineRemarks: selectedPayment.rejectionReason,
@@ -153,8 +154,8 @@ export default function PaymentsPage() {
         checkedDues={checkedDues}
         selectedDues={selectedDues}
         selectedTotal={selectedTotal}
-        paymentDate={paymentDate}
-        onPaymentDateChange={setPaymentDate}
+        paymentDate={paymentDate.toDate().toISOString().slice(0, 10)}
+        onPaymentDateChange={(date) => setPaymentDate(Timestamp.fromDate(new Date(date)))}
         onToggleDue={toggleDue}
         onToggleAll={toggleAllDues}
         onLogPayment={handleLogPayment}

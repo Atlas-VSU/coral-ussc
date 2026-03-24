@@ -56,7 +56,7 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
                             amount: fee.amount,
                             }],
                         total: parseFloat(amount),
-                        date:  new Date().toISOString().slice(0, 10),
+                        date:  new Date().toLocaleString(),
                         verifiedByName: currentUser?.firstName + " " + currentUser?.lastName || "",
                         paymentMethod: method,
                     }); 

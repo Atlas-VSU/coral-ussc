@@ -456,7 +456,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                             showLineItemsTotal: !!(paymentCoveredFineItems?.length),
                             amountPaid: pendingPayment.amount || 0,
                             referenceNo: pendingPayment.referenceNumber,
-                            submittedAt: pendingPayment.submittedAt?.toDate().toLocaleDateString() || "",
+                            submittedAt: pendingPayment.submittedAt?.toDate().toLocaleString() || "",
                             receiptContent: pendingPayment.imageUrl,
                             declineRemarks: pendingPayment.rejectionReason,
                             reviewedBy: pendingPayment.verifiedByName,

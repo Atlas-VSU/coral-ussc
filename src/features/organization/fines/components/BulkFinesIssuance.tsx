@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import type { FineGenerationProgress } from "../types";
 import { generateFinesOnEvent } from "@/firebase/fines/create/fines";
 import { Event } from "../../events/types";
+import { toast } from "sonner";
 
 interface BulkFinesIssuanceProps {
   open: boolean;
@@ -40,10 +41,10 @@ export function BulkFinesIssuance({
         event,
         (update) => setProgress(update)  // each report() call triggers a re-render
       );
-      setProgress(null);
-      onOpenChange(false);
+      toast.success("Fines generated successfully!");
     } catch (error) {
       console.error("Error during fine generation:", error);
+      toast.error("An error occurred during fine generation. Please check the logs and try again.");
      }
   };
 
