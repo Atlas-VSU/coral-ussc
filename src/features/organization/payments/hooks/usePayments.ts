@@ -15,52 +15,10 @@ interface ClearanceWithStudent {
   student: Member
 }
 
-// ── Pure converter — outside hook, no deps ────────────────────────────────
-const toUnpaidRecord = ({ cl, student }: ClearanceWithStudent): StudentUnpaidRecord | null => {
-  const dues: UnpaidDue[] = Object.entries(cl.blockingItems || {})
-    .filter(([_, item]) => item.status === "unpaid" && !item.pendingReview)
-    .map(([_, item]) => {
-      const isFine = item.type === "fines"
-      return {
-        id: item.referenceId,
-        type: isFine ? "fines" as const : "fees" as const,
-        name: item.title,
-        item: isFine
-          ? {
-              refId: item.referenceId,
-              userId: cl.userId,
-              fine: {} as StudentFines,
-              parentFineId: item.parentFineId!,
-              title: item.title,
-              amount: item.balance,
-            } as StudentFineItem
-          : {
-              id: item.referenceId,
-              userId: cl.userId,
-              title: item.title,
-              amount: item.balance,
-              paidAmount: 0,
-            } as unknown as Fee,
-        balance: item.balance,
-        parentId: item.parentFineId ?? item.referenceId,
-      }
-    })
-
-  if (dues.length === 0) return null
-  return { student, dues }
-}
-
-// ── Shared helper — fetch users in parallel then build records ────────────
-const buildRecords = async (docs: ClearanceStatus[]): Promise<StudentUnpaidRecord[]> => {
-  const users = await Promise.all(docs.map(d => getUserById(d.userId)))
-  return docs
-    .map((cl, i) => users[i] ? toUnpaidRecord({ cl, student: users[i]! }) : null)
-    .filter(Boolean) as StudentUnpaidRecord[]
-}
 
 export function usePayments() {
   const [payments, setPayments] = useState<ProofOfPayment[]>([])
-  const [unpaidPayments, setUnpaidPayments] = useState<StudentUnpaidRecord[]>([])
+  const [unpaidPayments, setUnpaidPayments] = useState<ClearanceStatus[]>([])
   const [loadingSubmissions, setLoadingSubmissions] = useState(true)
   const [loadingUnpaid, setLoadingUnpaid] = useState(true)
   const [totalUnpaidCount, setTotalUnpaidCount] = useState(0)
@@ -183,9 +141,8 @@ export function usePayments() {
       
       if (isMounted) {
       setTotalUnpaidCount(unpaidSearch? count : await getCountOfUnclearedDocuments(currentUser.id!));
-      
-      const records = await buildRecords(isJump?docs.slice((unpaidPage - 1) * itemsPerPage) : docs)
-      setUnpaidPayments(records)
+        const records = isJump ? docs.slice((unpaidPage - 1) * itemsPerPage) : docs;
+        setUnpaidPayments(records);
       setUnpaidSearchCount(count)
 
         if (allSnapshots && allSnapshots.length > 0) {

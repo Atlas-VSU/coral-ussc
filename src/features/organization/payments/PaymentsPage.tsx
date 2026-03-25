@@ -36,7 +36,7 @@ export default function PaymentsPage() {
     checkedDues, selectedDues, selectedTotal,
     paymentDate, setPaymentDate,
     toggleDue, toggleAllDues, openUnpaidDetail, handleLogPayment,
-    studentProgram,
+    student, studentProgram,
     // receipt
     receiptOpen, setReceiptOpen, receiptData, setReceiptData,
     stats, totalUnpaidCount
@@ -159,7 +159,8 @@ export default function PaymentsPage() {
         onToggleDue={toggleDue}
         onToggleAll={toggleAllDues}
         onLogPayment={handleLogPayment}
-        studentProgram={studentProgram}
+        student={student}
+        studentProgram = {studentProgram}
         isLoading={isLoading}
         isSubmitting={loading}
       />
