@@ -18,6 +18,8 @@ interface ClearanceFiltersProps {
   onViewChange: (v: ViewMode) => void
   onRefresh: () => void
   isLoading?: boolean
+  currentPage: number
+  totalPages: number
 }
 
 export function ClearanceFilters({
@@ -30,6 +32,8 @@ export function ClearanceFilters({
   onViewChange,
   onRefresh,
   isLoading,
+  currentPage,
+  totalPages,
 }: ClearanceFiltersProps) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -64,6 +68,7 @@ export function ClearanceFilters({
           <Download className="size-4" /> Export
         </Button>
         <ViewToggle viewMode={viewMode} onViewChange={onViewChange} />
+        <p className="text-sm text-muted-foreground">Page {currentPage} of {totalPages}</p>
       </div>
     </div>
   )

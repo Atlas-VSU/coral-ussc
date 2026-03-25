@@ -243,6 +243,9 @@ export function FeesRosterContent({
                   setViewMode(viewMode === "card" ? "table" : "card")
                 }
               />
+              <p className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </p>
             </div>
             
           </div>
@@ -257,9 +260,6 @@ export function FeesRosterContent({
                   <TabsTrigger value="all-students">All Students</TabsTrigger>
                 </TabsList>
               </Tabs>
-              <div>
-                <p>Page {currentPage} of {totalPages}</p>
-              </div>
           </div>
         <CardContent>
           {isLoading ? (
