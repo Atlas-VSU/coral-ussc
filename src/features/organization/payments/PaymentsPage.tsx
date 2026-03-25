@@ -23,7 +23,7 @@ export default function PaymentsPage() {
     viewMode, setViewMode,
     totalSubmissionCount, totalPages, paginated,
     handleApprove, handleDecline, openReview, isLoading, loading  , isLoadingUnpaid,
-    refetchPayments, submissionPage, setSubmissionPage,
+    refetchPayments,refetchUnpaids, submissionPage, setSubmissionPage,
     // unpaid
     unpaidSearch, setUnpaidSearch,
     unpaidPage, setUnpaidPage,
@@ -96,7 +96,7 @@ export default function PaymentsPage() {
             onViewChange={setViewMode}
             onOpenReview={openReview}
             isLoading={isLoading}
-            refetchPayments={refreshAll}
+            refetchPayments={refetchPayments}
             isLoadingUnpaid={isLoadingUnpaid}
             totalCount={totalSubmissionCount}
           />
@@ -112,7 +112,7 @@ export default function PaymentsPage() {
             onViewChange={setUnpaidViewMode}
             onOpenDetail={openUnpaidDetail}
             isLoading={isLoadingUnpaid}
-            refetchPayments={refreshAll}
+            refetchPayments={refetchUnpaids}
             isLoadingUnpaid={isLoadingUnpaid}
             totalCount={totalUnpaidCount}
           />

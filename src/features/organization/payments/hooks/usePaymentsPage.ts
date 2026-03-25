@@ -267,8 +267,8 @@ export function usePaymentsPage() {
       return
     }
 
-    refetchPayments()
-    refetchUnpaids()
+    // refetchPayments()
+    // refetchUnpaids()
 
     // Optimistic update — remove settled dues from local state
     const settledIds = new Set(selectedDues.map(d => d.referenceId))
