@@ -77,6 +77,7 @@ export function UnpaidTab({
               {(isLoading || isLoadingUnpaid) ? 'Refreshing...' : 'Refresh'}
             </Button>
             <ViewToggle viewMode={unpaidViewMode} onViewChange={onViewChange} />
+            <p className="text-sm text-muted-foreground">Page {unpaidPage} of {unpaidTotalPages}</p>
           </div>
         </div>
       </CardHeader>
