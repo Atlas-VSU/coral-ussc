@@ -9,6 +9,7 @@ interface DataPaginationProps {
   totalItems: number
   itemsPerPage: number
   onPageChange: (page: number) => void
+  hasNextPage?: boolean
 }
 
 export function DataPagination({
@@ -17,6 +18,7 @@ export function DataPagination({
   totalItems,
   itemsPerPage,
   onPageChange,
+  hasNextPage,
 }: DataPaginationProps) {
   if (totalPages <= 1) return null
 
@@ -68,17 +70,6 @@ export function DataPagination({
               </span>
             )
           }
-          return (
-            <Button
-              key={page}
-              variant={currentPage === page ? "default" : "outline"}
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={() => onPageChange(page)}
-            >
-              {page}
-            </Button>
-          )
         })}
 
         <Button
@@ -86,7 +77,7 @@ export function DataPagination({
           size="icon"
           className="h-8 w-8"
           onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
+          disabled={currentPage === totalPages || hasNextPage === false}
         >
           <ChevronRightIcon className="h-4 w-4" />
         </Button>

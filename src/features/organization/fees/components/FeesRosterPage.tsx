@@ -34,7 +34,8 @@ export default function FeesRosterPage({
     totalCount,
     refetchStudentRow, 
     refetch,
-    stats
+    stats,
+    hasNextPage,
   } = useFeesRoster(title, academicYear, {
     pageSize: ITEMS_PER_PAGE,
     currentPage,
@@ -116,12 +117,9 @@ export default function FeesRosterPage({
         setFilterStatus={setFilterStatus}
         dataView={dataView}
         setDataView={setDataView}
-        totalCount={totalCount} stats={{
-          pending: 0,
-          verified: 0,
-          rejected: 0,
-          unpaid: 0
-        }}      />
+        totalCount={totalCount} stats={stats}
+        hasNextPage={hasNextPage}
+        />
      </>
   );
 }
