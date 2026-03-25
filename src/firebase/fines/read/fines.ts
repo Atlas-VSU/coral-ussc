@@ -128,39 +128,39 @@ export const countFinesOfStudents = async (status: string) => {
 
 export const countUnsettleFinesOfStudents = async () => { 
   const currUser = await getCurrentUserData() as unknown as Member;
-  // return cacheService.getOrFetch(
-  //   `fines:countUnsettled:${currUser.id}`,
-    // async () => {
+  return cacheService.getOrFetch(
+    `fines:countUnsettled:${currUser.id}`,
+    async () => {
       const coll = collection(db, "fines");
-      let q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("status", "==", "unpaid"), where("accumulatedAmount", ">", 0));
+      let q = query(coll, where("metadata.isArchived", "==", false), where("orgId", "==", currUser.id), where("status", "==", "unpaid"), where("accumulatedAmount", ">", 0));
       let snapshot = await getCountFromServer(q);
       let total = snapshot.data().count;
 
-      q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("status", "==", "partial"));
+      q = query(coll, where("metadata.isArchived", "==", false), where("orgId", "==", currUser.id), where("status", "==", "partial"));
       snapshot = await getCountFromServer(q);
       total += snapshot.data().count;
 
-      q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("status", "==", "pending"));
+      q = query(coll, where("metadata.isArchived", "==", false), where("orgId", "==", currUser.id), where("status", "==", "pending"));
       snapshot = await getCountFromServer(q);
       total += snapshot.data().count;
       return total;
-  //   },
-  //   CACHE_DURATIONS.FINES
-  // );
+    },
+    CACHE_DURATIONS.COUNTS
+  );
 }
 
 export const countStudentsWithFines = async () => { 
   const currUser = await getCurrentUserData() as unknown as Member;
-  // return cacheService.getOrFetch(
-  //   `fines:countWithFines:${currUser.id}`,
-    // async () => {
+  return cacheService.getOrFetch(
+    `fines:countWithFines:${currUser.id}`,
+    async () => {
       const coll = collection(db, "fines");
-      const q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("accumulatedAmount", ">", 0));
+      const q = query(coll, where("metadata.isArchived", "==", false), where("orgId", "==", currUser.id), where("accumulatedAmount", ">", 0));
       const snapshot = await getCountFromServer(q);
       return snapshot.data().count;
-    // },
-  //   CACHE_DURATIONS.FINES
-  // );
+    },
+    CACHE_DURATIONS.COUNTS
+  );
 }
 
 export const getFineItemsByFineId = async (fineId: string) => {
@@ -249,30 +249,36 @@ export const fetchFinesPaginated = async (
  * Gets the total count of fine documents for an organization with optional search.
  */
 export const getFinesCount = async (orgId: string, statusFilter: string = "all", searchTerm: string = "") => {
-  let constraints: any[] = [
-    where("orgId", "==", orgId),
-    where("metadata.isArchived", "==", false),
-    where("accumulatedAmount", ">", 0),
-  ];
+  return cacheService.getOrFetch(
+    CACHE_KEYS.clearanceCount(orgId, statusFilter, searchTerm).replace('clearance:count', 'fines:count'),
+    async () => {
+      const constraints: any[] = [
+        where("orgId", "==", orgId),
+        where("metadata.isArchived", "==", false),
+        where("accumulatedAmount", ">", 0),
+      ];
 
-  if (statusFilter !== "all") {
-    constraints.push(where("status", "==", statusFilter));
-  }
+      if (statusFilter !== "all") {
+        constraints.push(where("status", "==", statusFilter));
+      }
 
-  const isIdSearch = /\d/.test(searchTerm);
-  const normalizedSearch = isIdSearch 
-    ? searchTerm.trim() 
-    : searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+      const isIdSearch = /\d/.test(searchTerm);
+      const normalizedSearch = isIdSearch 
+        ? searchTerm.trim() 
+        : searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
 
-  if (normalizedSearch) {
-    const searchField = isIdSearch ? "studentId" : "userName";
-    constraints.push(where(searchField, ">=", normalizedSearch));
-    constraints.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
-  }
+      if (normalizedSearch) {
+        const searchField = isIdSearch ? "studentId" : "userName";
+        constraints.push(where(searchField, ">=", normalizedSearch));
+        constraints.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
+      }
 
-  const q = query(finesCollection, ...constraints);
-  const snapshot = await getCountFromServer(q);
-  return snapshot.data().count;
+      const q = query(finesCollection, ...constraints);
+      const snapshot = await getCountFromServer(q);
+      return snapshot.data().count;
+    },
+    CACHE_DURATIONS.COUNTS
+  );
 };
 
 export const subscribeFines = (
