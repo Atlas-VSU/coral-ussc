@@ -1,15 +1,15 @@
 "use client"
 
 import { Eye } from "lucide-react"
-import type { StudentUnpaidRecord } from "../types"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { TableSkeleton } from "@/components/organization/Skeletons"
+import { ClearanceStatus } from "../../clearance/types"
 
 interface UnpaidTableViewProps {
   totalCount: number
-  paginatedUnpaid: StudentUnpaidRecord[]
-  onOpenDetail: (r: StudentUnpaidRecord) => void
+  paginatedUnpaid: ClearanceStatus[]
+  onOpenDetail: (r: ClearanceStatus) => void
   isLoading?: boolean
 }
 
@@ -40,16 +40,23 @@ export function UnpaidTableView({ totalCount, paginatedUnpaid, onOpenDetail, isL
             </TableRow>
           ) : (
             paginatedUnpaid.map(record => {
-              const totalDue = record.dues.reduce((s, d) => s + d.balance, 0)
+                      let totalDue = 0
+                let totalDuesNumber = 0
+                for (const [key, value] of Object.entries(record.blockingItems)) {
+                  if (value.status === "unpaid") {
+                    totalDue += value.balance;
+                    totalDuesNumber += 1;
+                  }
+                }
               return (
-                <TableRow key={record.student.studentId} className="border-border">
+                <TableRow key={record.studentId} className="border-border">
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium text-foreground">{record.student.firstName+ " "+ record.student.lastName}</span>
-                      <span className="text-xs text-muted-foreground">{record.student.studentId}</span>
+                      <span className="text-sm font-medium text-foreground">{record.userName}</span>
+                      <span className="text-xs text-muted-foreground">{record.studentId}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-center text-sm">{record.dues.length}</TableCell>
+                  <TableCell className="text-center text-sm">{totalDuesNumber}</TableCell>
                   <TableCell className="text-right text-sm font-medium">₱{totalDue.toLocaleString()}</TableCell>
                   <TableCell className="text-right">
                     <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => onOpenDetail(record)}>

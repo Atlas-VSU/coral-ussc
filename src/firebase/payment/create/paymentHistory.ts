@@ -14,9 +14,9 @@ import { PaymentStatus } from "@/constants/status";
 import { PaymentMethods, PaymentType } from "@/constants/types";
 import { recalculateClearanceStatus } from "@/firebase/clearance";
 import { recalculateFees } from "@/firebase/fees/update/recalculate";
-import { UnpaidDue } from "@/features/organization/payments/types";
 import { getFineItemsByFineId, getAllFines, getAllUnpaidFinesforOrg } from "@/firebase/fines/read/fines";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
+import { BlockingItem } from "@/features/organization/clearance/types";
 
 export const addOnlineFinesPayment = async (fines: StudentFines, type:string, method: PaymentMethod, payRef?: string, senderNumber?:string) => {
     try {
@@ -165,7 +165,7 @@ export const createFinesPaymentHistory = async (
     referenceId: string,
     proofId: string, 
     userId: string,
-    paid?: UnpaidDue) => {
+    paid?: BlockingItem) => {
     try {
         const current = await getCurrentUserData() as unknown as Member;
         const subColRef = collection(db, paid?.type? paid.type : proof.type! , referenceId , "paymentHistory");
@@ -196,8 +196,8 @@ export const createFinesPaymentHistory = async (
         if ((paid?.type? paid.type : proof.type!) === "fines") {
             try {
                 await recalculateFines(referenceId, null, paid?.balance);
-                await markFineItemsAsPaid(referenceId, paid?.id);
-                reference = paid?.id!;
+                await markFineItemsAsPaid(referenceId, paid?.referenceId);
+                reference = paid?.referenceId!;
             } catch (error) {
                 console.error("Error updating fines after payment:", error);
                 throw new Error("Payment recorded, but failed to update fines. Please check the fines record.");

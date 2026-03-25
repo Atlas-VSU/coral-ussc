@@ -1,5 +1,4 @@
 import { ITEMS_PER_PAGE } from "../config"
-import type { StudentUnpaidRecord } from "../types"
 import { ViewMode, ViewToggle } from "@/components/organization/ViewToggle"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { SearchInput } from "@/components/organization/SearchInput"
@@ -8,9 +7,10 @@ import { UnpaidCardView } from "./UnpaidCardView"
 import { UnpaidTableView } from "./UnpaidTableView"
 import { Button } from "@/components/ui/button"
 import { RefreshCcw } from "lucide-react"
+import { ClearanceStatus } from "../../clearance/types"
 
 interface UnpaidTabProps {
-  paginatedUnpaid: StudentUnpaidRecord[]
+  paginatedUnpaid: ClearanceStatus[]
   unpaidTotalPages: number
   unpaidPage: number
   unpaidSearch: string
@@ -18,7 +18,7 @@ interface UnpaidTabProps {
   onPageChange: (page: number) => void
   onSearchChange: (value: string) => void
   onViewChange: (mode: ViewMode) => void
-  onOpenDetail: (record: StudentUnpaidRecord) => void
+  onOpenDetail: (record: ClearanceStatus) => void
   isLoading: boolean
   refetchPayments: () => void
   isLoadingUnpaid: boolean
