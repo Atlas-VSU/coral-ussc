@@ -1,12 +1,13 @@
 "use client"
 
-import { Download, RefreshCcw } from "lucide-react"
+import { Download, RefreshCcw, Search } from "lucide-react"
 import { SearchInput } from "@/components/organization/SearchInput"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ViewToggle } from "@/components/organization/ViewToggle"
 import type { ViewMode } from "@/components/organization/ViewToggle"
 import { CardTitle } from "@/components/ui/card"
+import { useEffect, useState } from "react"
 
 interface ClearanceFiltersProps {
   search: string
@@ -35,6 +36,16 @@ export function ClearanceFilters({
   currentPage,
   totalPages,
 }: ClearanceFiltersProps) {
+
+  const [localSearch, setLocalSearch] = useState(search);
+  useEffect(() => {
+    setLocalSearch(search)
+  }, [search])
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSearchChange(localSearch)
+   }
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
@@ -43,12 +54,18 @@ export function ClearanceFilters({
         </CardTitle>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <SearchInput
-          placeholder="Search Name or Student ID..."
-          value={search}
-          onChange={onSearchChange}
-          className="w-full sm:w-56"
-        />
+        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
+              <SearchInput
+                placeholder="Search by name or ID..."
+                value={localSearch}
+                onChange={v => setLocalSearch(v)} // Only update local state on keystroke
+                className="w-full sm:w-64"
+              />
+              <Button type="submit" variant="secondary" size="icon" disabled={isLoading}>
+                <Search className="h-4 w-4" />
+                <span className="sr-only">Search</span>
+              </Button>
+            </form>
         <Select value={filterStatus} onValueChange={onFilterChange}>
           <SelectTrigger className="w-full sm:w-36">
             <SelectValue placeholder="Status" />
