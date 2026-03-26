@@ -2,23 +2,22 @@
 "use client"
 import { useState, useMemo, useEffect, useCallback } from "react"
 import { toast } from "sonner"
-import type { StudentUnpaidRecord } from "../types"
 import { ITEMS_PER_PAGE } from "../config"
 import { usePayments } from "./usePayments"
 import { ProofOfPayment } from "../../fines/types"
 import { PaymentStatus } from "@/constants/status"
 import { ViewMode } from "@/components/organization/ViewToggle"
-import { getCurrentUserData, getProgramById } from "@/firebase"
+import { getCurrentUserData, getProgramById, getUserById } from "@/firebase"
 import { PaymentFormData } from "@/lib/validators"
 import { createBulkOfflineProofOfPayment } from "@/firebase/payment/create/proofOfPayment"
 import { generateReceiptId } from "../utils"
-import { Member } from "../../members/types"
+import { Member, Program } from "../../members/types"
 import { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
 import { PaymentMethods, PaymentType } from "@/constants/types"
 import { usePaymentApproval } from "./usePaymentApproval"
 import { useDebounce } from "@/hooks/useDebounce"
-import { getProofOfPaymentsCount } from "@/firebase/payment/read/proofOfPayment"
 import { Timestamp } from "firebase/firestore"
+import { BlockingItem, ClearanceStatus } from "../../clearance/types"
 
 export function usePaymentsPage() {
   const {
@@ -62,7 +61,7 @@ export function usePaymentsPage() {
   const [unpaidViewMode, setUnpaidViewMode] = useState<ViewMode>("table")
 
   // ── Unpaid detail modal ───────────────────────────────────────────────────
-  const [selectedUnpaid, setSelectedUnpaid] = useState<StudentUnpaidRecord | null>(null)
+  const [selectedUnpaid, setSelectedUnpaid] = useState<ClearanceStatus | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [checkedDues, setCheckedDues] = useState<Set<string>>(new Set())
   const [paymentDate, setPaymentDate] = useState(Timestamp.now())
@@ -72,7 +71,8 @@ export function usePaymentsPage() {
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
 
   // ── Student program ───────────────────────────────────────────────────────
-  const [studentProgram, setStudentProgram] = useState<Awaited<ReturnType<typeof getProgramById>> | null>(null)
+  const [studentProgram, setStudentProgram] = useState<Program|null>(null)
+  const [student, setStudent] = useState<Member|null>(null)
 
   const { _approvePayment, _rejectPayment } = usePaymentApproval()
 
@@ -99,17 +99,17 @@ export function usePaymentsPage() {
 
 
   // Fetch student program when selected unpaid changes
-  useEffect(() => {
-    if (!selectedUnpaid) return
-    let cancelled = false
-    getProgramById(selectedUnpaid.student.programId)
-      .then(program => { if (!cancelled) setStudentProgram(program ?? null) })
-      .catch(err => {
-        console.error("Error fetching student program:", err)
-        toast.error("Could not fetch student program information.")
-      })
-    return () => { cancelled = true }
-  }, [selectedUnpaid])
+  // useEffect(() => {
+  //   if (!selectedUnpaid) return
+  //   let cancelled = false
+  //   getProgramById(selectedUnpaid)
+  //     .then(program => { if (!cancelled) setStudentProgram(program ?? null) })
+  //     .catch(err => {
+  //       console.error("Error fetching student program:", err)
+  //       toast.error("Could not fetch student program information.")
+  //     })
+  //   return () => { cancelled = true }
+  // }, [selectedUnpaid])
 
   const totalPages = Math.ceil(totalSubmissionCount / ITEMS_PER_PAGE)
   const paginated = payments;
@@ -121,17 +121,33 @@ export function usePaymentsPage() {
 
   // ── Live unpaid record (keeps modal in sync after mutations) ──────────────
   const liveSelectedUnpaid = useMemo(
-    () => unpaidPayments.find(r => r.student.studentId === selectedUnpaid?.student.studentId) ?? null,
+    () => unpaidPayments.find(r => r.studentId === selectedUnpaid?.studentId) ?? null,
     [unpaidPayments, selectedUnpaid],
   )
 
   const selectedDues = useMemo(
-    () => liveSelectedUnpaid?.dues.filter(d => checkedDues.has(d.id)) ?? [],
+    () => {
+      if (!liveSelectedUnpaid) return []
+      const dues = [];
+      for(const [key, value] of Object.entries(liveSelectedUnpaid!.blockingItems!)) {
+        if(checkedDues.has(key)) {
+          dues.push(value);
+        }
+      }
+      return dues;
+    },
     [liveSelectedUnpaid, checkedDues]
   )
 
   const selectedTotal = useMemo(
-    () => selectedDues.reduce((s, d) => s + d.balance, 0),
+    () => {
+      let total = 0;
+      for (const due of selectedDues)
+      {
+        total += due.balance;
+      }
+      return total;
+    },
     [selectedDues]
   )
 
@@ -189,7 +205,11 @@ export function usePaymentsPage() {
   }, [])
 
   // ── Handlers: unpaid ──────────────────────────────────────────────────────
-  const openUnpaidDetail = useCallback((record: StudentUnpaidRecord) => {
+  const openUnpaidDetail = useCallback(async (record: ClearanceStatus) => {
+    const user = await getUserById(record.userId!);
+    const program = await getProgramById(user?.programId ?? "");
+    setStudent(user as Member);
+    setStudentProgram(program ?? null);
     setSelectedUnpaid(record)
     setCheckedDues(new Set())
     setPaymentDate(Timestamp.now())
@@ -206,7 +226,10 @@ export function usePaymentsPage() {
 
   const toggleAllDues = useCallback(() => {
     if (!liveSelectedUnpaid) return
-    const allIds = liveSelectedUnpaid.dues.map(d => d.id)
+    let allIds: string[] = [];
+     for(const [key, value] of Object.entries(liveSelectedUnpaid!.blockingItems!)) {
+      allIds.push(value.referenceId);
+      }
     const allChecked = allIds.every(id => checkedDues.has(id))
     setCheckedDues(allChecked ? new Set() : new Set(allIds))
   }, [liveSelectedUnpaid, checkedDues])
@@ -216,7 +239,7 @@ export function usePaymentsPage() {
     setLoading(true)
 
     const receiptId = generateReceiptId()
-    const studentName = `${liveSelectedUnpaid.student.firstName} ${liveSelectedUnpaid.student.lastName}`
+    const studentName = liveSelectedUnpaid.userName;
     let isFine = false, isFee = false, totalAmount = 0
 
     for (const due of selectedDues) {
@@ -227,35 +250,40 @@ export function usePaymentsPage() {
 
     const lineItems: PaymentFormData = {
       userName: studentName,
-      studentId: liveSelectedUnpaid.student.studentId,
+      studentId: liveSelectedUnpaid.studentId,
       amount: totalAmount,
       paymentMethod: PaymentMethods.CASH,
       referenceNumber: "",
       notes: `Manual payment for ${isFine && isFee ? "fees and fines" : isFine ? "fines" : "fees"}`,
       type: isFine && isFee ? PaymentType.BULK : isFine ? PaymentType.FINES : PaymentType.FEES,
-      referenceId: selectedDues.length > 1 ? "bulk_transaction" : selectedDues[0].parentId,
+      referenceId: selectedDues.length > 1 && isFine &&isFee ? "bulk_transaction" : isFine? selectedDues[0].parentFineId: selectedDues[0].referenceId,
     }
 
     try {
-      await createBulkOfflineProofOfPayment(lineItems, receiptId, selectedDues, liveSelectedUnpaid.student.id!, paymentDate)
+      await createBulkOfflineProofOfPayment(lineItems, receiptId, selectedDues, liveSelectedUnpaid.userId!, paymentDate)
     } catch (error) {
       toast.error("Failed to log payment. Please try again.")
       setLoading(false)
       return
     }
 
-    refetchPayments()
-    refetchUnpaids()
+    // refetchPayments()
+    // refetchUnpaids()
 
     // Optimistic update — remove settled dues from local state
-    const settledIds = new Set(selectedDues.map(d => d.id))
+    const settledIds = new Set(selectedDues.map(d => d.referenceId))
     setUnpaidPayments(prev => prev
       .map(r => {
-        if (r.student.studentId !== liveSelectedUnpaid.student.studentId) return r
-        const remaining = r.dues.filter(d => !settledIds.has(d.id))
+        if (r.studentId !== liveSelectedUnpaid.studentId) return r
+        const remaining:BlockingItem[] = [];
+        for (const [key, value] of Object.entries(r.blockingItems!)) {
+          if (!settledIds.has(value.referenceId)) {
+            remaining.push(value);
+          }
+         }
         return remaining.length > 0 ? { ...r, dues: remaining } : null
       })
-      .filter(Boolean) as StudentUnpaidRecord[]
+      .filter(Boolean) as ClearanceStatus[]
     )
     setTotalUnpaidCount(prev => prev -1 )
 
@@ -263,8 +291,8 @@ export function usePaymentsPage() {
     setReceiptData({
       receiptId,
       studentName,
-      studentId: liveSelectedUnpaid.student.studentId,
-      items: selectedDues.map(d => ({ name: d.name, type: d.type as "fees" | "fines", amount: d.balance })),
+      studentId: liveSelectedUnpaid.studentId,
+      items: selectedDues.map(d => ({ name: d.title, type: d.type as "fees" | "fines", amount: d.balance })),
       total: selectedTotal,
       date: paymentDate.toDate().toLocaleString(),
       verifiedByName: `${currentUser.firstName} ${currentUser.lastName}`,
@@ -314,7 +342,7 @@ export function usePaymentsPage() {
     checkedDues, selectedDues, selectedTotal,
     paymentDate, setPaymentDate,
     toggleDue, toggleAllDues, openUnpaidDetail, handleLogPayment,
-    studentProgram,
+    student,studentProgram,
     receiptOpen, setReceiptOpen, receiptData, setReceiptData,
     stats,
     refetchPayments,refetchUnpaids, refreshAll, totalUnpaidCount, totalSubmissionCount,

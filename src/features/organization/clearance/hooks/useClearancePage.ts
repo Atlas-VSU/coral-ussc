@@ -34,7 +34,7 @@ export function useClearancePage(orgId: string | undefined) {
   })
   const pageSize = 10
 
-  const { clearances, loading, totalCount, setClearances, hardRefresh } = useClearances(
+  const { clearances, loading, totalCount, setClearances, hardRefresh, hasNextPage } = useClearances(
     orgId,
     pageSize,
     search,
@@ -83,6 +83,9 @@ export function useClearancePage(orgId: string | undefined) {
       getClearanceStats(orgId, "pending"),
     ])
     setStats({ cleared, not_cleared, pending })
+
+    const stats = {cleared, not_cleared, pending}
+    cacheService.set(`clearance_stats_${orgId}`, stats, 5 * 60 * 1000);
   }
 
   useEffect(() => {
@@ -280,6 +283,7 @@ export function useClearancePage(orgId: string | undefined) {
     totalPages,
     reviewData,
     stats,
+    hasNextPage,
     
     // UI State
     search,

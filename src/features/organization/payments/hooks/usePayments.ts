@@ -1,81 +1,38 @@
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ProofOfPayment, StudentFines } from "../../fines/types";
-import { fetchClearanceDocumentsPaginated, getCountOfUnclearedDocuments, getCurrentUserData, getUserById } from "@/firebase";
+import { ProofOfPayment } from "../../fines/types";
+import { fetchClearanceDocumentsPaginated, getCountOfUnclearedDocuments, getCurrentUserData } from "@/firebase";
 import { getProofOfPaymentsCount, getProofOfPaymentsPaginated } from "@/firebase/payment/read/proofOfPayment";
 import { toast } from "sonner";
-import { Fee } from "../../fees/types";
-import { StudentFineItem, StudentUnpaidRecord, UnpaidDue } from "../types";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { Member } from "../../members/types";
 import { ClearanceStatus } from "../../clearance/types";
 
-interface ClearanceWithStudent {
-  cl: ClearanceStatus
-  student: Member
-}
-
-// ── Pure converter — outside hook, no deps ────────────────────────────────
-const toUnpaidRecord = ({ cl, student }: ClearanceWithStudent): StudentUnpaidRecord | null => {
-  const dues: UnpaidDue[] = Object.entries(cl.blockingItems || {})
-    .filter(([_, item]) => item.status === "unpaid" && !item.pendingReview)
-    .map(([_, item]) => {
-      const isFine = item.type === "fines"
-      return {
-        id: item.referenceId,
-        type: isFine ? "fines" as const : "fees" as const,
-        name: item.title,
-        item: isFine
-          ? {
-              refId: item.referenceId,
-              userId: cl.userId,
-              fine: {} as StudentFines,
-              parentFineId: item.parentFineId!,
-              title: item.title,
-              amount: item.balance,
-            } as StudentFineItem
-          : {
-              id: item.referenceId,
-              userId: cl.userId,
-              title: item.title,
-              amount: item.balance,
-              paidAmount: 0,
-            } as unknown as Fee,
-        balance: item.balance,
-        parentId: item.parentFineId ?? item.referenceId,
-      }
-    })
-
-  if (dues.length === 0) return null
-  return { student, dues }
-}
-
-// ── Shared helper — fetch users in parallel then build records ────────────
-const buildRecords = async (docs: ClearanceStatus[]): Promise<StudentUnpaidRecord[]> => {
-  const users = await Promise.all(docs.map(d => getUserById(d.userId)))
-  return docs
-    .map((cl, i) => users[i] ? toUnpaidRecord({ cl, student: users[i]! }) : null)
-    .filter(Boolean) as StudentUnpaidRecord[]
-}
-
 export function usePayments() {
   const [payments, setPayments] = useState<ProofOfPayment[]>([])
-  const [unpaidPayments, setUnpaidPayments] = useState<StudentUnpaidRecord[]>([])
+  const [unpaidPayments, setUnpaidPayments] = useState<ClearanceStatus[]>([])
   const [loadingSubmissions, setLoadingSubmissions] = useState(true)
   const [loadingUnpaid, setLoadingUnpaid] = useState(true)
+  
   const [totalUnpaidCount, setTotalUnpaidCount] = useState(0)
   const [totalSubmissionCount, setTotalSubmissionCount] = useState(0)
-  // ── Refs — avoid stale closures ───────────────────────────────────────────
-  const [lastVisibleDocs, setLastVisibleDocs] = useState<any[]>([]);
+  
+  // ── Refs — Pure Next/Prev Cursors ─────────────────────────────────────────
+  const submissionsCursorsRef = useRef<Record<number, any>>({});
+  const unpaidCursorsRef = useRef<Record<number, any>>({});
   const currentOrgIdRef = useRef<string | null>(null)
+  
   const [unpaidPage, setUnpaidPage] = useState(1)
   const [submissionPage, setSubmissionPage] = useState(1)
-  // Track current search/filter so loadMore knows what query it's continuing
+  
   const [search, setSearch] = useState("")
   const [searchCount, setSearchCount] = useState(0)
   const [unpaidSearch, setUnpaidSearch] = useState("")
   const [unpaidSearchCount, setUnpaidSearchCount] = useState(0)
   const [filterStatus, setFilterStatus] = useState<string>("all")
+
+  // Refresh locks to prevent spam
+  const [isRefreshingSubmissions, setIsRefreshingSubmissions] = useState(false)
+  const [isRefreshingUnpaid, setIsRefreshingUnpaid] = useState(false)
 
   const [stats, setStats] = useState({
     pending: 0,
@@ -84,183 +41,176 @@ export function usePayments() {
     unpaid: 0,
   })
 
-  const [submissionsRefreshKey, setSubmissionsRefreshKey] = useState(0) 
-  const [unpaidRefreshKey, setUnpaidRefreshKey] = useState(0) 
-
-  const isLoading = loadingSubmissions
-  const isLoadingUnpaid = loadingUnpaid
-
-  // // ── Fetch proof of payments ───────────────────────────────────────────────
-    useEffect(() => { 
-        let isMounted = true;
-        const itemsPerPage = 10; 
-
-      const fetchPayments = async (
-      ) => {
-        setLoadingSubmissions(true);
-
-        try {
-          const currentUser = await getCurrentUserData() as unknown as Member
-          if (!currentUser) return
-          currentOrgIdRef.current = currentUser.id!
-
-          const isJump = submissionPage > 1 && !lastVisibleDocs[submissionPage - 2];
-          const effectivePageSize = isJump ? (submissionPage * itemsPerPage) : itemsPerPage;
-          const effectiveCursor = isJump ? null : (submissionPage > 1 ? lastVisibleDocs[submissionPage - 2] : null);
-          const { docs, count, allSnapshots } = await getProofOfPaymentsPaginated(
-            currentUser.id!,
-            effectivePageSize,
-            effectiveCursor,
-            search,
-            filterStatus, 
-            search? true:false
-          )
-          
-          if (isMounted) {
-          setTotalSubmissionCount(search ? count : await getProofOfPaymentsCount(currentUser.id!, filterStatus));
-          const records = isJump?docs.slice((submissionPage - 1) * itemsPerPage) : docs
-          setPayments(records)
-          setSearchCount(count)
-
-            if (allSnapshots && allSnapshots.length > 0) {
-              setLastVisibleDocs(prev => {
-                const next = [...prev];
-                allSnapshots.forEach((snap, index) => {
-                  const absoluteIndex = isJump ? index : ((submissionPage - 1) * itemsPerPage + index);
-                  if ((absoluteIndex + 1) % itemsPerPage === 0) {
-                    const pageNum = (absoluteIndex + 1) / itemsPerPage;
-                    next[pageNum - 1] = snap;
-                  }
-                });
-                const finalAbsoluteIndex = isJump ? (allSnapshots.length - 1) : ((unpaidPage - 1) * itemsPerPage + allSnapshots.length - 1);
-                const finalPageNum = Math.ceil((finalAbsoluteIndex + 1) / itemsPerPage);
-                next[finalPageNum - 1] = allSnapshots[allSnapshots.length - 1];
-                return next;
-              });
-            }
-          } 
-          setLoadingSubmissions(false)
-        } catch (error) {
-          toast.error("Could not load submitted payments.")
-          console.error(error)
-        } 
-        }
-
-        fetchPayments();
-
-        return () => { 
-          isMounted = false;
-        };
-      }, [submissionPage, search, filterStatus, submissionsRefreshKey])
-
-  
-  // ── Core fetch — used for initial load, search, and refresh ──────────────
-  useEffect(() => { 
-    let isMounted = true;
-    const itemsPerPage = 10; 
-
-  const fetchUnpaid = async (
-  ) => {
-    setLoadingUnpaid(true);
-    try {
-      const currentUser = await getCurrentUserData() as unknown as Member
-      if (!currentUser) return
-      currentOrgIdRef.current = currentUser.id!
-
-      const isJump = unpaidPage > 1 && !lastVisibleDocs[unpaidPage - 2];
-      const effectivePageSize = isJump ? (unpaidPage * itemsPerPage) : itemsPerPage;
-      const effectiveCursor = isJump ? null : (unpaidPage > 1 ? lastVisibleDocs[unpaidPage - 2] : null);
-      
-      const { docs, count, allSnapshots } = await fetchClearanceDocumentsPaginated(
-        currentUser.id!,
-        effectivePageSize,
-        effectiveCursor,
-        unpaidSearch,
-        "not_cleared",
-        unpaidSearch ? true : false,
-        true
-      )
-      
-      if (isMounted) {
-      setTotalUnpaidCount(unpaidSearch? count : await getCountOfUnclearedDocuments(currentUser.id!));
-      
-      const records = await buildRecords(isJump?docs.slice((unpaidPage - 1) * itemsPerPage) : docs)
-      setUnpaidPayments(records)
-      setUnpaidSearchCount(count)
-
-        if (allSnapshots && allSnapshots.length > 0) {
-          setLastVisibleDocs(prev => {
-            const next = [...prev];
-            allSnapshots.forEach((snap, index) => {
-              const absoluteIndex = isJump ? index : ((unpaidPage - 1) * itemsPerPage + index);
-              if ((absoluteIndex + 1) % itemsPerPage === 0) {
-                const pageNum = (absoluteIndex + 1) / itemsPerPage;
-                next[pageNum - 1] = snap;
-              }
-            });
-            const finalAbsoluteIndex = isJump ? (allSnapshots.length - 1) : ((unpaidPage - 1) * itemsPerPage + allSnapshots.length - 1);
-            const finalPageNum = Math.ceil((finalAbsoluteIndex + 1) / itemsPerPage);
-            next[finalPageNum - 1] = allSnapshots[allSnapshots.length - 1];
-            return next;
-          });
-        }
-       } 
-      setLoadingUnpaid(false)
-    } catch (error) {
-      toast.error("Could not load unpaid payments.")
-      console.error(error)
-    } 
+  // ── Stats (Isolated and Cached) ───────────────────────────────────────────
+  const fetchStats = useCallback(async (orgId: string) => {
+    const cacheKey = `payments:stats:${orgId}`;
+    const cached = cacheService.get(cacheKey);
+    
+    if (cached !== null && cached !== undefined) {
+       // Extract data to prevent the React Object render crash
+       const statsData = typeof cached === 'object' && 'data' in (cached as any) 
+         ? (cached as any).data 
+         : cached;
+       setStats(prev => ({ ...prev, ...statsData }));
+       return;
     }
 
-    fetchUnpaid();
+    try {
+      const [pending, approved, declined] = await Promise.all([
+        getProofOfPaymentsCount(orgId, "pending"),
+        getProofOfPaymentsCount(orgId, "verified"),
+        getProofOfPaymentsCount(orgId, "rejected")
+      ]);
+      
+      const newStats = { pending, approved, declined };
+      cacheService.set(cacheKey, newStats, 5 * 60 * 1000); // 5 minute cache
+      setStats(prev => ({ ...prev, ...newStats }));
+    } catch (err) {
+      console.error("Failed to load stats:", err);
+    }
+  }, []);
 
-    return () => { 
-      isMounted = false;
-    };
-  }, [unpaidPage, unpaidSearch, unpaidRefreshKey])
+  // ── Fetch proof of payments ───────────────────────────────────────────────
+  const fetchPayments = useCallback(async () => {
+    setLoadingSubmissions(true);
+    const itemsPerPage = 10;
+
+    try {
+      const currentUser = await getCurrentUserData() as unknown as Member;
+      if (!currentUser?.id) return;
+      
+      currentOrgIdRef.current = currentUser.id;
+      fetchStats(currentUser.id); // Trigger stats fetch safely
+
+      // Retrieve the cursor for the current page
+      const cursor = submissionPage > 1 
+        ? (submissionsCursorsRef.current[submissionPage - 2] ?? null) 
+        : null;
+
+      const { docs, count, lastVisible } = await getProofOfPaymentsPaginated(
+        currentUser.id,
+        itemsPerPage,
+        cursor,
+        search,
+        filterStatus, 
+        !!search
+      );
+      
+      setTotalSubmissionCount(search ? count : await getProofOfPaymentsCount(currentUser.id, filterStatus));
+      setPayments(docs);
+      setSearchCount(count);
+
+      // Persist cursor
+      if (lastVisible) {
+        submissionsCursorsRef.current[submissionPage - 1] = lastVisible;
+      }
+      
+    } catch (error) {
+      toast.error("Could not load submitted payments.");
+      console.error(error);
+    } finally {
+      setLoadingSubmissions(false);
+    }
+  }, [submissionPage, search, filterStatus, fetchStats]);
+
+  useEffect(() => { 
+    fetchPayments();
+  }, [fetchPayments]);
+
+  // ── Fetch Unpaid Records ──────────────────────────────────────────────────
+  const fetchUnpaid = useCallback(async () => {
+    setLoadingUnpaid(true);
+    const itemsPerPage = 10;
+
+    try {
+      const currentUser = await getCurrentUserData() as unknown as Member;
+      if (!currentUser?.id) return;
+      
+      currentOrgIdRef.current = currentUser.id;
+
+      // Retrieve cursor for unpaid
+      const cursor = unpaidPage > 1 
+        ? (unpaidCursorsRef.current[unpaidPage - 2] ?? null) 
+        : null;
+      
+      // Note: Assuming fetchClearanceDocumentsPaginated returns 'lastVisible' 
+      // instead of or alongside 'allSnapshots' now
+      const { docs, count, lastVisible } = await fetchClearanceDocumentsPaginated(
+        currentUser.id,
+        itemsPerPage,
+        cursor,
+        unpaidSearch,
+        "not_cleared",
+        !!unpaidSearch,
+        true
+      );
+      
+      const actualUnpaidCount = unpaidSearch ? count : await getCountOfUnclearedDocuments(currentUser.id);
+      setTotalUnpaidCount(actualUnpaidCount);
+      
+      // Keep stats in sync with total unpaid
+      setStats(prev => ({ ...prev, unpaid: actualUnpaidCount }));
+      
+      setUnpaidPayments(docs);
+      setUnpaidSearchCount(count);
+
+      // Persist cursor
+      if (lastVisible) {
+        unpaidCursorsRef.current[unpaidPage - 1] = lastVisible;
+      }
+      
+    } catch (error) {
+      toast.error("Could not load unpaid payments.");
+      console.error(error);
+    } finally {
+      setLoadingUnpaid(false);
+    }
+  }, [unpaidPage, unpaidSearch]);
+
+  useEffect(() => { 
+    fetchUnpaid();
+  }, [fetchUnpaid]);
 
 
   // ── Hard refresh ──────────────────────────────────────────────────────────
   const hardRefreshSubmissions = useCallback(async () => {
-    const currentUser = await getCurrentUserData()
-    if (currentUser) {
-      cacheService.invalidate(CACHE_KEYS.proofOfPayments(currentUser.uid))
-      cacheService.invalidate(CACHE_KEYS.finesUnpaid(currentUser.uid))
-      cacheService.invalidate(CACHE_KEYS.feesUnpaid(currentUser.uid))
-      cacheService.invalidate(CACHE_KEYS.clearanceAll(currentUser.uid))
+    if (isRefreshingSubmissions) return;
+    setIsRefreshingSubmissions(true);
+
+    try {
+      const currentUser = await getCurrentUserData();
+      if (currentUser) {
+        cacheService.invalidate(CACHE_KEYS.proofOfPayments(currentUser.uid));
+        cacheService.invalidate(`payments:stats:${currentUser.uid}`);
+      }
+      
+      // Wipe ONLY the current page's cursor to force a fresh fetch of this view
+      submissionsCursorsRef.current[submissionPage - 1] = undefined;
+      await fetchPayments();
+    } finally {
+      setIsRefreshingSubmissions(false);
     }
-    setLastVisibleDocs([])
-    setSubmissionPage(1)
-    setSubmissionsRefreshKey(prev => prev + 1)
-    
-  }, [])
+  }, [isRefreshingSubmissions, submissionPage, fetchPayments]);
 
-    const hardRefreshUnpaid = useCallback(async () => {
-    const currentUser = await getCurrentUserData()
-    if (currentUser) {
-      cacheService.invalidate(CACHE_KEYS.proofOfPayments(currentUser.uid))
-      cacheService.invalidate(CACHE_KEYS.finesUnpaid(currentUser.uid))
-      cacheService.invalidate(CACHE_KEYS.feesUnpaid(currentUser.uid))
-      cacheService.invalidate(CACHE_KEYS.clearanceAll(currentUser.uid))
+  const hardRefreshUnpaid = useCallback(async () => {
+    if (isRefreshingUnpaid) return;
+    setIsRefreshingUnpaid(true);
+
+    try {
+      const currentUser = await getCurrentUserData();
+      if (currentUser) {
+        cacheService.invalidate(CACHE_KEYS.finesUnpaid(currentUser.uid));
+        cacheService.invalidate(CACHE_KEYS.feesUnpaid(currentUser.uid));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(currentUser.uid));
+      }
+      
+      unpaidCursorsRef.current[unpaidPage - 1] = undefined;
+      await fetchUnpaid();
+    } finally {
+      setIsRefreshingUnpaid(false);
     }
-      setLastVisibleDocs([])
-      setUnpaidPage(1)
-      setUnpaidRefreshKey(prev => prev + 1)
-    
-  }, [])
+  }, [isRefreshingUnpaid, unpaidPage, fetchUnpaid]);
 
-
-    // ── Stats ─────────────────────────────────────────────────────────────────
-  useEffect(() => { 
-    async function fetchStats() { 
-
-      const pending = await getProofOfPaymentsCount(currentOrgIdRef.current!, "pending")
-      const approved = await getProofOfPaymentsCount(currentOrgIdRef.current!, "verified")
-      const declined = await getProofOfPaymentsCount(currentOrgIdRef.current!, "rejected")
-      setStats({ pending:pending, approved:approved, declined:declined, unpaid: totalUnpaidCount })
-    }
-    fetchStats()
-  }, [totalUnpaidCount])
 
   const pendingPayments  = useMemo(() => payments.filter(p => p.status === "pending"),  [payments])
   const rejectedPayments = useMemo(() => payments.filter(p => p.status === "rejected"), [payments])
@@ -275,8 +225,8 @@ export function usePayments() {
     verifiedPayments,
     refetchPayments: hardRefreshSubmissions,
     refetchUnpaids: hardRefreshUnpaid,
-    isLoading,
-    isLoadingUnpaid,
+    isLoading: loadingSubmissions,
+    isLoadingUnpaid: loadingUnpaid,
     setTotalUnpaidCount,
     totalUnpaidCount,
     unpaidPage,
@@ -294,6 +244,7 @@ export function usePayments() {
     currentOrgIdRef,
     filterStatus,
     setFilterStatus,
-    stats, setStats,
+    stats, 
+    setStats,
   }
 }

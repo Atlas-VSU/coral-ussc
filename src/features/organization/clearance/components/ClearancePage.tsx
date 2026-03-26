@@ -55,7 +55,8 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
     handleRejectPayment,
     openLogPayment,
     handleLogPayment,
-    hardRefresh
+    hardRefresh,
+    hasNextPage
   } = useClearancePage(orgId)
 
   return (
@@ -86,8 +87,11 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
               hardRefresh();
             }}
             isLoading={loading}
+            currentPage={currentPage}
+            totalPages={totalPages}
           />
         </CardHeader>
+        
         <CardContent>
           {viewMode === "card" ? (
             loading && clearances.length === 0 ? (
@@ -120,6 +124,7 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
             totalItems={totalCount}
             itemsPerPage={10}
             onPageChange={setCurrentPage}
+            hasNextPage={hasNextPage}
           />
         </CardContent>
       </Card>

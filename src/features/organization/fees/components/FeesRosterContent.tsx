@@ -68,7 +68,8 @@ export function FeesRosterContent({
   dataView,
   setDataView,
   totalCount,
-  stats
+  stats,
+  hasNextPage,
 }: {
   fee: Fee;
   studentRows: StudentFeeRow[];
@@ -106,6 +107,7 @@ export function FeesRosterContent({
     rejected: number;
     unpaid: number;
   };
+  hasNextPage: boolean;
 }) {
   const router = useRouter();
   const { state, computed, actions } = useFeesRosterUI({
@@ -222,16 +224,9 @@ export function FeesRosterContent({
                   Track and manage payments for this fee
                 </CardDescription>
               </div>
-              <Tabs
-                value={dataView}
-                onValueChange={(v) => handleDataView(v as any)}
-              >
-                <TabsList>
-                  <TabsTrigger value="submissions">Submissions</TabsTrigger>
-                  <TabsTrigger value="all-students">All Students</TabsTrigger>
-                </TabsList>
-              </Tabs>
+              
             </div>
+            
             <div className="flex flex-wrap items-center gap-2">
               <SearchFilterBar
                 search={search}
@@ -248,9 +243,24 @@ export function FeesRosterContent({
                   setViewMode(viewMode === "card" ? "table" : "card")
                 }
               />
+              <p className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </p>
             </div>
+            
           </div>
         </CardHeader>
+        <div className="flex items-center gap-2 justify-between px-6">
+              <Tabs
+                value={dataView}
+                onValueChange={(v) => handleDataView(v as any)}
+              >
+                <TabsList>
+                  <TabsTrigger value="submissions">Submissions</TabsTrigger>
+                  <TabsTrigger value="all-students">All Students</TabsTrigger>
+                </TabsList>
+              </Tabs>
+          </div>
         <CardContent>
           {isLoading ? (
             viewMode === "table" ? (
@@ -280,6 +290,7 @@ export function FeesRosterContent({
             totalItems={totalCount}
             itemsPerPage={ITEMS_PER_PAGE}
             onPageChange={handlePageChange}
+            hasNextPage={hasNextPage}
           />
         </CardContent>
       </Card>

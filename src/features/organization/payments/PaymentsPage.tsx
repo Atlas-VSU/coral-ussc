@@ -23,7 +23,7 @@ export default function PaymentsPage() {
     viewMode, setViewMode,
     totalSubmissionCount, totalPages, paginated,
     handleApprove, handleDecline, openReview, isLoading, loading  , isLoadingUnpaid,
-    refetchPayments, submissionPage, setSubmissionPage,
+    refetchPayments,refetchUnpaids, submissionPage, setSubmissionPage,
     // unpaid
     unpaidSearch, setUnpaidSearch,
     unpaidPage, setUnpaidPage,
@@ -36,7 +36,7 @@ export default function PaymentsPage() {
     checkedDues, selectedDues, selectedTotal,
     paymentDate, setPaymentDate,
     toggleDue, toggleAllDues, openUnpaidDetail, handleLogPayment,
-    studentProgram,
+    student, studentProgram,
     // receipt
     receiptOpen, setReceiptOpen, receiptData, setReceiptData,
     stats, totalUnpaidCount
@@ -96,7 +96,7 @@ export default function PaymentsPage() {
             onViewChange={setViewMode}
             onOpenReview={openReview}
             isLoading={isLoading}
-            refetchPayments={refreshAll}
+            refetchPayments={refetchPayments}
             isLoadingUnpaid={isLoadingUnpaid}
             totalCount={totalSubmissionCount}
           />
@@ -112,7 +112,7 @@ export default function PaymentsPage() {
             onViewChange={setUnpaidViewMode}
             onOpenDetail={openUnpaidDetail}
             isLoading={isLoadingUnpaid}
-            refetchPayments={refreshAll}
+            refetchPayments={refetchUnpaids}
             isLoadingUnpaid={isLoadingUnpaid}
             totalCount={totalUnpaidCount}
           />
@@ -159,7 +159,8 @@ export default function PaymentsPage() {
         onToggleDue={toggleDue}
         onToggleAll={toggleAllDues}
         onLogPayment={handleLogPayment}
-        studentProgram={studentProgram}
+        student={student}
+        studentProgram = {studentProgram}
         isLoading={isLoading}
         isSubmitting={loading}
       />
