@@ -252,7 +252,7 @@ export function FeesRosterContent({
                 }
               />
               <p className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
+                Page {currentPage} of {totalPages == 0 ? 1 : totalPages}
               </p>
             </div>
             

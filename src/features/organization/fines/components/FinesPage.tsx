@@ -182,7 +182,7 @@ export function FinesPage() {
             </div>
           </div>
           <CardDescription className="text-muted-foreground">
-            Page {currentPage} of {totalPages || 1} · {paginatedFines.length} records shown
+            Page {currentPage} of {totalPages == 0 ? 1 : totalPages} · {paginatedFines.length} records shown
           </CardDescription>
         </CardHeader>
 

@@ -53,7 +53,7 @@ export function useFeesRoster(
     const [logs, setLogs] = useState<PaymentLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
-    const [totalCount, setTotalCount] = useState(0);
+    const [totalCount, setTotalCount] = useState(1);
     const [hasNextPage, setHasNextPage] = useState(false);
     const [stats, setStats] = useState({
       pending: 0,
