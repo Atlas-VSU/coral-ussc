@@ -258,60 +258,59 @@ export const getDashboardEvents = async (
 export const getDashboardRecentMembers = async (
   count = 10
 ): Promise<Member[]> => {
-  // try {
-  //   // Use cache with a specific key for this dashboard section
-  //   const cacheKey = `dashboard:recent-members:${count}`;
+  try {
+    // Use cache with a specific key for this dashboard section
+    const cacheKey = `dashboard:recent-members:${count}`;
 
-  //   return await cacheService.getOrFetch<Member[]>(
-  //     cacheKey,
-  //     async () => {
-  //       const currentUser = (await getCurrentUserData()) as unknown as Member;
-  //       if (!currentUser) return [];
+    return await cacheService.getOrFetch<Member[]>(
+      cacheKey,
+      async () => {
+        const currentUser = (await getCurrentUserData()) as unknown as Member;
+        if (!currentUser) return [];
 
-  //       const accessLevel = currentUser.accessLevel;
+        const accessLevel = currentUser.accessLevel;
 
-  //       // Query for recently added members
-  //       let membersQuery = query(
-  //         collection(db, "users"),
-  //         where("isDeleted", "==", false),
-  //         where("role", "==", "user")
-  //       );
+        // Query for recently added members
+        let membersQuery = query(
+          collection(db, "users"),
+          where("isDeleted", "==", false),
+          where("role", "==", "user")
+        );
 
-  //       if (accessLevel === 1) {
-  //         membersQuery = query(membersQuery, where("programId", "==", currentUser.programId ?? ""));
-  //       } else if (accessLevel === 2) {
-  //         membersQuery = query(membersQuery, where("facultyId", "==", currentUser.facultyId ?? ""));
-  //       }
+        if (accessLevel === 1) {
+          membersQuery = query(membersQuery, where("programId", "==", currentUser.programId ?? ""));
+        } else if (accessLevel === 2) {
+          membersQuery = query(membersQuery, where("facultyId", "==", currentUser.facultyId ?? ""));
+        }
 
-  //       membersQuery = query(
-  //         membersQuery,
-  //         orderBy("createdAt", "desc"),
-  //         limit(count)
-  //       );
+        membersQuery = query(
+          membersQuery,
+          orderBy("createdAt", "desc"),
+          limit(count)
+        );
 
-  //       const querySnapshot = await getDocs(membersQuery);
+        const querySnapshot = await getDocs(membersQuery);
 
-  //       // Transform to our Member type with only the needed fields for display
-  //       return querySnapshot.docs.map((doc) => {
-  //         const data = doc.data();
-  //         return {
-  //           id: doc.id,
-  //           firstName: data.firstName || "",
-  //           lastName: data.lastName || "",
-  //           studentId: data.studentId || "",
-  //           programId: data.programId || "",
-  //           yearLevel: data.yearLevel || 0,
-  //           createdAt: data.createdAt,
-  //         } as unknown as Member;
-  //       });
-  //     },
-  //     CACHE_DURATIONS.USERS // Cache for 1 hour
-  //   );
-  // } catch (error) {
-  //   console.error("Error getting dashboard recent members:", error);
-  //   return [];
-  // }
-  return [];
+        // Transform to our Member type with only the needed fields for display
+        return querySnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            firstName: data.firstName || "",
+            lastName: data.lastName || "",
+            studentId: data.studentId || "",
+            programId: data.programId || "",
+            yearLevel: data.yearLevel || 0,
+            createdAt: data.createdAt,
+          } as unknown as Member;
+        });
+      },
+      CACHE_DURATIONS.USERS // Cache for 1 hour
+    );
+  } catch (error) {
+    console.error("Error getting dashboard recent members:", error);
+    return [];
+  }
 };
 
 /**
@@ -326,132 +325,122 @@ export const getDashboardStats = async (): Promise<{
   peakAttendance: number;
   totalAbsences: number;
 }> => {
-  // try {
-  //   // Use cache with a specific key for dashboard stats
-  //   const cacheKey = `dashboard:stats`;
+  try {
+    // Use cache with a specific key for dashboard stats
+    const cacheKey = `dashboard:stats`;
 
-  //   return await cacheService.getOrFetch<{
-  //     totalStudents: number;
-  //     totalEvents: number;
-  //     totalAttendances: number;
-  //     overallAttendanceRate: number;
-  //     averageAttendance: number;
-  //     peakAttendance: number;
-  //     totalAbsences: number;
-  //   }>(
-  //     cacheKey,
-  //     async () => {
-  //       const currentUser = (await getCurrentUserData()) as unknown as Member;
-  //       if (!currentUser) {
-  //         return {
-  //           totalStudents: 0,
-  //           totalEvents: 0,
-  //           totalAttendances: 0,
-  //           overallAttendanceRate: 0,
-  //           averageAttendance: 0,
-  //           peakAttendance: 0,
-  //           totalAbsences: 0,
-  //         };
-  //       }
+    return await cacheService.getOrFetch<{
+      totalStudents: number;
+      totalEvents: number;
+      totalAttendances: number;
+      overallAttendanceRate: number;
+      averageAttendance: number;
+      peakAttendance: number;
+      totalAbsences: number;
+    }>(
+      cacheKey,
+      async () => {
+        const currentUser = (await getCurrentUserData()) as unknown as Member;
+        if (!currentUser) {
+          return {
+            totalStudents: 0,
+            totalEvents: 0,
+            totalAttendances: 0,
+            overallAttendanceRate: 0,
+            averageAttendance: 0,
+            peakAttendance: 0,
+            totalAbsences: 0,
+          };
+        }
 
-  //       const accessLevel = currentUser.accessLevel;
+        const accessLevel = currentUser.accessLevel;
 
-  //       // Base queries
-  //       let studentsBaseQuery = query(
-  //         collection(db, "users"),
-  //         where("isDeleted", "==", false),
-  //         where("role", "==", "user")
-  //       );
-  //       let eventsBaseQuery = query(
-  //         collection(db, "events"),
-  //         where("isDeleted", "==", false)
-  //       );
+        // Base queries
+        let studentsBaseQuery = query(
+          collection(db, "users"),
+          where("isDeleted", "==", false),
+          where("role", "==", "user")
+        );
+        let eventsBaseQuery = query(
+          collection(db, "events"),
+          where("isDeleted", "==", false)
+        );
 
-  //       if (accessLevel === 1) {
-  //         studentsBaseQuery = query(studentsBaseQuery, where("programId", "==", currentUser.programId ?? ""));
-  //         eventsBaseQuery = query(eventsBaseQuery, where("accessLevelEvent", "==", 1), where("programId", "==", currentUser.programId ?? ""));
-  //       } else if (accessLevel === 2) {
-  //         studentsBaseQuery = query(studentsBaseQuery, where("facultyId", "==", currentUser.facultyId ?? ""));
-  //         eventsBaseQuery = query(eventsBaseQuery, where("accessLevelEvent", "==", 2), where("facultyId", "==", currentUser.facultyId ?? ""));
-  //       } else if (accessLevel === 3) {
-  //         eventsBaseQuery = query(eventsBaseQuery, where("accessLevelEvent", "==", 3));
-  //       }
+        if (accessLevel === 1) {
+          studentsBaseQuery = query(studentsBaseQuery, where("programId", "==", currentUser.programId ?? ""));
+          eventsBaseQuery = query(eventsBaseQuery, where("accessLevelEvent", "==", 1), where("programId", "==", currentUser.programId ?? ""));
+        } else if (accessLevel === 2) {
+          studentsBaseQuery = query(studentsBaseQuery, where("facultyId", "==", currentUser.facultyId ?? ""));
+          eventsBaseQuery = query(eventsBaseQuery, where("accessLevelEvent", "==", 2), where("facultyId", "==", currentUser.facultyId ?? ""));
+        } else if (accessLevel === 3) {
+          eventsBaseQuery = query(eventsBaseQuery, where("accessLevelEvent", "==", 3));
+        }
 
-  //       // Execute all count queries in parallel for efficiency
-  //       const [studentsCount, eventsSnapshot, totalAttendances] =
-  //         await Promise.all([
-  //           // Get total students count
-  //           getCountFromServer(studentsBaseQuery),
-  //           // Get events with attendee counts
-  //           getDocs(eventsBaseQuery),
-  //           // Get total attendances count (reuse the dedicated function)
-  //           getDashboardAttendeeCount(),
-  //         ]);
+        // Execute all count queries in parallel for efficiency
+        const [studentsCount, eventsSnapshot, totalAttendances] =
+          await Promise.all([
+            // Get total students count
+            getCountFromServer(studentsBaseQuery),
+            // Get events with attendee counts
+            getDocs(eventsBaseQuery),
+            // Get total attendances count (reuse the dedicated function)
+            getDashboardAttendeeCount(),
+          ]);
 
-  //       const totalStudents = studentsCount.data().count;
-  //       const totalEvents = eventsSnapshot.size;
+        const totalStudents = studentsCount.data().count;
+        const totalEvents = eventsSnapshot.size;
 
-  //       // Calculate event attendance statistics
-  //       let peakAttendance = 0;
+        // Calculate event attendance statistics
+        let peakAttendance = 0;
 
-  //       // Find peak attendance
-  //       eventsSnapshot.forEach((doc) => {
-  //         const attendees = doc.data().attendees || 0;
-  //         if (attendees > peakAttendance) {
-  //           peakAttendance = attendees;
-  //         }
-  //       });
+        // Find peak attendance
+        eventsSnapshot.forEach((doc) => {
+          const attendees = doc.data().attendees || 0;
+          if (attendees > peakAttendance) {
+            peakAttendance = attendees;
+          }
+        });
 
-  //       // Handle case with no events or students to avoid division by zero
-  //       if (totalEvents === 0 || totalStudents === 0) {
-  //         return {
-  //           totalStudents,
-  //           totalEvents,
-  //           totalAttendances: 0,
-  //           overallAttendanceRate: 0,
-  //           averageAttendance: 0,
-  //           peakAttendance: 0,
-  //           totalAbsences: 0,
-  //         };
-  //       }
+        // Handle case with no events or students to avoid division by zero
+        if (totalEvents === 0 || totalStudents === 0) {
+          return {
+            totalStudents,
+            totalEvents,
+            totalAttendances: 0,
+            overallAttendanceRate: 0,
+            averageAttendance: 0,
+            peakAttendance: 0,
+            totalAbsences: 0,
+          };
+        }
 
-  //       // Calculate the total possible attendances
-  //       const totalPossibleAttendances = totalEvents * totalStudents;
+        // Calculate the total possible attendances
+        const totalPossibleAttendances = totalEvents * totalStudents;
 
-  //       // Calculate overall attendance rate
-  //       const overallAttendanceRate =
-  //         (totalAttendances / totalPossibleAttendances) * 100;
+        // Calculate overall attendance rate
+        const overallAttendanceRate =
+          (totalAttendances / totalPossibleAttendances) * 100;
 
-  //       // Calculate average attendance per event
-  //       const averageAttendance = totalAttendances / totalEvents;
+        // Calculate average attendance per event
+        const averageAttendance = totalAttendances / totalEvents;
 
-  //       // Calculate total absences
-  //       const totalAbsences = totalPossibleAttendances - totalAttendances;
+        // Calculate total absences
+        const totalAbsences = totalPossibleAttendances - totalAttendances;
 
-  //       return {
-  //         totalStudents,
-  //         totalEvents,
-  //         totalAttendances,
-  //         overallAttendanceRate: parseFloat(overallAttendanceRate.toFixed(1)),
-  //         averageAttendance: parseFloat(averageAttendance.toFixed(1)),
-  //         peakAttendance,
-  //         totalAbsences,
-  //       };
-  //     },
-  //     5 * 60 * 1000 // Cache for 5 minutes
-  //   );
-  // } catch (error) {
-  //   console.error("Error getting dashboard stats:", error);
-  //   return {
-  //     totalStudents: 0,
-  //     totalEvents: 0,
-  //     totalAttendances: 0,
-  //     overallAttendanceRate: 0,
-  //     averageAttendance: 0,
-  //     peakAttendance: 0,
-  //     totalAbsences: 0,
-  //   };
-  // }
+        return {
+          totalStudents,
+          totalEvents,
+          totalAttendances,
+          overallAttendanceRate: parseFloat(overallAttendanceRate.toFixed(1)),
+          averageAttendance: parseFloat(averageAttendance.toFixed(1)),
+          peakAttendance,
+          totalAbsences,
+        };
+      },
+      5 * 60 * 1000 // Cache for 5 minutes
+    );
+  } catch (error) {
+    console.error("Error getting dashboard stats:", error);
     return {
       totalStudents: 0,
       totalEvents: 0,
@@ -461,53 +450,52 @@ export const getDashboardStats = async (): Promise<{
       peakAttendance: 0,
       totalAbsences: 0,
     };
-  
+  }
 };
 
 // Recent Payments
 export const getDashboardRecentPayments = async (count = 5) => {
-  // try {
-  //   const currentUser = (await getCurrentUserData()) as unknown as Member;
-  //   if (!currentUser) return [];
+  try {
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return [];
 
-  //   const orgId = (currentUser as any).id ?? "";
+    const orgId = (currentUser as any).id ?? "";
 
-  //   const paymentsQuery = query(
-  //     collection(db, "proofOfPayments"),
-  //     where("orgId", "==", orgId),
-  //     where("isArchived", "==", false),
-  //     orderBy("submittedAt", "desc"),
-  //     limit(count)
-  //   );
+    const paymentsQuery = query(
+      collection(db, "proofOfPayments"),
+      where("orgId", "==", orgId),
+      where("isArchived", "==", false),
+      orderBy("submittedAt", "desc"),
+      limit(count)
+    );
 
-  //   const snapshot = await getDocs(paymentsQuery);
+    const snapshot = await getDocs(paymentsQuery);
 
-  //   return snapshot.docs.map((doc) => {
-  //     const data = doc.data();
-  //     return {
-  //       id: doc.id,
-  //       userName: data.userName ?? "",
-  //       studentId: data.studentId ?? "",
-  //       amount: data.amount ?? 0,
-  //       status: data.status ?? "pending",      
-  //       paymentMethod: data.paymentMethod ?? "",
-  //       paymentType: data.paymentType ?? "",    
-  //       receiptCode: data.receiptCode ?? "",
-  //       referenceNumber: data.referenceNumber ?? "",
-  //       submittedAt: data.submittedAt ?? null,
-  //       // items nested under metadata
-  //       items: (data.metadata?.items ?? []) as Array<{
-  //         title: string;
-  //         amount: number;
-  //         paymentType: string;
-  //       }>,
-  //     };
-  //   });
-  // } catch (error) {
-  //   console.error("Error getting dashboard recent payments:", error);
-  //   return [];
-  // }
-  return [];
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        userName: data.userName ?? "",
+        studentId: data.studentId ?? "",
+        amount: data.amount ?? 0,
+        status: data.status ?? "pending",      
+        paymentMethod: data.paymentMethod ?? "",
+        paymentType: data.paymentType ?? "",    
+        receiptCode: data.receiptCode ?? "",
+        referenceNumber: data.referenceNumber ?? "",
+        submittedAt: data.submittedAt ?? null,
+        // items nested under metadata
+        items: (data.metadata?.items ?? []) as Array<{
+          title: string;
+          amount: number;
+          paymentType: string;
+        }>,
+      };
+    });
+  } catch (error) {
+    console.error("Error getting dashboard recent payments:", error);
+    return [];
+  }
 };
 
 // Fees Collected
