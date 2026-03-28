@@ -31,7 +31,6 @@ type Props = {
 
 export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props) {
   function handlePrint() {
-
     if (!data) return
 
     const itemRows = data.items
@@ -40,6 +39,9 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
           `<div class="row"><span class="item-name">${i.name}</span><span>₱${i.amount.toLocaleString()}</span></div>`,
       )
       .join("")
+
+    // Grab the current domain so the image loads properly in the popup
+    const baseUrl = window.location.origin;
 
     const html = `
       <!DOCTYPE html>
@@ -66,12 +68,31 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
             .footer { text-align: center; font-size: 11px; }
             .footer p + p { margin-top: 4px; }
             .footer-note { margin-top: 24px; text-align: center; font-size: 11px; color: #6b7280; }
+          
+            /* --- NEW PRINT SPECIFIC STYLES --- */
+            @page {
+              margin: 0; /* Removes browser default margins, dates, and URLs */
+            }
+            
+            @media print {
+              body {
+                padding: 0; /* Removes the 32px padding you set for the preview */
+                display: block; /* Changes from flex to block so it aligns to top-left */
+              }
+              .receipt {
+                border: none; /* Optional: Removes the border since the paper edge acts as the border */
+                margin: 0 auto; /* Centers the receipt on the paper */
+                width: 100%; /* Uncomment this if you want it to stretch to the absolute edges of a thermal printer */
+              }
+            }
           </style>
+
+
         </head>
         <body>
           <div class="receipt">
             <div class="header">
-              <img src="/images/ussc-logo-1.webp" alt="Org Logo" />
+              <img src="${baseUrl}/images/ussc-logo-1.webp" alt="Org Logo" />
               <p class="org-name">University Supreme Student Council</p>
               <p class="university">Visayas State University Main Campus</p>
               <p class="subtitle">Official Payment Receipt</p>
@@ -100,6 +121,18 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
             </div>
             <p class="footer-note">This serves as an official proof of payment.</p>
           </div>
+
+          <script>
+            // Wait for the window (and the image) to fully load before printing
+            window.onload = function() {
+              window.focus();
+              window.print();
+              
+              // Optional: Uncomment the next line if you want the popup window 
+              // to close automatically after the user finishes printing
+              // window.close();
+            };
+          </script>
         </body>
       </html>
     `

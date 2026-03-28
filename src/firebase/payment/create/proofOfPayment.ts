@@ -10,10 +10,10 @@ import { getFeeByStudentId } from "@/firebase/fees";
 import { getCurrentUserData } from "@/firebase/users";
 import { Member } from "@/features/organization/members/types";
 import { createFinesPaymentHistory, createOnlinePaymentHistory } from "./paymentHistory";
-import { UnpaidDue } from "@/features/organization/payments/types";
 import { FineItem, StudentFines } from "@/features/organization/fines/types";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { getAllProofOfPayments } from "../read/proofOfPayment";
+import { BlockingItem } from "@/features/organization/clearance/types";
 
 export const createOnlineProofOfPayment = async (
     payment: PaymentFormData, type: string ) => {
@@ -202,8 +202,9 @@ export const createOfflineFinesProofOfPayment = async (
 export const createBulkOfflineProofOfPayment = async (
   payment: PaymentFormData,
   receipt: string,
-  dues: UnpaidDue[],
+  dues: BlockingItem[],
   userId: string,
+  date?: Timestamp,
 ) => {
   const currentUser = await getCurrentUserData() as unknown as Member;
   const verifierName = `${currentUser.firstName} ${currentUser.lastName}`;
@@ -217,7 +218,7 @@ export const createBulkOfflineProofOfPayment = async (
     metadata: {},
     verifiedBy: currentUser.id!,
     verifiedByName: verifierName,
-    verifiedAt: Timestamp.now(),
+    verifiedAt: date? date : Timestamp.now(),
     receiptCode: receipt,
     isArchived: false,
     updatedAt: Timestamp.now(),
@@ -226,13 +227,13 @@ export const createBulkOfflineProofOfPayment = async (
   const docRef = await addDoc(ref, paymentData);
   const items = [];
   for (const due of dues) {
-    await createFinesPaymentHistory(payment, due.parentId!, docRef.id, userId, due);
+    await createFinesPaymentHistory(payment, due.parentFineId?due.parentFineId:due.referenceId, docRef.id, userId, due);
     items.push({
-      refId: due.id,
-      title: due.name,
+      refId: due.referenceId,
+      title: due.title,
       amount: due.balance,
       paymentType: due.type,
-      parentFineId: due.type === "fines" ? due.parentId : "",
+      parentFineId: due.type === "fines" ? due.parentFineId : "",
     })
   }
   await updateDoc(doc(db, "proofOfPayments", docRef.id), {

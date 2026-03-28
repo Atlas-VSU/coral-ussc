@@ -8,7 +8,8 @@ import { DataPagination } from "@/components/organization/DataPagination"
 import { SubmissionsCardView } from "./SubmissionsCardView"
 import { SubmissionsTableView } from "./SubmissionsTableView"
 import { Button } from "@/components/ui/button"
-import { RefreshCcw } from "lucide-react"
+import { RefreshCcw, Search } from "lucide-react"
+import { useEffect, useState } from "react"
 
 interface SubmissionsTabProps {
   paginated: ProofOfPayment[]
@@ -34,6 +35,19 @@ export function SubmissionsTab({
   onPageChange, onSearchChange, onStatusChange, onViewChange, onOpenReview,
   isLoading, refetchPayments, isLoadingUnpaid, totalCount
 }: SubmissionsTabProps) {
+
+  const [localSearch, setLocalSearch] = useState(search);
+  
+  useEffect(() => {
+    setLocalSearch(search)
+  },[search])
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault() // Prevent the page from refreshing
+    onSearchChange(localSearch)
+    onPageChange(1)
+  }
+
   return (
     <>
       <CardHeader>
@@ -45,12 +59,18 @@ export function SubmissionsTab({
             <CardDescription>{totalCount} records found</CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <SearchInput
-              placeholder="Search student..."
-              value={search}
-              onChange={v => { onSearchChange(v); onPageChange(1) }}
-              className="w-full sm:w-64"
-            />
+            <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
+              <SearchInput
+                placeholder="Search by name or ID..."
+                value={localSearch}
+                onChange={v => setLocalSearch(v)} // Only update local state on keystroke
+                className="w-full sm:w-64"
+              />
+              <Button type="submit" variant="secondary" size="icon" disabled={isLoading || isLoadingUnpaid}>
+                <Search className="h-4 w-4" />
+                <span className="sr-only">Search</span>
+              </Button>
+            </form>
             <Select value={filterStatus} onValueChange={v => { onStatusChange(v); onPageChange(1) }}>
               <SelectTrigger className="w-full sm:w-32">
                 <SelectValue placeholder="Status" />
@@ -67,6 +87,7 @@ export function SubmissionsTab({
               {(isLoading || isLoadingUnpaid) ? 'Refreshing...' : 'Refresh'}
             </Button>
             <ViewToggle viewMode={viewMode} onViewChange={onViewChange} />
+            <p className="text-sm text-muted-foreground">Page {currentPage} of {totalPages == 0 ? 1 : totalPages}</p>
           </div>
         </div>
       </CardHeader>

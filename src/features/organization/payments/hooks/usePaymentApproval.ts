@@ -61,7 +61,7 @@ export const usePaymentApproval = () => {
                     studentId: payment.studentId,
                     items: items.map(d => ({ name: d.title, type: d.paymentType as "fees" | "fines", amount: d.amount })),
                     total: payment.amount,
-                    date: Timestamp.now().toDate().toLocaleDateString(),
+                    date: Timestamp.now().toDate().toLocaleString(),
                     verifiedByName: verifier.firstName + " " + verifier.lastName,
                     paymentMethod: payment.paymentMethod,
                 };

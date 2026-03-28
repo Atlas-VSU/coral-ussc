@@ -10,6 +10,7 @@ import { UnpaidTab } from "./components/UnpaidTab"
 import { LogPaymentDialog } from "./components/LogPaymentDialog"
 import { usePaymentsPage } from "./hooks/usePaymentsPage"
 import PaymentReceiptDialog, { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
+import { Timestamp } from "firebase/firestore"
 
 export default function PaymentsPage() {
   const {
@@ -22,7 +23,7 @@ export default function PaymentsPage() {
     viewMode, setViewMode,
     totalSubmissionCount, totalPages, paginated,
     handleApprove, handleDecline, openReview, isLoading, loading  , isLoadingUnpaid,
-    refetchPayments, submissionPage, setSubmissionPage,
+    refetchPayments,refetchUnpaids, submissionPage, setSubmissionPage,
     // unpaid
     unpaidSearch, setUnpaidSearch,
     unpaidPage, setUnpaidPage,
@@ -35,7 +36,7 @@ export default function PaymentsPage() {
     checkedDues, selectedDues, selectedTotal,
     paymentDate, setPaymentDate,
     toggleDue, toggleAllDues, openUnpaidDetail, handleLogPayment,
-    studentProgram,
+    student, studentProgram,
     // receipt
     receiptOpen, setReceiptOpen, receiptData, setReceiptData,
     stats, totalUnpaidCount
@@ -48,11 +49,22 @@ export default function PaymentsPage() {
       studentId: selectedPayment?.studentId || "N/A",
       items: selectedPayment?.metadata.items?.map(d => ({ name: d.title, type: d.paymentType as "fees" | "fines", amount: d.amount })) ?? [],
       total: selectedPayment?.amount || 0,
-      date: selectedPayment?.submittedAt.toDate().toLocaleDateString() || "N/A",
+      date: selectedPayment?.verifiedAt!.toDate().toLocaleString() || "N/A",
       verifiedByName: selectedPayment?.verifiedByName || "N/A",
       paymentMethod: selectedPayment?.paymentMethod || "Cash (Manual)",
     });
     setReceiptOpen(true)
+  }
+
+  const handleRefresh = async () => {
+    setUnpaidSearch("");
+    setUnpaidPage(1);
+    setFilterStatus("all");
+    if (dataView === "submissions") {
+      await refetchPayments();
+    } else {
+      await refetchUnpaids();
+    }
   }
 
   return (
@@ -95,7 +107,7 @@ export default function PaymentsPage() {
             onViewChange={setViewMode}
             onOpenReview={openReview}
             isLoading={isLoading}
-            refetchPayments={refreshAll}
+            refetchPayments={handleRefresh}
             isLoadingUnpaid={isLoadingUnpaid}
             totalCount={totalSubmissionCount}
           />
@@ -111,7 +123,7 @@ export default function PaymentsPage() {
             onViewChange={setUnpaidViewMode}
             onOpenDetail={openUnpaidDetail}
             isLoading={isLoadingUnpaid}
-            refetchPayments={refreshAll}
+            refetchPayments={handleRefresh}
             isLoadingUnpaid={isLoadingUnpaid}
             totalCount={totalUnpaidCount}
           />
@@ -130,7 +142,7 @@ export default function PaymentsPage() {
           showLineItemsTotal: !!(selectedPayment.metadata?.items?.length),
           amountPaid: selectedPayment.amount,
           referenceNo: selectedPayment.referenceNumber,
-          submittedAt: selectedPayment.submittedAt.toDate().toLocaleDateString(),
+          submittedAt: selectedPayment.submittedAt.toDate().toLocaleString(),
           notes: selectedPayment.notes,
           receiptContent: selectedPayment.imageUrl,
           declineRemarks: selectedPayment.rejectionReason,
@@ -153,12 +165,13 @@ export default function PaymentsPage() {
         checkedDues={checkedDues}
         selectedDues={selectedDues}
         selectedTotal={selectedTotal}
-        paymentDate={paymentDate}
-        onPaymentDateChange={setPaymentDate}
+        paymentDate={paymentDate.toDate().toISOString().slice(0, 10)}
+        onPaymentDateChange={(date) => setPaymentDate(Timestamp.fromDate(new Date(date)))}
         onToggleDue={toggleDue}
         onToggleAll={toggleAllDues}
         onLogPayment={handleLogPayment}
-        studentProgram={studentProgram}
+        student={student}
+        studentProgram = {studentProgram}
         isLoading={isLoading}
         isSubmitting={loading}
       />

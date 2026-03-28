@@ -385,6 +385,7 @@ export const CACHE_DURATIONS = {
   PAYMENTS: 10 * 60 * 1000, // 10 minutes (payments change more frequently)
   PAYMENT_HISTORY: 10 * 60 * 1000, // 10 minutes
   CLEARANCE: 10 * 60 * 1000, // 10 minutes
+  COUNTS: 5 * 60 * 1000, // 5 minutes for aggregate counts/stats
 };
 
 // Structured cache key helpers — use these everywhere instead of raw strings
@@ -395,6 +396,7 @@ export const CACHE_KEYS = {
   feeRoster:    (orgId: string, title: string, year: string) => `fees:roster:${orgId}:${title}:${year}`,
   feeDoc:       (feeId: string) => `fees:doc:${feeId}`,
   feeLogs:      (feeId: string) => `fees:logs:${feeId}`,
+  feeSubmissionCount: (orgId: string, title: string, year: string, statusFilter: string, searchTerm: string) => `fees:submission-count:${orgId}:${title}:${year}:${statusFilter}:${searchTerm}`,
 
   // Fines
   finesAll:        (orgId: string) => `fines:all:${orgId}`,
@@ -425,4 +427,10 @@ export const CACHE_KEYS = {
   clearancePage:  (orgId: string, page: number, size: number, search: string, status: string) => 
     `clearance:page:${orgId}:${page}:${size}:${search}:${status}`,
   feeStatusForClearance: (userId: string, orgId: string) => `fees:statusForClearance:${userId}:${orgId}`,
+  clearanceStats: (orgId: string, status: string) => `clearance:stats:${orgId}:${status}`,
+  clearanceCount: (orgId: string, statusFilter: string, searchTerm: string) => `clearance:count:${orgId}:${statusFilter}:${searchTerm}`,
+
+  // Count aggregates
+  feesCount:      (orgId: string, title: string, year: string, status: string, search: string) => `fees:count:${orgId}:${title}:${year}:${status}:${search}`,
+  paymentsCount:  (orgId: string, statusFilter: string) => `payments:count:${orgId}:${statusFilter}`,
 };

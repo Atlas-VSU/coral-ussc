@@ -13,7 +13,7 @@ import { BulkGenerationDialog } from "@/features/organization/fines/components/B
 import { FineTypeForm } from "@/features/organization/fines/components/FineTypeForm";
 import { FineType, StudentFines } from "@/features/organization/fines/types";
 import { createFineType, deleteFineType, updateFineType } from "@/firebase/fines/create/fineType";
-import { Users, AlertTriangle, Banknote, CircleDollarSign, ChevronRight, Eye, RefreshCcw } from "lucide-react";
+import { Users, AlertTriangle, Banknote, CircleDollarSign, ChevronRight, Eye, RefreshCcw, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
@@ -37,6 +37,7 @@ export function FinesPage() {
   const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
   const [selectedFineType, setSelectedFineType] = useState<FineType | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
+  const [localSearch, setLocalSearch] = useState("");
 
   const {
     paginatedFines,
@@ -64,6 +65,7 @@ export function FinesPage() {
     handleUpdateFineType,
     handleDeleteFineType,
   } = useFineTypes();
+
 
   useEffect(() => {
     fetchFineTypes();
@@ -95,6 +97,16 @@ export function FinesPage() {
     // markStatusChanged();
     hardRefresh();
   };
+
+  useEffect(() => {
+    setLocalSearch(search);
+  }, [search])
+  
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearch(localSearch);
+    setCurrentPage(1);
+   }
 
   return (
     <div className="flex flex-col gap-6 pb-24 lg:pb-0">
@@ -142,12 +154,18 @@ export function FinesPage() {
               </CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+            <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
               <SearchInput
                 placeholder="Search by name or ID..."
-                value={search}
-                onChange={v => setSearch(v)}
+                value={localSearch}
+                onChange={v => setLocalSearch(v)} 
                 className="w-full sm:w-64"
               />
+              <Button type="submit" variant="secondary" size="icon" disabled={isLoading}>
+                <Search className="h-4 w-4" />
+                <span className="sr-only">Search</span>
+              </Button>
+            </form>
               <Select value={filterStatus} onValueChange={handleStatusFilterChange}>
                 <SelectTrigger className="w-full sm:w-36">
                   <SelectValue placeholder="Status" />
@@ -164,7 +182,7 @@ export function FinesPage() {
             </div>
           </div>
           <CardDescription className="text-muted-foreground">
-            Page {currentPage} of {totalPages || 1} · {paginatedFines.length} records shown
+            Page {currentPage} of {totalPages == 0 ? 1 : totalPages} · {paginatedFines.length} records shown
           </CardDescription>
         </CardHeader>
 

@@ -2,28 +2,49 @@
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./Select";
+import { useEffect, useState } from "react";
+import { SearchInput } from "@/components/organization/SearchInput";
+import { Button } from "@/components/ui/button";
 
 export function SearchFilterFee({
   search,
   onSearchChange,
   filterStatus,
   onFilterChange,
+  isLoading
 }: {
   search: string;
   onSearchChange: (value: string) => void;
   filterStatus: string;
   onFilterChange: (value: string) => void;
-}) {
+  isLoading?: boolean;
+  }) {
+  
+  const [localSearch, setLocalSearch] = useState(search);
+  
+  useEffect(() => {
+    setLocalSearch(search);
+  }, [search]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSearchChange(localSearch);
+   }
   return (
     <>
       <div className="relative">
-        <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-        <Input
-          placeholder="Search fees..."
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-8 w-48"
+        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
+        <SearchInput
+          placeholder="Search Fees..."
+          value={localSearch}
+          onChange={v => setLocalSearch(v)} 
+          className="w-full sm:w-64"
         />
+        <Button type="submit" variant="secondary" size="icon" disabled={isLoading}>
+          <Search className="h-4 w-4" />
+          <span className="sr-only">Search</span>
+        </Button>
+      </form>
       </div>
       <Select value={filterStatus} onValueChange={onFilterChange}>
         <SelectTrigger className="w-44">

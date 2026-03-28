@@ -111,7 +111,6 @@ export const getProofOfPaymentsPaginated = async (
   return {
     docs,
     lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
-    allSnapshots: snapshot.docs,
     hasMore: snapshot.docs.length === pageSize,
     count: count, // Return total count of searched items for pagination controls
   };
@@ -172,15 +171,20 @@ export const getPendingProofOfPaymentsByUserId = async (userId: string, orgId?:s
 }
 
 export const getProofOfPaymentsCount = async (orgId: string, statusFilter: string = "all") => {
-    const proofOfPaymentsRef = collection(db, "proofOfPayments");
-    let constraints: QueryConstraint[] = [
-      where("orgId", "==", orgId),
-      where("isArchived", "==", false),
-  ];
-  if (statusFilter !== "all") {
-    constraints.push(where("status", "==", statusFilter));
-  }
-
-  const countSnapshot = await getCountFromServer(query(proofOfPaymentsRef, ...constraints));
-  return countSnapshot.data().count;
- }
+  return cacheService.getOrFetch(
+    CACHE_KEYS.paymentsCount(orgId, statusFilter),
+    async () => {
+      const proofOfPaymentsRef = collection(db, "proofOfPayments");
+      const constraints: QueryConstraint[] = [
+        where("orgId", "==", orgId),
+        where("isArchived", "==", false),
+      ];
+      if (statusFilter !== "all") {
+        constraints.push(where("status", "==", statusFilter));
+      }
+      const countSnapshot = await getCountFromServer(query(proofOfPaymentsRef, ...constraints));
+      return countSnapshot.data().count;
+    },
+    CACHE_DURATIONS.COUNTS
+  );
+}

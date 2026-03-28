@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { Zap, ChevronRight, CircleDollarSign, Loader2, Plus } from "lucide-react"
+import { Zap, ChevronRight, CircleDollarSign, Loader2, Plus, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -67,6 +67,7 @@ export default function FeeListPage() {
                 onSearchChange={setSearch}
                 filterStatus={filterStatus}
                 onFilterChange={setFilterStatus as any}
+                isLoading={isLoading}
               />
               <ViewToggle viewMode={viewMode} onViewChange={() => setViewMode(viewMode === "card" ? "table" : "card")} />
               <Button variant="outline" onClick={() => setGenerateOpen(true)}>

@@ -1,20 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchFee, fetchFeesPaginated, getFeesCount, fetchFeeSubmissionsPaginated, fetchPaymentLogs } from "@/firebase/fees";
+import { fetchFee, fetchFeesPaginated, getFeesCount, fetchFeeSubmissionsPaginated, fetchPaymentLogs, getFeeSubmissionsCount } from "@/firebase/fees";
 import { Fee, PaymentLog } from "../types";
 import { Member } from "../../members/types";
-import { cacheService, CACHE_KEYS } from "@/services/cacheService";
+import { cacheService } from "@/services/cacheService";
 import { getCurrentUserData } from "@/firebase";
 
 export type BaseFeeData = Partial<Fee>;
 
 export interface StudentFeeRow extends Fee {
-    id: string; 
+    id: string;
     student: Partial<Member>;
     logs: PaymentLog[];
 }
 
 export function useFeesRoster(
-  title: string, 
+  title: string,
   academicYear: string,
   options: {
     pageSize?: number;
@@ -24,10 +24,10 @@ export function useFeesRoster(
     dataView?: "submissions" | "all-students";
   } = {}
 ) {
-    const { 
-      pageSize = 10, 
-      currentPage = 1, 
-      search = "", 
+    const {
+      pageSize = 10,
+      currentPage = 1,
+      search = "",
       filterStatus = "all",
       dataView = "submissions"
     } = options;
@@ -38,26 +38,28 @@ export function useFeesRoster(
         if (stash) return JSON.parse(stash) as BaseFeeData
       } catch {}
       return null
-    })
-    const feeRef = useRef<BaseFeeData | null>(null)
-    // Sync ref with any prefetched value so fetchData skips the fee doc fetch
-    useEffect(() => {
-      if (fee && !feeRef.current) feeRef.current = fee
-    }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    });
+
+    const feeRef = useRef<BaseFeeData | null>(fee);
+    useEffect(() => { feeRef.current = fee }, [fee]);
+
+    // Store cursors in a ref — NOT state — so updating them never triggers a re-render
+    const cursorsRef = useRef<Record<string, Record<number, any>>>({
+      "all-students": {},
+      "submissions": {},
+    });
+
     const [studentRows, setStudentRows] = useState<StudentFeeRow[]>([]);
     const [logs, setLogs] = useState<PaymentLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
-    const [totalCount, setTotalCount] = useState(0);
-    const [lastVisibleDocs, setLastVisibleDocs] = useState<Record<string, any[]>>({
-      "all-students": [],
-      "submissions": []
-    });
+    const [totalCount, setTotalCount] = useState(1);
+    const [hasNextPage, setHasNextPage] = useState(false);
     const [stats, setStats] = useState({
       pending: 0,
       verified: 0,
       rejected: 0,
-      unpaid: 0
+      unpaid: 0,
     });
 
     const fetchData = useCallback(async () => {
@@ -71,89 +73,61 @@ export function useFeesRoster(
             if (!user?.uid) return;
             const orgId = user.uid;
 
-            // 1. Fetch the reference fee document if not already set
-            if (!fee) {
+            // Fetch the reference fee document once
+            if (!feeRef.current) {
               const { docs: feeDocs } = await fetchFeesPaginated(orgId, title, academicYear, 1);
               if (feeDocs.length > 0) {
+                feeRef.current = feeDocs[0];
                 setFee(feeDocs[0]);
               }
             }
 
-            // 2. Fetch data based on dataView
-            if (dataView === "all-students") {
-                const isJump = currentPage > 1 && !lastVisibleDocs["all-students"][currentPage - 2];
-                const effectivePageSize = isJump ? (currentPage * pageSize) : pageSize;
-                const effectiveCursor = isJump ? null : (currentPage > 1 ? lastVisibleDocs["all-students"][currentPage - 2] : null);
+            // Page 1 has no cursor. Page N uses the stored last-doc of page N-1.
+            const cursor = currentPage > 1
+              ? (cursorsRef.current[dataView][currentPage - 2] ?? null)
+              : null;
 
-                const { docs: fetchedDocs, lastVisible, allSnapshots } = await fetchFeesPaginated(
-                  orgId, 
-                  title, 
-                  academicYear, 
-                  effectivePageSize, 
-                  effectiveCursor, 
-                  search, 
+            if (dataView === "all-students") {
+                const { docs, lastVisible } = await fetchFeesPaginated(
+                  orgId,
+                  title,
+                  academicYear,
+                  pageSize,
+                  cursor,
+                  search,
                   filterStatus
                 );
 
-                const docs = isJump ? fetchedDocs.slice((currentPage - 1) * pageSize) : fetchedDocs;
-
-                const enrichedRows = await Promise.all(docs.map(async (f) => {
-                    // For the roster view, we might want the last payment log for each student
-                    const feeLogs = await fetchPaymentLogs(f.id) as PaymentLog[];
-                    return {
-                        ...f,
-                        log: feeLogs.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())[0],
-                        student: {
-                            id: f.userId,
-                            studentId: f.studentId,
-                            firstName: f.userName.split(' ')[0],
-                            lastName: f.userName.split(' ').slice(1).join(' '),
-                        },
-                        logs: feeLogs
-                    } as any;
+                const enrichedRows: StudentFeeRow[] = docs.map((f) => ({
+                    ...f,
+                    student: {
+                        id: f.userId,
+                        studentId: f.studentId,
+                        firstName: f.userName.split(' ')[0],
+                        lastName: f.userName.split(' ').slice(1).join(' '),
+                    },
+                    logs: [],
                 }));
 
                 setStudentRows(enrichedRows);
+                setHasNextPage(docs.length === pageSize);
                 
-                if (allSnapshots && allSnapshots.length > 0) {
-                  setLastVisibleDocs(prev => {
-                    const nextAll = { ...prev["all-students"] };
-                    const next = { ...prev, "all-students": nextAll };
-                    
-                    allSnapshots.forEach((snap, index) => {
-                      const absoluteIndex = isJump ? index : ((currentPage - 1) * pageSize + index);
-                      if ((absoluteIndex + 1) % pageSize === 0) {
-                        const pageNum = (absoluteIndex + 1) / pageSize;
-                        nextAll[pageNum - 1] = snap;
-                      }
-                    });
-                    
-                    const finalAbsoluteIndex = isJump ? (allSnapshots.length - 1) : ((currentPage - 1) * pageSize + allSnapshots.length - 1);
-                    const finalPageNum = Math.ceil((finalAbsoluteIndex + 1) / pageSize);
-                    nextAll[finalPageNum - 1] = allSnapshots[allSnapshots.length - 1];
-                    
-                    return next;
-                  });
+                // Persist the cursor for this page so the next page can use it
+                if (lastVisible) {
+                  cursorsRef.current["all-students"][currentPage - 1] = lastVisible;
                 }
 
             } else {
-                // submissions view
-                const isJump = currentPage > 1 && !lastVisibleDocs["submissions"][currentPage - 2];
-                const effectivePageSize = isJump ? (currentPage * pageSize) : pageSize;
-                const effectiveCursor = isJump ? null : (currentPage > 1 ? lastVisibleDocs["submissions"][currentPage - 2] : null);
-
-                const { docs: fetchedDocs, lastVisible, allSnapshots } = await fetchFeeSubmissionsPaginated(
-                  orgId, 
-                  title, 
-                  effectivePageSize, 
-                  effectiveCursor,
+                const { docs, lastVisible } = await fetchFeeSubmissionsPaginated(
+                  orgId,
+                  title,
+                  pageSize,
+                  cursor,
                   filterStatus,
                   search
                 );
 
-                const docs = isJump ? fetchedDocs.slice((currentPage - 1) * pageSize) : fetchedDocs;
-
-                const mappedLogs = (docs as any[]).map(d => ({
+                const mappedLogs: PaymentLog[] = (docs as any[]).map(d => ({
                    id: d.id,
                    paymentProofId: d.id,
                    amount: d.amount,
@@ -173,29 +147,10 @@ export function useFeesRoster(
                 } as unknown as PaymentLog));
 
                 setLogs(mappedLogs);
-                // Note: totalCount for submissions should be fetched separately if needed
-                // For now we use docs.length or a fixed estimate
-                setTotalCount(docs.length > 0 ? (currentPage * pageSize + (docs.length === pageSize ? pageSize : 0)) : (currentPage - 1) * pageSize);
+                setHasNextPage(docs.length === pageSize);
 
-                if (allSnapshots && allSnapshots.length > 0) {
-                  setLastVisibleDocs(prev => {
-                    const nextSub = { ...prev["submissions"] };
-                    const next = { ...prev, "submissions": nextSub };
-                    
-                    allSnapshots.forEach((snap, index) => {
-                      const absoluteIndex = isJump ? index : ((currentPage - 1) * pageSize + index);
-                      if ((absoluteIndex + 1) % pageSize === 0) {
-                        const pageNum = (absoluteIndex + 1) / pageSize;
-                        nextSub[pageNum - 1] = snap;
-                      }
-                    });
-                    
-                    const finalAbsoluteIndex = isJump ? (allSnapshots.length - 1) : ((currentPage - 1) * pageSize + allSnapshots.length - 1);
-                    const finalPageNum = Math.ceil((finalAbsoluteIndex + 1) / pageSize);
-                    nextSub[finalPageNum - 1] = allSnapshots[allSnapshots.length - 1];
-                    
-                    return next;
-                  });
+                if (lastVisible) {
+                  cursorsRef.current["submissions"][currentPage - 1] = lastVisible;
                 }
             }
 
@@ -205,24 +160,43 @@ export function useFeesRoster(
         } finally {
             setIsLoading(false);
         }
-    }, [title, academicYear, dataView, currentPage, pageSize, search, filterStatus, fee]);
+    // cursorsRef is a ref — safe to omit from deps, it never changes identity
+    }, [title, academicYear, dataView, currentPage, pageSize, search, filterStatus]);
+
+    const fetchTotalCount = useCallback(async () => {
+        try {
+            const user = await getCurrentUserData() as any;
+            if (!user?.uid) return;
+            const orgId = user.uid;
+
+            if (dataView === "all-students") {
+                const count = await getFeesCount(orgId, title, academicYear, filterStatus, search);
+                setTotalCount(count);
+            } else {
+                const count = await getFeeSubmissionsCount(orgId, title, academicYear, filterStatus, search);
+                setTotalCount(count);
+            }
+        } catch (err) {
+            console.error("Error fetching total count:", err);
+        }
+    }, [title, academicYear, filterStatus, search, dataView]);
 
     useEffect(() => {
         fetchData();
-    }, [fetchData]);
+        fetchTotalCount();
+    }, [fetchData, fetchTotalCount]);
 
+    // Only wipe the cursor for the current page so we re-fetch just this page
     const hardRefresh = useCallback(async () => {
         const user = await getCurrentUserData();
         if (user && title && academicYear) {
-            // Corrected prefix to 'fees:doc:' and added 'fees:logs:'
             cacheService.invalidateByPrefix('fees:doc:');
             cacheService.invalidateByPrefix('fees:logs:');
-            // If the roster list itself is cached, it should be cleared too
             cacheService.invalidateByPrefix('fees:roster:');
         }
-        setLastVisibleDocs({ "all-students": [], "submissions": [] });
+        cursorsRef.current[dataView][currentPage - 1] = undefined;
         await fetchData();
-    }, [title, academicYear, fetchData]);
+    }, [title, academicYear, dataView, currentPage, fetchData]);
 
     const refetchStudentRow = useCallback(async (feeId: string) => {
         try {
@@ -237,16 +211,12 @@ export function useFeesRoster(
                 const rowIndex = prevRows.findIndex(row => row.id === feeId);
                 if (rowIndex === -1) return prevRows;
 
-                const rowToUpdate = prevRows[rowIndex];
-                const updatedRow = {
-                    ...rowToUpdate,
-                    ...updatedFee,
-                    logs: freshLogs as PaymentLog[]
-
-                };
-
                 const newRows = [...prevRows];
-                newRows[rowIndex] = updatedRow;
+                newRows[rowIndex] = {
+                    ...prevRows[rowIndex],
+                    ...updatedFee,
+                    logs: freshLogs as PaymentLog[],
+                };
                 return newRows;
             });
         } catch (err) {
@@ -255,6 +225,10 @@ export function useFeesRoster(
     }, []);
 
     const fetchStatistics = useCallback(async () => {
+        const cacheKey = `fees:stats:${title}:${academicYear}`;
+        const cached = cacheService.get(cacheKey);
+        if (cached) { setStats(cached as any); return; }
+
         try {
             const user = await getCurrentUserData() as any;
             if (!user?.uid) return;
@@ -267,31 +241,28 @@ export function useFeesRoster(
                 getFeesCount(orgId, title, academicYear, "unpaid", "")
             ]);
 
-
-            setStats({
-                pending,
-                verified,
-                rejected,
-                unpaid
-            });
+            const result = { pending, verified, rejected, unpaid };
+            cacheService.set(cacheKey, result, 5 * 60 * 1000);
+            setStats(result);
         } catch (err) {
             console.error("Error fetching statistics:", err);
         }
-    }, []);
+    }, [title, academicYear]);
 
     useEffect(() => {
         fetchStatistics();
     }, [title, academicYear]);
 
-    return { 
-        fee, 
+    return {
+        fee,
         stats,
-        studentRows, 
-        logs, 
-        isLoading, 
+        studentRows,
+        logs,
+        isLoading,
         error,
         totalCount,
+        hasNextPage,
         refetchStudentRow,
-        refetch: hardRefresh
+        refetch: hardRefresh,
     };
 }

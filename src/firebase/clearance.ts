@@ -12,13 +12,19 @@ import { usePaymentApproval } from "@/features/organization/payments/hooks/usePa
 
 
 export const getClearanceStats = async (orgId: string, statusFilter: string = "all") => {
-  const snapshot = await getCountFromServer(query(
-    collection(db, 'clearanceStatus'),
-    where('orgId', '==', orgId),
-    where('isArchived', '==', false),
-    where('status', '==', statusFilter)
-  ));
-  return snapshot.data().count;
+  return cacheService.getOrFetch(
+    CACHE_KEYS.clearanceStats(orgId, statusFilter),
+    async () => {
+      const snapshot = await getCountFromServer(query(
+        collection(db, 'clearanceStatus'),
+        where('orgId', '==', orgId),
+        where('isArchived', '==', false),
+        where('status', '==', statusFilter)
+      ));
+      return snapshot.data().count;
+    },
+    CACHE_DURATIONS.COUNTS
+  );
 }
 
 /**
@@ -114,30 +120,36 @@ export const fetchClearanceDocumentsPaginated = async (
  * Gets the total count of clearance documents for an organization with optional search.
  */
 export const getClearanceCount = async (orgId: string, statusFilter: string = "all", searchTerm: string = "") => {
-  const clearanceRef = collection(db, "clearanceStatus");
-  let constraints = [
-    where("orgId", "==", orgId),
-    where("isArchived", "==", false),
-  ];
+  return cacheService.getOrFetch(
+    CACHE_KEYS.clearanceCount(orgId, statusFilter, searchTerm),
+    async () => {
+      const clearanceRef = collection(db, "clearanceStatus");
+      const constraints: any[] = [
+        where("orgId", "==", orgId),
+        where("isArchived", "==", false),
+      ];
 
-  if (statusFilter !== "all") {
-    constraints.push(where("status", "==", statusFilter));
-  }
+      if (statusFilter !== "all") {
+        constraints.push(where("status", "==", statusFilter));
+      }
 
-  const isIdSearch = /\d/.test(searchTerm);
-  const normalizedSearch = isIdSearch 
-    ? searchTerm.trim() 
-    : searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+      const isIdSearch = /\d/.test(searchTerm);
+      const normalizedSearch = isIdSearch 
+        ? searchTerm.trim() 
+        : searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
 
-  if (normalizedSearch) {
-    const searchField = isIdSearch ? "studentId" : "userName";
-    constraints.push(where(searchField, ">=", normalizedSearch));
-    constraints.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
-  }
+      if (normalizedSearch) {
+        const searchField = isIdSearch ? "studentId" : "userName";
+        constraints.push(where(searchField, ">=", normalizedSearch));
+        constraints.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
+      }
 
-  const q = query(clearanceRef, ...constraints);
-  const snapshot = await getCountFromServer(q);
-  return snapshot.data().count;
+      const q = query(clearanceRef, ...constraints);
+      const snapshot = await getCountFromServer(q);
+      return snapshot.data().count;
+    },
+    CACHE_DURATIONS.COUNTS
+  );
 };
 
 // Deprecated in favor of fetchClearanceDocumentsPaginated
@@ -205,8 +217,11 @@ export const recalculateClearanceStatus = async (clearanceId: string) => {
     });
 
     cacheService.invalidate(CACHE_KEYS.clearanceDoc(clearanceId));
-    // ClearanceAll invalidation is deprecated as we move to paginated fetching
-    // cacheService.invalidate(CACHE_KEYS.clearanceAll(clearance.orgId));
+    // Invalidate aggregate counts/stats so they reflect the new status
+    if (clearance.orgId) {
+        cacheService.invalidateByPrefix(`clearance:stats:${clearance.orgId}`);
+        cacheService.invalidateByPrefix(`clearance:count:${clearance.orgId}`);
+    }
 }
 
 export const updateClearanceDocument = async (userId: string, orgId: string) => {
@@ -250,6 +265,9 @@ export const updateClearanceDocument = async (userId: string, orgId: string) => 
 
     await recalculateClearanceStatus(userId);
     cacheService.invalidateByPrefix('clearance:doc:');
+    // Count/stats are invalidated inside recalculateClearanceStatus; but invalidate broadly for safety
+    cacheService.invalidateByPrefix(`clearance:stats:`);
+    cacheService.invalidateByPrefix(`clearance:count:`);
 }
 
 
@@ -262,7 +280,6 @@ export const updateClearanceDocumentForAllStudents = async (orgId: string) => {
     );
     const snapshot = await getDocs(q);
     snapshot.docs.forEach(doc => {
-        console.log(doc.id);
         updateClearanceDocument(doc.id, orgId);
     });
 }

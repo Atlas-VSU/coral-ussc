@@ -8,22 +8,23 @@ import {
   Dialog, DialogContent, DialogDescription,
   DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
-import type { StudentUnpaidRecord } from "../types"
-import { Program } from "../../members/types"
+import { Member, Program } from "../../members/types"
+import { BlockingItem, ClearanceStatus } from "../../clearance/types"
 
 interface LogPaymentDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  record: StudentUnpaidRecord | null
+  record: ClearanceStatus | null
   checkedDues: Set<string>
-  selectedDues: StudentUnpaidRecord["dues"]
+  selectedDues: BlockingItem[]
   selectedTotal: number
   paymentDate: string
   onPaymentDateChange: (date: string) => void
   onToggleDue: (id: string) => void
   onToggleAll: () => void
   onLogPayment: () => void
-  studentProgram?: Program | null | undefined
+  student: Member | null
+  studentProgram: Program | null
   isLoading: boolean
   isSubmitting: boolean
 }
@@ -34,17 +35,22 @@ export function LogPaymentDialog({
   open, onOpenChange, record,
   checkedDues, selectedDues, selectedTotal,
   paymentDate, onPaymentDateChange,
-  onToggleDue, onToggleAll, onLogPayment, studentProgram, isLoading, isSubmitting 
+  onToggleDue, onToggleAll, onLogPayment, student,studentProgram, isLoading, isSubmitting 
 }: LogPaymentDialogProps) {
 
   const handleToggleType = (type: string) => {
     if (!record) return
-    const duesOfType = record.dues.filter(d => d.type === type)
-    const allChecked = duesOfType.every(d => checkedDues.has(d.id))
+    const duesOfType: BlockingItem[] = []
+    for (const [key, dues] of Object.entries(record.blockingItems)) { 
+      if (dues.type === type) {
+        duesOfType.push(dues)
+       }
+    }
+    const allChecked = duesOfType.every(d => checkedDues.has(d.referenceId))
     duesOfType.forEach(d => {
-      const isChecked = checkedDues.has(d.id)
-      if (allChecked && isChecked) onToggleDue(d.id)
-      if (!allChecked && !isChecked) onToggleDue(d.id)
+      const isChecked = checkedDues.has(d.referenceId)
+      if (allChecked && isChecked) onToggleDue(d.referenceId)
+      if (!allChecked && !isChecked) onToggleDue(d.referenceId)
     })
   }
 
@@ -52,9 +58,9 @@ export function LogPaymentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Unsettled Dues — {record?.student.firstName + " " + record?.student.lastName}</DialogTitle>
+          <DialogTitle>Unsettled Dues — {record?.userName}</DialogTitle>
           <DialogDescription>
-            {record?.student.studentId} · {studentProgram?.shortName} · Year {record?.student.yearLevel}
+            {record?.studentId} · {studentProgram?.shortName} · Year {student?.yearLevel}
           </DialogDescription>
         </DialogHeader>
 
@@ -65,10 +71,10 @@ export function LogPaymentDialog({
             <div className="rounded-md border border-border bg-muted/30 px-4 py-3">
               <div className="grid grid-cols-2 gap-3 text-xs">
                 {[
-                  ["Student Name", record.student.firstName + " " + record.student.lastName],
-                  ["Student ID",   record.student.studentId],
+                  ["Student Name", record.userName],
+                  ["Student ID",   record.studentId],
                   ["Program",      studentProgram?.shortName || "N/A"],
-                  ["Year Level",   String(record.student.yearLevel)],
+                  ["Year Level",   String(student!.yearLevel)], 
                 ].map(([label, value]) => (
                   <div key={label}>
                     <p className="text-muted-foreground">{label}</p>
@@ -86,11 +92,16 @@ export function LogPaymentDialog({
 
               <div className="flex flex-col gap-3">
                 {DUE_TYPES.map(type => {
-                  const duesOfType = record.dues.filter(d => d.type === type)
+                  const duesOfType: BlockingItem[] = []
+                  for (const [key, dues] of Object.entries(record.blockingItems)) { 
+                    if (dues.type === type && dues.status === "unpaid") {
+                      duesOfType.push(dues)
+                    }
+                  }
                   if (duesOfType.length === 0) return null
 
-                  const allChecked = duesOfType.every(d => checkedDues.has(d.id))
-                  const someChecked = duesOfType.some(d => checkedDues.has(d.id))
+                  const allChecked = duesOfType.every(d => checkedDues.has(d.referenceId))
+                  const someChecked = duesOfType.some(d => checkedDues.has(d.referenceId))
                   const totalBalance = duesOfType.reduce((sum, d) => sum + d.balance, 0)
 
                   return (
@@ -125,12 +136,12 @@ export function LogPaymentDialog({
                       <div className="flex flex-col gap-0 border-t border-border mx-4 mb-3">
                         {duesOfType.map((due, i) => (
                           <div
-                            key={due.id}
+                            key={due.referenceId}
                             className={`flex items-center justify-between gap-2 py-2 text-xs ${
                               i !== duesOfType.length - 1 ? "border-b border-border/50" : ""
                             }`}
                           >
-                            <p className="text-muted-foreground truncate">{due.name}</p>
+                            <p className="text-muted-foreground truncate">{due.title}</p>
                             <span className="text-muted-foreground shrink-0">
                               ₱{due.balance.toLocaleString()}
                             </span>
