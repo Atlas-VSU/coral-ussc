@@ -346,6 +346,48 @@ export const getFeesCount = async (
   );
 };
 
+export const getFeeSubmissionsCount = async (
+  orgId: string,
+  title: string,
+  academicYear: string,
+  statusFilter: string = "all",
+  searchTerm: string = ""
+) => {
+  return cacheService.getOrFetch(
+    CACHE_KEYS.feeSubmissionCount(orgId, title, academicYear, statusFilter, searchTerm),
+        async () => {
+        let constraints: any[] = [
+            where("orgId", "==", orgId),
+            where("paymentType", "in", ["bulk", "fees"]),
+            where("isArchived", "==", false),
+        ];
+
+        if (statusFilter !== "all" && statusFilter !== "") {
+            constraints.push(where("status", "==", statusFilter));
+        }
+
+        const isIdSearch = /\d/.test(searchTerm);
+        const normalizedSearch = isIdSearch 
+            ? searchTerm.trim() 
+            : searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+
+        if (normalizedSearch) {
+            const searchField = isIdSearch ? "studentId" : "userName";
+            constraints.push(where(searchField, ">=", normalizedSearch));
+            constraints.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
+            constraints.push(orderBy(searchField));
+        } else {
+            constraints.push(orderBy("submittedAt", "desc"));
+        }
+
+        const q = query(collection(db, "proofOfPayments"), ...constraints);
+        const snapshot = await getCountFromServer(q);
+        return snapshot.data().count;
+    },
+    CACHE_DURATIONS.COUNTS
+  );
+};
+
 /**
  * Fetches globally aggregated payment submissions for a specific fee.
  * Note: If no global indexing by title exists in proofOfPayments, 

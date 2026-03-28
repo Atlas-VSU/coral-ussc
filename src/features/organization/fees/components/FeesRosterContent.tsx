@@ -151,6 +151,7 @@ export function FeesRosterContent({
     paginatedRows,
   } = computed;
 
+
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   const {
@@ -173,6 +174,13 @@ export function FeesRosterContent({
     setDataView: handleDataView,
     setCurrentPage: handlePageChange,
   } = actions;
+
+  const handleRefresh = async () => {
+    setFilterStatus("all");
+    setCurrentPage(1);
+    setSearch("");
+    await refetch();
+  };
 
   return (
     <div className="flex flex-col gap-6 pb-25 lg:pb-10">
@@ -234,7 +242,7 @@ export function FeesRosterContent({
                 filterStatus={filterStatus}
                 onFilterChange={handleFilterStatus}
                 showUnpaidFilter={dataView === "all-students"}
-                handleRefresh={refetch}
+                handleRefresh={handleRefresh}
                 isLoading={isLoading}
               />
               <ViewToggle
@@ -244,7 +252,7 @@ export function FeesRosterContent({
                 }
               />
               <p className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
+                Page {currentPage} of {totalPages == 0 ? 1 : totalPages}
               </p>
             </div>
             

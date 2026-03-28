@@ -46,7 +46,6 @@ export function UnpaidTab({
     onSearchChange(localSearch)
     onPageChange(1)
   }
-
   return (
     <>
       <CardHeader>

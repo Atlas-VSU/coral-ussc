@@ -87,7 +87,7 @@ export function SubmissionsTab({
               {(isLoading || isLoadingUnpaid) ? 'Refreshing...' : 'Refresh'}
             </Button>
             <ViewToggle viewMode={viewMode} onViewChange={onViewChange} />
-            <p className="text-sm text-muted-foreground">Page {currentPage} of {totalPages}</p>
+            <p className="text-sm text-muted-foreground">Page {currentPage} of {totalPages == 0 ? 1 : totalPages}</p>
           </div>
         </div>
       </CardHeader>
