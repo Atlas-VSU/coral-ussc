@@ -151,6 +151,7 @@ export function FeesRosterContent({
     paginatedRows,
   } = computed;
 
+
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   const {
