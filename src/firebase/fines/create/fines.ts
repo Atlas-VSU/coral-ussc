@@ -292,16 +292,16 @@ export const generateFinesOnEvent = async (
 
   report("preflight", "Fetching fine records…");
 
-  const [absentUsersFines, /*partialUsers*/] = await Promise.all([
+  const [absentUsersFines, partialUsers] = await Promise.all([
     absentUsers?.length ? getFinesByStudents(absentUsers) : Promise.resolve([]),
-    // type.requiresTimeOut ? getPartialAttendeesForEvent(event.id) : Promise.resolve([]),
+    type.requiresTimeOut ? getPartialAttendeesForEvent(event.id) : Promise.resolve([]),
   ]);
 
   let partialUsersFines: typeof absentUsersFines = [];
-  // if (type.requiresTimeOut && partialUsers?.length) {
-  //   report("preflight", "Fetching fine records for partial users…");
-  //   partialUsersFines = await getFinesByStudents(partialUsers);
-  // }
+  if (type.requiresTimeOut && partialUsers?.length) {
+    report("preflight", "Fetching fine records for partial users…");
+    partialUsersFines = await getFinesByStudents(partialUsers);
+  }
 
   if (!absentUsersFines.length && !partialUsersFines.length) {
     report("done", "No users found to generate fines for.");
