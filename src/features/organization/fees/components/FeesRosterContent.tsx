@@ -175,6 +175,13 @@ export function FeesRosterContent({
     setCurrentPage: handlePageChange,
   } = actions;
 
+  const handleRefresh = async () => {
+    setFilterStatus("all");
+    setCurrentPage(1);
+    setSearch("");
+    await refetch();
+  };
+
   return (
     <div className="flex flex-col gap-6 pb-25 lg:pb-10">
       <div className="flex flex-col gap-1">
@@ -235,7 +242,7 @@ export function FeesRosterContent({
                 filterStatus={filterStatus}
                 onFilterChange={handleFilterStatus}
                 showUnpaidFilter={dataView === "all-students"}
-                handleRefresh={refetch}
+                handleRefresh={handleRefresh}
                 isLoading={isLoading}
               />
               <ViewToggle

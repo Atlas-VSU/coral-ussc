@@ -170,7 +170,7 @@ export function useFeesRoster(
             const orgId = user.uid;
 
             if (dataView === "all-students") {
-                const count = await getFeesCount(orgId, title, academicYear);
+                const count = await getFeesCount(orgId, title, academicYear, filterStatus, search);
                 setTotalCount(count);
             } else {
                 const count = await getFeeSubmissionsCount(orgId, title, academicYear, filterStatus, search);
