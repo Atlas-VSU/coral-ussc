@@ -251,9 +251,6 @@ export function FeesRosterContent({
                   setViewMode(viewMode === "card" ? "table" : "card")
                 }
               />
-              <p className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages == 0 ? 1 : totalPages}
-              </p>
             </div>
             
           </div>

@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -18,6 +19,11 @@ export function middleware(request: NextRequest) {
     } else {
       return NextResponse.redirect(new URL("/org-dashboard", request.url));
     } 
+  }
+  
+const isMaintenance = process.env.MAINTENANCE_MODE === "true";
+  if (isMaintenance && pathname !== "/maintenance") {
+    return NextResponse.redirect(new URL("/maintenance", request.url));
   }
 
   const isProtectedRoute = orgRoutes.some((route) => pathname.startsWith(route)) ||

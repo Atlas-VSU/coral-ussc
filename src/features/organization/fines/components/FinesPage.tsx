@@ -1,6 +1,6 @@
 "use client";
 
-import { DataPagination } from "@/features/organization/fines/components/DataPagination";
+import { DataPagination } from "@/components/organization/DataPagination";
 import { SearchInput } from "@/features/organization/fines/components/SearchInput";
 import { StatCard } from "@/components/organization/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +55,7 @@ export function FinesPage() {
     totalUnpaidFines,
     totalCollectedFines,
     hardRefresh,
+    setFilterStatus,
   } = useFines({ itemsPerPage: ITEMS_PER_PAGE });
 
   const {
@@ -108,6 +109,14 @@ export function FinesPage() {
     setCurrentPage(1);
    }
 
+  const handleRefresh = async () => {
+    setSearch("");
+    setLocalSearch("");
+    setCurrentPage(1);
+    setFilterStatus("all");
+    await hardRefresh();
+  }
+
   return (
     <div className="flex flex-col gap-6 pb-24 lg:pb-0">
       <PageHeader
@@ -117,15 +126,7 @@ export function FinesPage() {
         description="Management and tracking of student fines"
         action={
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={hardRefresh}
-              disabled={isLoading}
-            >
-              <RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-              {isLoading ? "Refreshing..." : "Refresh"}
-            </Button>
+           
             {/* <Button size="sm" onClick={() => setIsBulkGenerateOpen(true)}>
               Bulk Generate
             </Button> */}
@@ -178,6 +179,15 @@ export function FinesPage() {
                   <SelectItem value="paid">Paid</SelectItem>
                 </SelectContent>
               </Select>
+               <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isLoading}
+              >
+                <RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                {isLoading ? "Refreshing..." : "Refresh"}
+              </Button>
               <ViewToggle viewMode={viewMode} onViewChange={setViewMode} />
             </div>
           </div>
