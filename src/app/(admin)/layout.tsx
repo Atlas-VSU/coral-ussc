@@ -2,7 +2,6 @@
 
 import { AdminSidebar } from "@/components/NavBar/app-sidebar/AdminSidebar";
 import { MobileBottomNav } from "@/components/NavBar/mobile-bottom-nav";
-import { SiteHeader } from "@/components/NavBar/site-header";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { useAuth } from "@/hooks/useAuth";
 import { cacheUtils } from "@/utils/cacheUtils";
@@ -98,11 +97,6 @@ export default function AdminLayout({
       <div className="flex min-h-screen w-full bg-app">
         <AdminSidebar user={userData} className="z-50" />
         <div className="flex-1 flex flex-col min-w-0">
-          <SiteHeader
-            user={userData}
-            isAuthenticated={isAuthenticated}
-            showSidebarTrigger={true}
-          />
           <main className="flex-1">
             <div className="mx-auto max-w-7xl px-2 py-10 sm:px-6 lg:px-8">
               {children}
