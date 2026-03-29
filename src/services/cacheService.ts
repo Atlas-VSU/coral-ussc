@@ -417,7 +417,6 @@ export const CACHE_KEYS = {
   // Payment history
   paymentHistory:  (refId: string)               => `payments:history:${refId}`,
   verifiedHistory: (type: string, refId: string) => `payments:verified:${type}:${refId}`,
-  rejectedHistory: ( refId: string)               => `payments:rejected:${refId}`,
 
   // Fees
   feeCheckTitle: (orgId: string, title: string, year: string, sem: string) => `fees:checkTitle:${orgId}:${title}:${year}:${sem}`,
