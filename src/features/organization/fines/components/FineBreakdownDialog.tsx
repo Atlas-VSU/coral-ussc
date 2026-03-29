@@ -63,7 +63,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
             setPaymentLogs(allPaymentLogs);
             setVerifiedPayments(verified);
             setRejectedPayments(rejected);
-            setTotalPaid(computeTotalPaid(verified));
+            setTotalPaid(computeTotalPaid(fetchedFineItems));
         } catch (error) {
             console.error("Failed to fetch fine items:", error);
         }
