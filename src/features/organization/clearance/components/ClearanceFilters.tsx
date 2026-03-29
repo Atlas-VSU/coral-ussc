@@ -85,7 +85,6 @@ export function ClearanceFilters({
           <Download className="size-4" /> Export
         </Button>
         <ViewToggle viewMode={viewMode} onViewChange={onViewChange} />
-        <p className="text-sm text-muted-foreground">Page {currentPage} of {totalPages == 0 ? 1 : totalPages}</p>
       </div>
     </div>
   )

@@ -41,6 +41,8 @@ export function DataPagination({
           <ChevronLeftIcon className="h-4 w-4" />
         </Button>
 
+        <p className="text-xs text-muted-foreground">Page {currentPage} of {totalPages}</p>
+
         <Button
           variant="outline"
           size="icon"

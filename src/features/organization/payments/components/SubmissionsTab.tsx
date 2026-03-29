@@ -48,6 +48,12 @@ export function SubmissionsTab({
     onPageChange(1)
   }
 
+  const handleRefresh = () => {
+    setLocalSearch("");
+    onPageChange(1);
+    refetchPayments();
+  }
+
   return (
     <>
       <CardHeader>
@@ -82,12 +88,11 @@ export function SubmissionsTab({
                 <SelectItem value="rejected">Declined</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={refetchPayments} variant="outline" disabled={isLoading || isLoadingUnpaid}>
+            <Button onClick={handleRefresh} variant="outline" disabled={isLoading || isLoadingUnpaid}>
               <RefreshCcw className={`mr-2 h-4 w-4 ${(isLoading || isLoadingUnpaid) ? 'animate-spin' : ''}`} />
               {(isLoading || isLoadingUnpaid) ? 'Refreshing...' : 'Refresh'}
             </Button>
             <ViewToggle viewMode={viewMode} onViewChange={onViewChange} />
-            <p className="text-sm text-muted-foreground">Page {currentPage} of {totalPages == 0 ? 1 : totalPages}</p>
           </div>
         </div>
       </CardHeader>
