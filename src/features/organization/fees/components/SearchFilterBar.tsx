@@ -32,6 +32,13 @@ export function SearchFilterBar({
     e.preventDefault();
     onSearchChange(localSearch);
   }
+
+  const handleRefreshLocal = () => {
+    setLocalSearch("");
+    onSearchChange("");
+    onFilterChange("all");
+    handleRefresh();
+  }
   
   return (
     <>
@@ -63,7 +70,7 @@ export function SearchFilterBar({
         </SelectContent>
       </Select>
 
-      <Button onClick={handleRefresh} variant="outline" disabled={isLoading}>
+      <Button onClick={handleRefreshLocal} variant="outline" disabled={isLoading}>
         <RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
         {isLoading ? 'Refreshing...' : 'Refresh'}
       </Button>
