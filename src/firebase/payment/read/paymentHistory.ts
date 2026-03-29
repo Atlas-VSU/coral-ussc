@@ -23,17 +23,17 @@ export const getPaymentHistoryById = async (paymentHistoryId: string, paymentTyp
 }
 
 export const getFinesRejectedPaymentHistoriesByReferenceId = async (paymentReferenceId: string) => {
-    // return cacheService.getOrFetch(
-        // CACHE_KEYS.rejectedHistory(paymentReferenceId),
-        // async () => {
+    return cacheService.getOrFetch(
+        CACHE_KEYS.rejectedHistory(paymentReferenceId),
+        async () => {
             const subColRef = collection(db, "fines", paymentReferenceId, "paymentHistory");
             const q = query(subColRef, where("status", "==", PaymentStatus.REJECTED));
             const querySnapshot = await getDocs(q);
             const paymentHistories = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as FinesPaymentLog[];
             return paymentHistories;
-        // },
-        // CACHE_DURATIONS.PAYMENT_HISTORY
-    // );
+        },
+        CACHE_DURATIONS.PAYMENT_HISTORY
+    );
  }
 
 export const getFinesPaymentHistoriesByReferenceId = async (paymentReferenceId: string) => {
