@@ -28,7 +28,7 @@ export default function PaymentsPage() {
     unpaidSearch, setUnpaidSearch,
     unpaidPage, setUnpaidPage,
     unpaidViewMode, setUnpaidViewMode,
-    unpaidTotalPages, paginatedUnpaid,
+    unpaidTotalPages, filteredUnpaid,
     refreshAll,
     // unpaid detail
     detailOpen, setDetailOpen,
@@ -113,7 +113,7 @@ export default function PaymentsPage() {
           />
         ) : (
           <UnpaidTab
-            paginatedUnpaid={paginatedUnpaid}
+            paginatedUnpaid={filteredUnpaid}
             unpaidTotalPages={unpaidTotalPages}
             unpaidPage={unpaidPage}
             unpaidSearch={unpaidSearch}
