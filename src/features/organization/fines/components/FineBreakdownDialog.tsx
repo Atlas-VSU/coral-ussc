@@ -4,7 +4,7 @@ import { appealStatusConfig } from "../config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "../local-components/button";
 import { FineItem, FinesPaymentLog, ProofOfPayment, StudentFines } from "../types";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback} from "react";
 import { getFineItemsByFineId } from "@/firebase/fines/read/fines";
 import { FineItemDetailDialog } from "./FineItemDetailDialog";
 import { getFinesPaymentHistoriesByReferenceId} from "@/firebase/payment/read/paymentHistory";
@@ -15,6 +15,7 @@ import { useFineItems } from "../hooks/useFineItems";
 import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval";
 import PaymentReceiptDialog, { ReceiptData } from "../local-components/PaymentReceiptDialog";
 import { toast } from "sonner";
+import { FineBreakdownSkeleton } from "@/components/organization/FineBreakdownSkeleton";
 
 interface FineBreakdownDialogProps { 
     open: boolean;
@@ -37,8 +38,9 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
     const [totalPaid, setTotalPaid] = useState(0);
     const [receiptOpen, setReceiptOpen] = useState(false);
     const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
-    
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    // const _fines = useRef(fines).current; // To hold the initial fines data for reference in callbacks without causing re-renders]
 
     const {
         pendingPayment,
@@ -50,6 +52,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
     
     const fetchFineItems = useCallback(async (fineId: string) => {
         try {
+            setIsLoading(true);
             const fetchedFineItems = await getFineItemsByFineId(fineId);
             const allPaymentLogs = await getFinesPaymentHistoriesByReferenceId(fineId);
             
@@ -66,7 +69,9 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
             setTotalPaid(computeTotalPaid(fetchedFineItems));
         } catch (error) {
             console.error("Failed to fetch fine items:", error);
-        }
+        } finally {
+            setIsLoading(false);
+         }
     }, []);
 
     const openFineDetail = (item: FineItem) => {
@@ -145,7 +150,8 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                             {fines?.studentId} · {fines?.fineItemsCount} fine item(s)
                         </DialogDescription>
                     </DialogHeader>
-          
+                    {isLoading ? <FineBreakdownSkeleton /> :
+                    (<>  
                     <div className="flex flex-col gap-2.5 rounded-md border border-[#2E7D32]/30 bg-[#AED581]/10 px-4 py-3">
                         {/* Header row */}
                         <div className="flex items-center justify-between gap-3">
@@ -471,7 +477,9 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                             if (pendingPayment) await handleRejectSucceed(pendingPayment, reason);
                         }}
                         isProcessing={isSubmitting}
-                    />
+                    />  
+                    </>)
+                    }
             
                 </DialogContent>
             </Dialog>
