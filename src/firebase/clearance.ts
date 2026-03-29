@@ -280,7 +280,6 @@ export const updateClearanceDocumentForAllStudents = async (orgId: string) => {
     );
     const snapshot = await getDocs(q);
     snapshot.docs.forEach(doc => {
-        console.log(doc.id);
         updateClearanceDocument(doc.id, orgId);
     });
 }

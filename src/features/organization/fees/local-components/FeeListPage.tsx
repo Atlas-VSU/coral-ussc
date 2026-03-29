@@ -47,6 +47,13 @@ export default function FeeListPage() {
     refetchFees,
     itemsPerPage: ITEMS_PER_PAGE
   })
+  
+  const handleRefresh = () => {
+    setSearch("")
+    setFilterStatus("all")
+    setCurrentPage(1)
+    refetchFees()
+  }
 
   const handleFeeClick = (fee: { title: string; academicYear: string; id: string; amount?: number; semester?: string; description?: string; type?: string }) => {
     setNavigatingId(fee.id)
@@ -106,7 +113,7 @@ export default function FeeListPage() {
                 filterStatus={filterStatus}
                 onFilterChange={setFilterStatus as any}
               />
-              <Button onClick={refetchFees} variant="outline" disabled={isLoading}>
+              <Button onClick={handleRefresh} variant="outline" disabled={isLoading}>
                 <RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                 {isLoading ? 'Refreshing...' : 'Refresh'}
               </Button>

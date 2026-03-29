@@ -396,6 +396,7 @@ export const CACHE_KEYS = {
   feeRoster:    (orgId: string, title: string, year: string) => `fees:roster:${orgId}:${title}:${year}`,
   feeDoc:       (feeId: string) => `fees:doc:${feeId}`,
   feeLogs:      (feeId: string) => `fees:logs:${feeId}`,
+  feeSubmissionCount: (orgId: string, title: string, year: string, statusFilter: string, searchTerm: string) => `fees:submission-count:${orgId}:${title}:${year}:${statusFilter}:${searchTerm}`,
 
   // Fines
   finesAll:        (orgId: string) => `fines:all:${orgId}`,

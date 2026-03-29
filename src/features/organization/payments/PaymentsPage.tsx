@@ -56,6 +56,17 @@ export default function PaymentsPage() {
     setReceiptOpen(true)
   }
 
+  const handleRefresh = async () => {
+    setUnpaidSearch("");
+    setUnpaidPage(1);
+    setFilterStatus("all");
+    if (dataView === "submissions") {
+      await refetchPayments();
+    } else {
+      await refetchUnpaids();
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6 pb-24 lg:pb-0">
       <PageHeader
@@ -96,7 +107,7 @@ export default function PaymentsPage() {
             onViewChange={setViewMode}
             onOpenReview={openReview}
             isLoading={isLoading}
-            refetchPayments={refetchPayments}
+            refetchPayments={handleRefresh}
             isLoadingUnpaid={isLoadingUnpaid}
             totalCount={totalSubmissionCount}
           />
@@ -112,7 +123,7 @@ export default function PaymentsPage() {
             onViewChange={setUnpaidViewMode}
             onOpenDetail={openUnpaidDetail}
             isLoading={isLoadingUnpaid}
-            refetchPayments={refetchUnpaids}
+            refetchPayments={handleRefresh}
             isLoadingUnpaid={isLoadingUnpaid}
             totalCount={totalUnpaidCount}
           />

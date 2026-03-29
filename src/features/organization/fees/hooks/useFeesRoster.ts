@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchFee, fetchFeesPaginated, getFeesCount, fetchFeeSubmissionsPaginated, fetchPaymentLogs } from "@/firebase/fees";
+import { fetchFee, fetchFeesPaginated, getFeesCount, fetchFeeSubmissionsPaginated, fetchPaymentLogs, getFeeSubmissionsCount } from "@/firebase/fees";
 import { Fee, PaymentLog } from "../types";
 import { Member } from "../../members/types";
 import { cacheService } from "@/services/cacheService";
@@ -53,7 +53,7 @@ export function useFeesRoster(
     const [logs, setLogs] = useState<PaymentLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
-    const [totalCount, setTotalCount] = useState(0);
+    const [totalCount, setTotalCount] = useState(1);
     const [hasNextPage, setHasNextPage] = useState(false);
     const [stats, setStats] = useState({
       pending: 0,
@@ -111,7 +111,7 @@ export function useFeesRoster(
 
                 setStudentRows(enrichedRows);
                 setHasNextPage(docs.length === pageSize);
-
+                
                 // Persist the cursor for this page so the next page can use it
                 if (lastVisible) {
                   cursorsRef.current["all-students"][currentPage - 1] = lastVisible;
@@ -148,11 +148,6 @@ export function useFeesRoster(
 
                 setLogs(mappedLogs);
                 setHasNextPage(docs.length === pageSize);
-                setTotalCount(prev =>
-                  docs.length > 0
-                    ? Math.max(prev, currentPage * pageSize + (docs.length === pageSize ? 1 : 0))
-                    : (currentPage - 1) * pageSize + docs.length
-                );
 
                 if (lastVisible) {
                   cursorsRef.current["submissions"][currentPage - 1] = lastVisible;
@@ -168,9 +163,28 @@ export function useFeesRoster(
     // cursorsRef is a ref — safe to omit from deps, it never changes identity
     }, [title, academicYear, dataView, currentPage, pageSize, search, filterStatus]);
 
+    const fetchTotalCount = useCallback(async () => {
+        try {
+            const user = await getCurrentUserData() as any;
+            if (!user?.uid) return;
+            const orgId = user.uid;
+
+            if (dataView === "all-students") {
+                const count = await getFeesCount(orgId, title, academicYear, filterStatus, search);
+                setTotalCount(count);
+            } else {
+                const count = await getFeeSubmissionsCount(orgId, title, academicYear, filterStatus, search);
+                setTotalCount(count);
+            }
+        } catch (err) {
+            console.error("Error fetching total count:", err);
+        }
+    }, [title, academicYear, filterStatus, search, dataView]);
+
     useEffect(() => {
         fetchData();
-    }, [fetchData]);
+        fetchTotalCount();
+    }, [fetchData, fetchTotalCount]);
 
     // Only wipe the cursor for the current page so we re-fetch just this page
     const hardRefresh = useCallback(async () => {
