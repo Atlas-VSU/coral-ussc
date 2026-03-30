@@ -1,10 +1,10 @@
-import { FineItem, FinesPaymentLog, StudentFines } from "../types";
+import { FineItem } from "../types";
 
 
-export function computeTotalPaid(record: FinesPaymentLog[]) {
+export function computeTotalPaid(record: FineItem[]) {
   let paidAmount = 0;
     record.forEach(r => {
-      if (r.status === "verified") {
+      if (r.isPaid) {
           paidAmount += r.amount;
       }
     })

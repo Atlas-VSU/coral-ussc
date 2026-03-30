@@ -117,7 +117,6 @@ export function usePaymentsPage() {
 
   // ── Derived: unpaid — server already filtered, just paginate in memory ────
   const unpaidTotalPages = Math.ceil(totalUnpaidCount / ITEMS_PER_PAGE)
-  const paginatedUnpaid = unpaidPayments;
 
   // ── Live unpaid record (keeps modal in sync after mutations) ──────────────
   const liveSelectedUnpaid = useMemo(
@@ -292,7 +291,7 @@ export function usePaymentsPage() {
       receiptId,
       studentName,
       studentId: liveSelectedUnpaid.studentId,
-      items: selectedDues.map(d => ({ name: d.title, type: d.type as "fees" | "fines", amount: d.balance })),
+      items: selectedDues.filter(d => d.balance > 0).map(d => ({ name: d.title, type: d.type as "fees" | "fines", amount: d.balance})) ?? [],
       total: selectedTotal,
       date: paymentDate.toDate().toLocaleString(),
       verifiedByName: `${currentUser.firstName} ${currentUser.lastName}`,
@@ -336,7 +335,7 @@ export function usePaymentsPage() {
     unpaidPage, setUnpaidPage,
     unpaidViewMode, setUnpaidViewMode,
     filteredUnpaid: unpaidPayments,
-    unpaidTotalPages, paginatedUnpaid,
+    unpaidTotalPages,
     detailOpen, setDetailOpen,
     liveSelectedUnpaid,
     checkedDues, selectedDues, selectedTotal,
