@@ -148,7 +148,7 @@ export const createOfflineFinesProofOfPayment = async (
     const currentUser = await getCurrentUserData() as unknown as Member;
     try {
       const transaction = await getFineByStudentId(payment.studentId);
-      for (const item of fineItems ?? []) { 
+      for (const item of fineItems?.filter(f => !f.isPaid) ?? []) { 
         items.push({
           refId: item.id,
           title: item.eventName,
@@ -226,7 +226,7 @@ export const createBulkOfflineProofOfPayment = async (
   const ref = collection(db, "proofOfPayments");
   const docRef = await addDoc(ref, paymentData);
   const items = [];
-  for (const due of dues) {
+  for (const due of dues.filter(d => d.status === "unpaid")) {
     await createFinesPaymentHistory(payment, due.parentFineId?due.parentFineId:due.referenceId, docRef.id, userId, due);
     items.push({
       refId: due.referenceId,

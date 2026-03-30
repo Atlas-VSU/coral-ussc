@@ -128,7 +128,7 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
     totalUnsettled,
     totalUnpaidFines, // Note: Unpaid total sum across 9,000 needs aggregation doc
     totalCollectedFines, // Note: Collected total sum across 9,000 needs aggregation doc
-    hardRefresh,
+    hardRefresh, setPaginatedFines, setTotalCount,
     setFilterStatus
   };
 }

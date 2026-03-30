@@ -55,6 +55,8 @@ export function FinesPage() {
     totalUnpaidFines,
     totalCollectedFines,
     hardRefresh,
+    setPaginatedFines,
+    setTotalCount,
     setFilterStatus,
   } = useFines({ itemsPerPage: ITEMS_PER_PAGE });
 
@@ -95,8 +97,9 @@ export function FinesPage() {
   };
 
   const handleSuccess = async () => {
-    // markStatusChanged();
-    hardRefresh();
+    const newFines = paginatedFines.filter(f => f.studentId !== selectedFine?.studentId);
+    setPaginatedFines(newFines);
+    setTotalCount(prev => prev - 1);
   };
 
   useEffect(() => {
