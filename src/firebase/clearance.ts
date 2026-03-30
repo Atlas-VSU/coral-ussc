@@ -271,19 +271,6 @@ export const updateClearanceDocument = async (userId: string, orgId: string) => 
 }
 
 
-export const updateClearanceDocumentForAllStudents = async (orgId: string) => {
-    const clearanceRef = collection(db, 'clearanceStatus');
-    const q = query(
-        clearanceRef, 
-        where('orgId', '==', orgId), 
-        where('isArchived', '==', false)
-    );
-    const snapshot = await getDocs(q);
-    snapshot.docs.forEach(doc => {
-        updateClearanceDocument(doc.id, orgId);
-    });
-}
-
 export const addStudentWithClearance = async (studentId: string,studentData: any, orgId: string) => {
     try {
         const batch = writeBatch(db);
@@ -333,20 +320,6 @@ export const addStudentWithClearance = async (studentId: string,studentData: any
         throw error;
     }
 };
-
-export const updateClearanceDocumentForPaginatedStudents = async (orgId: string, userIds: string[]) => {
-    const clearanceRef = collection(db, 'clearanceStatus');
-    const q = query(
-        clearanceRef, 
-        where('userId', 'in', userIds), 
-        where('orgId', '==', orgId), 
-        where('isArchived', '==', false)
-    );
-    const snapshot = await getDocs(q);
-    snapshot.docs.forEach(doc => {
-        updateClearanceDocument(doc.id, orgId);
-    });
-}
 
 export const approvePaymentClearanceUpdate = async (
   clearanceId: string, 
