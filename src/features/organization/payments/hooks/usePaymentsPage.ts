@@ -7,7 +7,7 @@ import { usePayments } from "./usePayments"
 import { ProofOfPayment } from "../../fines/types"
 import { PaymentStatus } from "@/constants/status"
 import { ViewMode } from "@/components/organization/ViewToggle"
-import { getCurrentUserData, getProgramById, getUserById } from "@/firebase"
+import { getCurrentUserData, getFee, getProgramById, getUserById } from "@/firebase"
 import { PaymentFormData } from "@/lib/validators"
 import { createBulkOfflineProofOfPayment } from "@/firebase/payment/create/proofOfPayment"
 import { generateReceiptId } from "../utils"
@@ -258,8 +258,19 @@ export function usePaymentsPage() {
       referenceId: selectedDues.length > 1 && isFine &&isFee ? "bulk_transaction" : isFine? selectedDues[0].parentFineId: selectedDues[0].referenceId,
     }
 
+    const feeItemKeys = []
+
+    if (isFee) {
+      for (const due of selectedDues) {
+        if (due.type === "fees") {
+          const feeItem = await getFee(due.referenceId)
+          feeItemKeys.push(feeItem.feeItemId)
+        }
+      }
+    }
+
     try {
-      await createBulkOfflineProofOfPayment(lineItems, receiptId, selectedDues, liveSelectedUnpaid.userId!, paymentDate)
+      await createBulkOfflineProofOfPayment(lineItems, receiptId, selectedDues, liveSelectedUnpaid.userId!, paymentDate, feeItemKeys)
     } catch (error) {
       toast.error("Failed to log payment. Please try again.")
       setLoading(false)

@@ -6,7 +6,7 @@ import { recalculateFees } from "@/firebase/fees/update/recalculate";
 import { Member } from "@/features/organization/members/types";
 import { PaymentStatus } from "@/constants/status";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
-import { fetchFeesForOrg, fetchUnpaidFeesForOrg } from "@/firebase/fees";
+import { fetchFeesForOrg } from "@/firebase/fees";
 import { recalculateClearanceStatus } from "@/firebase/clearance";
 
 

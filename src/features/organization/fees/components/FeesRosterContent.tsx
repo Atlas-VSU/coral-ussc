@@ -82,11 +82,7 @@ export function FeesRosterContent({
     method: "gcash" | "cash" | "bank_transfer" | "waiver",
     ref?: string,
   ) => Promise<void>;
-  onArchiveFee: (
-    feeTitle: string,
-    academicYear: string,
-    semester: string,
-  ) => Promise<void>;
+  onArchiveFee: (feeItemId: string) => Promise<void>;
   isSubmitting?: boolean;
   refetchStudentRow: (feeId: string) => Promise<void>;
   isLoading?: boolean;

@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
 
     const batch = adminDb.batch();
     const proofRef = adminDb.collection("proofOfPayments").doc();
+    const itemKeys: string[] = [];
     const items: object[] = [];
 
     for (const due of payload.dues) {
@@ -160,6 +161,14 @@ export async function POST(request: NextRequest) {
         academicYear: due.academicYear,
         semester:     due.semester,
       });
+
+      if (due.paymentType === "fees") {
+        const fee = await adminDb.collection("fees").doc(due.refId).get();
+        const feeData = fee.data();
+        itemKeys.push(feeData?.feeItemId);
+      } else if (due.paymentType === "fines") {
+        itemKeys.push(due.parentFineId);
+      }
     }
 
     // Single proof-of-payment doc covering all dues
@@ -189,6 +198,7 @@ export async function POST(request: NextRequest) {
         submittedBy: "student",
         items,
       },
+      itemKeys: itemKeys,
     });
 
     batch.update(adminDb.collection("clearanceStatus").doc(userId), {

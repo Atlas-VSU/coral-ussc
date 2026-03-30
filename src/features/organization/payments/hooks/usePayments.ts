@@ -183,6 +183,7 @@ export function usePayments() {
       if (currentUser) {
         cacheService.invalidate(CACHE_KEYS.proofOfPayments(currentUser.uid));
         cacheService.invalidate(`payments:stats:${currentUser.uid}`);
+        cacheService.invalidateByPrefix('payments:proof:')
       }
       
       // Wipe ONLY the current page's cursor to force a fresh fetch of this view
