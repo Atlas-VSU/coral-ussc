@@ -22,8 +22,9 @@ export default function MaintenancePage() {
                 alt="Maintenance"
                 width={250}
                 height={190}
-                className="w-auto h-auto object-contain max-w-full max-h-[200px]"
-                priority
+                className="w-auto h-auto object-contain max-w-full max-h-[200px] lg:hidden"
+                
+                unoptimized
               />
             </div>
           </div>
@@ -31,13 +32,14 @@ export default function MaintenancePage() {
           {/* Left Side - Content */}
 
           <div className="hidden lg:flex justify-center items-center order-3 lg:order-2 animate-fade-in-left animation-delay-400">            
-              <Image
+              <Image  
                 src="/images/ussc-logo-1.webp"
                 alt="Maintenance Illustration"
                 width={450}
                 height={340}
                 className="w-auto h-auto object-contain max-w-full max-h-[380px]"
                 priority
+                unoptimized
               />
           </div>
 
