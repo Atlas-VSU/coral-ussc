@@ -2,7 +2,7 @@ import { PaymentStatus } from "@/constants/status";
 import { getFineByStudentId, getAllFines, getAllUnpaidFinesforOrg } from "@/firebase/fines/read/fines";
 import { db } from "@/firebase/firebase.config";
 import { PaymentFormData } from "@/lib/validators";
-import { addDoc, collection, doc, Timestamp, updateDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, Timestamp, updateDoc } from "firebase/firestore";
 
 
 import { generateReceiptId } from "@/features/organization/payments/utils";
@@ -36,7 +36,17 @@ export const createOnlineProofOfPayment = async (
                 paymentType:payment.type,
                 status: PaymentStatus.PENDING,
                 submittedAt: Timestamp.now(),
-                metadata: {},
+                metadata: {
+                    items: [{
+                        refId: transaction.id,
+                        title: payment.notes || (type === "fines" ? "Fine Payment" : "Fee Payment"),
+                        amount: payment.amount,
+                        paymentType: type,
+                        parentFineId: type === "fines" ? (transaction.id || "") : "",
+                        academicYear: type === "fees" ? transaction.academicYear : "2025-2026",
+                        semester: type === "fees" ? transaction.semester : "2nd",
+                    }]
+                },
                 verifiedBy: currentUser.id!,
                 verifiedByName: currentUser.firstName + " " + currentUser.lastName,
                 verifiedAt: Timestamp.now(),
@@ -108,12 +118,26 @@ export const createBulkOnlineProofOfPayment = async (
         await updateDoc(clearanceRef, {
           [`blockingItems.${due.refId}.pendingReview`]: true,
         })
+        let academicYear = "2025-2026";
+        let semester = "2nd";
+        
+        if (due.paymentType === "fees") {
+          const feeDoc = await getDoc(doc(db, "fees", due.refId));
+          if (feeDoc.exists()) {
+            const feeData = feeDoc.data();
+            academicYear = feeData.academicYear;
+            semester = feeData.semester;
+          }
+        }
+
         items.push({
           refId: due.refId || null,
           title: due.title || null,
           amount: due.amount || null,
           paymentType: due.paymentType || null,
           parentFineId: due.paymentType === "fines" ? due.parentFineId : "",
+          academicYear,
+          semester,
         })
     }
         await updateDoc(doc(db, "clearanceStatus", userId), { status: "pending" });
@@ -155,6 +179,8 @@ export const createOfflineFinesProofOfPayment = async (
           amount: item.amount,
           paymentType: type,
           parentFineId: fine.id!,
+          academicYear: "2025-2026",
+          semester: "2nd",
           })
       }
         if (transaction)
@@ -234,7 +260,20 @@ export const createBulkOfflineProofOfPayment = async (
       amount: due.balance,
       paymentType: due.type,
       parentFineId: due.type === "fines" ? due.parentFineId : "",
+      academicYear: "2025-2026",
+      semester: "2nd",
     })
+    
+    // If it's a fee, we should try to get the actual academic year and semester if possible
+    if (due.type === "fees") {
+       const feeDoc = await getDoc(doc(db, "fees", due.referenceId));
+       if (feeDoc.exists()) {
+         const feeData = feeDoc.data();
+         const lastItem = items[items.length - 1];
+         lastItem.academicYear = feeData.academicYear;
+         lastItem.semester = feeData.semester;
+       }
+    }
   }
   await updateDoc(doc(db, "proofOfPayments", docRef.id), {
       metadata: {

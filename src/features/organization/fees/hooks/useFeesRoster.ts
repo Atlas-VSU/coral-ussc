@@ -16,6 +16,7 @@ export interface StudentFeeRow extends Fee {
 export function useFeesRoster(
   title: string,
   academicYear: string,
+  semester: string,
   options: {
     pageSize?: number;
     currentPage?: number;
@@ -121,6 +122,8 @@ export function useFeesRoster(
                 const { docs, lastVisible } = await fetchFeeSubmissionsPaginated(
                   orgId,
                   title,
+                  academicYear,
+                  semester,
                   pageSize,
                   cursor,
                   filterStatus,

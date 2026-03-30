@@ -391,6 +391,8 @@ export const getFeeSubmissionsCount = async (
 export const fetchFeeSubmissionsPaginated = async (
   orgId: string,
   feeTitle: string,
+  academicYear: string,
+  semester: string,
   pageSize: number = 10,
   lastVisibleDoc: any = null,
   statusFilter: string = "all",
@@ -432,11 +434,13 @@ export const fetchFeeSubmissionsPaginated = async (
   // Since we don't have feeTitle indexed at root in proofOfPayments yet, 
   // we filter by title in metadata if possible, but Firestore can't do that.
   // For now, we fetch recent fee payments for the org.
-  const docs = snapshot.docs.map((doc) => ({
+  let docs = snapshot.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
   }));
 
+  docs = docs.filter((doc : any) => doc.metadata.items.find((item: any) => item.title === feeTitle && item.academicYear === academicYear && item.semester === semester));
+  
   return {
     docs,
     lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
@@ -693,7 +697,9 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                     title: item.title,
                     data: itemDoc.data(),
                     paymentAmount: item.amount,
-                    refId: item.refId
+                    refId: item.refId,
+                    academicYear: item.paymentType === PaymentType.FEES ? itemDoc.data()?.academicYear : "2025-2026",
+                    semester: item.paymentType === PaymentType.FEES ? itemDoc.data()?.semester : "2nd",
                 });
                 if (bulkPaymentHistoryRef) {
                     // Stage the log data for the WRITE phase
@@ -712,7 +718,15 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                         rejectionReason: null,
                         notes: `Bulk manual payment recorded by admin. Items: ${items.map(i => i.refId).join(', ')}`,
                         paymentType: overallPaymentType,
-                        metadata: { items },
+                        metadata: { items: itemDocsToUpdate.map(i => ({
+                            refId: i.refId,
+                            title: i.title,
+                            amount: i.paymentAmount,
+                            paymentType: i.data.paymentType || (item.paymentType), // Fallback
+                            parentFineId: i.data.parentFineId || "",
+                            academicYear: i.academicYear,
+                            semester: i.semester
+                        })) },
                         createdAt: Timestamp.now(),
                     };
 
@@ -752,7 +766,15 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                 verifiedAt: Timestamp.now(),
                 rejectionReason: "",
                 notes: "Bulk manual payment recorded by admin",
-                metadata: { items },
+                metadata: { items: itemDocsToUpdate.map(i => ({
+                    refId: i.refId,
+                    title: i.title,
+                    amount: i.paymentAmount,
+                    paymentType: i.data.paymentType || "bulk", 
+                    parentFineId: i.data.parentFineId || "",
+                    academicYear: i.academicYear,
+                    semester: i.semester
+                })) },
                 receiptCode: receipt,
                 isArchived: false,
                 updatedAd: Timestamp.now(),
@@ -915,6 +937,8 @@ export const recordManualPaymentAndUpdateClearance = async (
                         amount: paymentAmount,
                         paymentType: PaymentType.FEES,
                         parentFineId: "",
+                        academicYear: feeData.academicYear,
+                        semester: feeData.semester,
                     }]
                 },
                 receiptCode: receipt,
