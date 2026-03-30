@@ -32,7 +32,7 @@ export function useAuth() {
             const firestoreData = userSnapshot.data();
             // Combine auth and Firestore data
             setUser({
-              uid: authUser.uid,
+              uid: firestoreData.id,
               name: firestoreData.name,
               email: authUser.email || firestoreData.email || "",
               avatar: authUser.photoURL || "",

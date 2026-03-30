@@ -51,6 +51,8 @@ export function SubmissionsTab({
   const handleRefresh = () => {
     setLocalSearch("");
     onPageChange(1);
+    onSearchChange("");
+    onStatusChange("all");
     refetchPayments();
   }
 

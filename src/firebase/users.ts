@@ -111,7 +111,7 @@ export const getCurrentUserData = async () => {
       return null;
     }
 
-    return { uid: currentUser.uid, ...userDocSnap.data() };
+    return { uid: userDocSnap.data().id, ...userDocSnap.data() };
     
   } catch (error) {
     console.error("Error fetching current user:", error);
