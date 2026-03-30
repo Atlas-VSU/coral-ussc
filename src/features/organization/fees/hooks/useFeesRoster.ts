@@ -186,13 +186,14 @@ export function useFeesRoster(
         try {
             const user = await getCurrentUserData() as any;
             if (!user?.uid) return;
+            const feeData = await fetchFeeItem(user.uid, title, academicYear, semester);
             const orgId = user.uid;
 
             if (dataView === "all-students") {
                 const count = await getFeesCount(orgId, title, academicYear, semester, filterStatus, search);
                 setTotalCount(count);
             } else {
-                const count = await getFeeSubmissionsCount(orgId, title, academicYear, semester, filterStatus, search);
+                const count = await getFeeSubmissionsCount(orgId, feeData?.id!, title, academicYear, semester, filterStatus, search);
                 setTotalCount(count);
             }
         } catch (err) {
@@ -215,6 +216,10 @@ export function useFeesRoster(
             cacheService.invalidateByPrefix('fees:count:');
             cacheService.invalidateByPrefix('fees:submission-count:');
             cacheService.invalidateByPrefix('fees:stats:');
+            cacheService.invalidateByPrefix('fees:totalPaidAmountCount:');
+            cacheService.invalidateByPrefix('fees:totalRejectedAmountCount:');
+            cacheService.invalidateByPrefix('fees:totalUnpaidAmountCount:');
+            cacheService.invalidateByPrefix('fees:totalPendingAmountCount:');
         }
         cursorsRef.current[dataView][currentPage - 1] = undefined;
         await fetchData();
@@ -228,6 +233,10 @@ export function useFeesRoster(
             cacheService.invalidateByPrefix('fees:submission-count:');
             cacheService.invalidateByPrefix('fees:stats:');
             cacheService.invalidateByPrefix('fees:roster:');
+            cacheService.invalidateByPrefix('fees:totalPaidAmountCount:');
+            cacheService.invalidateByPrefix('fees:totalRejectedAmountCount:');
+            cacheService.invalidateByPrefix('fees:totalUnpaidAmountCount:');
+            cacheService.invalidateByPrefix('fees:totalPendingAmountCount:');
             const [freshLogs, updatedFee] = await Promise.all([
                 fetchPaymentLogs(feeId),
                 fetchFee(feeId)

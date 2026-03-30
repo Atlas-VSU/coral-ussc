@@ -13,6 +13,7 @@ export type Fee = {
     semester?: string,
     eventId?: string,
     amount: number,
+    feeItemId: string,
     paidAmount: number,
     balance: number, 
     status: string,

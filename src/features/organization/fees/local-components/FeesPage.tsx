@@ -40,7 +40,7 @@ export function FeesPage() {
         />
         <StatCard
           title="Avg. Collection Rate"
-          value={`${(totalCollected / totalStudents).toFixed(2)}%`}
+          value={`${totalStudents > 0 ? (totalCollected / totalStudents).toFixed(2) : 0}%`}
           description="Overall completion"
           icon={Users}
         />

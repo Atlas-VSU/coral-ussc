@@ -7,8 +7,8 @@ import { Member } from "@/features/organization/members/types";
 import { PaymentStatus } from "@/constants/status";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { getAllProofOfPayments } from "../read/proofOfPayment";
-import { fetchFeesForOrg, fetchUnpaidFeesForOrg } from "@/firebase/fees";
-import { getAllFines, getAllUnpaidFinesforOrg } from "@/firebase/fines/read/fines";
+import { fetchFeesForOrg } from "@/firebase/fees";
+import { getAllFines } from "@/firebase/fines/read/fines";
 import { recalculateClearanceStatus } from "@/firebase/clearance";
 
 
@@ -78,9 +78,7 @@ export const verifyPaymentHistory = async (
         // Pre-emptive warming
         getAllProofOfPayments(orgId).catch(console.error);
         fetchFeesForOrg(orgId).catch(console.error);
-        fetchUnpaidFeesForOrg().catch(console.error);
         getAllFines().catch(console.error);
-        getAllUnpaidFinesforOrg().catch(console.error);
 }
 
 export const rejectPaymentHistory = async (
@@ -141,15 +139,11 @@ export const rejectPaymentHistory = async (
         const orgId = verifier.id || '';
         cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
         cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
         cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
-        cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
         cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
         
         // Pre-emptive warming
         getAllProofOfPayments(orgId).catch(console.error);
         fetchFeesForOrg(orgId).catch(console.error);
-        fetchUnpaidFeesForOrg().catch(console.error);
         getAllFines().catch(console.error);
-        getAllUnpaidFinesforOrg().catch(console.error);
 }

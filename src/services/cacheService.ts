@@ -436,4 +436,10 @@ export const CACHE_KEYS = {
 
   // Fees
   totalCollectedAmount: (orgId: string) => `fees:totalCollectedAmount:${orgId}`,
+
+  // Fees
+  totalPaidAmountCount: (feeItemId: string) => `fees:totalPaidAmountCount:${feeItemId}`,
+  totalRejectedAmountCount: (feeItemId: string) => `fees:totalRejectedAmountCount:${feeItemId}`,
+  totalUnpaidAmountCount: (feeItemId: string) => `fees:totalUnpaidAmountCount:${feeItemId}`,
+  totalPendingAmountCount: (feeItemId: string) => `fees:totalPendingAmountCount:${feeItemId}`,
 };
