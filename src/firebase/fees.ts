@@ -7,7 +7,7 @@ import { Fee, FeeWithPaymentHistory, PaymentLog } from "@/features/organization/
 import { getAllStudents, getMembersOfAnOrg } from "./members";
 import { setDate } from "date-fns";
 import { toast } from "sonner";
-import { getCurrentUserData } from "./users";
+import { getCurrentUserCount, getCurrentUserData } from "./users";
 import { access } from "fs";
 import { PaymentStatus } from "@/constants/status";
 import { PaymentType } from "@/constants/types";
@@ -109,11 +109,14 @@ export interface GenerationProgress {
 export const createFee = async (feeData: z.infer<typeof FeeGenerationSchema>, currentUserData: any) => {
     const feeRef = collection(db, "feeItems");
     const feeDocRef = doc(feeRef);
+    const totalStudents = await getCurrentUserCount();
     await setDoc(feeDocRef, {
         ...feeData,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
         orgId: currentUserData.uid,
+        totalStudents: totalStudents,
+        id: feeDocRef.id,
         isArchived: false,
     });
     return feeDocRef.id;
