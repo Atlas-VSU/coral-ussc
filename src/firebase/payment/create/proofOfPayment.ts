@@ -46,6 +46,9 @@ export const createOnlineProofOfPayment = async (
                         semester: type === "fees" ? transaction.semester : "2nd",
                     }]
                 },
+                itemKeys: [
+                    type === "fees" ? transaction.feeType : transaction.id,
+                ],
                 verifiedBy: currentUser.id!,
                 verifiedByName: currentUser.firstName + " " + currentUser.lastName,
                 verifiedAt: Timestamp.now(),
@@ -163,6 +166,7 @@ export const createOfflineFinesProofOfPayment = async (
     const currentUser = await getCurrentUserData() as unknown as Member;
     try {
       const transaction = await getFineByStudentId(payment.studentId);
+      
       for (const item of fineItems?.filter(f => !f.isPaid) ?? []) { 
         items.push({
           refId: item.id,
@@ -187,6 +191,7 @@ export const createOfflineFinesProofOfPayment = async (
                 metadata: {
                   items: items,
                 },
+                itemKeys: items.map(item => item.refId),
                 verifiedBy: currentUser.id!,
                 verifiedByName: currentUser.firstName + " " + currentUser.lastName,
                 verifiedAt: Timestamp.now(),
@@ -218,6 +223,7 @@ export const createBulkOfflineProofOfPayment = async (
   dues: BlockingItem[],
   userId: string,
   date?: Timestamp,
+  feeItemKeys?: string[],
 ) => {
   const currentUser = await getCurrentUserData() as unknown as Member;
   const verifierName = `${currentUser.firstName} ${currentUser.lastName}`;
@@ -265,7 +271,8 @@ export const createBulkOfflineProofOfPayment = async (
   await updateDoc(doc(db, "proofOfPayments", docRef.id), {
       metadata: {
         items: items,
-      }
+      },
+      itemKeys: feeItemKeys,
     } )
 
     const orgId = currentUser.id || '';

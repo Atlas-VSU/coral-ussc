@@ -2,15 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { AggregatedFee, Fee } from "../types"
-import { fetchFeesForOrg } from "@/firebase/fees";
+import { fetchFeesForOrg, getTotalCollectedAmount, getTotalPaidAmountCount } from "@/firebase/fees";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { getCurrentUserData } from "@/firebase";
 import { cacheService } from "@/services/cacheService";
+import { FeeItem } from "../types";
 
 export function useFeeList() {
-    const [rawFees, setRawFees] = useState<Fee[]>([]);
+    const [rawFees, setRawFees] = useState<FeeItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [totalCollected, setTotalCollected] = useState<number>(0);
+    const [totalFees, setTotalFees] = useState<number>(0);
+    const [totalStudents, setTotalStudents] = useState<number>(0);
+    
+    const [aggregatedFees, setAggregatedFees] = useState<AggregatedFee[]>([]);
 
     useEffect(() => {
         const loadFees = async() => {
@@ -20,8 +26,8 @@ export function useFeeList() {
                 if(!user) 
                     throw new Error("Not Authenticated!");
                 
-                const data = await fetchFeesForOrg(user.uid);
-                
+                const data = await fetchFeesForOrg(user.uid) as unknown as FeeItem[];
+                setTotalFees(data.length);
                 setRawFees(data);
             }
             catch (error) {
@@ -46,7 +52,7 @@ export function useFeeList() {
             accumulator[groupKey].push(currentFee);
             
             return accumulator;
-        }, {} as Record<string, Fee[]>);
+        }, {} as Record<string, FeeItem[]>);
     }, [rawFees])
 
     const refetchFees = useCallback(() => {
@@ -61,7 +67,7 @@ export function useFeeList() {
                 const cacheKey = `fees:org:${user.uid}`;
                 cacheService.invalidate(cacheKey);
 
-                const data = await fetchFeesForOrg(user.uid);
+                const data = await fetchFeesForOrg(user.uid) as unknown as FeeItem[];
                 setRawFees(data);
             }
             catch (error) {
@@ -75,39 +81,62 @@ export function useFeeList() {
         loadFees();
     }, [])
 
-    
-    const aggregatedFees = useMemo<AggregatedFee[]>(() => {
-        if (!rawFees || !Array.isArray(rawFees)) return [];
 
-        const groups = (rawFees as Fee[]).reduce((acc, fee) => {
-        const title = fee.title;
-        const semester = fee.semester;
-        const academicYear = fee.academicYear;
-        const groupKey = `${title}-${semester}-${academicYear}`;
-        if (!acc[groupKey]) acc[groupKey] = [];
-        acc[groupKey].push(fee);
-        return acc;
-        }, {} as Record<string, Fee[]>);
+    useEffect(() => {
+        const fetchTotalCollected = async () => {
+            const user = await getCurrentUserData();
+            if(!user) 
+                throw new Error("Not Authenticated!");
+            
+            const data = await getTotalCollectedAmount(user.uid);
+            setTotalCollected(data);
+        }
+        fetchTotalCollected();
+    }, [])
 
-        return Object.entries(groups).map(([groupKey, feeList]) => {
-        const first = feeList[0];
-        const paidCount = feeList.filter(f => f.status === "verified" || f.status === "paid").length;
-        
-        return {
-            id: `${groupKey}-${first.feeType}-${first.amount}`, 
-            title: first.title,
-            type: first.feeType,
-            amount: first.amount,
-            academicYear: first.academicYear || "",
-            semester: first.semester || "N/A",
-            dueDate: first.dueDate,
-            isRequiredForClearance: first.isRequiredForClearance,
-            totalStudents: feeList.length,
-            paidCount,
-            description: first.description
+    useEffect(() => {
+        const fetchAggregatedData = async () => {
+            if (!rawFees || !Array.isArray(rawFees)) {
+                setAggregatedFees([]);
+                return;
+            }
+
+            // 1. Group the fees synchronously
+            const groups = (rawFees as FeeItem[]).reduce((acc, fee) => {
+                const groupKey = `${fee.title}-${fee.semester}-${fee.academicYear}`;
+                acc[groupKey] = fee;
+                return acc;
+            }, {} as Record<string, FeeItem>);
+
+            // 2. Map to an array of Promises and wait for all to resolve
+            let sumStudents = 0;
+            const feePromises = Object.entries(groups).map(async ([groupKey, fee]) => {
+                const totalPaid = await getTotalPaidAmountCount(fee.id);
+                sumStudents += fee.totalStudents;
+                
+                return {
+                    id: `${groupKey}-${fee.feeType}-${fee.amount}`, 
+                    title: fee.title,
+                    type: fee.feeType,
+                    amount: fee.amount,
+                    academicYear: fee.academicYear || "",
+                    semester: fee.semester || "N/A",
+                    dueDate: fee.dueDate,
+                    isRequiredForClearance: fee.isRequiredForClearance,
+                    totalStudents: fee.totalStudents,
+                    paidCount: totalPaid,
+                    description: fee.description
+                };
+            });
+
+            const results = await Promise.all(feePromises);
+            setAggregatedFees(results);
+            setTotalStudents(sumStudents);
         };
-        });
-    }, [rawFees]);
+
+        fetchAggregatedData();
+    }, [rawFees]); // Runs whenever rawFees changes
+
 
  
     return {
@@ -115,6 +144,9 @@ export function useFeeList() {
         aggregatedFees,
         groupedFees,
         isLoading,
+        totalCollected,
+        totalFees,
+        totalStudents,
         refetchFees
     }
 }

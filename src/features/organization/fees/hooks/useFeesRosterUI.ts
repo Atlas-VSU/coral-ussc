@@ -17,7 +17,7 @@ interface UseFeesRosterUIProps {
     ref?: string,
     senderNumber?: string
   ) => Promise<void>;
-  onArchiveFee: (feeTitle: string, academicYear: string, semester: string) => Promise<void>;
+  onArchiveFee: (feeItemId: string) => Promise<void>;
   itemsPerPage?: number;
   isLoading?: boolean;
   // External state
@@ -128,7 +128,7 @@ export function useFeesRosterUI({
   const handleArchiveConfirm = async () => {
     try {
       setIsArchiving(true);
-      await onArchiveFee(fee.title, fee.academicYear, fee.semester!);
+      await onArchiveFee(fee.id!);
       router.back(); 
     } catch (error) {
       console.error('Failed to archive fee:', error);
