@@ -668,7 +668,6 @@ export const archiveFeeDocuments = async (feeItemId: string) => {
         );
         
         const snapshot = await getDocs(q);
-        console.log(`Fetched fees to archive cost: ${snapshot.size} for title: ${feeTitle}, academicYear: ${academicYear}, semester: ${semester}`);
         const batchSize = 200; 
 
         if (!snapshot.empty) {
