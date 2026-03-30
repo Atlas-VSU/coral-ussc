@@ -28,6 +28,7 @@ const isMaintenance = process.env.MAINTENANCE_MODE === "true";
     return NextResponse.redirect(new URL("/maintenance", request.url));
   }
 
+
   // prevent access to maintenance page when not in maintenance mode
   if (!isMaintenance && pathname === "/maintenance") {
   return NextResponse.redirect(new URL("/", request.url));
