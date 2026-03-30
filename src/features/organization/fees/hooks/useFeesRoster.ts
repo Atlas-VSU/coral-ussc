@@ -161,17 +161,19 @@ export function useFeesRoster(
                 }
             }
 
-            const pending = await getTotalPendingAmountCount(feeData.id);
-            const verified = await getTotalPaidAmountCount(feeData.id);
-            const rejected = await getTotalRejectedAmountCount(feeData.id);
-            const unpaid = await getTotalUnpaidAmountCount(feeData.id);
+            if (feeData) {
+                const pending = await getTotalPendingAmountCount(feeData.id);
+                const verified = await getTotalPaidAmountCount(feeData.id);
+                const rejected = await getTotalRejectedAmountCount(feeData.id);
+                const unpaid = await getTotalUnpaidAmountCount(feeData.id);
 
-            setStats({
-                pending,
-                verified,
-                rejected,
-                unpaid,
-            });
+                setStats({
+                    pending,
+                    verified,
+                    rejected,
+                    unpaid,
+                });
+            }
 
         } catch (err) {
             console.error("Error fetching fees roster:", err);
@@ -192,8 +194,8 @@ export function useFeesRoster(
             if (dataView === "all-students") {
                 const count = await getFeesCount(orgId, title, academicYear, semester, filterStatus, search);
                 setTotalCount(count);
-            } else {
-                const count = await getFeeSubmissionsCount(orgId, feeData?.id!, title, academicYear, semester, filterStatus, search);
+            } else if (feeData) {
+                const count = await getFeeSubmissionsCount(orgId, feeData.id, title, academicYear, semester, filterStatus, search);
                 setTotalCount(count);
             }
         } catch (err) {

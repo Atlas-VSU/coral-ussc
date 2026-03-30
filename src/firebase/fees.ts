@@ -32,8 +32,8 @@ export const checkFeeTitleExist = async (title: string, academicYear: string, se
         where("isArchived", "==", false)
     );
     
-    const feeSnapshot = await getDocs(q);
-    return feeSnapshot.size > 0;
+    const feeSnapshot = await getCountFromServer(q);
+    return feeSnapshot.data().count > 0;
 }
 
 export const checkFeeStatusForClearance = async (userId: string, orgId: string) => {
@@ -45,7 +45,8 @@ export const checkFeeStatusForClearance = async (userId: string, orgId: string) 
                 feeRef, 
                 where("userId", "==", userId), 
                 where("orgId", "==", orgId), 
-                where("isArchived", "==", false)
+                where("isArchived", "==", false),
+                limit(10)
             );
             
             const feeSnapshot = await getDocs(q);
@@ -580,29 +581,6 @@ export const fetchFeeSubmissionsPaginated = async (
   };
 };
 
-export async function fetchFeeRoster(title: string, academicYear: string) {
-  // Deprecated for main roster. Use fetchFeesPaginated instead.
-  const currentUser = await getCurrentUserData() as unknown as Member;
-  console.warn("fetchFeeRoster is deprecated for large datasets. Use fetchFeesPaginated instead.");
-  
-  return cacheService.getOrFetch(
-    CACHE_KEYS.feeRoster(currentUser.id || '', title, academicYear),
-    async () => {
-      const feesRef = collection(db, "fees");
-      const rosterQuery = query(
-        feesRef,
-        where("title", "==", title),
-        where("academicYear", "==", academicYear),
-        where("isArchived", "==", false),
-        limit(100) // Safety limit
-      );
-      const snapshot = await getDocs(rosterQuery);
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    },
-    CACHE_DURATIONS.FEES
-  );
-}
-
 export async function fetchFee(feeId: string): Promise<Fee | null> {
     return cacheService.getOrFetch(
         CACHE_KEYS.feeDoc(feeId),
@@ -655,16 +633,29 @@ export const getFeeByStudentId = async (studentId: string) => {
     );
 }
 
-export const archiveFeeDocuments = async (feeTitle: string, academicYear: string, semester: string) => {
+export const archiveFeeDocuments = async (feeItemId: string) => {
     try {
         const userIdMap = new Map<string, string>(); 
-        const feeRef = collection(db, "fees");
+        const feeItemRef = doc(db, "feeItems", feeItemId);
+        const feeItemSnap = await getDoc(feeItemRef);
         
+        if (!feeItemSnap.exists()) {
+            throw new Error(`Fee item with ID ${feeItemId} does not exist.`);
+        }
+
+        const orgId = feeItemSnap.data().orgId || '';
+        
+        // 1. Mark parent feeItem as archived
+        await updateDoc(feeItemRef, { 
+            isArchived: true,
+            updatedAt: Timestamp.now()
+        });
+
+        // 2. Query all student fee documents for this feeItem
+        const feeRef = collection(db, "fees");
         let q = query(
             feeRef,
-            where("title", "==", feeTitle),
-            where("academicYear", "==", academicYear),
-            where("semester", "==", semester),
+            where("feeItemId", "==", feeItemId),
             where("isArchived", "==", false)
         );
         
@@ -678,7 +669,10 @@ export const archiveFeeDocuments = async (feeTitle: string, academicYear: string
                 
                 chunk.forEach((feeDoc) => {
                     userIdMap.set(feeDoc.data().userId, feeDoc.id);
-                    batch.update(feeDoc.ref, { isArchived: true });
+                    batch.update(feeDoc.ref, { 
+                        isArchived: true,
+                        updatedAt: Timestamp.now()
+                    });
                 });
                 
                 await batch.commit();
@@ -716,8 +710,10 @@ export const archiveFeeDocuments = async (feeTitle: string, academicYear: string
                             const checkRemainingItemKeys = Object.keys(currentBlockingItems).filter(key => key !== correspondingFeeId);
 
                             const updatePayLoad: Record<string, any> = {
-                                [`blockingItems.${correspondingFeeId}`]: deleteField()
+                                [`blockingItems.${correspondingFeeId}`]: deleteField(),
+                                updatedAt: Timestamp.now()
                             }
+                            
                             if(checkRemainingItemKeys.length == 0) {
                                 updatePayLoad.status = "cleared";
                             }
@@ -727,21 +723,28 @@ export const archiveFeeDocuments = async (feeTitle: string, academicYear: string
                     });
                     
                     await batch.commit();
+                    
+                    // Trigger recalculation for each student to ensure status is 100% correct
+                    for (const userId of userIdChunk) {
+                        recalculateClearanceStatus(userId).catch(console.error);
+                    }
                 }
             }
         }
         
-        const orgId = currentUserName.id || '';
         cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
         cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
         cacheService.invalidateByPrefix(`fees:count:${orgId}`);
         cacheService.invalidateByPrefix(`clearance:stats:${orgId}`);
         cacheService.invalidateByPrefix(`clearance:count:${orgId}`);
+        cacheService.invalidateByPrefix(`fees:totalPaidAmountCount:`);
+        cacheService.invalidateByPrefix(`fees:totalRejectedAmountCount:`);
+        cacheService.invalidateByPrefix(`fees:totalUnpaidAmountCount:`);
+        cacheService.invalidateByPrefix(`fees:totalPendingAmountCount:`);
         
         fetchFeesForOrg(orgId).catch(console.error);
     } catch (error) {
-        console.error("Error archiving fee:", error);
+        console.error("Error archiving fee item and documents:", error);
         throw error;
     }
 }
