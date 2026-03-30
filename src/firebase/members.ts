@@ -276,6 +276,7 @@ export const getMembersOfAnOrg = async (currentUserData: Member) => {
 
 
     const snapshot = await getDocs(q);
+    console.log(`cost of getMembersOfAnOrg: ${snapshot.size} reads`);
     return snapshot.docs.map((doc) => ({
       id: doc.id,
       member: { ...doc.data() },
