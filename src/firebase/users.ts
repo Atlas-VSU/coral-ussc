@@ -141,6 +141,7 @@ export const getCurrentUserData = async () => {
     }
     const userDocRef = doc(db, "users", currentUser.uid);
     const userDocSnap = await getDoc(userDocRef);
+    console.log(`Fetched current user data for UID ${currentUser.uid} with cost: 1`);
 
     if (!userDocSnap.exists()) {
       console.error("Authenticated user's document not found in Firestore.");

@@ -81,6 +81,7 @@ export const fetchClearanceDocumentsPaginated = async (
 
   const q = query(clearanceRef, ...constraints);
   const snapshot = await getDocs(q);
+  console.log(`cost of fetchClearanceDocumentsPaginated query: ${snapshot.size} documents scanned.`);
 
   const docs = snapshot.docs.map((doc) => {
     const data = { id: doc.id, ...doc.data() } as ClearanceStatus;
@@ -175,7 +176,8 @@ export const fetchClearanceStatus = async (userId: string) => {
         CACHE_KEYS.clearanceDoc(userId),
         async () => {
             const docRef = doc(db, 'clearanceStatus', userId);
-            const snapshot = await getDoc(docRef);
+          const snapshot = await getDoc(docRef);
+          console.log(`cost of fetchClearanceStatus for userId ${userId}: 1 document read.`);
             if (snapshot.exists()) {
                 return { id: snapshot.id, ...snapshot.data() } as ClearanceStatus;
             }
@@ -191,6 +193,7 @@ export const fetchClearanceStatus = async (userId: string) => {
 export const recalculateClearanceStatus = async (clearanceId: string) => {
     const clearanceRef = doc(db, 'clearanceStatus', clearanceId);
     const snapshot = await getDoc(clearanceRef);
+    console.log(`cost of recalculateClearanceStatus for clearanceId ${clearanceId}: 1 document read.`);
     const clearance = snapshot.data() as ClearanceStatus;
 
     if (!clearance) return;
@@ -577,6 +580,7 @@ export const seedClearanceDocuments = async (orgId: string) => {
     const usersRef = collection(db, 'users');
     const studentQuery = query(usersRef, where('role', '==', 'user'), where('isDeleted', '==', false));
     const usersSnapshot = await getDocs(studentQuery);
+    console.log(`Found ${usersSnapshot.size} students for seeding clearance documents.`);
 
     if (usersSnapshot.empty) {
       console.log("No students found to seed.");
@@ -585,6 +589,7 @@ export const seedClearanceDocuments = async (orgId: string) => {
 
     // IMPROVEMENT 2: Fetch existing clearances to safely skip students who already have one
     const existingClearancesSnap = await getDocs(collection(db, 'clearanceStatus'));
+    console.log(`Found ${existingClearancesSnap.size} existing clearance documents.`);
     const existingClearanceIds = new Set(existingClearancesSnap.docs.map(doc => doc.id));
 
     let batch = writeBatch(db);

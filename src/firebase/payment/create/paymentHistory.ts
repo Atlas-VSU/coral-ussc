@@ -1,6 +1,6 @@
 import { db } from "@/firebase/firebase.config";
 import { addDoc, collection, doc, getCountFromServer, Timestamp, updateDoc } from "firebase/firestore";
-import { getProofOfPaymentById, getAllProofOfPayments } from "../read/proofOfPayment";
+import { getProofOfPaymentById } from "../read/proofOfPayment";
 import { updateProofOfPaymentHistoryId } from "../update/proofOfPayment";
 import { getCurrentUserData } from "@/firebase/users";
 import { Member, MemberData } from "@/features/organization/members/types";
@@ -14,7 +14,7 @@ import { PaymentStatus } from "@/constants/status";
 import { PaymentMethods, PaymentType } from "@/constants/types";
 import { recalculateClearanceStatus } from "@/firebase/clearance";
 import { recalculateFees } from "@/firebase/fees/update/recalculate";
-import { getFineItemsByFineId, getAllFines, getAllUnpaidFinesforOrg } from "@/firebase/fines/read/fines";
+import { getFineItemsByFineId} from "@/firebase/fines/read/fines";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { BlockingItem } from "@/features/organization/clearance/types";
 
@@ -65,17 +65,9 @@ export const addOnlineFinesPayment = async (fines: StudentFines, type:string, me
         }
         
         const orgId = fines.orgId || '';
-        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
-        cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
-        cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
-        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
-        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        // cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
         
-        // Pre-emptive warming
-        getAllProofOfPayments(orgId).catch(console.error);
-        getAllFines().catch(console.error);
-        getAllUnpaidFinesforOrg().catch(console.error);
         
     } catch (error) {
         console.error("Error adding offline payment history:", error);
@@ -141,17 +133,10 @@ export const addOfflineFinesPayment = async (fines: StudentFines, type:string, m
         }
 
         const orgId = fines.orgId || '';
-        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
-        cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
-        cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
-        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
-        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
-        
-        // Pre-emptive warming
-        getAllProofOfPayments(orgId).catch(console.error);
-        getAllFines().catch(console.error);
-        getAllUnpaidFinesforOrg().catch(console.error);
+        // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        // cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+
         return proofId;
 
     } catch (error) {
@@ -227,17 +212,10 @@ export const createFinesPaymentHistory = async (
         }
 
         const orgId = current.id || '';
-        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
-        cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
-        cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
-        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
-        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        // cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
 
-        // Pre-emptive warming
-        getAllProofOfPayments(orgId).catch(console.error);
-        getAllFines().catch(console.error);
-        getAllUnpaidFinesforOrg().catch(console.error);
 
         return paymentHist.id;
     }catch(error){
@@ -291,18 +269,10 @@ export const createOnlinePaymentHistory = async (
         
         const user = await getCurrentUserData();
         const orgId = user?.uid || '';
-        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
-        cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
-        cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
-        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
-        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        // cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
 
-        // Pre-emptive warming
-        if (orgId) {
-            getAllFines().catch(console.error);
-            getAllUnpaidFinesforOrg().catch(console.error);
-        }
 
         return paymentHist.id;
     }catch(error){

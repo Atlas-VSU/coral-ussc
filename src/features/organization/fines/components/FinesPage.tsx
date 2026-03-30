@@ -10,18 +10,13 @@ import { TableHeader, TableRow, TableHead, TableBody, TableCell, Table } from "@
 import { TableSkeleton, CardGridSkeleton } from "@/components/organization/Skeletons";
 import { ViewToggle } from "@/features/organization/fines/components/ViewToggle";
 import { BulkGenerationDialog } from "@/features/organization/fines/components/BulkGenerationDialog";
-import { FineTypeForm } from "@/features/organization/fines/components/FineTypeForm";
 import { FineType, StudentFines } from "@/features/organization/fines/types";
-import { createFineType, deleteFineType, updateFineType } from "@/firebase/fines/create/fineType";
 import { Users, AlertTriangle, Banknote, CircleDollarSign, ChevronRight, Eye, RefreshCcw, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { countFinesOfStudents, countStudentsWithFines, countUnsettleFinesOfStudents, getAllFines } from "@/firebase/fines/read/fines";
 import { FineBreakdownDialog } from "@/features/organization/fines/components/FineBreakdownDialog";
-import { usePaymentApproval } from "@/features/organization/payments/hooks/usePaymentApproval";
 import { FineTypeDialog } from "@/features/organization/fines/components/FineTypeDialog";
 import { useFines } from "@/features/organization/fines/hooks/useFines";
 import { useFineTypes } from "@/features/organization/fines/hooks/useFineTypes";
