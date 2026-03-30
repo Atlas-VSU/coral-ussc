@@ -67,6 +67,7 @@ export function useFeeGeneration({ studentsCount, onSuccess, onOpenChange }: Use
         toast.error("Fee title already exists for that academic year and semester!");
         return;
       }
+      console.log(pendingFormData)
       await generateFeesForAllStudentsInAnOrg(
         pendingFormData,
         currentUser,

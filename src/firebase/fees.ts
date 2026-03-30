@@ -21,24 +21,19 @@ import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheServi
 const currentUserName = await getCurrentUserData() as unknown as Member;
 
 export const checkFeeTitleExist = async (title: string, academicYear: string, semester: string) => {
-    return cacheService.getOrFetch(
-        CACHE_KEYS.feeCheckTitle(currentUserName.id || '', title, academicYear, semester),
-        async () => {
-            const feeRef = collection(db, "fees");
-            const q = query(
-                feeRef, 
-                where("title", "==", title), 
-                where("academicYear", "==", academicYear), 
-                where("semester", "==", semester), 
-                where("orgId", "==", currentUserName.id), 
-                where("isArchived", "==", false)
-            );
-            
-            const feeSnapshot = await getDocs(q);
-            return feeSnapshot.size > 0;
-        },
-        CACHE_DURATIONS.FEES
+    const feeRef = collection(db, "fees");
+    console.log(title, academicYear, semester, currentUserName.id);
+    const q = query(
+        feeRef, 
+        where("title", "==", title), 
+        where("academicYear", "==", academicYear), 
+        where("semester", "==", semester), 
+        where("orgId", "==", currentUserName.id), 
+        where("isArchived", "==", false)
     );
+    
+    const feeSnapshot = await getDocs(q);
+    return feeSnapshot.size > 0;
 }
 
 export const checkFeeStatusForClearance = async (userId: string, orgId: string) => {

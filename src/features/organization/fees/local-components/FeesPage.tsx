@@ -28,11 +28,6 @@ export function FeesPage() {
         title="Fees"
         context="2nd Semester · A.Y. 2025–2026"
         description="Management and tracking of Council/Organization Fees"
-        action={
-          <Button size="sm" onClick={() => setIsDialogOpen(true)}>
-            Add Fee
-          </Button>
-        }
       />
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
