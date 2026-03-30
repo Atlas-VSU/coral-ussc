@@ -1,5 +1,5 @@
 import { cache, useCallback, useEffect, useRef, useState } from "react";
-import { fetchFee, fetchFeesPaginated, getFeesCount, fetchFeeSubmissionsPaginated, fetchPaymentLogs, getFeeSubmissionsCount } from "@/firebase/fees";
+import { fetchFee, fetchFeesPaginated, getFeesCount, fetchFeeSubmissionsPaginated, fetchPaymentLogs, getFeeSubmissionsCount, getTotalPendingAmountCount, getTotalPaidAmountCount, getTotalUnpaidAmountCount, getTotalRejectedAmountCount, fetchFeeItem } from "@/firebase/fees";
 import { Fee, PaymentLog } from "../types";
 import { Member } from "../../members/types";
 import { cacheService } from "@/services/cacheService";
@@ -83,6 +83,9 @@ export function useFeesRoster(
               }
             }
 
+            const feeData = await fetchFeeItem(orgId, title, academicYear, semester);
+            if (!feeData) return;
+
             // Page 1 has no cursor. Page N uses the stored last-doc of page N-1.
             const cursor = currentPage > 1
               ? (cursorsRef.current[dataView][currentPage - 2] ?? null)
@@ -157,6 +160,18 @@ export function useFeesRoster(
                   cursorsRef.current["submissions"][currentPage - 1] = lastVisible;
                 }
             }
+
+            const pending = await getTotalPendingAmountCount(feeData.id);
+            const verified = await getTotalPaidAmountCount(feeData.id);
+            const rejected = await getTotalRejectedAmountCount(feeData.id);
+            const unpaid = await getTotalUnpaidAmountCount(feeData.id);
+
+            setStats({
+                pending,
+                verified,
+                rejected,
+                unpaid,
+            });
 
         } catch (err) {
             console.error("Error fetching fees roster:", err);

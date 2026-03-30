@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { AggregatedFee, Fee } from "../types"
-import { fetchFeesForOrg, getTotalCollectedAmount, getTotalPaidAmount } from "@/firebase/fees";
+import { fetchFeesForOrg, getTotalCollectedAmount, getTotalPaidAmountCount } from "@/firebase/fees";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { getCurrentUserData } from "@/firebase";
@@ -111,7 +111,7 @@ export function useFeeList() {
             // 2. Map to an array of Promises and wait for all to resolve
             let sumStudents = 0;
             const feePromises = Object.entries(groups).map(async ([groupKey, fee]) => {
-                const totalPaid = await getTotalPaidAmount(fee.id);
+                const totalPaid = await getTotalPaidAmountCount(fee.id);
                 sumStudents += fee.totalStudents;
                 
                 return {
