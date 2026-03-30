@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { cache, useCallback, useEffect, useRef, useState } from "react";
 import { fetchFee, fetchFeesPaginated, getFeesCount, fetchFeeSubmissionsPaginated, fetchPaymentLogs, getFeeSubmissionsCount } from "@/firebase/fees";
 import { Fee, PaymentLog } from "../types";
 import { Member } from "../../members/types";
@@ -173,10 +173,11 @@ export function useFeesRoster(
             const orgId = user.uid;
 
             if (dataView === "all-students") {
-                const count = await getFeesCount(orgId, title, academicYear, filterStatus, search);
+                const count = await getFeesCount(orgId, title, academicYear, semester, filterStatus, search);
                 setTotalCount(count);
             } else {
-                const count = await getFeeSubmissionsCount(orgId, title, academicYear, filterStatus, search);
+                const count = await getFeeSubmissionsCount(orgId, title, academicYear, semester, filterStatus, search);
+                console.log(count)
                 setTotalCount(count);
             }
         } catch (err) {
@@ -196,6 +197,9 @@ export function useFeesRoster(
             cacheService.invalidateByPrefix('fees:doc:');
             cacheService.invalidateByPrefix('fees:logs:');
             cacheService.invalidateByPrefix('fees:roster:');
+            cacheService.invalidateByPrefix('fees:count:');
+            cacheService.invalidateByPrefix('fees:submission-count:');
+            cacheService.invalidateByPrefix('fees:stats:');
         }
         cursorsRef.current[dataView][currentPage - 1] = undefined;
         await fetchData();
@@ -203,6 +207,12 @@ export function useFeesRoster(
 
     const refetchStudentRow = useCallback(async (feeId: string) => {
         try {
+            cacheService.invalidateByPrefix('fees:logs:');
+            cacheService.invalidateByPrefix('fees:doc:');
+            cacheService.invalidateByPrefix('fees:count:');
+            cacheService.invalidateByPrefix('fees:submission-count:');
+            cacheService.invalidateByPrefix('fees:stats:');
+            cacheService.invalidateByPrefix('fees:roster:');
             const [freshLogs, updatedFee] = await Promise.all([
                 fetchPaymentLogs(feeId),
                 fetchFee(feeId)

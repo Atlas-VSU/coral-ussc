@@ -305,18 +305,22 @@ export const getFeesCount = async (
   orgId: string,
   title: string,
   academicYear: string,
+  semester: string,
   statusFilter: string = "all",
   searchTerm: string = ""
 ) => {
   return cacheService.getOrFetch(
-    CACHE_KEYS.feesCount(orgId, title, academicYear, statusFilter, searchTerm),
+    CACHE_KEYS.feesCount(orgId, title, academicYear, semester, statusFilter, searchTerm),
     async () => {
       const constraints: any[] = [
         where("orgId", "==", orgId),
         where("title", "==", title),
         where("academicYear", "==", academicYear),
+        where("semester", "==", semester),
         where("isArchived", "==", false),
       ];
+
+      console.log(academicYear, semester, title)
 
       if (statusFilter !== "all" && statusFilter !== "") {
         constraints.push(where("status", "==", statusFilter));
@@ -335,6 +339,7 @@ export const getFeesCount = async (
 
       const q = query(collection(db, "fees"), ...constraints);
       const snapshot = await getCountFromServer(q);
+      console.log(snapshot.data().count)
       return snapshot.data().count;
     },
     CACHE_DURATIONS.COUNTS
@@ -345,11 +350,12 @@ export const getFeeSubmissionsCount = async (
   orgId: string,
   title: string,
   academicYear: string,
+  semester: string,
   statusFilter: string = "all",
   searchTerm: string = ""
 ) => {
   return cacheService.getOrFetch(
-    CACHE_KEYS.feeSubmissionCount(orgId, title, academicYear, statusFilter, searchTerm),
+    CACHE_KEYS.feeSubmissionCount(orgId, title, academicYear, semester, statusFilter, searchTerm),
         async () => {
         let constraints: any[] = [
             where("orgId", "==", orgId),
@@ -376,8 +382,12 @@ export const getFeeSubmissionsCount = async (
         }
 
         const q = query(collection(db, "proofOfPayments"), ...constraints);
-        const snapshot = await getCountFromServer(q);
-        return snapshot.data().count;
+        const snapshot = await getDocs(q);
+        console.log(snapshot.docs)
+        console.log(snapshot.docs.filter((doc: any) => doc.data().metadata.items?.some((item: any) => item.title === title && item.academicYear === academicYear && item.semester === semester)))
+        const count = snapshot.docs.filter((doc: any) => doc.data().metadata.items?.some((item: any) => item.title === title && item.academicYear === academicYear && item.semester === semester)).length;
+
+        return count;
     },
     CACHE_DURATIONS.COUNTS
   );
@@ -439,8 +449,7 @@ export const fetchFeeSubmissionsPaginated = async (
     ...doc.data(),
   }));
 
-  docs = docs.filter((doc : any) => doc.metadata.items.find((item: any) => item.title === feeTitle && item.academicYear === academicYear && item.semester === semester));
-  
+  docs = docs.filter((doc : any) => doc.metadata.items?.find((item: any) => item.title === feeTitle && item.academicYear === academicYear && item.semester === semester));
   return {
     docs,
     lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,

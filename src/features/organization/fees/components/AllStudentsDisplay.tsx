@@ -34,11 +34,11 @@ export function AllStudentsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map(({ student, log }) => {
+          {rows.map(({ student, log }, index) => {
             const config = log?.status ? statusConfig[log.status] : statusConfig["unpaid"];
             const Icon = config.icon;
             return (
-              <TableRow key={student?.studentId || student?.id}>
+              <TableRow key={`${student?.studentId || student?.id || "no-id"}-table-${index}`}>
                 <TableCell className="text-xs font-mono text-muted-foreground">{student?.studentId || "—"}</TableCell>
                 <TableCell className="text-sm font-medium text-foreground">
                   {student?.firstName || ""} {student?.lastName || ""}
@@ -90,11 +90,11 @@ export function AllStudentsCards({
 }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {rows.map(({ student, log }) => {
+      {rows.map(({ student, log }, index) => {
         const config = log?.status ? statusConfig[log.status] : statusConfig["unpaid"];
         const Icon = config.icon;
         return (
-          <Card key={student.studentId || student.id} className="border-border">
+          <Card key={`${student.studentId || student.id || "no-id"}-card-${index}`} className="border-border">
             <CardContent className="pt-4 pb-3">
               <div className="flex items-start justify-between gap-2 mb-3">
                 <div>
