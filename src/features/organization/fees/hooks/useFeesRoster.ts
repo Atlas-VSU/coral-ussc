@@ -99,7 +99,7 @@ export function useFeesRoster(
                   filterStatus
                 );
 
-                const enrichedRows: StudentFeeRow[] = docs.map((f) => ({
+                const enrichedRows: StudentFeeRow[] = await Promise.all(docs.map(async (f) => ({
                     ...f,
                     student: {
                         id: f.userId,
@@ -107,8 +107,9 @@ export function useFeesRoster(
                         firstName: f.userName.split(' ')[0],
                         lastName: f.userName.split(' ').slice(1).join(' '),
                     },
-                    logs: [],
-                }));
+                    status: f.status,
+                    logs: await fetchPaymentLogs(f.id) as PaymentLog[],
+                })));
 
                 setStudentRows(enrichedRows);
                 setHasNextPage(docs.length === pageSize);
@@ -116,7 +117,7 @@ export function useFeesRoster(
                 // Persist the cursor for this page so the next page can use it
                 if (lastVisible) {
                   cursorsRef.current["all-students"][currentPage - 1] = lastVisible;
-                }
+                };
 
             } else {
                 const { docs, lastVisible } = await fetchFeeSubmissionsPaginated(
@@ -177,7 +178,6 @@ export function useFeesRoster(
                 setTotalCount(count);
             } else {
                 const count = await getFeeSubmissionsCount(orgId, title, academicYear, semester, filterStatus, search);
-                console.log(count)
                 setTotalCount(count);
             }
         } catch (err) {

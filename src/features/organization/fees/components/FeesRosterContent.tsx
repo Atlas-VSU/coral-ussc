@@ -281,7 +281,10 @@ export function FeesRosterContent({
             />
           ) : (
             <AllStudentsView
-              rows={paginatedRows as any}
+              rows={paginatedRows.map((row) => ({
+                ...row,
+                log: row.logs[0],
+              }))}
               viewMode={viewMode}
               onViewDetails={handleViewDetails}
               onManualLog={(student) =>

@@ -34,8 +34,8 @@ export function AllStudentsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map(({ student, log }, index) => {
-            const config = log?.status ? statusConfig[log.status] : statusConfig["unpaid"];
+          {rows.map(({ student, log, status }, index) => {
+            const config = status ? statusConfig[status] : statusConfig["unpaid"];
             const Icon = config.icon;
             return (
               <TableRow key={`${student?.studentId || student?.id || "no-id"}-table-${index}`}>

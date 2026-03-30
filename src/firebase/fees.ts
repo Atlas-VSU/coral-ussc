@@ -22,7 +22,6 @@ const currentUserName = await getCurrentUserData() as unknown as Member;
 
 export const checkFeeTitleExist = async (title: string, academicYear: string, semester: string) => {
     const feeRef = collection(db, "fees");
-    console.log(title, academicYear, semester, currentUserName.id);
     const q = query(
         feeRef, 
         where("title", "==", title), 
@@ -291,6 +290,7 @@ export const fetchFeesPaginated = async (
     return data;
   });
 
+
   return {
     docs,
     lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
@@ -320,8 +320,6 @@ export const getFeesCount = async (
         where("isArchived", "==", false),
       ];
 
-      console.log(academicYear, semester, title)
-
       if (statusFilter !== "all" && statusFilter !== "") {
         constraints.push(where("status", "==", statusFilter));
       }
@@ -339,7 +337,6 @@ export const getFeesCount = async (
 
       const q = query(collection(db, "fees"), ...constraints);
       const snapshot = await getCountFromServer(q);
-      console.log(snapshot.data().count)
       return snapshot.data().count;
     },
     CACHE_DURATIONS.COUNTS
@@ -383,8 +380,6 @@ export const getFeeSubmissionsCount = async (
 
         const q = query(collection(db, "proofOfPayments"), ...constraints);
         const snapshot = await getDocs(q);
-        console.log(snapshot.docs)
-        console.log(snapshot.docs.filter((doc: any) => doc.data().metadata.items?.some((item: any) => item.title === title && item.academicYear === academicYear && item.semester === semester)))
         const count = snapshot.docs.filter((doc: any) => doc.data().metadata.items?.some((item: any) => item.title === title && item.academicYear === academicYear && item.semester === semester)).length;
 
         return count;
