@@ -17,6 +17,7 @@ import { getProofOfPaymentById } from "./payment/read/proofOfPayment";
 import { getPaymentHistoryById } from "./payment/read/paymentHistory";
 import { recalculateFines } from "./fines/update/recalculate";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
+import { FeeItem } from "@/app/(public)/payment/page";
 
 const currentUserName = await getCurrentUserData() as unknown as Member;
 
@@ -74,11 +75,51 @@ export const checkFeeStatusForClearance = async (userId: string, orgId: string) 
     );
 }
 
+export const getTotalCollectedAmount = async (orgId: string) => {
+    return cacheService.getOrFetch(
+        CACHE_KEYS.totalCollectedAmount(orgId),
+        async () => {
+            const feeRef = collection(db, "feeItems");
+            const q = query(
+                feeRef, 
+                where("orgId", "==", orgId),
+                where("isArchived", "==", false)
+            );
+            
+            const feeSnapshot = await getDocs(q);
+            
+            const totalPaid = await feeSnapshot.docs.reduce(async (acc, feeDoc) => {
+                const feeData = feeDoc.data();
+                console.log(feeData.id);
+                console.log(await getTotalPaidAmount(feeData.id));
+                console.log(feeData.amount);
+                return (await acc) + (await getTotalPaidAmount(feeData.id) * feeData.amount);
+            }, Promise.resolve(0));
+            
+            return totalPaid;
+        },
+        CACHE_DURATIONS.FEES
+    );
+}
+
 export interface GenerationProgress {
     processedCount: number;
     totalCount: number;
     currentBatch: number;
     totalBatches: number;
+}
+
+export const createFee = async (feeData: z.infer<typeof FeeGenerationSchema>, currentUserData: any) => {
+    const feeRef = collection(db, "feeItems");
+    const feeDocRef = doc(feeRef);
+    await setDoc(feeDocRef, {
+        ...feeData,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+        orgId: currentUserData.uid,
+        isArchived: false,
+    });
+    return feeDocRef.id;
 }
 
 export const generateFeesForAllStudentsInAnOrg = async (
@@ -92,6 +133,8 @@ export const generateFeesForAllStudentsInAnOrg = async (
     if (totalCount === 0) {
         throw new Error("No students provided");
     }
+
+    const feeItem = await createFee(feeData, currentUserData);
 
     const feesCollection = collection(db, "fees");
     const clearanceCollection = collection(db, "clearanceStatus");
@@ -116,6 +159,7 @@ export const generateFeesForAllStudentsInAnOrg = async (
                 userId: studentId,
                 userName: `${student.member.firstName} ${student.member.lastName}`,
                 studentId: student.member.studentId,
+                feeItemId: feeItem,
                 feeType: feeData.feeType,
                 title: feeData.title,
                 amount: feeData.amount,
@@ -190,11 +234,11 @@ export const generateFeesForAllStudentsInAnOrg = async (
     fetchFeesForOrg(orgId).catch(console.error);
     fetchUnpaidFeesForOrg().catch(console.error);
 }
-export const fetchFeesForOrg = async(orgId: string): Promise<Fee[]> => {
+export const fetchFeesForOrg = async(orgId: string): Promise<FeeItem[]> => {
     return cacheService.getOrFetch(
         CACHE_KEYS.feesForOrg(orgId),
         async () => {
-            const feesRef = collection(db, "fees");
+            const feesRef = collection(db, "feeItems");
             const q = query(
                 feesRef,
                 where("orgId", "==", orgId),
@@ -205,10 +249,23 @@ export const fetchFeesForOrg = async(orgId: string): Promise<Fee[]> => {
             return snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
-            })) as unknown as Fee[];
+            })) as unknown as FeeItem[];
         },
         CACHE_DURATIONS.FEES
     );
+}
+
+export const getTotalPaidAmount = async(feeItemId: string): Promise<number> => {
+    const feesRef = collection(db, "fees");
+    const q = query(
+        feesRef,
+        where("feeItemId", "==", feeItemId),
+        where("status", "in", ["verified", "paid"])
+    );
+    console.log(feeItemId);
+    const snapshot = await getCountFromServer(q);
+    console.log(snapshot.data().count);
+    return snapshot.data().count;
 }
 
 export const fetchUnpaidFeesForOrg = async (): Promise<Fee[]> => {

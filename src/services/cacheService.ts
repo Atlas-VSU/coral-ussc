@@ -433,4 +433,7 @@ export const CACHE_KEYS = {
   // Count aggregates
   feesCount:      (orgId: string, title: string, year: string, semester: string, status: string, search: string) => `fees:count:${orgId}:${title}:${year}:${status}:${search}`,
   paymentsCount:  (orgId: string, statusFilter: string) => `payments:count:${orgId}:${statusFilter}`,
+
+  // Fees
+  totalCollectedAmount: (orgId: string) => `fees:totalCollectedAmount:${orgId}`,
 };

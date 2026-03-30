@@ -76,3 +76,17 @@ export interface AggregatedFee {
 export interface FeeWithPaymentHistory extends Fee {
     paymentHistory: PaymentLog[];
 }
+
+export interface FeeItem {
+    id: string;
+    title: string;
+    feeType: string;
+    amount: number;
+    academicYear: string;
+    semester: string;
+    dueDate: string;
+    isRequiredForClearance: boolean;
+    totalStudents: number;
+    paidCount: number;
+    description?: string;
+}
