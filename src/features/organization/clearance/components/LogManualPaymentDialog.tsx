@@ -27,14 +27,11 @@ export function LogManualPaymentDialog({
   isProcessing,
   onLogPayment
 }: LogManualPaymentDialogProps) {
-  const [checkedAllFees, setCheckedAllFees] = useState(false);
-  const [checkedAllFines, setCheckedAllFines] = useState(false);
+  
 
   // Reset states when dialog opens
   useEffect(() => {
     if (open) {
-      setCheckedAllFees(false);
-      setCheckedAllFines(false);
       selection.clearSelection();
     }
   }, [open]);
@@ -53,6 +50,11 @@ export function LogManualPaymentDialog({
   const hasFines = groupedItems.fines.length > 0
   const hasOther = groupedItems.other.length > 0
 
+  
+  const isAllFeesChecked = hasFees && groupedItems.fees.every((item: any) => selection.selectedRefIds.has(item.refId));
+  const isAllFinesChecked = hasFines && groupedItems.fines.every((item: any) => selection.selectedRefIds.has(item.refId));
+
+
   const getGroupTotals = () => {
     const feesTotal = groupedItems.fees
       .filter((item: any) => selection.selectedRefIds.has(item.refId))
@@ -70,34 +72,46 @@ export function LogManualPaymentDialog({
   }
 
   const handleSelectAllFees = () => {
-    const nextState = !checkedAllFees;
-    setCheckedAllFees(nextState);
-    
+    const nextState = !isAllFeesChecked;
     groupedItems.fees.forEach((item: any) => {
       const isCurrentlySelected = selection.selectedRefIds.has(item.refId);
-      if (nextState && !isCurrentlySelected) {
-        selection.toggleItem(item.refId);
-      } else if (!nextState && isCurrentlySelected) {
+      if (nextState !== isCurrentlySelected) {
         selection.toggleItem(item.refId);
       }
     });
   }
 
   const handleSelectAllFines = () => {
-    const nextState = !checkedAllFines;
-    setCheckedAllFines(nextState);
-
+    const nextState = !isAllFinesChecked;
     groupedItems.fines.forEach((item: any) => {
       const isCurrentlySelected = selection.selectedRefIds.has(item.refId);
-      if (nextState && !isCurrentlySelected) {
-        selection.toggleItem(item.refId);
-      } else if (!nextState && isCurrentlySelected) {
+      if (nextState !== isCurrentlySelected) {
         selection.toggleItem(item.refId);
       }
     });
   }
 
   const groupTotals = getGroupTotals()
+
+  // Selection states
+  const totalItemsCount = selection.items.length;
+  const selectedCount = selection.selectedRefIds.size;
+  const isAllSelected = totalItemsCount > 0 && selectedCount === totalItemsCount;
+  const isAnySelected = selectedCount > 0;
+
+  const handleToggleAll = () => {
+    if (isAllSelected) {
+      // Deselect everything
+      selection.clearSelection();
+    } else {
+      // Select everything that isn't already selected
+      selection.items.forEach((item: any) => {
+        if (!selection.selectedRefIds.has(item.refId)) {
+          selection.toggleItem(item.refId);
+        }
+      });
+    }
+  };
 
   const renderItem = (item: any, index: number) => {
     const isFee = item.type.toLowerCase().includes('fee')
@@ -172,25 +186,29 @@ export function LogManualPaymentDialog({
         {target && selection.items.length > 0 && (
           <div className="flex flex-col gap-4">
             {/* Selection Controls */}
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-wider text-foreground">
-                Unsettled Items
-              </p>
-              <button
+            <div className="flex items-center justify-between bg-muted/30 px-3 py-2 rounded-lg border border-border/50">
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] font-black uppercase tracking-[0.1em] text-muted-foreground">
+                  Unsettled Items
+                </p>
+                <Badge variant="outline" className="h-5 px-1.5 text-[10px] font-bold bg-background/50 text-foreground border-border/50">
+                  {totalItemsCount}
+                </Badge>
+              </div>
+              <Button
                 type="button"
-                className="text-xs text-primary hover:underline"
-                onClick={() => {
-                  if(checkedAllFees && checkedAllFines) {
-                    setCheckedAllFees(false)
-                    setCheckedAllFines(false)
-                  } else {
-                    setCheckedAllFees(true)
-                    setCheckedAllFines(true)
-                  }
-                }}
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-7 px-2 text-[11px] font-bold transition-all",
+                  isAllSelected 
+                    ? "text-destructive hover:text-destructive hover:bg-destructive/5" 
+                    : "text-[#1B5E20] hover:text-[#2E7D32] hover:bg-[#1B5E20]/5"
+                )}
+                onClick={handleToggleAll}
               >
-                {(checkedAllFees && checkedAllFines) ? "Deselect All" : "Select All"}
-              </button>
+                {isAllSelected ? "Deselect All" : "Select All"}
+              </Button>
             </div>
 
             {/* Fees Section */}
@@ -198,7 +216,7 @@ export function LogManualPaymentDialog({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 px-1">
                   <Checkbox
-                    checked={checkedAllFees}
+                    checked={isAllFeesChecked}
                     onCheckedChange={handleSelectAllFees}
                   />
                   <CreditCard className="size-4 text-[#1B5E20]" />
@@ -218,7 +236,7 @@ export function LogManualPaymentDialog({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 px-1">
                   <Checkbox
-                    checked={checkedAllFines}
+                    checked={isAllFinesChecked}
                     onCheckedChange={handleSelectAllFines}
                   />
                   <AlertCircle className="size-4 text-destructive" />
