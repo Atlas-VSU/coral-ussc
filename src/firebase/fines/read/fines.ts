@@ -48,7 +48,7 @@ export const getFinesByStudents = async (students: MemberData[]) => {
               getDocs(query(
                 finesCollection,
                 where("studentId", "in", chunk),
-                where("metadata.isArchived", "==", false)
+                where("metadata.isArchived", "==", false),
               ))
             )
           );
@@ -77,7 +77,8 @@ export const getFineByStudentId = async (studentId: string) => {
             const fineQuery = query(
                 finesCollection,
                 where("studentId", "==", studentId),
-                where("metadata.isArchived", "==", false)
+                where("metadata.isArchived", "==", false),
+                limit(1)
             );
             const querySnapshot = await getDocs(fineQuery);
             if (!querySnapshot.empty) {

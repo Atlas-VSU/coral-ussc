@@ -117,7 +117,7 @@ export const getProofOfPaymentByUserId = async (userId: string, orgId?:string) =
                     constraints.push(where("orgId", "==", orgId));
                 }
                 const docSnap = await getDocs(query(collection(db, "proofOfPayments"),
-                  ...constraints));
+                  ...constraints, limit(1)));
               console.log(`fetched proofOfPayment for userId ${userId} with cost: ${docSnap.size}`);
                 
                 if (docSnap.empty) {
