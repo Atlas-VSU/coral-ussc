@@ -118,8 +118,8 @@ export function PaymentReviewDialog({
 
     const total = items.reduce((s, i) => s + (i.amount ?? 0), 0)
 
-    const renderRow = (item: PaymentReviewLineItem) => (
-      <div key={item.label} className="flex items-center justify-between px-3 py-2">
+    const renderRow = (item: PaymentReviewLineItem, index: number) => (
+      <div key={item.label + "-" + index} className="flex items-center justify-between px-3 py-2">
         <div className="flex flex-col gap-0.5">
           <span className="text-sm">{item.label}</span>
           {item.sublabel && (

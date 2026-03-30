@@ -180,11 +180,16 @@ export function LogManualPaymentDialog({
                 type="button"
                 className="text-xs text-primary hover:underline"
                 onClick={() => {
-                  handleSelectAllFees();
-                  handleSelectAllFines();
+                  if(checkedAllFees && checkedAllFines) {
+                    setCheckedAllFees(false)
+                    setCheckedAllFines(false)
+                  } else {
+                    setCheckedAllFees(true)
+                    setCheckedAllFines(true)
+                  }
                 }}
               >
-                {checkedAllFees && checkedAllFines ? "Deselect All" : "Select All"}
+                {(checkedAllFees && checkedAllFines) ? "Deselect All" : "Select All"}
               </button>
             </div>
 

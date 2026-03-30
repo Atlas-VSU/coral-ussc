@@ -48,7 +48,7 @@ export function SubmissionsTableView({ paginated, totalCount, onOpenReview, isLo
               const cfg = statusConfig[payment.status]
               const StatusIcon = cfg.icon
               return (
-                <TableRow key={payment.id} className="border-border">
+                <TableRow key={payment.id?? "" + payment.submittedAt.toMillis()} className="border-border">
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-foreground">{payment.userName}</span>
