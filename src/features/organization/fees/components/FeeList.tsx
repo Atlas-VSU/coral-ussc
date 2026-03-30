@@ -101,7 +101,7 @@ export default function FeeListPage() {
                     <Card
                       key={fee.id}
                       className="border-border cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => router.push(`/org-fees/roster?title=${encodeURIComponent(fee.title)}&academic_year=${fee.academicYear}`)}
+                      onClick={() => router.push(`/org-fees/roster?title=${encodeURIComponent(fee.title)}&academic_year=${fee.academicYear}&semester=${fee.semester}`)}
                     >
                       <CardHeader className="pb-2">
                         <div className="flex items-start justify-between gap-2">
@@ -161,7 +161,7 @@ export default function FeeListPage() {
                         <TableRow
                           key={fee.id}
                           className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => router.push(`/org-fees/roster?title=${encodeURIComponent(fee.title)}&academic_year=${fee.academicYear}`)}
+                          onClick={() => router.push(`/org-fees/roster?title=${encodeURIComponent(fee.title)}&academic_year=${fee.academicYear}&semester=${fee.semester}`)}
                         >
                           <TableCell>
                             <p className="text-sm font-medium text-foreground">{fee.title}</p>

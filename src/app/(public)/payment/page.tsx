@@ -32,6 +32,8 @@ export interface FeeItem {
   dueDate?: string;
   latestRejectionReason?: string;
   isPayable?: boolean;
+  academicYear?: string;
+  semester?: string;
   paymentState?: "unpaid" | "pending" | "rejected";
 }
 

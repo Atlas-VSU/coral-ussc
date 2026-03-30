@@ -12,6 +12,8 @@ type FeeRecord = {
   amount?: number;
   dueDate?: unknown;
   isArchived?: boolean;
+  academicYear?: string;
+  semester?: string;
   status?: string;
 };
 
@@ -199,6 +201,8 @@ export async function GET(request: NextRequest) {
           dueDate?: string;
           latestRejectionReason?: string;
           isPayable: boolean;
+          academicYear: string;
+          semester: string;
           paymentState: "unpaid" | "pending" | "rejected";
         }>;
         fines: Array<{
@@ -269,6 +273,8 @@ export async function GET(request: NextRequest) {
         dueDate: toIsoDate(fee.dueDate),
         latestRejectionReason,
         isPayable,
+        academicYear: fee.academicYear || "2025-2026",
+        semester: fee.semester || "2nd",
         paymentState,
       });
 

@@ -38,10 +38,8 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
         });
         console.log("Fine type created with ID: ", fineTypeDoc.id);
         const currentOrgId = orgId ? orgId : currentUser.uid;
-        cacheService.invalidate(CACHE_KEYS.finesAll(currentOrgId));
-        cacheService.invalidate(CACHE_KEYS.finesUnpaid(currentOrgId));
-        cacheService.invalidate(CACHE_KEYS.clearanceAll(currentOrgId));
-        getAllFineTypes().catch(console.error);
+
+        // cacheService.invalidate(CACHE_KEYS.clearanceAll(currentOrgId));
     } catch (error) {
         handleFirestoreError(error, `creating fine type`);
         return null;
@@ -71,10 +69,7 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
               }
           });
           const currentOrgId = currentUser.uid;
-          cacheService.invalidate(CACHE_KEYS.finesAll(currentOrgId));
-          cacheService.invalidate(CACHE_KEYS.finesUnpaid(currentOrgId));
-          cacheService.invalidate(CACHE_KEYS.clearanceAll(currentOrgId));
-          getAllFineTypes().catch(console.error);
+          // cacheService.invalidate(CACHE_KEYS.clearanceAll(currentOrgId));
       } catch (error) {
           handleFirestoreError(error, `updating fine type`);
           return null;
@@ -96,10 +91,7 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
                 }
             });
             const currentOrgId = currentUser.uid;
-            cacheService.invalidate(CACHE_KEYS.finesAll(currentOrgId));
-            cacheService.invalidate(CACHE_KEYS.finesUnpaid(currentOrgId));
-            cacheService.invalidate(CACHE_KEYS.clearanceAll(currentOrgId));
-            getAllFineTypes().catch(console.error);
+            // cacheService.invalidate(CACHE_KEYS.clearanceAll(currentOrgId));
         } catch (error) {
             handleFirestoreError(error, `deleting fine type`);
             return null;

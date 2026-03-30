@@ -39,7 +39,7 @@ export function UnpaidTableView({ totalCount, paginatedUnpaid, onOpenDetail, isL
               </TableCell>
             </TableRow>
           ) : (
-            paginatedUnpaid.map(record => {
+            paginatedUnpaid.map((record, index) => {
                       let totalDue = 0
                 let totalDuesNumber = 0
                 for (const [key, value] of Object.entries(record.blockingItems)) {
@@ -49,7 +49,7 @@ export function UnpaidTableView({ totalCount, paginatedUnpaid, onOpenDetail, isL
                   }
                 }
               return (
-                <TableRow key={record.studentId} className="border-border">
+                <TableRow key={`${record.studentId || record.id || "no-id"}-table-${index}`} className="border-border">
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-foreground">{record.userName}</span>

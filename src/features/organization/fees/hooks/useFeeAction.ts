@@ -126,16 +126,16 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
         }
     };
 
-    const archiveFee = async (feeTitle: string, academicYear: string, semester: string) => {
+    const archiveFee = async (feeItemId: string) => {
         setIsSubmitting(true);
         setError(null);
         setSuccess(false);
 
         try {
-            await archiveFeeDocuments(feeTitle, academicYear, semester);
+            await archiveFeeDocuments(feeItemId);
             setSuccess(true);
             toast.success("Fee archived successfully!");
-            onSuccess?.(feeTitle);
+            onSuccess?.(feeItemId);
         } catch (err) {
             setError("Failed to perform action");
             toast.error("Failed to archive fee");

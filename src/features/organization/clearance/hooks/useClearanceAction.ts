@@ -19,7 +19,7 @@ export function useClearanceActions(
   clearances: ClearanceStatus[], 
   setClearances: React.Dispatch<React.SetStateAction<ClearanceStatus[]>>
 ) {
-  const { user: currentUser } = useAuth()
+  const { user: currentUser } = useAuth();
   const [receiptOpen, setReceiptOpen] = useState(false)
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
   

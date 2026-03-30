@@ -1,8 +1,8 @@
 import { PaymentStatus } from "@/constants/status";
-import { getFineByStudentId, getAllFines, getAllUnpaidFinesforOrg } from "@/firebase/fines/read/fines";
+import { getFineByStudentId} from "@/firebase/fines/read/fines";
 import { db } from "@/firebase/firebase.config";
 import { PaymentFormData } from "@/lib/validators";
-import { addDoc, collection, doc, Timestamp, updateDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, Timestamp, updateDoc } from "firebase/firestore";
 
 
 import { generateReceiptId } from "@/features/organization/payments/utils";
@@ -12,7 +12,6 @@ import { Member } from "@/features/organization/members/types";
 import { createFinesPaymentHistory, createOnlinePaymentHistory } from "./paymentHistory";
 import { FineItem, StudentFines } from "@/features/organization/fines/types";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
-import { getAllProofOfPayments } from "../read/proofOfPayment";
 import { BlockingItem } from "@/features/organization/clearance/types";
 
 export const createOnlineProofOfPayment = async (
@@ -36,7 +35,20 @@ export const createOnlineProofOfPayment = async (
                 paymentType:payment.type,
                 status: PaymentStatus.PENDING,
                 submittedAt: Timestamp.now(),
-                metadata: {},
+                metadata: {
+                    items: [{
+                        refId: transaction.id,
+                        title: payment.notes || (type === "fines" ? "Fine Payment" : "Fee Payment"),
+                        amount: payment.amount,
+                        paymentType: type,
+                        parentFineId: type === "fines" ? (transaction.id || "") : "",
+                        academicYear: type === "fees" ? transaction.academicYear : "2025-2026",
+                        semester: type === "fees" ? transaction.semester : "2nd",
+                    }]
+                },
+                itemKeys: [
+                    type === "fees" ? transaction.feeType : transaction.id,
+                ],
                 verifiedBy: currentUser.id!,
                 verifiedByName: currentUser.firstName + " " + currentUser.lastName,
                 verifiedAt: Timestamp.now(),
@@ -49,14 +61,10 @@ export const createOnlineProofOfPayment = async (
             const docRef = await addDoc(collection(db, "proofOfPayments"), paymentData);
             
             const orgId = transaction.orgId || '';
-            cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
-            cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
-            cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
-            cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-            cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
-            cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+            // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+            // cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+            // cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
             
-            getAllProofOfPayments(orgId).catch(console.error);
 
             return docRef.id;
         }
@@ -108,12 +116,26 @@ export const createBulkOnlineProofOfPayment = async (
         await updateDoc(clearanceRef, {
           [`blockingItems.${due.refId}.pendingReview`]: true,
         })
+        let academicYear = "2025-2026";
+        let semester = "2nd";
+        
+        if (due.paymentType === "fees") {
+          const feeDoc = await getDoc(doc(db, "fees", due.refId));
+          if (feeDoc.exists()) {
+            const feeData = feeDoc.data();
+            academicYear = feeData.academicYear;
+            semester = feeData.semester;
+          }
+        }
+
         items.push({
           refId: due.refId || null,
           title: due.title || null,
           amount: due.amount || null,
           paymentType: due.paymentType || null,
           parentFineId: due.paymentType === "fines" ? due.parentFineId : "",
+          academicYear,
+          semester,
         })
     }
         await updateDoc(doc(db, "clearanceStatus", userId), { status: "pending" });
@@ -125,14 +147,10 @@ export const createBulkOnlineProofOfPayment = async (
         })
 
         const orgId = tempOrgIdForStudents;
-        cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
-        cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
-        cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
-        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
-        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        // cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
         
-        getAllProofOfPayments(orgId).catch(console.error);
 
     return [{ success: true, message: "Proof of payment submitted successfully." }];
   }catch(error) {
@@ -148,6 +166,7 @@ export const createOfflineFinesProofOfPayment = async (
     const currentUser = await getCurrentUserData() as unknown as Member;
     try {
       const transaction = await getFineByStudentId(payment.studentId);
+      
       for (const item of fineItems?.filter(f => !f.isPaid) ?? []) { 
         items.push({
           refId: item.id,
@@ -155,6 +174,8 @@ export const createOfflineFinesProofOfPayment = async (
           amount: item.amount,
           paymentType: type,
           parentFineId: fine.id!,
+          academicYear: "2025-2026",
+          semester: "2nd",
           })
       }
         if (transaction)
@@ -170,6 +191,7 @@ export const createOfflineFinesProofOfPayment = async (
                 metadata: {
                   items: items,
                 },
+                itemKeys: items.map(item => item.refId),
                 verifiedBy: currentUser.id!,
                 verifiedByName: currentUser.firstName + " " + currentUser.lastName,
                 verifiedAt: Timestamp.now(),
@@ -181,14 +203,10 @@ export const createOfflineFinesProofOfPayment = async (
             const docRef = await addDoc(collection(db, "proofOfPayments"), paymentData);
             
             const orgId = transaction.orgId || '';
-            cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
-            cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
-            cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
-            cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-            cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
-            cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+            // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+            // cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+            // cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
             
-            getAllProofOfPayments(orgId).catch(console.error);
 
             return docRef.id;
         }
@@ -205,6 +223,7 @@ export const createBulkOfflineProofOfPayment = async (
   dues: BlockingItem[],
   userId: string,
   date?: Timestamp,
+  feeItemKeys?: string[],
 ) => {
   const currentUser = await getCurrentUserData() as unknown as Member;
   const verifierName = `${currentUser.firstName} ${currentUser.lastName}`;
@@ -234,23 +253,31 @@ export const createBulkOfflineProofOfPayment = async (
       amount: due.balance,
       paymentType: due.type,
       parentFineId: due.type === "fines" ? due.parentFineId : "",
+      academicYear: "2025-2026",
+      semester: "2nd",
     })
+    
+    // If it's a fee, we should try to get the actual academic year and semester if possible
+    if (due.type === "fees") {
+       const feeDoc = await getDoc(doc(db, "fees", due.referenceId));
+       if (feeDoc.exists()) {
+         const feeData = feeDoc.data();
+         const lastItem = items[items.length - 1];
+         lastItem.academicYear = feeData.academicYear;
+         lastItem.semester = feeData.semester;
+       }
+    }
   }
   await updateDoc(doc(db, "proofOfPayments", docRef.id), {
       metadata: {
         items: items,
-      }
+      },
+      itemKeys: feeItemKeys,
     } )
 
     const orgId = currentUser.id || '';
-    cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
-    cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
-    cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
-    cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-    cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
-    cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+    // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+    // cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+    // cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
     
-    getAllProofOfPayments(orgId).catch(console.error);
-    getAllFines().catch(console.error);
-    getAllUnpaidFinesforOrg().catch(console.error);
 }

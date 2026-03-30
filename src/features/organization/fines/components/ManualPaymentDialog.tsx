@@ -64,6 +64,8 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
                         amount: item.amount,
                         type: item.paymentType as "fees" | "fines",
                         parentFineId: item.parentFineId,
+                        academicYear: "2025-2026",
+                        semester: "2nd",
                     };
                 })!,
                 total: proofData?.amount!,

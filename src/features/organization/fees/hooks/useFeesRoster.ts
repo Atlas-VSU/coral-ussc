@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchFee, fetchFeesPaginated, getFeesCount, fetchFeeSubmissionsPaginated, fetchPaymentLogs, getFeeSubmissionsCount } from "@/firebase/fees";
+import { cache, useCallback, useEffect, useRef, useState } from "react";
+import { fetchFee, fetchFeesPaginated, getFeesCount, fetchFeeSubmissionsPaginated, fetchPaymentLogs, getFeeSubmissionsCount, getTotalPendingAmountCount, getTotalPaidAmountCount, getTotalUnpaidAmountCount, getTotalRejectedAmountCount, fetchFeeItem } from "@/firebase/fees";
 import { Fee, PaymentLog } from "../types";
 import { Member } from "../../members/types";
 import { cacheService } from "@/services/cacheService";
@@ -16,6 +16,7 @@ export interface StudentFeeRow extends Fee {
 export function useFeesRoster(
   title: string,
   academicYear: string,
+  semester: string,
   options: {
     pageSize?: number;
     currentPage?: number;
@@ -82,6 +83,9 @@ export function useFeesRoster(
               }
             }
 
+            const feeData = await fetchFeeItem(orgId, title, academicYear, semester);
+            if (!feeData) return;
+
             // Page 1 has no cursor. Page N uses the stored last-doc of page N-1.
             const cursor = currentPage > 1
               ? (cursorsRef.current[dataView][currentPage - 2] ?? null)
@@ -98,7 +102,7 @@ export function useFeesRoster(
                   filterStatus
                 );
 
-                const enrichedRows: StudentFeeRow[] = docs.map((f) => ({
+                const enrichedRows: StudentFeeRow[] = await Promise.all(docs.map(async (f) => ({
                     ...f,
                     student: {
                         id: f.userId,
@@ -106,8 +110,9 @@ export function useFeesRoster(
                         firstName: f.userName.split(' ')[0],
                         lastName: f.userName.split(' ').slice(1).join(' '),
                     },
-                    logs: [],
-                }));
+                    status: f.status,
+                    logs: await fetchPaymentLogs(f.id) as PaymentLog[],
+                })));
 
                 setStudentRows(enrichedRows);
                 setHasNextPage(docs.length === pageSize);
@@ -115,12 +120,14 @@ export function useFeesRoster(
                 // Persist the cursor for this page so the next page can use it
                 if (lastVisible) {
                   cursorsRef.current["all-students"][currentPage - 1] = lastVisible;
-                }
+                };
 
             } else {
                 const { docs, lastVisible } = await fetchFeeSubmissionsPaginated(
                   orgId,
                   title,
+                  academicYear,
+                  semester,
                   pageSize,
                   cursor,
                   filterStatus,
@@ -154,6 +161,20 @@ export function useFeesRoster(
                 }
             }
 
+            if (feeData) {
+                const pending = await getTotalPendingAmountCount(feeData.id);
+                const verified = await getTotalPaidAmountCount(feeData.id);
+                const rejected = await getTotalRejectedAmountCount(feeData.id);
+                const unpaid = await getTotalUnpaidAmountCount(feeData.id);
+
+                setStats({
+                    pending,
+                    verified,
+                    rejected,
+                    unpaid,
+                });
+            }
+
         } catch (err) {
             console.error("Error fetching fees roster:", err);
             setError(err as Error);
@@ -167,13 +188,14 @@ export function useFeesRoster(
         try {
             const user = await getCurrentUserData() as any;
             if (!user?.uid) return;
+            const feeData = await fetchFeeItem(user.uid, title, academicYear, semester);
             const orgId = user.uid;
 
             if (dataView === "all-students") {
-                const count = await getFeesCount(orgId, title, academicYear, filterStatus, search);
+                const count = await getFeesCount(orgId, title, academicYear, semester, filterStatus, search);
                 setTotalCount(count);
-            } else {
-                const count = await getFeeSubmissionsCount(orgId, title, academicYear, filterStatus, search);
+            } else if (feeData) {
+                const count = await getFeeSubmissionsCount(orgId, feeData.id, title, academicYear, semester, filterStatus, search);
                 setTotalCount(count);
             }
         } catch (err) {
@@ -193,6 +215,13 @@ export function useFeesRoster(
             cacheService.invalidateByPrefix('fees:doc:');
             cacheService.invalidateByPrefix('fees:logs:');
             cacheService.invalidateByPrefix('fees:roster:');
+            cacheService.invalidateByPrefix('fees:count:');
+            cacheService.invalidateByPrefix('fees:submission-count:');
+            cacheService.invalidateByPrefix('fees:stats:');
+            cacheService.invalidateByPrefix('fees:totalPaidAmountCount:');
+            cacheService.invalidateByPrefix('fees:totalRejectedAmountCount:');
+            cacheService.invalidateByPrefix('fees:totalUnpaidAmountCount:');
+            cacheService.invalidateByPrefix('fees:totalPendingAmountCount:');
         }
         cursorsRef.current[dataView][currentPage - 1] = undefined;
         await fetchData();
@@ -200,6 +229,16 @@ export function useFeesRoster(
 
     const refetchStudentRow = useCallback(async (feeId: string) => {
         try {
+            cacheService.invalidateByPrefix('fees:logs:');
+            cacheService.invalidateByPrefix('fees:doc:');
+            cacheService.invalidateByPrefix('fees:count:');
+            cacheService.invalidateByPrefix('fees:submission-count:');
+            cacheService.invalidateByPrefix('fees:stats:');
+            cacheService.invalidateByPrefix('fees:roster:');
+            cacheService.invalidateByPrefix('fees:totalPaidAmountCount:');
+            cacheService.invalidateByPrefix('fees:totalRejectedAmountCount:');
+            cacheService.invalidateByPrefix('fees:totalUnpaidAmountCount:');
+            cacheService.invalidateByPrefix('fees:totalPendingAmountCount:');
             const [freshLogs, updatedFee] = await Promise.all([
                 fetchPaymentLogs(feeId),
                 fetchFee(feeId)
