@@ -4,7 +4,7 @@ import { Member, MemberData } from "@/features/organization/members/types";
 import { StudentFineItem } from "@/features/organization/payments/types";
 import { db } from "@/firebase/firebase.config";
 import { getCurrentUserData } from "@/firebase/users";
-import { collection, query, where, getDocs, CollectionReference, DocumentData, DocumentSnapshot, orderBy, limit, startAfter, getCountFromServer, getDoc, doc, onSnapshot } from "firebase/firestore";
+import { collection, query, where, getDocs, CollectionReference, DocumentData, DocumentSnapshot, orderBy, limit, startAfter, getCountFromServer, getDoc, doc, onSnapshot, connectFirestoreEmulator } from "firebase/firestore";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 
 const finesCollection: CollectionReference<DocumentData> = collection(
@@ -59,6 +59,7 @@ export const getFinesByStudents = async (students: MemberData[]) => {
               fineDocs.push({ id: doc.id, ...doc.data() } as StudentFines);
             });
         }
+        console.log(`Fetched fines for ${fineDocs.length} students in ${chunks.length} chunks.`);
         return fineDocs;
       } catch (error) {
         handleFirestoreError(error, `fetching fine documents for student IDs`);
@@ -81,6 +82,7 @@ export const getFineByStudentId = async (studentId: string) => {
             const querySnapshot = await getDocs(fineQuery);
             if (!querySnapshot.empty) {
                 const fineDoc = querySnapshot.docs[0];
+                console.log(`Fetched fine for student ID: ${studentId} with fine ID: ${fineDoc.id} read: ${querySnapshot.docs.length}`);
                 return { id: fineDoc.id, ...fineDoc.data() } as StudentFines;
             }
             console.warn(`No fine document found for student ID: ${studentId}`);
@@ -99,6 +101,7 @@ export const getFineById = async (fineId: string) => {
         console.warn(`No fine document found for fine ID: ${fineId}`);
         return null;
       }
+      console.log(`Fetched fine document for fine ID: ${fineId} read: ${fineDoc}`);
       return { id: fineDoc.id, ...fineDoc.data() } as StudentFines;
     },
     CACHE_DURATIONS.FINES
@@ -119,6 +122,7 @@ export const countFinesOfStudents = async (status: string) => {
       }
 
       const snapshot = await getCountFromServer(q);
+      console.log(`Counted fines with status "${status}" costs ${snapshot}`);
       return snapshot.data().count;
     },
     CACHE_DURATIONS.FINES
@@ -168,6 +172,7 @@ export const getFineItemsByFineId = async (fineId: string) => {
     CACHE_KEYS.fineItems(fineId),
     async () => {
       const fineDoc = await getDocs(query(collection(db, "fines", fineId, "fineItems"), where("isArchived", "==", false)));
+      console.log(`Fetched fine items for fine ID: ${fineId} with cost: ${fineDoc.docs.length}`);
       return fineDoc.docs.map(doc => ({ id: doc.id, ...doc.data() })) as FineItem[];
     },
     CACHE_DURATIONS.FINES
@@ -179,6 +184,7 @@ export const getUnpaidFineItemsByFineId = async (fine: StudentFines) => {
     CACHE_KEYS.fineUnpaidItems(fine.id!),
     async () => {
       const fineDoc = await getDocs(query(collection(db, "fines", fine.id!, "fineItems"), where("isArchived", "==", false), where("isPaid", "==", false)));
+      console.log(`Fetched unpaid fine items for fine ID: ${fine.id} with cost: ${fineDoc.docs.length}`);
       return fineDoc.docs.map(doc => ({ refId: doc.id, userId: fine.userId, fine: fine, parentFineId: fine.id!, title: doc.data().eventName, amount: doc.data().amount })) as StudentFineItem[];
     },
     CACHE_DURATIONS.PAYMENTS
@@ -227,8 +233,10 @@ export const fetchFinesPaginated = async (
     constraints.push(startAfter(lastVisibleDoc));
   }
 
-  const q = query(finesCollection, ...constraints);
+  const q = query(finesCollection, ...constraints, limit(10));
   const snapshot = await getDocs(q);
+
+  console.log(`Fetched page of fines with search "${searchTerm}" and status "${statusFilter}" read: ${snapshot.docs.length}`);
 
   const docs = snapshot.docs.map((doc) => {
     const data = { id: doc.id, ...doc.data() } as StudentFines;
@@ -307,29 +315,6 @@ export const subscribeFines = (
   );
 };
 
-export const getAllFines = async () => {
-    const currUser = await getCurrentUserData() as unknown as Member;
-    console.warn("getAllFines is deprecated. Use fetchFinesPaginated instead.");
-    const { docs } = await fetchFinesPaginated(currUser.id || "", 100);
-    return docs;
-};
-
-
-export const getAllUnpaidFinesforOrg = async () => {
-  const currUser = await getCurrentUserData() as unknown as Member;
-  return cacheService.getOrFetch(
-    CACHE_KEYS.finesUnpaid(currUser.id || ''),
-    async () => {
-      const snapshot = await getDocs(query(finesCollection,
-        where("metadata.isArchived", "==", false),
-        where("orgId", "==", currUser.id),
-        where("status", "in", ["unpaid", "partial"]),
-        where("accumulatedAmount", ">", 0)));
-      return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as StudentFines[];
-    },
-    CACHE_DURATIONS.PAYMENTS
-  );
-}
  
 export const getFineItemsByIds = async (fineId:string, fineItemIds: string[]) => {
   const hash = fineItemIds.sort().join(',');
@@ -344,6 +329,7 @@ export const getFineItemsByIds = async (fineId:string, fineItemIds: string[]) =>
           console.log("No items for fines found");
           return [];
         }
+        console.log(`Fetched ${snapshot.docs.length} fine items for fine ID: ${fineId} with cost: ${snapshot.docs.length}`);
         return snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as FineItem[];
       } catch (error) {
         handleFirestoreError(error, "Fetching all fine items for a student");

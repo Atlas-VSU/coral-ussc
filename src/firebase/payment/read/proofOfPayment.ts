@@ -10,7 +10,8 @@ export const getProofOfPaymentById = async (proofOfPaymentId: string) => {
         async () => {
             const docRef = doc(db, "proofOfPayments", proofOfPaymentId);
             const docSnap = await getDoc(docRef);
-            if (docSnap.exists() && !docSnap.data().isArchived) {
+          if (docSnap.exists() && !docSnap.data().isArchived) {
+              console.log(`fetched proofOfPayment doc with cost: 1`);
                 return { id: docSnap.id, ...docSnap.data() } as ProofOfPayment;
             }
             return null;
@@ -19,22 +20,6 @@ export const getProofOfPaymentById = async (proofOfPaymentId: string) => {
     );
 }
 
-export const getAllProofOfPayments = async (orgId: string) => {
-    return cacheService.getOrFetch(
-        CACHE_KEYS.proofOfPayments(orgId),
-        async () => {
-            const proofOfPaymentsRef = collection(db, "proofOfPayments");
-            const q = query(proofOfPaymentsRef, where("orgId", "==", orgId), where("isArchived", "==", false));
-            const querySnapshot = await getDocs(q);
-            const proofOfPayments: ProofOfPayment[] = [];
-            querySnapshot.forEach((doc) => {
-                proofOfPayments.push({ id: doc.id, ...doc.data() } as ProofOfPayment);
-            });
-            return proofOfPayments;
-        },
-        CACHE_DURATIONS.PAYMENTS
-    );
-}
 
 export const getProofOfPaymentsPaginated = async (
   orgId: string,
@@ -74,6 +59,7 @@ export const getProofOfPaymentsPaginated = async (
   let count = 0;
   if (needCount) {
     const countSnapshot = await getCountFromServer(query(proofOfPaymentsRef, ...constraints));
+    console.log(`Counted proofOfPayments with cost: 1`);
     count =  countSnapshot.data().count; //This is for total count of searched item
 }
 
@@ -85,6 +71,7 @@ export const getProofOfPaymentsPaginated = async (
 
   const q = query(proofOfPaymentsRef, ...constraints);
   const snapshot = await getDocs(q);
+  console.log(`fetched paginated proofOfPayments with cost: ${snapshot.size} for pageSize: ${pageSize}`);
 
   const docs = snapshot.docs.map((doc) => {
     const data = { id: doc.id, ...doc.data() } as ProofOfPayment;
@@ -130,7 +117,8 @@ export const getProofOfPaymentByUserId = async (userId: string, orgId?:string) =
                     constraints.push(where("orgId", "==", orgId));
                 }
                 const docSnap = await getDocs(query(collection(db, "proofOfPayments"),
-                    ...constraints));
+                  ...constraints));
+              console.log(`fetched proofOfPayment for userId ${userId} with cost: ${docSnap.size}`);
                 
                 if (docSnap.empty) {
                     return null;
@@ -158,7 +146,8 @@ export const getPendingProofOfPaymentsByUserId = async (userId: string, orgId?:s
                     constraints.push(where("orgId", "==", orgId));
                 }
                 const docSnap = await getDocs(query(collection(db, "proofOfPayments"),
-                    ...constraints));
+                  ...constraints));
+              console.log(`fetched pending proofOfPayments for userId ${userId} with cost: ${docSnap.size}`);
                 
                 if (docSnap.empty) {
                     return null;
@@ -187,6 +176,7 @@ export const getProofOfPaymentsCount = async (orgId: string, statusFilter: strin
         constraints.push(where("status", "==", statusFilter));
       }
       const countSnapshot = await getCountFromServer(query(proofOfPaymentsRef, ...constraints));
+      console.log(`Counted proofOfPayments with cost: 1 for orgId: ${orgId} and status: ${statusFilter}`);
       return countSnapshot.data().count;
     },
     CACHE_DURATIONS.COUNTS

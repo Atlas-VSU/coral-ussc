@@ -57,6 +57,7 @@ export const getAllFineTypes = async () => {
         where("orgId", "==", orgId)
       );
       const querySnapshot = await getDocs(fineTypeQuery);
+      console.log(`Fetched fine types for orgId: ${orgId} with cost: ${querySnapshot.size} `);
       return querySnapshot.docs.map((doc) => ({
         id: doc.id,
         orgId: doc.data().orgId || null,

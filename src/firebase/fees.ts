@@ -32,6 +32,7 @@ export const checkFeeTitleExist = async (title: string, academicYear: string, se
     );
     
     const feeSnapshot = await getDocs(q);
+    console.log(`cost: ${feeSnapshot.size} for checking fee title existence`);
     return feeSnapshot.size > 0;
 }
 
@@ -48,6 +49,7 @@ export const checkFeeStatusForClearance = async (userId: string, orgId: string) 
             );
             
             const feeSnapshot = await getDocs(q);
+            console.log(`cost: ${feeSnapshot.size} for checking fee status for clearance`);
 
             const feesWithHistory = await Promise.all(feeSnapshot.docs.map(async (feeDoc) => {
                 const feeData = feeDoc.data();
@@ -55,6 +57,7 @@ export const checkFeeStatusForClearance = async (userId: string, orgId: string) 
                 const paymentHistoryRef = collection(db, "fees", feeDoc.id, "paymentHistory");
                 
                 const paymentHistorySnapshot = await getDocs(paymentHistoryRef);
+                console.log(`cost: ${paymentHistorySnapshot.size} for fetching payment history of fee ${feeDoc.id}`);
                 
                 const paymentHistory = paymentHistorySnapshot.docs.map(paymentDoc => ({
                     id: paymentDoc.id,
@@ -179,16 +182,16 @@ export const generateFeesForAllStudentsInAnOrg = async (
     
     // Targeted invalidation instead of broad prefix
     const orgId = currentUserName.id || '';
-    cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-    cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+    // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+    // cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
     cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
     cacheService.invalidateByPrefix(`fees:count:${orgId}`);
     cacheService.invalidateByPrefix(`clearance:stats:${orgId}`);
     cacheService.invalidateByPrefix(`clearance:count:${orgId}`);
     
     // Refresh fee caches in background (not clearance — paginated fetcher handles that on next load)
-    fetchFeesForOrg(orgId).catch(console.error);
-    fetchUnpaidFeesForOrg().catch(console.error);
+    // fetchFeesForOrg(orgId).catch(console.error);
+    // fetchUnpaidFeesForOrg().catch(console.error);
 }
 export const fetchFeesForOrg = async(orgId: string): Promise<Fee[]> => {
     return cacheService.getOrFetch(
@@ -202,6 +205,7 @@ export const fetchFeesForOrg = async(orgId: string): Promise<Fee[]> => {
                 orderBy("createdAt", "desc")
             );
             const snapshot = await getDocs(q);
+            console.log("Fetched fees for org cost:", snapshot.size);
             return snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -225,6 +229,7 @@ export const fetchUnpaidFeesForOrg = async (): Promise<Fee[]> => {
                 orderBy("createdAt", "desc")
             );
             const snapshot = await getDocs(q);
+            console.log("Fetched unpaid fees for org cost:", snapshot.size);
             return snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -282,6 +287,7 @@ export const fetchFeesPaginated = async (
 
   const q = query(collection(db, "fees"), ...constraints);
   const snapshot = await getDocs(q);
+  console.log(`Fetched fees paginated cost: ${snapshot.size}`);
 
   const docs = snapshot.docs.map((doc) => {
     const data = { id: doc.id, ...doc.data() } as Fee;
@@ -380,6 +386,7 @@ export const getFeeSubmissionsCount = async (
 
         const q = query(collection(db, "proofOfPayments"), ...constraints);
         const snapshot = await getDocs(q);
+        console.log(`Fetched fee submissions for count cost: ${snapshot.size}`);
         const count = snapshot.docs.filter((doc: any) => doc.data().metadata.items?.some((item: any) => item.title === title && item.academicYear === academicYear && item.semester === semester)).length;
 
         return count;
@@ -435,6 +442,7 @@ export const fetchFeeSubmissionsPaginated = async (
 
   const q = query(collection(db, "proofOfPayments"), ...constraints);
   const snapshot = await getDocs(q);
+  console.log(`Fetched fee submissions paginated cost: ${snapshot.size}`);
 
   // Since we don't have feeTitle indexed at root in proofOfPayments yet, 
   // we filter by title in metadata if possible, but Firestore can't do that.
@@ -470,6 +478,7 @@ export async function fetchFeeRoster(title: string, academicYear: string) {
         limit(100) // Safety limit
       );
       const snapshot = await getDocs(rosterQuery);
+      console.log(`Fetched fee roster cost: ${snapshot.size} for title: ${title}, academicYear: ${academicYear}`);
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     },
     CACHE_DURATIONS.FEES
@@ -482,6 +491,7 @@ export async function fetchFee(feeId: string): Promise<Fee | null> {
         async () => {
             const feeRef = doc(db, "fees", feeId);
             const snapshot = await getDoc(feeRef);
+            console.log(`Fetched fee document cost for feeId ${feeId}: ${snapshot.exists() ? "found" : "not found"}`);
             if (snapshot.exists()) {
                 return { id: snapshot.id, ...snapshot.data() } as Fee;
             }
@@ -498,6 +508,7 @@ export async function fetchPaymentLogs(feeId: string) {
             const logsRef = collection(db, "fees", feeId, "paymentHistory");
             const q = query(logsRef, orderBy("paidAt", "desc"));
             const snapshot = await getDocs(q);
+            console.log(`Fetched payment logs cost for feeId ${feeId}: ${snapshot.size}`);
             return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         },
         CACHE_DURATIONS.FEES
@@ -515,6 +526,7 @@ export const getFeeByStudentId = async (studentId: string) => {
                 where("isArchived", "==", false)
             );
             const snapshot = await getDocs(q);
+            console.log(`Fetched fee by studentId cost for studentId ${studentId}: ${snapshot.size}`);
             if (!snapshot.empty) {
                 const feeDoc = snapshot.docs[0];
                 return {
@@ -542,6 +554,7 @@ export const archiveFeeDocuments = async (feeTitle: string, academicYear: string
         );
         
         const snapshot = await getDocs(q);
+        console.log(`Fetched fees to archive cost: ${snapshot.size} for title: ${feeTitle}, academicYear: ${academicYear}, semester: ${semester}`);
         const batchSize = 200; 
 
         if (!snapshot.empty) {
@@ -574,6 +587,7 @@ export const archiveFeeDocuments = async (feeTitle: string, academicYear: string
                 );
                 
                 const clearanceSnapshot = await getDocs(clearanceQuery);
+                console.log(`Fetched clearance documents cost for userId chunk ${i}-${i + maxInQuerySize}: ${clearanceSnapshot.size}`);
                 
                 if (!clearanceSnapshot.empty) {
                     const batch = writeBatch(db);
@@ -605,15 +619,15 @@ export const archiveFeeDocuments = async (feeTitle: string, academicYear: string
         }
         
         const orgId = currentUserName.id || '';
-        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
         cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
         cacheService.invalidateByPrefix(`fees:count:${orgId}`);
         cacheService.invalidateByPrefix(`clearance:stats:${orgId}`);
         cacheService.invalidateByPrefix(`clearance:count:${orgId}`);
         
-        fetchFeesForOrg(orgId).catch(console.error);
-        fetchUnpaidFeesForOrg().catch(console.error);
+        // fetchFeesForOrg(orgId).catch(console.error);
+        // fetchUnpaidFeesForOrg().catch(console.error);
     } catch (error) {
         console.error("Error archiving fee:", error);
         throw error;
@@ -637,6 +651,7 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
         }
 
         const studentDataDoc = await getDoc(doc(db, "users", studentId));
+        console.log(`Fetched student data for bulk payment cost for studentId ${studentId}: ${studentDataDoc.exists() ? "found" : "not found"}`);
         const studentData = studentDataDoc.data();
         const currentUser = await getCurrentUserData(); // Assuming this is available in your scope
 
@@ -781,7 +796,7 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                 })) },
                 receiptCode: receipt,
                 isArchived: false,
-                updatedAd: Timestamp.now(),
+                updatedAt: Timestamp.now(),
             });
 
             const clearanceUpdates: Record<string, any> = {};
@@ -833,16 +848,16 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
         cacheService.invalidate(CACHE_KEYS.feeStatusForClearance(studentId, orgId));
         cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
 
-        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
         cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
         cacheService.invalidateByPrefix(`fees:count:${orgId}`);
         cacheService.invalidateByPrefix(`clearance:stats:${orgId}`);
         cacheService.invalidateByPrefix(`clearance:count:${orgId}`);
         cacheService.invalidateByPrefix(`payments:count:${orgId}`);
 
-        fetchFeesForOrg(orgId).catch(console.error);
-        fetchUnpaidFeesForOrg().catch(console.error);
+        // fetchFeesForOrg(orgId).catch(console.error);
+        // fetchUnpaidFeesForOrg().catch(console.error);
     } catch (error) {
         console.error("Error processing bulk manual payment and clearance:", error);
         throw error;
@@ -873,6 +888,7 @@ export const recordManualPaymentAndUpdateClearance = async (
         const clearanceRef = doc(db, 'clearanceStatus', studentId);
 
         const studentData = await getDoc(doc(db, "users", studentId));
+        console.log(`Fetched student data for manual payment cost for studentId ${studentId}: ${studentData.exists() ? "found" : "not found"}`);
         const currentUser = await getCurrentUserData() as unknown as Member;
 
         await runTransaction(db, async (transaction) => {
@@ -972,13 +988,13 @@ export const recordManualPaymentAndUpdateClearance = async (
         cacheService.invalidate(CACHE_KEYS.feeStatusForClearance(studentId, orgId));
         cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
 
-        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
-        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        // cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
 
-        fetchFeesForOrg(orgId).catch(console.error);
-        fetchUnpaidFeesForOrg().catch(console.error);
-        fetchClearanceDocuments(orgId).catch(console.error);
+        // fetchFeesForOrg(orgId).catch(console.error);
+        // fetchUnpaidFeesForOrg().catch(console.error);
+        // fetchClearanceDocuments(orgId).catch(console.error);
         return newLogRef.id;
     } catch (error) {
         console.error("Error processing manual payment and clearance:", error);
@@ -1060,13 +1076,13 @@ export const approvePaymentTransaction = async (feeId: string, paymentLogId: str
         cacheService.invalidate(CACHE_KEYS.feeStatusForClearance(clearanceId, orgId));
         cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
 
-        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
-        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        // cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
 
-        fetchFeesForOrg(orgId).catch(console.error);
-        fetchUnpaidFeesForOrg().catch(console.error);
-        fetchClearanceDocuments(orgId).catch(console.error);
+        // fetchFeesForOrg(orgId).catch(console.error);
+        // fetchUnpaidFeesForOrg().catch(console.error);
+        // fetchClearanceDocuments(orgId).catch(console.error);
     } catch (error) {
         console.error("Error approving payment:", error);
         throw error;
@@ -1148,13 +1164,13 @@ export const rejectPaymentTransaction = async (feeId: string, paymentLogId: stri
         cacheService.invalidate(CACHE_KEYS.feeStatusForClearance(clearanceId, orgId));
         cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
 
-        cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-        cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
-        cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        // cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+        // cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
 
-        fetchFeesForOrg(orgId).catch(console.error);
-        fetchUnpaidFeesForOrg().catch(console.error);
-        fetchClearanceDocuments(orgId).catch(console.error);
+        // fetchFeesForOrg(orgId).catch(console.error);
+        // fetchUnpaidFeesForOrg().catch(console.error);
+        // fetchClearanceDocuments(orgId).catch(console.error);
     } catch (error) {
         console.error("Error rejecting payment:", error);
         throw error;
