@@ -44,6 +44,7 @@ export const getProofOfPaymentsPaginated = async (
   statusFilter: string = "all",
   needCount: boolean = false
 ) => {
+  console.log(orgId);
     const proofOfPaymentsRef = collection(db, "proofOfPayments");
     let constraints: QueryConstraint[] = [
       where("orgId", "==", orgId),
@@ -68,6 +69,7 @@ export const getProofOfPaymentsPaginated = async (
   } else {
     constraints.push(orderBy("updatedAt", "desc"));
   }
+
 
   let count = 0;
   if (needCount) {
@@ -107,6 +109,8 @@ export const getProofOfPaymentsPaginated = async (
     }
     return data;
   });
+
+  console.log(docs);
 
   return {
     docs,

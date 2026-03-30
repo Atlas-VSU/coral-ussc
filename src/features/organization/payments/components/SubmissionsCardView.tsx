@@ -28,7 +28,7 @@ export function SubmissionsCardView({ paginated, onOpenReview, isLoading }: Subm
         const cfg = statusConfig[payment.status]
         const StatusIcon = cfg.icon
         return (
-          <Card key={payment.id} className="border-border bg-card flex flex-col hover:shadow-md transition-shadow">
+          <Card key={payment.id?? "" + payment.submittedAt.toMillis()} className="border-border bg-card flex flex-col hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-3 max-[420px]:flex-col max-[420px]:items-start">
                 <div className="flex-1 min-w-0">

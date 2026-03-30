@@ -14,11 +14,13 @@ const ITEMS_PER_PAGE = 10;
 interface FeesRosterPageProps {
   title: string;
   academicYear: string;
+  semester: string;
 }
 
 export default function FeesRosterPage({
   title,
   academicYear,
+  semester,
 }: FeesRosterPageProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -36,7 +38,7 @@ export default function FeesRosterPage({
     refetch,
     stats,
     hasNextPage,
-  } = useFeesRoster(title, academicYear, {
+  } = useFeesRoster(title, academicYear, semester, {
     pageSize: ITEMS_PER_PAGE,
     currentPage,
     search,

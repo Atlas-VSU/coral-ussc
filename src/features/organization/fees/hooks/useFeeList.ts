@@ -37,7 +37,7 @@ export function useFeeList() {
 
     const groupedFees = useMemo(() => {
         return rawFees.reduce((accumulator, currentFee) => {
-            const groupKey = currentFee.title;
+            const groupKey = `${currentFee.title}-${currentFee.semester}-${currentFee.academicYear}`;
 
             if(!accumulator[groupKey]) {
                 accumulator[groupKey] = [];
@@ -81,18 +81,21 @@ export function useFeeList() {
 
         const groups = (rawFees as Fee[]).reduce((acc, fee) => {
         const title = fee.title;
-        if (!acc[title]) acc[title] = [];
-        acc[title].push(fee);
+        const semester = fee.semester;
+        const academicYear = fee.academicYear;
+        const groupKey = `${title}-${semester}-${academicYear}`;
+        if (!acc[groupKey]) acc[groupKey] = [];
+        acc[groupKey].push(fee);
         return acc;
         }, {} as Record<string, Fee[]>);
 
-        return Object.entries(groups).map(([title, feeList]) => {
+        return Object.entries(groups).map(([groupKey, feeList]) => {
         const first = feeList[0];
         const paidCount = feeList.filter(f => f.status === "verified" || f.status === "paid").length;
         
         return {
-            id: `${title}-${first.feeType}-${first.amount}`, 
-            title,
+            id: `${groupKey}-${first.feeType}-${first.amount}`, 
+            title: first.title,
             type: first.feeType,
             amount: first.amount,
             academicYear: first.academicYear || "",

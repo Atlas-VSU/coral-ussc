@@ -10,6 +10,8 @@ const unpaidDueSchema = z.object({
   amount:       z.number().positive(),
   paymentType:  z.enum(["fees", "fines"]),
   parentFineId: z.string().default(""),
+  academicYear: z.string().default("2025-2026"),
+  semester:     z.string().default("2nd"),
 });
 
 const submitPaymentSchema = z.object({
@@ -155,6 +157,8 @@ export async function POST(request: NextRequest) {
         paymentType:  due.paymentType,
         parentFineId: due.paymentType === "fines" ? due.parentFineId : "",
         historyId:    historyRef.id,
+        academicYear: due.academicYear,
+        semester:     due.semester,
       });
     }
 

@@ -77,6 +77,7 @@ export function usePayments() {
 
     try {
       const currentUser = await getCurrentUserData() as unknown as Member;
+      console.log(currentUser);
       if (!currentUser?.id) return;
       
       currentOrgIdRef.current = currentUser.id;
