@@ -1,5 +1,5 @@
 import { Clock, CheckCircle, XCircle, MinusCircle } from "lucide-react";
-import { StatCard } from "@/components/organization/StatCard";
+import { StatCard } from "@/components/organization/general/StatCard";
     
 export function StatCards({ stats }: { stats: { pending: number; verified: number; rejected: number; unpaid: number } }) {
   return (

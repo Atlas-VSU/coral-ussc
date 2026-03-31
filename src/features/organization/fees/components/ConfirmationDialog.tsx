@@ -6,10 +6,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "./dialog";
+} from "@/components/ui/dialog";
 import { AlertCircle, AlertTriangle } from "lucide-react";
 
-interface ConfirmDialogProps {
+interface ConfirmationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void | Promise<void>;
@@ -23,7 +23,7 @@ interface ConfirmDialogProps {
   notice?: string;
 }
 
-export function ConfirmDialog({
+export function ConfirmationDialog({
   open,
   onOpenChange,
   onConfirm,
@@ -35,7 +35,7 @@ export function ConfirmDialog({
   variant = "warning",
   icon = <AlertTriangle className="h-6 w-6" />,
   notice,
-}: ConfirmDialogProps) {
+}: ConfirmationDialogProps) {
   // Style mapping based on variant
   const styles = {
     warning: {
@@ -65,27 +65,27 @@ export function ConfirmDialog({
       <DialogContent className="sm:max-w-md border-0 shadow-xl">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
-            <div className={`p-2 rounded-lg ${currentStyle.border}`}>
+            <div className={`p-2 rounded-lg ${currentStyle.bg} ${currentStyle.border}`}>
               <div className={currentStyle.text}>{icon}</div>
             </div>
-            <DialogTitle className={`text-lg ${currentStyle.text} `}>{title}</DialogTitle>
+            <DialogTitle className={`text-lg ${currentStyle.text}`}>{title}</DialogTitle>
           </div>
-          <DialogDescription className="text-[#1B5E20] text-base">
+          <DialogDescription className="text-gray-600 dark:text-gray-400 text-base">
             {description}
           </DialogDescription>
         </DialogHeader>
 
         {notice && (
-          <div className={`mt-4 p-4 rounded-lg  border ${currentStyle.border}`}>
+          <div className={`mt-4 p-4 rounded-lg ${currentStyle.bg} border ${currentStyle.border}`}>
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 mt-0.5">
                 <AlertCircle className="h-4 w-4 text-gray-500 dark:text-gray-400" />
               </div>
               <div>
-                <p className="text-sm text-[#1B5E20] mb-1 font-semibold">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
                   Important Notice
                 </p>
-                <p className="text-sm text-[#1B5E20]">{notice}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{notice}</p>
               </div>
             </div>
           </div>
@@ -95,21 +95,13 @@ export function ConfirmDialog({
           <Button
             variant="outline"
             onClick={onCancel}
-            className="flex-1 text-[#1B5E20]"
-            style={{
-                backgroundColor:"white" 
-
-            }}
+            className="flex-1 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             {cancelText}
           </Button>
           <Button
             variant={currentStyle.buttonVariant}
             onClick={onConfirm}
-            style={{
-                      backgroundColor: '#1B5E20',
-                      color: 'white',
-                    }}
             className="flex-1 shadow-sm hover:shadow-md transition-shadow"
           >
             {confirmText}

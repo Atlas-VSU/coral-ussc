@@ -1,5 +1,5 @@
 // app/admin/fees/roster/components/SubmissionsView.tsx
-import { PaymentTable, PaymentCards } from "@/features/organization/fees/components/PaymentDisplay"; // shared display components
+import { PaymentTable, PaymentCards } from "@/features/organization/fees-roster/components/PaymentDisplay"; // shared display components
 import type { PaymentLog } from "@/features/organization/fees/types";
 
 export function SubmissionsView({

@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { SearchInput } from "@/components/organization/SearchInput"
-import { ViewToggle } from "@/components/organization/ViewToggle"
-import { DataPagination } from "@/components/organization/DataPagination"
+import { SearchInput } from "@/components/organization/general/SearchInput"
+import { ViewToggle } from "@/components/organization/general/ViewToggle"
+import { DataPagination } from "@/components/organization/general/DataPagination"
 
 import { useFeeList } from "../hooks/useFeeList"
 import { usePaginatedMembers } from "../../members/hooks/usePaginatedMembers"

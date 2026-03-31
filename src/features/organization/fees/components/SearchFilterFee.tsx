@@ -3,8 +3,8 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
-import { Button } from "../local-components/button";
-import { SearchInput } from "@/components/shared/SearchInput";
+import { SearchInput } from "@/components/organization/general/SearchInput";
+import { Button } from "@/components/ui/button";
 
 export function SearchFilterFee({
   search,
@@ -30,15 +30,14 @@ export function SearchFilterFee({
     e.preventDefault();
     onSearchChange(localSearch);
    }
-  
   return (
     <>
       <div className="relative">
-      <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
+        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
         <SearchInput
-          placeholder="Search by name or ID..."
+          placeholder="Search Fees..."
           value={localSearch}
-          onChange={v => setLocalSearch(v)} // Only update local state on keystroke
+          onChange={v => setLocalSearch(v)} 
           className="w-full sm:w-64"
         />
         <Button type="submit" variant="secondary" size="icon" disabled={isLoading}>

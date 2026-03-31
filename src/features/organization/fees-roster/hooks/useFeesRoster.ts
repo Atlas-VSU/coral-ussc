@@ -1,6 +1,6 @@
 import { cache, useCallback, useEffect, useRef, useState } from "react";
 import { fetchFee, fetchFeesPaginated, getFeesCount, fetchFeeSubmissionsPaginated, fetchPaymentLogs, getFeeSubmissionsCount, getTotalPendingAmountCount, getTotalPaidAmountCount, getTotalUnpaidAmountCount, getTotalRejectedAmountCount, fetchFeeItem } from "@/firebase/fees";
-import { Fee, PaymentLog } from "../types";
+import { Fee, PaymentLog } from "../../fees/types";
 import { Member } from "../../members/types";
 import { cacheService } from "@/services/cacheService";
 import { getCurrentUserData } from "@/firebase";

@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Archive, ArrowLeft, Loader } from "lucide-react";
+import { AlertTriangle, Archive, ArrowLeft, CheckCircle, Loader, Clock, XCircle, MinusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,20 +13,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DataPagination } from "@/components/organization/DataPagination";
-// import { StatCards } from "@/features/organization/fees/components/StatCards";
-import { StatCards } from "../local-components/StatCards";
+import { DataPagination } from "@/components/organization/general/DataPagination";
 import { SearchFilterBar } from "@/features/organization/fees/components/SearchFilterBar";
-import { ViewToggle } from "@/components/organization/ViewToggle";
-import {
-  TableSkeleton,
-  CardGridSkeleton,
-} from "@/components/organization/Skeletons";
+import { ViewToggle } from "@/components/organization/general/ViewToggle";
+import { TableSkeleton } from "@/components/organization/skeleton/TableSkeleton";
+import { CardGridSkeleton } from "@/components/organization/skeleton/CardGridSkeleton";
 import { SubmissionsView } from "@/features/organization/fees/components/SubmissionView";
-import { AllStudentsView } from "@/features/organization/fees/components/AllStudentsView";
+import { AllStudentsView } from "@/features/organization/fees-roster/components/AllStudentsView";
 import { ManualPaymentDialog } from "@/features/organization/fees/components/ManualPaymentDialog";
-import { PaymentDetailDialog } from "@/features/organization/fees/components/PaymentDetailDialog";
-import { RejectDialog } from "@/features/organization/fees/components/RejectDialog";
+import { PaymentDetailDialog } from "@/features/organization/fees-roster/components/PaymentDetailDialog";
+import { RejectDialog } from "@/features/organization/fees-roster/components/RejectDialog";
 import type { Fee, PaymentLog } from "@/features/organization/fees/types";
 
 import {
@@ -38,11 +34,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../local-components/alert-dialog";
+} from "@/components/ui/alert-dialog";
 
 import { StudentFeeRow } from "../hooks/useFeesRoster";
 import { useFeesRosterUI } from "../hooks/useFeesRosterUI";
-import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog";
+import { PaymentReviewDialog } from "@/components/organization/receipt/PaymentReviewDialog";
+import { StatCard } from "@/components/organization/general/StatCard";
 const ITEMS_PER_PAGE = 10;
 
 export function FeesRosterContent({
@@ -141,11 +138,7 @@ export function FeesRosterContent({
   // Use the prop isSubmitting if provided, otherwise fallback to local isArchiving state
   const isCurrentlyArchiving = isSubmitting || isStateArchiving;
 
-  const {
-    paginatedLogs,
-    paginatedRows,
-  } = computed;
-
+  const { paginatedLogs, paginatedRows } = computed;
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
@@ -213,7 +206,27 @@ export function FeesRosterContent({
         </div>
       </div>
 
-      <StatCards stats={stats} />
+      <div className="grid gap-4 sm:grid-cols-3">
+      <StatCard
+        title="Pending"
+        value={stats.pending}
+        description="Awaiting verification"
+        icon={Clock}
+      />
+      <StatCard
+        title="Verified"
+        value={stats.verified}
+        description="Payments confirmed"
+        icon={CheckCircle}
+      />
+      {/* <StatCard title="Rejected" value={stats.rejected} description="Payments declined" icon={XCircle} /> */}
+      <StatCard
+        title="Unpaid"
+        value={stats.unpaid}
+        description="No submission yet"
+        icon={MinusCircle}
+      />
+    </div>
 
       <Card className="border-border">
         <CardHeader>
@@ -227,9 +240,8 @@ export function FeesRosterContent({
                   Track and manage payments for this fee
                 </CardDescription>
               </div>
-              
             </div>
-            
+
             <div className="flex flex-wrap items-center gap-2">
               <SearchFilterBar
                 search={search}
@@ -247,20 +259,19 @@ export function FeesRosterContent({
                 }
               />
             </div>
-            
           </div>
         </CardHeader>
         <div className="flex items-center gap-2 justify-between px-6">
-              <Tabs
-                value={dataView}
-                onValueChange={(v) => handleDataView(v as any)}
-              >
-                <TabsList>
-                  <TabsTrigger value="submissions">Submissions</TabsTrigger>
-                  <TabsTrigger value="all-students">All Students</TabsTrigger>
-                </TabsList>
-              </Tabs>
-          </div>
+          <Tabs
+            value={dataView}
+            onValueChange={(v) => handleDataView(v as any)}
+          >
+            <TabsList>
+              <TabsTrigger value="submissions">Submissions</TabsTrigger>
+              <TabsTrigger value="all-students">All Students</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
         <CardContent>
           {isLoading ? (
             viewMode === "table" ? (
@@ -391,7 +402,10 @@ export function FeesRosterContent({
           amountPaid: selectedLog?.amount || 0,
           paymentMethod: selectedLog?.paymentMethod || "Cash",
           submittedAt: selectedLog?.paidAt
-            ? (selectedLog as any)!.paidAt.toDate().toLocaleString().slice(0, 10)
+            ? (selectedLog as any)!.paidAt
+                .toDate()
+                .toLocaleString()
+                .slice(0, 10)
             : "",
           receiptContent: (selectedLog as any)?.receiptContent || "",
           referenceNo: selectedLog?.gcashReference || "",
@@ -403,9 +417,14 @@ export function FeesRosterContent({
             "",
           declineRemarks: (selectedLog as any)?.declineRemarks || "",
         }}
-        onApprove={selectedLog?.status === "pending" ? async () => await handleApprove(selectedLog!.paymentProofId!) : undefined}
+        onApprove={
+          selectedLog?.status === "pending"
+            ? async () => await handleApprove(selectedLog!.paymentProofId!)
+            : undefined
+        }
         onReject={async (reason) => {
-        if (selectedLog?.status === "pending" ) await handleReject(selectedLog!.paymentProofId!, reason);
+          if (selectedLog?.status === "pending")
+            await handleReject(selectedLog!.paymentProofId!, reason);
         }}
         isProcessing={isSubmitting}
       />

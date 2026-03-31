@@ -1,7 +1,7 @@
 // app/admin/fees/roster/components/AllStudentsDisplay.tsx
 import { Eye, PenLine } from "lucide-react";
 // import { Button } from "@/components/ui/button";
-import { Button } from "../local-components/button";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";

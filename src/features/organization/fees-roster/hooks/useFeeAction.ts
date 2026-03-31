@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PaymentLog } from "../types";
+import { PaymentLog } from "../../fees/types";
 import { approvePaymentTransaction, archiveFeeDocuments, fetchFee, recordManualPaymentAndUpdateClearance, rejectPaymentTransaction } from "@/firebase/fees";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -8,7 +8,7 @@ import { db } from "@/firebase/firebase.config";
 import { verifyPaymentHistory, rejectPaymentHistory } from "@/firebase/payment/update/paymentHistory";
 import { ProofOfPayment } from "@/features/organization/fines/types";
 import { PaymentStatus } from "@/constants/status";
-import { ReceiptData } from "@/components/organization/PaymentReceiptDialog";
+import { ReceiptData } from "@/components/organization/receipt/PaymentReceiptDialog";
 import { generateReceiptId } from "../../payments/utils";
 import { getUserById } from "@/firebase";
 import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval";

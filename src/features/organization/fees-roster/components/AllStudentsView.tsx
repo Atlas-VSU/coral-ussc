@@ -1,5 +1,5 @@
 // app/admin/fees/roster/components/AllStudentsView.tsx
-import { AllStudentsTable, AllStudentsCards, type Row } from "@/features/organization/fees/components/AllStudentsDisplay";
+import { AllStudentsTable, AllStudentsCards, type Row } from "@/features/organization/fees-roster/components/AllStudentsDisplay";
 import type { PaymentLog } from "@/features/organization/fees/types";
 import type { Member } from "@/features/organization/members/types";
 

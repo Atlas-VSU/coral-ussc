@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import type { Fee, PaymentLog } from "../types";
+import type { Fee, PaymentLog } from "../../fees/types";
 import type { StudentFeeRow } from "./useFeesRoster";
 import { useRouter } from "next/navigation";
 
