@@ -14,7 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../../ui/tooltip";
-import ConfirmationDialog from "@/components/shared/ConfirmationDialog";
+import ConfirmationDialog from "@/features/organization/members/components/ConfirmationDialog";
 import { useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebase/firebase.config";

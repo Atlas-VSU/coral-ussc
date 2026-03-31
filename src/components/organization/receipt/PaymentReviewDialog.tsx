@@ -14,7 +14,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../../features/organization/fees/local-components/dialog"
+} from "@/components/ui/dialog"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

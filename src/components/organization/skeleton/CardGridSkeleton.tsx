@@ -1,42 +1,5 @@
-"use client"
-
-import { Skeleton } from "@/components/ui/skeleton"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent } from "@/components/ui/card"
-
-interface TableSkeletonProps {
-  columns: number
-  rows?: number
-}
-
-export function TableSkeleton({ columns, rows = 5 }: TableSkeletonProps) {
-  return (
-    <div className="rounded-md border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent border-border">
-            {Array.from({ length: columns }).map((_, i) => (
-              <TableHead key={i}>
-                <Skeleton className="h-4 w-[100px]" />
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {Array.from({ length: rows }).map((_, rowIndex) => (
-            <TableRow key={rowIndex} className="border-border">
-              {Array.from({ length: columns }).map((_, colIndex) => (
-                <TableCell key={colIndex}>
-                  <Skeleton className="h-5 w-full" />
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  )
-}
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface CardGridSkeletonProps {
   count?: number

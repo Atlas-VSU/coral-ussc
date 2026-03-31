@@ -4,7 +4,7 @@ import { LayoutGrid, List } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-export type ViewMode = "table" | "card"
+export type ViewMode = "table" | "card" 
 
 interface ViewToggleProps {
   viewMode: ViewMode
