@@ -68,7 +68,11 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
     onEventsUpdate();
     setBulkIssueFinesOpen(false);
     setSelectedEvent(null);
-   }
+  }
+  
+    const handleOpenChange = (open: boolean) => {
+    if (!open) return;
+    }
 
   // Executes after the user confirms
   const handleConfirm = async () => {
@@ -231,7 +235,8 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
       {selectedEvent && (
         <BulkFinesIssuance
         open={isBulkIssueFinesOpen}
-        onOpenChange={handleBulkIssueFinesClose}
+        onOpenChange={handleOpenChange}
+        onClose={handleBulkIssueFinesClose}
         event={selectedEvent}
         />
       )}
