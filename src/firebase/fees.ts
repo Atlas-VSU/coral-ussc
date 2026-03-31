@@ -896,7 +896,7 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                             academicYear: i.academicYear,
                             semester: i.semester
                         })) },
-                        itemKeys: itemDocsToUpdate.map(i => i.data.feeItemId),
+                        itemKeys: itemDocsToUpdate.map(i => i.data.feeItemId ?? i.refId), // fallback to refId
                         createdAt: Timestamp.now(),
                     };
 
@@ -945,7 +945,7 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                     academicYear: i.academicYear,
                     semester: i.semester
                 })) },
-                itemKeys: itemDocsToUpdate.map(i => i.data.feeItemId),
+                itemKeys: itemDocsToUpdate.map(i => i.data.feeItemId ?? i.refId), // fallback to refId
                 receiptCode: receipt,
                 isArchived: false,
                 updatedAt: Timestamp.now(),
