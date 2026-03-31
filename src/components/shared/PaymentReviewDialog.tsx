@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
-import { CheckCircle, XCircle } from "lucide-react"
-import { Button } from "../ui/button"
-import { Label } from "../ui/label"
-import { Textarea } from "../ui/textarea"
-import { Separator } from "../ui/separator"
+import { useState, useEffect } from "react"
+import { Check, X, FileImage, Calendar, Hash, CreditCard, XCircle, CheckCircle } from "lucide-react"
+import { format } from "date-fns"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Separator } from "@/components/ui/separator"
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../ui/dialog"
+} from "../../features/organization/fees/local-components/dialog"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ export interface PaymentReviewData {
   paymentMethod?: string
   referenceNo?: string
   submittedAt: string
+  notes?: string
   /** Text shown inside the receipt placeholder box */
   receiptContent?: string
 
@@ -72,11 +74,14 @@ interface PaymentReviewDialogProps {
    * Provide both callbacks to enable Approve + Reject actions.
    * Omit both to render a read-only dialog with a Close button.
    */
-  onApprove?: () => void
-  onReject?: (reason: string) => void
+  onApprove?: () => Promise<void>
+  onReject?: (reason: string) => Promise<void>
+  onViewReceipt?: (bool: boolean) => void
+  isProcessing?: boolean,
+  isLoading?: boolean,
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
+// ─── Component ──────────────────────────────────────────────────────────────
 
 export function PaymentReviewDialog({
   open,
@@ -86,25 +91,32 @@ export function PaymentReviewDialog({
   data,
   onApprove,
   onReject,
+  isProcessing = false,
+  onViewReceipt,
+  isLoading,
 }: PaymentReviewDialogProps) {
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false)
   const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectReason, setRejectReason] = useState("")
-
+  const [isSubmitting, setIsSubmitting] = useState(false)
+ 
   const isPending = Boolean(onApprove && onReject)
-
-  function handleApproveConfirmed() {
-    onApprove?.()
+  async function handleApproveConfirmed() {
+    setIsSubmitting(true)
+    await onApprove?.()
     setApproveConfirmOpen(false)
     onOpenChange(false)
+    setIsSubmitting(false)
   }
 
-  function handleRejectConfirmed() {
+  async function handleRejectConfirmed() {
     if (!rejectReason.trim()) return
-    onReject?.(rejectReason)
+    setIsSubmitting(true)
+    await onReject?.(rejectReason)
     setRejectOpen(false)
     setRejectReason("")
     onOpenChange(false)
+    setIsSubmitting(false)
   }
 
   function renderLineItems() {
@@ -159,6 +171,10 @@ export function PaymentReviewDialog({
     )
   }
 
+  const handleViewReceipt = (bool: boolean) => {
+    onViewReceipt?.(bool);
+   }
+
   return (
     <>
       {/* ── Main review dialog ─────────────────────────────────────────── */}
@@ -170,24 +186,24 @@ export function PaymentReviewDialog({
           </DialogHeader>
 
           {data && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 text-[#3b413a]">
               {/* Optional identity section */}
               {(data.studentName || data.typeLabel) && (
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     {data.studentName && (
                       <div>
-                        <Label className="text-muted-foreground">Student</Label>
+                        <Label className="font-bold">Student</Label>
                         <p className="mt-0.5 text-sm font-medium">{data.studentName}</p>
                         {data.studentId && (
-                          <p className="text-xs text-muted-foreground">{data.studentId}</p>
+                          <p className="text-xs">{data.studentId}</p>
                         )}
                       </div>
                     )}
                     {data.typeLabel && (
                       <div>
-                        <Label className="text-muted-foreground">Type</Label>
-                        <p className="mt-0.5 text-sm font-medium">{data.typeLabel}</p>
+                        <Label className="font-bold">Type</Label>
+                        <p className="mt-0.5 text-sm font-medium">{data.typeLabel.toUpperCase()}</p>
                       </div>
                     )}
                   </div>
@@ -199,9 +215,27 @@ export function PaymentReviewDialog({
               {renderLineItems()}
 
               {/* Receipt placeholder */}
-              <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
-                {data.receiptContent ?? "Receipt Image Preview"}
-              </div>
+             {data.paymentMethod !== "cash" && data.receiptContent && (
+                <div className="group relative h-48 w-full rounded-md border bg-muted/3 ">
+                  <img
+                    src={data.receiptContent}
+                    alt="Receipt"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  
+                  {/* Overlay on Hover */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                    <a 
+                      href={data.receiptContent} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="text-xs font-medium text-white underline"
+                    >
+                      View Full Receipt
+                    </a>
+                  </div>
+                </div>
+              )}
 
               <Separator />
 
@@ -209,30 +243,39 @@ export function PaymentReviewDialog({
               <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                 {data.paymentMethod && (
                   <div>
-                    <Label className="text-muted-foreground">Payment Method</Label>
-                    <p className="mt-0.5 text-sm font-medium">{data.paymentMethod}</p>
+                    <Label className="font-bold">Payment Method</Label>
+                    <p className="mt-0.5 text-sm font-medium">{data.paymentMethod.toUpperCase()}</p>
                   </div>
                 )}
                 {data.referenceNo && (
                   <div>
-                    <Label className="text-muted-foreground">Reference No.</Label>
+                    <Label className="font-bold">Reference No.</Label>
                     <p className="mt-0.5 text-sm font-mono">{data.referenceNo}</p>
                   </div>
                 )}
                 <div>
-                  <Label className="text-muted-foreground">Amount Paid</Label>
+                  <Label className="font-bold">Amount Paid</Label>
                   <p className="mt-0.5 text-sm font-medium">₱{data.amountPaid.toLocaleString()}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Date Submitted</Label>
+                  <Label className="font-bold">Date Submitted</Label>
                   <p className="mt-0.5 text-sm">{data.submittedAt}</p>
                 </div>
               </div>
 
+              {data.notes && (
+                <div>
+                  <Label className="font-bold">Payment Notes</Label>
+                  <p className="mt-1 rounded-md border border-border bg-muted/30 p-3 text-sm text-foreground">
+                    {data.notes}
+                  </p>
+                </div>
+              )}
+
               {/* Decline remarks (read-only, shown for declined payments) */}
               {data.declineRemarks && (
                 <div>
-                  <Label className="text-muted-foreground">Decline Remarks</Label>
+                  <Label className="font-bold">Decline Remarks</Label>
                   <p className="mt-1 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
                     {data.declineRemarks}
                   </p>
@@ -254,17 +297,29 @@ export function PaymentReviewDialog({
                       variant="outline"
                       className="gap-1.5 text-destructive hover:text-destructive"
                       onClick={() => setRejectOpen(true)}
+                      disabled={isProcessing}
                     >
                       <XCircle className="size-4" /> Reject
                     </Button>
-                    <Button className="gap-1.5" onClick={() => setApproveConfirmOpen(true)}>
+                    <Button 
+                      className="gap-1.5" 
+                      onClick={() => setApproveConfirmOpen(true)}
+                      disabled={isProcessing}
+                    >
                       <CheckCircle className="size-4" /> Approve
                     </Button>
                   </>
                 ) : (
-                  <Button variant="outline" onClick={() => onOpenChange(false)}>
+                    <>
+                  {!data.declineRemarks && onViewReceipt && (
+                    <Button variant="outline" className="gap-1.5" onClick={()=>handleViewReceipt(true)}>
+                      View Receipt
+                    </Button>
+                  )}
+                  <Button variant="outline" className="gap-1.5" onClick={() => onOpenChange(false)}>
                     Close
                   </Button>
+                    </>
                 )}
               </DialogFooter>
             </div>
@@ -282,10 +337,13 @@ export function PaymentReviewDialog({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setApproveConfirmOpen(false)}>
+            <Button variant="outline" onClick={() => setApproveConfirmOpen(false)} disabled={isProcessing}>
               Cancel
             </Button>
-            <Button onClick={handleApproveConfirmed}>Yes, Approve</Button>
+            <Button onClick={handleApproveConfirmed} disabled={isSubmitting} className="gap-2">
+              {isSubmitting && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+              Yes, Approve
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -316,14 +374,17 @@ export function PaymentReviewDialog({
             <Button
               variant="outline"
               onClick={() => { setRejectOpen(false); setRejectReason("") }}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
-              disabled={!rejectReason.trim()}
+              disabled={!rejectReason.trim() || isSubmitting}
               onClick={handleRejectConfirmed}
+              className="gap-2"
             >
+              {isSubmitting && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
               Reject
             </Button>
           </DialogFooter>
