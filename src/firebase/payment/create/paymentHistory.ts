@@ -129,6 +129,7 @@ export const addOfflineFinesPayment = async (fines: StudentFines, type:string, m
                 [`blockingItems.${item.id}.pendingReview`]: false,
             });
             }
+            await updateFineStats("2ndSem-2025-2026",0, fines.balance);
             await recalculateClearanceStatus(clearanceRef.id)
         }
 
