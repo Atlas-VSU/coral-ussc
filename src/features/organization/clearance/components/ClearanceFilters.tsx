@@ -1,11 +1,11 @@
 "use client"
 
 import { Download, RefreshCcw, Search } from "lucide-react"
-import { SearchInput } from "@/components/organization/SearchInput"
+import { SearchInput } from "@/components/organization/general/SearchInput"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ViewToggle } from "@/components/organization/ViewToggle"
-import type { ViewMode } from "@/components/organization/ViewToggle"
+import { ViewToggle } from "@/components/organization/general/ViewToggle"
+import type { ViewMode } from "@/components/organization/general/ViewToggle"
 import { CardTitle } from "@/components/ui/card"
 import { useEffect, useState } from "react"
 

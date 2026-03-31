@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../local-components/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FineItem } from "../types";
 import { ShieldCheckIcon, MessageSquareIcon, XIcon } from "lucide-react";
 import { appealStatusConfig } from "../config";

@@ -3,7 +3,7 @@
 import { Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { TableSkeleton } from "@/components/organization/Skeletons"
+import { TableSkeleton } from "@/components/organization/skeleton/TableSkeleton"
 import { ClearanceStatus } from "../../clearance/types"
 
 interface UnpaidTableViewProps {

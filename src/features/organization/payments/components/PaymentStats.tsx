@@ -1,4 +1,4 @@
-import { StatCard } from "@/components/organization/StatCard"
+import { StatCard } from "@/components/organization/general/StatCard"
 import { CheckCircle, XCircle, Clock, Users } from "lucide-react"
 
 interface PaymentStatsProps {

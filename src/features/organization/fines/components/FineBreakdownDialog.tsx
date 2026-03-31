@@ -1,8 +1,8 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../local-components/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Banknote, AlertTriangle, XIcon, CalendarIcon, UserIcon, ShieldCheckIcon, MessageSquareIcon, Eye, PenLine } from "lucide-react";
 import { appealStatusConfig } from "../config";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "../local-components/button";
+import { Button } from "@/components/ui/button";
 import { FineItem, FinesPaymentLog, ProofOfPayment, StudentFines } from "../types";
 import { useEffect, useState, useCallback} from "react";
 import { getFineItemsByFineId } from "@/firebase/fines/read/fines";
@@ -10,12 +10,12 @@ import { FineItemDetailDialog } from "./FineItemDetailDialog";
 import { getFinesPaymentHistoriesByReferenceId} from "@/firebase/payment/read/paymentHistory";
 import { computeTotalPaid } from "../utils/fineComputations";
 import { ManualPaymentDialog } from "./ManualPaymentDialog";
-import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog";
+import { PaymentReviewDialog } from "@/components/organization/receipt/PaymentReviewDialog";
 import { useFineItems } from "../hooks/useFineItems";
 import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval";
-import PaymentReceiptDialog, { ReceiptData } from "../../../../components/organization/PaymentReceiptDialog";
+import PaymentReceiptDialog, { ReceiptData } from "../../../../components/organization/receipt/PaymentReceiptDialog";
 import { toast } from "sonner";
-import { FineBreakdownSkeleton } from "@/components/organization/FineBreakdownSkeleton";
+import { FineBreakdownSkeleton } from "@/features/organization/fines/components/FineBreakdownSkeleton";
 
 interface FineBreakdownDialogProps { 
     open: boolean;

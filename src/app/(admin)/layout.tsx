@@ -1,7 +1,7 @@
 "use client"
 
-import { AdminSidebar } from "@/components/NavBar/app-sidebar/AdminSidebar";
-import { MobileBottomNav } from "@/components/NavBar/mobile-bottom-nav";
+import { AdminSidebar } from "@/components/organization/nav-bar/AdminSidebar";
+import { MobileBottomNav } from "@/components/organization/nav-bar/mobile-bottom-nav";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { useAuth } from "@/hooks/useAuth";
 import { cacheUtils } from "@/utils/cacheUtils";

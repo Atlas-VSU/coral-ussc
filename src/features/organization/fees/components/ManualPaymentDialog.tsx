@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../local-components/dialog";
-import { Button } from "../local-components/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "../local-components/Select";
+import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { PenLine } from "lucide-react";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useProofOfPaymentForm } from "@/features/organization/fines/hooks/useProofOfPaymentForm";
 import { PaymentFormData } from "@/lib/validators";
 import type { Fee } from "@/features/organization/fees/types";
-import type { StudentFeeRow } from "../hooks/useFeesRoster";
+import type { StudentFeeRow } from "../../fees-roster/hooks/useFeesRoster";
 
 interface ManualPaymentDialogProps {
   fee: Fee;

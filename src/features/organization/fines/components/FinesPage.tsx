@@ -1,14 +1,15 @@
 "use client";
 
-import { DataPagination } from "@/components/organization/DataPagination";
-import { SearchInput } from "@/features/organization/fines/components/SearchInput";
-import { StatCard } from "@/components/organization/StatCard";
+import { DataPagination } from "@/components/organization/general/DataPagination";
+import { SearchInput } from "@/components/organization/general/SearchInput";
+import { StatCard } from "@/components/organization/general/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/features/organization/fines/local-components/Select";
+import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/components/ui/select";
 
 import { TableHeader, TableRow, TableHead, TableBody, TableCell, Table } from "@/components/ui/table";
-import { TableSkeleton, CardGridSkeleton } from "@/components/organization/Skeletons";
-import { ViewToggle } from "@/features/organization/fines/components/ViewToggle";
+import { TableSkeleton } from "@/components/organization/skeleton/TableSkeleton";
+import { CardGridSkeleton } from "@/components/organization/skeleton/CardGridSkeleton"
+import { ViewToggle } from "@/components/organization/general/ViewToggle";
 import { BulkGenerationDialog } from "@/features/organization/fines/components/BulkGenerationDialog";
 import { FineType, StudentFines } from "@/features/organization/fines/types";
 import { Users, AlertTriangle, Banknote, CircleDollarSign, ChevronRight, Eye, RefreshCcw, Search } from "lucide-react";
@@ -21,7 +22,7 @@ import { FineTypeDialog } from "@/features/organization/fines/components/FineTyp
 import { useFines } from "@/features/organization/fines/hooks/useFines";
 import { useFineTypes } from "@/features/organization/fines/hooks/useFineTypes";
 import { getVariantFineType } from "@/features/organization/fines/utils/getVariantFineType";
-import { PageHeader } from "@/components/organization/PageHeader";
+import { PageHeader } from "@/components/organization/general/PageHeader";
 
 export function FinesPage() {
   const ITEMS_PER_PAGE = 10;
@@ -142,7 +143,6 @@ export function FinesPage() {
         <StatCard title="Total Collected" value={`₱${totalCollectedFines.toLocaleString()}`} description="Total approved payments" icon={Banknote} />
         <StatCard title="Unsettled" value={totalUnsettled.toLocaleString()} description="Students with outstanding fines" icon={CircleDollarSign} />
       </div>
-
       <Card className="border-border">
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

@@ -6,7 +6,7 @@ import { RecentPayments } from "./RecentPayments";
 import { MobileDashboard } from "./MobileDashboard";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useDashboard } from "../hooks/useDashboard";
-import { PageHeader } from "@/components/organization/PageHeader";
+import { PageHeader } from "@/components/organization/general/PageHeader";
 
 export function DashboardLayout() {
   const {

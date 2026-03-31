@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PageHeader } from "@/components/organization/PageHeader";
+import { PageHeader } from "@/components/organization/general/PageHeader";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useEventsData } from "@/features/organization/events/hooks/useEventsData";
 import { EventsList } from "@/features/organization/events/components/EventsList";

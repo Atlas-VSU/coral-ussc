@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { CardGridSkeleton } from "@/components/organization/Skeletons"
+import { CardGridSkeleton } from "@/components/organization/skeleton/CardGridSkeleton"
 
 interface SubmissionsCardViewProps {
   paginated: ProofOfPayment[]

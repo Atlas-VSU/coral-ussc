@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/features/organization/fines/components/PageHeader";
+import { PageHeader } from "@/components/organization/general/PageHeader";
 import { Eye, RefreshCcw, TicketPlus, UserPlus } from "lucide-react";
 
 interface FinesHeaderProps {

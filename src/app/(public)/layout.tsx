@@ -8,8 +8,8 @@ import { LoadingScreen } from "@/components/ui/loading-screen";
 import { cacheUtils } from "@/utils/cacheUtils";
 import { useTheme } from "next-themes";
 import { useRef } from "react";
-import { AdminSidebar } from "@/components/NavBar/app-sidebar/AdminSidebar";
-import { MobileBottomNav } from "@/components/NavBar/mobile-bottom-nav";
+import { AdminSidebar } from "@/components/organization/nav-bar/AdminSidebar";
+import { MobileBottomNav } from "@/components/organization/nav-bar/mobile-bottom-nav";
 
 
 
