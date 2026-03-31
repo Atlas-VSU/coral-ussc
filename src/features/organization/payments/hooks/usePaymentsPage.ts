@@ -12,7 +12,7 @@ import { PaymentFormData } from "@/lib/validators"
 import { createBulkOfflineProofOfPayment } from "@/firebase/payment/create/proofOfPayment"
 import { generateReceiptId } from "../utils"
 import { Member, Program } from "../../members/types"
-import { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
+import { ReceiptData } from "@/components/shared/PaymentReceiptDialog"
 import { PaymentMethods, PaymentType } from "@/constants/types"
 import { usePaymentApproval } from "./usePaymentApproval"
 import { useDebounce } from "@/hooks/useDebounce"
@@ -306,7 +306,7 @@ export function usePaymentsPage() {
       total: selectedTotal,
       date: paymentDate.toDate().toLocaleString(),
       verifiedByName: `${currentUser.firstName} ${currentUser.lastName}`,
-      paymentMethod: "Cash (Manual)",
+      paymentMethod: "Cash",
     })
 
     setReceiptOpen(true)

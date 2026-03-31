@@ -13,7 +13,7 @@ import { Member } from "../../members/types"
 import { PaymentType } from "@/constants/types"
 import type { ViewMode } from "@/components/organization/ViewToggle"
 import type { ClearanceStatus } from "../types"
-import type { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
+import type { ReceiptData } from "@/components/shared/PaymentReceiptDialog"
 import { generateReceiptId } from "../../payments/utils"
 import { ProofOfPayment } from "../../fines/types"
 import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval"
@@ -238,7 +238,7 @@ export function useClearancePage(orgId: string | undefined) {
         total: selection.total,
         date: new Date().toLocaleString(),
         verifiedByName: currentUser.firstName + " " + currentUser.lastName,
-        paymentMethod: "Cash (Manual)",
+        paymentMethod: "Cash",
       })
 
       setLogPaymentOpen(false)

@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { FeesRosterContent } from "./FeesRosterContent";
 import { useFeeAction } from "../hooks/useFeeAction";
-import PaymentReceiptDialog from "../local-components/PaymentReceiptDialog";
+import PaymentReceiptDialog from "@/components/shared/PaymentReceiptDialog";
 
 const ITEMS_PER_PAGE = 10;
 

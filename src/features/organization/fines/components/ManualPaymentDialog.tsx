@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { PaymentType } from "@/constants/types";
 import { PaymentFormData } from "@/lib/validators";
 import { addOfflineFinesPayment } from "@/firebase/payment/create/paymentHistory";
-import PaymentReceiptDialog, { ReceiptData, ReceiptItem } from "@/components/organization/PaymentReceiptDialog";
+import PaymentReceiptDialog, { ReceiptData, ReceiptItem } from "@/components/shared/PaymentReceiptDialog";
 import { getProofOfPaymentById } from "@/firebase/payment/read/proofOfPayment";
 import { string } from "zod";
 

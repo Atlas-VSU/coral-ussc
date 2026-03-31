@@ -6,8 +6,8 @@ import { toast } from "sonner"
 import { PageHeader } from "@/components/organization/PageHeader"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { DataPagination } from "@/components/organization/DataPagination"
-import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog"
-import PaymentReceiptDialog from "@/components/organization/PaymentReceiptDialog"
+import { PaymentReviewDialog } from "@/components/shared/PaymentReviewDialog"
+import PaymentReceiptDialog from "@/components/shared/PaymentReceiptDialog"
 
 // Local Components & Hooks
 import { ClearanceStats } from "./ClearanceStats"
