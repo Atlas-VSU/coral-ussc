@@ -511,6 +511,20 @@ export const rejectPaymentClearanceUpdate = async (
   // }
  };
 
+ export const fetchStats = async (orgId: string) => {
+  return cacheService.getOrFetch(`clearance:stats:${orgId}`, async () => {
+     if (!orgId) return;
+     const [cleared, not_cleared, pending] = await Promise.all([
+       getClearanceStats(orgId, "cleared"),
+       getClearanceStats(orgId, "not_cleared"),
+       getClearanceStats(orgId, "pending"),
+     ])
+     const stats = {cleared, not_cleared, pending}
+     return stats;
+   }
+   , CACHE_DURATIONS.COUNTS);
+   }
+
  
  export const logManualPaymentClearanceUpdate = async (
    clearanceId: string,

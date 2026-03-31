@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { useClearances } from "./useClearances"
 import { useClearanceActions } from "./useClearanceAction"
 import { useManualPaymentSelection } from "./useManualPaymentSelection"
-import { getClearanceStats, getCurrentUserData } from "@/firebase"
+import { fetchStats, getClearanceStats, getCurrentUserData } from "@/firebase"
 import { Member } from "../../members/types"
 import { PaymentType } from "@/constants/types"
 import type { ViewMode } from "@/components/organization/general/ViewToggle"
@@ -34,7 +34,7 @@ export function useClearancePage(orgId: string | undefined) {
   })
   const pageSize = 10
 
-  const { clearances, loading, totalCount, setClearances, hardRefresh, hasNextPage } = useClearances(
+  const { clearances, loading, totalCount, setClearances, hardRefresh: baseHardRefresh, hasNextPage } = useClearances(
     orgId,
     pageSize,
     search,
@@ -74,23 +74,8 @@ export function useClearancePage(orgId: string | undefined) {
     setPaymentReviewOpen(true)
   }
 
-  const fetchStats = async () => {
-    const orgId = currentUser?.uid;
-    if (!orgId) return;
-    const [cleared, not_cleared, pending] = await Promise.all([
-      getClearanceStats(orgId, "cleared"),
-      getClearanceStats(orgId, "not_cleared"),
-      getClearanceStats(orgId, "pending"),
-    ])
-    setStats({ cleared, not_cleared, pending })
+  
 
-    const stats = {cleared, not_cleared, pending}
-    cacheService.set(`clearance_stats_${orgId}`, stats, 5 * 60 * 1000);
-  }
-
-  useEffect(() => {
-    fetchStats()
-  }, [orgId])
 
   const handleApprovePayment = async () => {
     if (!payment) return
@@ -273,6 +258,15 @@ export function useClearancePage(orgId: string | undefined) {
   const updateSearch = (v: string) => { setSearch(v); setPage(1) }
   const updateFilterStatus = (v: string) => { setFilterStatus(v); setPage(1) }
 
+    const handleHardRefresh = async () => {
+      if (!orgId) return;
+      cacheService.invalidate(`clearance:stats:${orgId}`)
+        await Promise.all([
+            baseHardRefresh(),
+            fetchStats(orgId)
+        ])
+    }
+
   return {
     // Data
     clearances,
@@ -315,6 +309,6 @@ export function useClearancePage(orgId: string | undefined) {
     handleRejectPayment,
     openLogPayment,
     handleLogPayment,
-    hardRefresh
+    hardRefresh: handleHardRefresh
   }
 }
