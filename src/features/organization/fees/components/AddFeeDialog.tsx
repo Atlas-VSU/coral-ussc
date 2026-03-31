@@ -41,6 +41,7 @@ import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { useFeeGeneration } from "../hooks/useFeeGeneration";
 import { Member } from "@/features/organization/members/types";
+import { FeeGenerationProgress } from "./FeeGenerationProgress";
 
 interface FeeGenerationDialogProps {
   open: boolean;
@@ -78,9 +79,9 @@ export function FeeGenerationDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={isGenerating ? undefined : onOpenChange}>
-        <DialogContent className="sm:max-w-[500px] h-[calc(100vh-10rem)] pt-12 pb-4 overflow-y-auto" showCloseButton={!isGenerating}>
+        <DialogContent className={cn("sm:max-w-[500px] h-auto pt-8 pb-4 overflow-y-auto", "min-h-[420px]", isGenerating && "max-h-[600px]")} showCloseButton={!isGenerating}>
           <DialogHeader>
-            <DialogTitle>Generate Fees for All Students</DialogTitle>
+            <DialogTitle>{isGenerating ? "Fee Generation in Progress" : "Create New Fee"}</DialogTitle>
             <DialogDescription>
               {isGenerating 
                 ? "Processing fee generation in batches. Please wait..."
@@ -90,41 +91,12 @@ export function FeeGenerationDialog({
 
           <div className="relative">
             {isGenerating ? (
-              <div className="space-y-6 py-8">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium flex items-center gap-2">
-                       <Clock className="h-4 w-4 animate-pulse" />
-                       Generating Fees...
-                    </span>
-                    <span className="text-muted-foreground">
-                      {importProgress.toFixed(0)}% complete
-                    </span>
-                  </div>
-
-                  {/* Progress bar */}
-                  <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                    <div
-                      className="bg-primary h-2.5 rounded-full transition-all duration-300"
-                      style={{ width: `${importProgress}%` }}
-                    ></div>
-                  </div>
-
-                  {/* Batch info */}
-                  {currentBatch > 0 && totalBatches > 0 && (
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>
-                        Batch {currentBatch} of {totalBatches}
-                      </span>
-                      <span>Processing {studentsCount.toLocaleString()} students</span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="p-4 bg-muted/50 rounded-lg border text-sm text-muted-foreground italic">
-                  Please do not close this window or refresh the page while generation is in progress.
-                </div>
-              </div>
+             <FeeGenerationProgress
+                processedCount={importProgress}  
+                totalCount={studentsCount}
+                currentBatch={currentBatch}
+                totalBatches={totalBatches}
+              />
             ) : (
               <Form {...form}>
               <form onSubmit={form.handleSubmit(onFormSubmit)} className="grid gap-4 py-4">
@@ -346,6 +318,7 @@ export function FeeGenerationDialog({
           </div>
         </DialogContent>
       </Dialog>
+
 
       <ConfirmDialog
         open={showConfirmDialog}
