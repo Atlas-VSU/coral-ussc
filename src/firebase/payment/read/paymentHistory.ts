@@ -13,7 +13,6 @@ export const getPaymentHistoryById = async (paymentHistoryId: string, paymentTyp
             const docRef = doc(db, paymentType, paymentReferenceId, "paymentHistory", paymentHistoryId);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
-                console.log(`fetched paymentHistory doc with cost: 1`);
                 return { id: docSnap.id, ...docSnap.data() } as FinesPaymentLog;
             } else {
                 return null;
@@ -29,7 +28,6 @@ export const getFinesPaymentHistoriesByReferenceId = async (paymentReferenceId: 
         async () => {
             const subColRef = collection(db, "fines", paymentReferenceId, "paymentHistory");
             const querySnapshot = await getDocs(subColRef);
-            console.log(`fetched paymentHistory collection for referenceId ${paymentReferenceId} with cost: ${querySnapshot.size}`);
             return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as FinesPaymentLog[];
         },
         CACHE_DURATIONS.PAYMENT_HISTORY
@@ -42,7 +40,6 @@ export const getFinesVerifiedPaymentHistoriesByReferenceId = async (paymentRefer
         async () => {
             const subColRef = collection(db, paymentType, paymentReferenceId, "paymentHistory");
             const querySnapshot = await getDocs(subColRef);
-            console.log(`fetched paymentHistory collection for referenceId ${paymentReferenceId} with cost: ${querySnapshot.size}`);
             const paymentHistories = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as FinesPaymentLog[];
             return paymentHistories.filter(ph => ph.status === PaymentStatus.VERIFIED);
         },
@@ -56,7 +53,6 @@ export const getPendingPaymentHistory = async (paymentTypeRefId: string, payment
         async () => {
             const subColRef = collection(db, paymentType, paymentTypeRefId, "paymentHistory");
             const querySnapshot = await getDocs(query(subColRef, where("paymentProofId", "==", paymentProofId)));
-            console.log(`fetched pending paymentHistory for paymentProofId ${paymentProofId} with cost: ${querySnapshot.size}`);
             if (querySnapshot.empty) return null;
             const firstDoc = querySnapshot.docs[0];
             return {

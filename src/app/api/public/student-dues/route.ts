@@ -184,9 +184,7 @@ export async function GET(request: NextRequest) {
           .collection("fineItems")
           .get();
         
-      } else {
-        console.log("No student found with that ID");
-      }
+      } 
 
     const grouped = new Map<
       string,

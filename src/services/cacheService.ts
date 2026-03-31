@@ -175,18 +175,18 @@ class CacheService {
       this.metrics.hits++;
       keyMetrics.hits++;
       const duration = performance.now() - startTime;
-      console.log(`%c[Cache Hit] %c${key} %c(${duration.toFixed(2)}ms)`, 'color: #4CAF50; font-weight: bold', 'color: #2196F3', 'color: #9E9E9E');
+      // console.log(`%c[Cache Hit] %c${key} %c(${duration.toFixed(2)}ms)`, 'color: #4CAF50; font-weight: bold', 'color: #2196F3', 'color: #9E9E9E');
       return cached.data as T;
     }
 
     // Cache miss
     this.metrics.misses++;
     keyMetrics.misses++;
-    console.log(`%c[Cache Miss] %c${key}`, 'color: #F44336; font-weight: bold', 'color: #2196F3');
+    // console.log(`%c[Cache Miss] %c${key}`, 'color: #F44336; font-weight: bold', 'color: #2196F3');
     
     const data = await fetchFn();
     const duration = performance.now() - startTime;
-    console.log(`%c[Cache Populated] %c${key} %c(Fetched in ${duration.toFixed(2)}ms)`, 'color: #FF9800; font-weight: bold', 'color: #2196F3', 'color: #9E9E9E');
+    // console.log(`%c[Cache Populated] %c${key} %c(Fetched in ${duration.toFixed(2)}ms)`, 'color: #FF9800; font-weight: bold', 'color: #2196F3', 'color: #9E9E9E');
 
     // Store in cache
     this.cache.set(key, {

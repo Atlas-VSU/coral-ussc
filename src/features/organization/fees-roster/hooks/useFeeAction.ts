@@ -81,7 +81,6 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
             const proof = await getProofOfPaymentById(proofId);
             if (proof) {
                 const result = await _approvePayment(proof);
-                console.log("Approval result:", result?.receipt);
                 setSuccess(true);
                 toast.success("Payment approved successfully!");
                 setReceiptData(result?.receipt! as ReceiptData);

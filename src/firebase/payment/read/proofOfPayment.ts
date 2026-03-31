@@ -11,7 +11,6 @@ export const getProofOfPaymentById = async (proofOfPaymentId: string) => {
             const docRef = doc(db, "proofOfPayments", proofOfPaymentId);
             const docSnap = await getDoc(docRef);
           if (docSnap.exists() && !docSnap.data().isArchived) {
-              console.log(`fetched proofOfPayment doc with cost: 1`);
                 return { id: docSnap.id, ...docSnap.data() } as ProofOfPayment;
             }
             return null;
@@ -29,7 +28,6 @@ export const getProofOfPaymentsPaginated = async (
   statusFilter: string = "all",
   needCount: boolean = false
 ) => {
-  console.log(orgId);
     const proofOfPaymentsRef = collection(db, "proofOfPayments");
     let constraints: QueryConstraint[] = [
       where("orgId", "==", orgId),
@@ -59,7 +57,6 @@ export const getProofOfPaymentsPaginated = async (
   let count = 0;
   if (needCount) {
     const countSnapshot = await getCountFromServer(query(proofOfPaymentsRef, ...constraints));
-    console.log(`Counted proofOfPayments with cost: 1`);
     count =  countSnapshot.data().count; //This is for total count of searched item
 }
 
@@ -71,8 +68,6 @@ export const getProofOfPaymentsPaginated = async (
 
   const q = query(proofOfPaymentsRef, ...constraints);
   const snapshot = await getDocs(q);
-  console.log(`fetched paginated proofOfPayments with cost: ${snapshot.size} for pageSize: ${pageSize}`);
-
   const docs = snapshot.docs.map((doc) => {
     const data = { id: doc.id, ...doc.data() } as ProofOfPayment;
     const key = CACHE_KEYS.proofOfPayment(doc.id);
@@ -81,23 +76,21 @@ export const getProofOfPaymentsPaginated = async (
     const cached = cacheService.get(key);
     if (cached) {
       // Color-coded logs matching cacheService.ts for a professional feel
-      console.log(
-        `%c[Cache Hit]%c ${key}`,
-        "color: #10b981; font-weight: bold;",
-        "color: inherit;"
-      );
+      // console.log(
+      // //   `%c[Cache Hit]%c ${key}`,
+      // //   "color: #10b981; font-weight: bold;",
+      // //   "color: inherit;"
+      // // );
     } else {
-      console.log(
-        `%c[Cache Miss]%c ${key}`,
-        "color: #f59e0b; font-weight: bold;",
-        "color: inherit;"
-      );
+      // console.log(
+      //   `%c[Cache Miss]%c ${key}`,
+      //   "color: #f59e0b; font-weight: bold;",
+      //   "color: inherit;"
+      // );
       cacheService.set(key, data, CACHE_DURATIONS.PAYMENTS);
     }
     return data;
   });
-
-  console.log(docs);
 
   return {
     docs,
@@ -118,7 +111,6 @@ export const getProofOfPaymentByUserId = async (userId: string, orgId?:string) =
                 }
                 const docSnap = await getDocs(query(collection(db, "proofOfPayments"),
                   ...constraints, limit(1)));
-              console.log(`fetched proofOfPayment for userId ${userId} with cost: ${docSnap.size}`);
                 
                 if (docSnap.empty) {
                     return null;
@@ -147,7 +139,6 @@ export const getPendingProofOfPaymentsByUserId = async (userId: string, orgId?:s
                 }
                 const docSnap = await getDocs(query(collection(db, "proofOfPayments"),
                   ...constraints));
-              console.log(`fetched pending proofOfPayments for userId ${userId} with cost: ${docSnap.size}`);
                 
                 if (docSnap.empty) {
                     return null;
@@ -176,7 +167,6 @@ export const getProofOfPaymentsCount = async (orgId: string, statusFilter: strin
         constraints.push(where("status", "==", statusFilter));
       }
       const countSnapshot = await getCountFromServer(query(proofOfPaymentsRef, ...constraints));
-      console.log(`Counted proofOfPayments with cost: 1 for orgId: ${orgId} and status: ${statusFilter}`);
       return countSnapshot.data().count;
     },
     CACHE_DURATIONS.COUNTS

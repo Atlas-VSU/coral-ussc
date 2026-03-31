@@ -380,9 +380,6 @@ export const disableFineGeneration = async (eventId: string) => {
     await updateDoc(eventDoc, {
       finesGenerated: true,
     });
-
-    console.log(`-------Fine generation disabled for event with ID ${eventId}-----------`);
-
     // Invalidate specific event cache and any paginated events
     cacheService.invalidate(`event:${eventId}`);
     cacheService.invalidateByPrefix("events:");

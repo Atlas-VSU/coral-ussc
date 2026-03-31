@@ -62,7 +62,6 @@ export const recalculateFines = async (fineId: string, addedAmount?: number | nu
         const fineItemsRef = collection(db, "fines", fineId, "fineItems");
         const q = query(fineItemsRef, where("isPending", "==", true));
         const fineItemsSnapShot = await getDocs(q);
-        console.log(`fineItems query cost: ${fineItemsSnapShot.size} documents scanned.`);
         
         if (!fineItemsSnapShot.empty) {
             newStatus = FineStatus.PENDING;
