@@ -1,78 +1,70 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 import { MemberData, Program, Faculty } from "../types";
-import { getFaculties, getProgramByFacultyId, getPrograms } from "@/firebase";
+import { getFaculties, getPrograms } from "@/firebase";
 import { getPaginatedUsers } from "@/firebase/members";
 import { toast } from "sonner";
 import {
-  getCacheKey,
   getStaticCache,
   isStaticCacheValid,
   updateStaticCache,
   getMembersCacheEntry,
   updateMembersCache,
   clearMembersCache,
-  getCacheStatus,
 } from "../services/membersCache";
 
+const ITEMS_PER_PAGE_CARD = 12;
+const ITEMS_PER_PAGE_TABLE = 10;
+
 export function usePaginatedMembers() {
-  // Members display state
+  // ─── Static data ──────────────────────────────────────────────────────────
+  const [faculties, setFaculties] = useState<Faculty[]>(
+    getStaticCache().faculties || []
+  );
+  const [programs, setPrograms] = useState<Program[]>(
+    getStaticCache().programs || []
+  );
+
+  // ─── Members ──────────────────────────────────────────────────────────────
   const [members, setMembers] = useState<MemberData[]>([]);
-  const [faculties, setFaculties] = useState(getStaticCache().faculties || []);
-  const [programs, setPrograms] = useState(getStaticCache().programs || []);
-  const [isLoading, setIsLoading] = useState(true);
   const [totalMembers, setTotalMembers] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [programFilter, setProgramFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("name-asc");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dataSource, setDataSource] = useState<"cache" | "server">("server");
 
-  // For search functionality
+  // ─── Filters & view ───────────────────────────────────────────────────────
+  const [programFilter, setProgramFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("name-asc");
+  const [viewMode, setViewMode] = useState<"card" | "table">("card");
+
+  // ─── Pagination (cursor-based, forward/backward only) ─────────────────────
+  // cursorStack[0] = null (page 1 has no cursor)
+  // cursorStack[N] = lastDoc from page N, used to fetch page N+1
+  const [currentPage, setCurrentPage] = useState(1);
+  const cursorStack = useRef<(QueryDocumentSnapshot<DocumentData> | null)[]>([null]);
+
+  // ─── Search ───────────────────────────────────────────────────────────────
+  // `committedSearch` is only updated on Enter — prevents mid-type fetches
+  const [searchInput, setSearchInput] = useState("");
+  const [committedSearch, setCommittedSearch] = useState("");
   const [isSearchActive, setIsSearchActive] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<MemberData[]>([]);
 
-  // Constants for pagination
-  const ITEMS_PER_PAGE_CARD = 12;
-  const ITEMS_PER_PAGE_TABLE = 10;
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+  const pageSize = viewMode === "card" ? ITEMS_PER_PAGE_CARD : ITEMS_PER_PAGE_TABLE;
 
-  // References for search debouncing
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  /** Reset cursor stack and page counter back to page 1. */
+  const resetPagination = useCallback(() => {
+    cursorStack.current = [null];
+    setCurrentPage(1);
+  }, []);
 
-  // Get current page size based on view mode
-  const getPageSize = useCallback(() => {
-    return viewMode === "card" ? ITEMS_PER_PAGE_CARD : ITEMS_PER_PAGE_TABLE;
-  }, [viewMode]);
-
-  // Current cache key based on query parameters
-  const cacheKey = useMemo(() => {
-    return getCacheKey({
-      page: currentPage,
-      pageSize: getPageSize(),
-      programFilter,
-      searchQuery,
-      sortBy,
-    });
-  }, [currentPage, getPageSize, programFilter, searchQuery, sortBy]);
-
-  // Cache status for UI indicators
-  const cacheStatus = useMemo(() => {
-    return getCacheStatus(cacheKey);
-  }, [cacheKey]);
-
-  // Load static data (faculties and programs) with caching
+  // ─── Static data loader ───────────────────────────────────────────────────
   const loadStaticData = useCallback(async (forceRefresh = false) => {
-    // Check if we have valid cached data and aren't forcing a refresh
     if (!forceRefresh && isStaticCacheValid()) {
-      const { faculties: cachedFaculties, programs: cachedPrograms } =
-        getStaticCache();
-      const programs = await getPrograms() as Program[];
-      // this is where the program is returned as NULL
-      setFaculties(cachedFaculties || []);
-      setPrograms(programs);
+      const { faculties: cf, programs: cp } = getStaticCache();
+      setFaculties(cf || []);
+      setPrograms(cp || []);
       return;
     }
 
@@ -81,7 +73,7 @@ export function usePaginatedMembers() {
         getFaculties(),
         getPrograms(),
       ]);
-      // Ensure we have all required fields with proper type checking
+
       const typedFaculties: Faculty[] = Array.isArray(rawFaculties)
         ? rawFaculties.map((item: any) => ({
             id: item.id || "",
@@ -101,10 +93,7 @@ export function usePaginatedMembers() {
           }))
         : [];
 
-      // Update the cache with the properly typed data
       updateStaticCache(typedFaculties, typedPrograms);
-
-      // Update component state
       setFaculties(typedFaculties);
       setPrograms(typedPrograms);
     } catch (error) {
@@ -113,15 +102,42 @@ export function usePaginatedMembers() {
     }
   }, []);
 
-  // Load members with server-side pagination and caching
-  const loadMembers = useCallback(
-    async (forceRefresh = false) => {
-      // First check if we have valid cached data
-      if (!forceRefresh && !isSearchActive) {
-        const cachedData = getMembersCacheEntry(cacheKey);
-        if (cachedData) {
-          setMembers(cachedData.members);
-          setTotalMembers(cachedData.totalMembers);
+  // ─── Core members loader ──────────────────────────────────────────────────
+  /**
+   * Single source of truth for fetching members.
+   * Pass explicit params to avoid stale closure issues entirely.
+   */
+  const fetchMembers = useCallback(
+    async (params: {
+      page: number;
+      pageSize: number;
+      programFilter: string;
+      sortBy: string;
+      committedSearch: string;
+      forceRefresh?: boolean;
+      needCount?: boolean;
+    }) => {
+      const {
+        page,
+        pageSize,
+        programFilter,
+        sortBy,
+        committedSearch,
+        forceRefresh = false,
+        needCount = false,
+      } = params;
+
+      // Cursor for this page: stack index = page - 1
+      const lastDoc = cursorStack.current[page - 1] ?? null;
+
+      // Build a stable cache key (no cursor — cursor is positional)
+      const cacheKey = `p${page}-ps${pageSize}-prog${programFilter}-sort${sortBy}-q${committedSearch}`;
+
+      if (!forceRefresh) {
+        const cached = getMembersCacheEntry(cacheKey);
+        if (cached) {
+          setMembers(cached.members);
+          setTotalMembers(cached.totalMembers);
           setDataSource("cache");
           setIsLoading(false);
           setIsRefreshing(false);
@@ -129,22 +145,20 @@ export function usePaginatedMembers() {
         }
       }
 
-      // No valid cache, fetch from server
       setIsLoading(true);
       setDataSource("server");
 
       try {
-        // Always fetch from server with current filters
         const result = await getPaginatedUsers({
-          page: currentPage,
-          pageSize: getPageSize(),
-          searchQuery: searchQuery,
+          pageSize,
+          lastDoc,
+          searchQuery: committedSearch,
           programId: programFilter,
-          sortBy: sortBy,
+          sortBy,
+          needCount,
         });
 
-        // Transform members data
-        const transformedMembers = result.members.map((m: any) => ({
+        const transformedMembers: MemberData[] = result.members.map((m: any) => ({
           id: m.id,
           member: {
             firstName: m.member.firstName ?? "",
@@ -157,15 +171,21 @@ export function usePaginatedMembers() {
             createdAt: m.member.createdAt ?? undefined,
             yearLevel: m.member.yearLevel ?? undefined,
           },
-        })) as MemberData[];
+        }));
 
-        // Update state
-        setMembers(transformedMembers);
-        setTotalMembers(result.total);
-        // Cache the results (only if not searching)
-        if (!isSearchActive) {
-          updateMembersCache(cacheKey, transformedMembers, result.total);
+        // Store the cursor for the NEXT page at stack position `page`
+        // Only push if we got a full page (there's a next page to go to)
+        if (result.lastDoc) {
+          cursorStack.current[page] = result.lastDoc;
         }
+
+        // If needCount was true, update total; otherwise keep existing total
+        if (needCount) {
+          setTotalMembers(result.total);
+        }
+
+        setMembers(transformedMembers);
+        updateMembersCache(cacheKey, transformedMembers, result.total);
       } catch (error) {
         console.error("Failed to fetch members", error);
         toast.error("Failed to load member data. Please try again.");
@@ -174,195 +194,199 @@ export function usePaginatedMembers() {
         setIsRefreshing(false);
       }
     },
-    [
-      cacheKey,
-      currentPage,
-      getPageSize,
-      isSearchActive,
+    [] // No state deps — params are passed explicitly to avoid stale closures
+  );
+
+  // ─── Navigation handlers ──────────────────────────────────────────────────
+  const goToNextPage = useCallback(() => {
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    fetchMembers({
+      page: nextPage,
+      pageSize,
       programFilter,
-      searchQuery,
       sortBy,
-    ]
-  );
+      committedSearch,
+    });
+  }, [currentPage, pageSize, programFilter, sortBy, committedSearch, fetchMembers]);
 
-  // Handle search with debouncing (for filters)
-  const handleSearch = useCallback(
-    (query: string) => {
-      setSearchQuery(query);
+  const goToPrevPage = useCallback(() => {
+    if (currentPage <= 1) return;
+    const prevPage = currentPage - 1;
+    setCurrentPage(prevPage);
+    fetchMembers({
+      page: prevPage,
+      pageSize,
+      programFilter,
+      sortBy,
+      committedSearch,
+    });
+  }, [currentPage, pageSize, programFilter, sortBy, committedSearch, fetchMembers]);
 
-      // Clear any existing timeout
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-
-      // Set a new timeout to delay the search execution
-      searchTimeoutRef.current = setTimeout(() => {
-        setCurrentPage(1); // Reset to first page
-        loadMembers(); // Load with new search query
-      }, 300); // 300ms debounce
-    },
-    [loadMembers]
-  );
-
-  // Handle program filter changes
+  // ─── Filter handlers ──────────────────────────────────────────────────────
   const handleProgramFilter = useCallback(
-    (programId: string) => {
-      setProgramFilter(programId);
-      setCurrentPage(1); // Reset to first page
-      loadMembers(true); // Force refresh with new filter
+    (newProgramFilter: string) => {
+      setProgramFilter(newProgramFilter);
+      resetPagination();
+      fetchMembers({
+        page: 1,
+        pageSize,
+        programFilter: newProgramFilter, // use new value directly — no stale state
+        sortBy,
+        committedSearch,
+        forceRefresh: true,
+        needCount: true,
+      });
     },
-    [loadMembers]
+    [pageSize, sortBy, committedSearch, fetchMembers, resetPagination]
   );
 
-  // Handle sort changes
   const handleSortBy = useCallback(
     (newSortBy: string) => {
       setSortBy(newSortBy);
-      loadMembers(true); // Force refresh with new sort
+      resetPagination();
+      fetchMembers({
+        page: 1,
+        pageSize,
+        programFilter,
+        sortBy: newSortBy, // use new value directly
+        committedSearch,
+        forceRefresh: true,
+      });
     },
-    [loadMembers]
+    [pageSize, programFilter, committedSearch, fetchMembers, resetPagination]
   );
 
-  // Handle page changes
-  const handlePageChange = useCallback(
-    (page: number) => {
-      setCurrentPage(page);
-      loadMembers(); // Try to use cache first
-    },
-    [loadMembers]
-  );
-
-  // Handle view mode changes
   const handleViewModeChange = useCallback(
     (mode: "card" | "table") => {
       setViewMode(mode);
       localStorage.setItem("membersViewMode", mode);
-      // Reset to page 1 when changing view mode since page sizes differ
-      setCurrentPage(1);
-      loadMembers(); // Try to use cache first
+      resetPagination();
+      const newPageSize =
+        mode === "card" ? ITEMS_PER_PAGE_CARD : ITEMS_PER_PAGE_TABLE;
+      fetchMembers({
+        page: 1,
+        pageSize: newPageSize, // use new value directly
+        programFilter,
+        sortBy,
+        committedSearch,
+        forceRefresh: true,
+      });
     },
-    [loadMembers]
+    [programFilter, sortBy, committedSearch, fetchMembers, resetPagination]
   );
 
-  // Manual refresh - reload data
+  // ─── Search handlers (Enter-only) ─────────────────────────────────────────
+  /** Update the visible input without triggering any fetch. */
+  const handleSearchInputChange = useCallback((value: string) => {
+    setSearchInput(value);
+  }, []);
+
+  /** Commit the search and fetch — called on Enter key or search button click. */
+  const handleSearchCommit = useCallback(() => {
+    const trimmed = searchInput.trim();
+    setCommittedSearch(trimmed);
+    setIsSearchActive(!!trimmed);
+    resetPagination();
+    fetchMembers({
+      page: 1,
+      pageSize,
+      programFilter,
+      sortBy,
+      committedSearch: trimmed, // pass directly — state hasn't updated yet
+      forceRefresh: true,
+      needCount: true,
+    });
+  }, [searchInput, pageSize, programFilter, sortBy, fetchMembers, resetPagination]);
+
+  /** Clear search and return to normal view. */
+  const clearSearch = useCallback(() => {
+    setSearchInput("");
+    setCommittedSearch("");
+    setIsSearchActive(false);
+    resetPagination();
+    fetchMembers({
+      page: 1,
+      pageSize,
+      programFilter,
+      sortBy,
+      committedSearch: "",
+      forceRefresh: true,
+      needCount: true,
+    });
+  }, [pageSize, programFilter, sortBy, fetchMembers, resetPagination]);
+
+  // ─── Refresh & cache ──────────────────────────────────────────────────────
   const refreshData = useCallback(() => {
     setIsRefreshing(true);
-
-    // Load static data first, then members
+    resetPagination();
     loadStaticData(true).then(() => {
-      loadMembers(true); // Force refresh from server
+      fetchMembers({
+        page: 1,
+        pageSize,
+        programFilter,
+        sortBy,
+        committedSearch,
+        forceRefresh: true,
+        needCount: true,
+      });
     });
-  }, [loadMembers, loadStaticData]);
+  }, [
+    loadStaticData,
+    fetchMembers,
+    pageSize,
+    programFilter,
+    sortBy,
+    committedSearch,
+    resetPagination,
+  ]);
 
-  // Clear all caches (for debugging or troubleshooting)
   const clearCache = useCallback(() => {
     clearMembersCache();
     toast.success("Cache cleared");
-    loadMembers(true); // Force refresh from server
-  }, [loadMembers]);
+    resetPagination();
+    fetchMembers({
+      page: 1,
+      pageSize,
+      programFilter,
+      sortBy,
+      committedSearch,
+      forceRefresh: true,
+      needCount: true,
+    });
+  }, [pageSize, programFilter, sortBy, committedSearch, fetchMembers, resetPagination]);
 
-  // Dedicated search function (for header search)
-  const performSearch = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      setIsSearchActive(false);
-      return;
-    }
-
-    setIsSearchActive(true);
-    setIsSearching(true);
-
-    try {
-      // Always perform a server-side search
-      const result = await getPaginatedUsers({
-        page: 1,
-        pageSize: 50, // Limit search results to prevent loading too many
-        searchQuery: query,
-        sortBy: "name-asc",
-      });
-
-      // Transform to correct type
-      const typedResults = result.members.map((m: any) => ({
-        id: m.id,
-        member: {
-          firstName: m.member.firstName ?? "",
-          lastName: m.member.lastName ?? "",
-          programId: m.member.programId ?? "",
-          facultyId: m.member.facultyId ?? "",
-          studentId: m.member.studentId ?? "",
-          email: m.member.email ?? "",
-          role: m.member.role ?? "user",
-          createdAt: m.member.createdAt ?? undefined,
-          yearLevel: m.member.yearLevel ?? undefined,
-        },
-      })) as MemberData[];
-
-      setSearchResults(typedResults);
-    } catch (error) {
-      console.error("Search failed:", error);
-      toast.error("Search failed. Please try again.");
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  }, []);
-
-  // Clear search
-  const clearSearch = useCallback(() => {
-    setIsSearchActive(false);
-    setSearchResults([]);
-    setSearchQuery("");
-    loadMembers(); // Reload the regular view
-  }, [loadMembers]);
-
-  // Load initial data
+  // ─── Initial load ─────────────────────────────────────────────────────────
   useEffect(() => {
-    // Load saved view mode from localStorage
     const savedViewMode = localStorage.getItem("membersViewMode") as
       | "card"
-      | "table";
-    if (
-      savedViewMode &&
-      (savedViewMode === "card" || savedViewMode === "table")
-    ) {
+      | "table"
+      | null;
+    if (savedViewMode === "card" || savedViewMode === "table") {
       setViewMode(savedViewMode);
     }
 
-    // Initial load - cascade loading to ensure proper order
-    const initialLoad = async () => {
-      await loadStaticData(false);
-      await loadMembers(false);
-    };
+    const initialPageSize =
+      savedViewMode === "table" ? ITEMS_PER_PAGE_TABLE : ITEMS_PER_PAGE_CARD;
 
-    initialLoad();
+    loadStaticData(false).then(() => {
+      fetchMembers({
+        page: 1,
+        pageSize: initialPageSize,
+        programFilter: "all",
+        sortBy: "name-asc",
+        committedSearch: "",
+        forceRefresh: false,
+        needCount: true, // get total on first load only
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally empty — runs once on mount
 
-    // Cleanup function for debounce timers
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [loadMembers, loadStaticData]);
-
-  //   useEffect(() => {
-  //     // Listen for cache invalidation events from other tabs
-  //     const handleStorageEvent = (event: StorageEvent) => {
-  //       if (event.key === "members-cache-invalidation") {
-  //         // Only refresh if we're not already loading or refreshing
-  //         if (!isLoading && !isRefreshing) {
-  //           refreshData();
-  //         }
-  //       }
-  //     };
-
-  //     window.addEventListener("storage", handleStorageEvent);
-  //     return () => window.removeEventListener("storage", handleStorageEvent);
-  //   }, [isLoading, isRefreshing, refreshData]);
-
-  // Calculate total pages
-  const totalPages = useMemo(() => {
-    return Math.max(1, Math.ceil(totalMembers / getPageSize()));
-  }, [totalMembers, getPageSize]);
-
+  // ─── Derived state ────────────────────────────────────────────────────────
+  const hasNextPage = members.length === pageSize;
+  const hasPrevPage = currentPage > 1;
+  const totalPages = Math.ceil(totalMembers / pageSize);
 
   return {
     // Data
@@ -372,29 +396,36 @@ export function usePaginatedMembers() {
     totalMembers,
     totalPages,
     currentPage,
-    searchQuery,
+
+    // Pagination
+    hasNextPage,
+    hasPrevPage,
+    goToNextPage,
+    goToPrevPage,
+
+    // Search
+    searchInput,        // bind to <input value={searchInput} />
+    committedSearch,    // what's actually been searched
+    isSearchActive,
+    handleSearchInputChange,  // onChange
+    handleSearchCommit,       // onKeyDown Enter + search button onClick
+    clearSearch,
+
+    // Filters
     programFilter,
     sortBy,
     viewMode,
-    searchResults,
 
-    // State
+    // State flags
     isLoading,
     isRefreshing,
-    isSearchActive,
-    isSearching,
     dataSource,
-    cacheStatus,
 
     // Actions
-    handleSearch,
     handleProgramFilter,
     handleSortBy,
-    handlePageChange,
     handleViewModeChange,
     refreshData,
-    performSearch,
-    clearSearch,
     clearCache,
   };
 }
