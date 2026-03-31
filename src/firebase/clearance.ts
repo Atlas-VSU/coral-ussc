@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { getProofOfPaymentByUserId } from "./payment/read/proofOfPayment";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 import { usePaymentApproval } from "@/features/organization/payments/hooks/usePaymentApproval";
+import { updateStudentStats } from "./stats/update/updateStats";
 
 
 export const getClearanceStats = async (orgId: string, statusFilter: string = "all") => {
@@ -316,6 +317,8 @@ export const addStudentWithClearance = async (studentId: string,studentData: any
         console.log(`✅ Successfully added student ${studentData.firstName} and initialized clearance.`);
         
         cacheService.invalidate(CACHE_KEYS.clearanceDoc(studentRef.id));
+        
+      await updateStudentStats("2ndSem-2025-2026", 1);
 
         return studentRef.id;
     } catch (error) {
