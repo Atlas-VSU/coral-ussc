@@ -27,7 +27,8 @@ export function BulkFinesIssuance({
 
   const isRunning = progress?.phase === "preflight"
     || progress?.phase === "absent"
-    || progress?.phase === "partial";
+    || progress?.phase === "partial"
+    || progress?.phase === "clearance";
   const isDone  = progress?.phase === "done";
   const isError = progress?.phase === "error";
 
@@ -214,7 +215,7 @@ export function BulkFinesIssuance({
         )}
 
                 {/* ── DONE ────────────────────────────────────────────────────── */}
-        {isDone && progress && (
+        {isDone && progress && !isRunning && (
           <div className="space-y-6 py-4">
             <Card>
               <CardHeader>
@@ -304,7 +305,7 @@ export function BulkFinesIssuance({
           </Button>
             {!isDone &&(
             <div>
-            {!isRunning ? (
+            {!isRunning && !isDone? (
             <Button onClick={handleIssuance}>
               <Upload className="h-4 w-4 mr-2" />
               Issue Fines
