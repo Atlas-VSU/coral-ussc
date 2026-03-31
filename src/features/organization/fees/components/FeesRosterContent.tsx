@@ -42,7 +42,7 @@ import {
 
 import { StudentFeeRow } from "../hooks/useFeesRoster";
 import { useFeesRosterUI } from "../hooks/useFeesRosterUI";
-import { PaymentReviewDialog } from "@/components/shared/PaymentReviewDialog";
+import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog";
 const ITEMS_PER_PAGE = 10;
 
 export function FeesRosterContent({

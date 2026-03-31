@@ -10,7 +10,7 @@ import { approvePaymentClearanceUpdate, logManualPaymentClearanceUpdate, rejectP
 import { recalculateClearanceStatus } from "@/firebase/clearance"
 import { PaymentType } from "@/constants/types"
 import { generateReceiptId } from "../../payments/utils"
-import { ReceiptData } from "@/components/shared/PaymentReceiptDialog"
+import { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
 import { set } from "zod"
 import { cacheService, CACHE_KEYS } from "@/services/cacheService"
 

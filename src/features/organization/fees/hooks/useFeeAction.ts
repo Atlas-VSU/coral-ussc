@@ -8,7 +8,7 @@ import { db } from "@/firebase/firebase.config";
 import { verifyPaymentHistory, rejectPaymentHistory } from "@/firebase/payment/update/paymentHistory";
 import { ProofOfPayment } from "@/features/organization/fines/types";
 import { PaymentStatus } from "@/constants/status";
-import { ReceiptData } from "@/components/shared/PaymentReceiptDialog";
+import { ReceiptData } from "@/components/organization/PaymentReceiptDialog";
 import { generateReceiptId } from "../../payments/utils";
 import { getUserById } from "@/firebase";
 import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval";
