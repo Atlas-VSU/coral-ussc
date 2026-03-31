@@ -136,9 +136,9 @@ export function FinesPage() {
       />
 
       {/* Stats */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-2">
         <StatCard title="Students w/ Fines" value={totalStudentsWithFines} description="Have at least one fine" icon={Users} />
-        <StatCard title="Outstanding Balance" value={`₱${totalUnpaidFines}`} description="Total unpaid amount" icon={AlertTriangle} />
+        {/* <StatCard title="Outstanding Balance" value={`₱${totalUnpaidFines}`} description="Total unpaid amount" icon={AlertTriangle} /> */}
         {/* <StatCard title="Total Collected" value={`₱${totalCollectedFines}`} description="Total approved payments" icon={Banknote} /> */}
         <StatCard title="Unsettled" value={totalUnsettled} description="Students with outstanding fines" icon={CircleDollarSign} />
       </div>

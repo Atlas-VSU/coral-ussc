@@ -58,7 +58,7 @@ export function BulkGenerationDialog({ open, onOpenChange }: BulkGenerationDialo
                   Generating Fines
                 </CardTitle>
                 <CardDescription>
-                  Processing {progress.totalUsers.toLocaleString()} users in batches of 400.
+                  Processing {progress.totalUsers.toLocaleString()} users in batches of 20.
                   This may take a few minutes. Please do not close this dialog.
                 </CardDescription>
               </CardHeader>
@@ -86,7 +86,7 @@ export function BulkGenerationDialog({ open, onOpenChange }: BulkGenerationDialo
                   </div>
                   <div>
                     <span className="text-muted-foreground">Batch size</span>
-                    <p className="font-medium">400</p>
+                    <p className="font-medium">20</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Committed</span>
