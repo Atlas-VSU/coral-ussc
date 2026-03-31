@@ -5,6 +5,7 @@ import { getCurrentUserData } from "@/firebase";
 import { Member } from "../../members/types";
 import { CACHE_KEYS, cacheService } from "@/services/cacheService";
 import { getDashboardUnpaidFinesAmount, getDashboardFeesCollected } from "@/firebase/dashboard";
+import { getStats } from "@/firebase/stats/read/getStats";
 
 
 interface UseFinesProps {
@@ -41,17 +42,16 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
         if (isMounted) setTotalCount(count);
 
         // 2. Fetch stats (these could be optimized with a single server-side call)
-        const [studentsCount, unsettledCount, unpaidTotal, /*collectedTotal*/] = await Promise.all([
+        const [studentsCount, unsettledCount, stats] = await Promise.all([
           countStudentsWithFines(),
           countUnsettleFinesOfStudents(),
-          getDashboardUnpaidFinesAmount(),
-          // getDashboardFeesCollected()
+          getStats("2ndSem-2025-2026")
         ]);
         if (isMounted) {
           setTotalStudentsWithFines(studentsCount);
           setTotalUnsettled(unsettledCount);
-          setTotalUnpaidFines(unpaidTotal);
-          // setTotalCollectedFines(collectedTotal);
+          setTotalUnpaidFines(stats?.totalUnpaidFines || 0);
+          setTotalCollectedFines(stats?.totalCollectedFines || 0);
         }
 
         // 3. Fetch paginated data
