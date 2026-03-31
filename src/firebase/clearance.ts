@@ -82,7 +82,6 @@ export const fetchClearanceDocumentsPaginated = async (
 
   const q = query(clearanceRef, ...constraints);
   const snapshot = await getDocs(q);
-  console.log(`cost of fetchClearanceDocumentsPaginated query: ${snapshot.size} documents scanned.`);
 
   const docs = snapshot.docs.map((doc) => {
     const data = { id: doc.id, ...doc.data() } as ClearanceStatus;
@@ -92,17 +91,17 @@ export const fetchClearanceDocumentsPaginated = async (
     const cached = cacheService.get(key);
     if (cached) {
       // Color-coded logs matching cacheService.ts for a professional feel
-      console.log(
-        `%c[Cache Hit]%c ${key}`,
-        "color: #10b981; font-weight: bold;",
-        "color: inherit;"
-      );
+      // console.log(
+      //   `%c[Cache Hit]%c ${key}`,
+      //   "color: #10b981; font-weight: bold;",
+      //   "color: inherit;"
+      // );
     } else {
-      console.log(
-        `%c[Cache Miss]%c ${key}`,
-        "color: #f59e0b; font-weight: bold;",
-        "color: inherit;"
-      );
+      // console.log(
+      //   `%c[Cache Miss]%c ${key}`,
+      //   "color: #f59e0b; font-weight: bold;",
+      //   "color: inherit;"
+      // );
       cacheService.set(key, data, CACHE_DURATIONS.CLEARANCE);
     }
     
@@ -178,7 +177,6 @@ export const fetchClearanceStatus = async (userId: string) => {
         async () => {
             const docRef = doc(db, 'clearanceStatus', userId);
           const snapshot = await getDoc(docRef);
-          console.log(`cost of fetchClearanceStatus for userId ${userId}: 1 document read.`);
             if (snapshot.exists()) {
                 return { id: snapshot.id, ...snapshot.data() } as ClearanceStatus;
             }
@@ -194,7 +192,6 @@ export const fetchClearanceStatus = async (userId: string) => {
 export const recalculateClearanceStatus = async (clearanceId: string) => {
     const clearanceRef = doc(db, 'clearanceStatus', clearanceId);
     const snapshot = await getDoc(clearanceRef);
-    console.log(`cost of recalculateClearanceStatus for clearanceId ${clearanceId}: 1 document read.`);
     const clearance = snapshot.data() as ClearanceStatus;
 
     if (!clearance) return;
@@ -314,7 +311,7 @@ export const addStudentWithClearance = async (studentId: string,studentData: any
 
         // 4. Commit to Firestore
         await batch.commit();
-        console.log(`✅ Successfully added student ${studentData.firstName} and initialized clearance.`);
+        // console.log(`✅ Successfully added student ${studentData.firstName} and initialized clearance.`);
         
         cacheService.invalidate(CACHE_KEYS.clearanceDoc(studentRef.id));
         
@@ -530,8 +527,6 @@ export const rejectPaymentClearanceUpdate = async (
   }
   let totalAmount = 0;
   items.forEach((item) => totalAmount += item.amount);
-  // Handle Bulk Payment separately - it should only be called ONCE
-  console.log(items);
     return await recordBulkManualPaymentAndUpdateClearance(
       studentId,
       items,
@@ -583,16 +578,13 @@ export const seedClearanceDocuments = async (orgId: string) => {
     const usersRef = collection(db, 'users');
     const studentQuery = query(usersRef, where('role', '==', 'user'), where('isDeleted', '==', false));
     const usersSnapshot = await getDocs(studentQuery);
-    console.log(`Found ${usersSnapshot.size} students for seeding clearance documents.`);
 
     if (usersSnapshot.empty) {
-      console.log("No students found to seed.");
       return;
     }
 
     // IMPROVEMENT 2: Fetch existing clearances to safely skip students who already have one
     const existingClearancesSnap = await getDocs(collection(db, 'clearanceStatus'));
-    console.log(`Found ${existingClearancesSnap.size} existing clearance documents.`);
     const existingClearanceIds = new Set(existingClearancesSnap.docs.map(doc => doc.id));
 
     let batch = writeBatch(db);
@@ -655,7 +647,7 @@ export const seedClearanceDocuments = async (orgId: string) => {
       await batch.commit();
     }
 
-    console.log(`✅ Successfully seeded clearance documents for ${totalAddedCount} new students.`);
+    //console.log(`✅ Successfully seeded clearance documents for ${totalAddedCount} new students.`);
     cacheService.invalidateByPrefix('clearance:doc:');
   } catch (error) {
     console.error('❌ Error seeding clearance documents:', error);

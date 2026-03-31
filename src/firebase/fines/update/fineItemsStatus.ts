@@ -17,8 +17,6 @@ export const markFineItemsAsPaid = async (fineId: string, fineItemId?: string) =
             const orgId = currUser.id || '';
             // cacheService.invalidate(CACHE_KEYS.fineDoc(fineId));
             // cacheService.invalidate(CACHE_KEYS.fineItems(fineId));
-
-            console.log(`Marked fine item ${fineItemId} as paid for fine: ${fineId}`);
         }
         else {
             const fineItemsRef = collection(db, "fines", fineId, "fineItems");
@@ -26,7 +24,6 @@ export const markFineItemsAsPaid = async (fineId: string, fineItemId?: string) =
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
-                console.log("No pending fine items found.");
                 return;
             }
 
@@ -45,8 +42,6 @@ export const markFineItemsAsPaid = async (fineId: string, fineItemId?: string) =
             const orgId = currUser.id || '';
             // cacheService.invalidate(CACHE_KEYS.fineDoc(fineId));
             // cacheService.invalidate(CACHE_KEYS.fineItems(fineId));
-
-            console.log(`Marked ${querySnapshot.size} items as paid for fine: ${fineId}`);
         }
 
     } catch (error) {
@@ -71,9 +66,6 @@ export const markFineItemsAsNotPending = async (fineId: string, fineItemIds: str
             const orgId = currUser.id || '';
             // cacheService.invalidate(CACHE_KEYS.fineDoc(fineId));
             // cacheService.invalidate(CACHE_KEYS.fineItems(fineId));
-
-            console.log(`Marked ${fineItemIds.length} items as paid for fine: ${fineId}`);
-            
     } catch (error) {
         console.error("Error marking fine items as paid:", error);
         throw error;

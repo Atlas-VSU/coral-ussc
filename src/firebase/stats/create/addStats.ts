@@ -23,7 +23,6 @@ export const createStats = async (customId: string, statsData: StatsData) => {
         const docRef = doc(db, "stats", customId);
         await setDoc(docRef, statsData);
         
-        console.log(`Successfully wrote stats with ID: ${customId}`);
     } catch (error) {
         console.error("Error writing stats: ", error);
     }

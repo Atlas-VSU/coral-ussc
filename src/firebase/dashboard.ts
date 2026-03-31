@@ -65,7 +65,6 @@ export const getDashboardAttendeeCount = async (): Promise<number> => {
 
         // Now fetch minimal data to sum attendees
         const eventsSnapshot = await getDocs(eventsQuery);
-        console.log(`Fetched ${eventsSnapshot.size} events for attendee count calculation with cost: ${eventsSnapshot.size}`);
 
         // Sum the attendees field from each event
         let totalAttendees = 0;
@@ -128,8 +127,6 @@ export const getDashboardUpcomingEvents = async (
         );
 
         const querySnapshot = await getDocs(eventsQuery);
-        console.log(`Fetched ${querySnapshot.size} upcoming events for dashboard with cost: ${querySnapshot.size}`);
-
         // Transform to our Event type
         return querySnapshot.docs.map(transformEventData);
       },
@@ -187,8 +184,6 @@ export const getDashboardOngoingEvents = async (
         eventsQuery = query(eventsQuery, limit(count));
 
         const querySnapshot = await getDocs(eventsQuery);
-        console.log(`Fetched ${querySnapshot.size} events for ongoing events calculation with cost: ${querySnapshot.size}`);
-
         // Filter for only ongoing events (has ongoing status or is currently ongoing)
         const events = querySnapshot.docs.map(transformEventData);
         return events.filter((event) => {
@@ -241,8 +236,6 @@ export const getDashboardEvents = async (
         eventsQuery = query(eventsQuery, limit(count));
 
         const querySnapshot = await getDocs(eventsQuery);
-        console.log(`Fetched ${querySnapshot.size} events for dashboard with cost: ${querySnapshot.size}`);
-
         return querySnapshot.docs.map(transformEventData);
         
       },
@@ -295,8 +288,6 @@ export const getDashboardRecentMembers = async (
         );
 
         const querySnapshot = await getDocs(membersQuery);
-        console.log(`Fetched ${querySnapshot.size} recent members for dashboard with cost: ${querySnapshot.size}`);
-
         // Transform to our Member type with only the needed fields for display
         return querySnapshot.docs.map((doc) => {
           const data = doc.data();
@@ -392,8 +383,6 @@ export const getDashboardStats = async (): Promise<{
             // Get total attendances count (reuse the dedicated function)
             getDashboardAttendeeCount(),
           ]);
-        console.log(`Fetched data for dashboard stats with cost: 1 for students count, ${eventsSnapshot.size} for events, and 1 for total attendances`);
-
         const totalStudents = studentsCount.data().count;
         const totalEvents = eventsSnapshot.size;
 
@@ -477,8 +466,7 @@ export const getDashboardRecentPayments = async (count = 5) => {
     );
 
     const snapshot = await getDocs(paymentsQuery);
-    console.log(`Fetched ${snapshot.size} recent payments for dashboard with cost: ${snapshot.size}`);
-
+    
     return snapshot.docs.map((doc) => {
       const data = doc.data();
       return {

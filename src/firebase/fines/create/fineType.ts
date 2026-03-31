@@ -36,7 +36,6 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
                 updatedAt: Timestamp.now(),
             }
         });
-        console.log("Fine type created with ID: ", fineTypeDoc.id);
         const currentOrgId = orgId ? orgId : currentUser.uid;
 
         // cacheService.invalidate(CACHE_KEYS.clearanceAll(currentOrgId));

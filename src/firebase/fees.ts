@@ -34,7 +34,6 @@ export const checkFeeTitleExist = async (title: string, academicYear: string, se
     );
     
     const feeSnapshot = await getCountFromServer(q);
-    console.log(`cost: ${feeSnapshot.data().count} for checking fee title existence for title: ${title}`);
     return feeSnapshot.data().count > 0;
 }
 
@@ -52,7 +51,6 @@ export const checkFeeStatusForClearance = async (userId: string, orgId: string) 
             );
             
             const feeSnapshot = await getDocs(q);
-            console.log(`cost: ${feeSnapshot.size} for checking fee status for clearance`);
 
             const feesWithHistory = await Promise.all(feeSnapshot.docs.map(async (feeDoc) => {
                 const feeData = feeDoc.data();
@@ -60,8 +58,6 @@ export const checkFeeStatusForClearance = async (userId: string, orgId: string) 
                 const paymentHistoryRef = collection(db, "fees", feeDoc.id, "paymentHistory");
                 
                 const paymentHistorySnapshot = await getDocs(paymentHistoryRef);
-                console.log(`cost: ${paymentHistorySnapshot.size} for fetching payment history of fee ${feeDoc.id}`);
-                
                 const paymentHistory = paymentHistorySnapshot.docs.map(paymentDoc => ({
                     id: paymentDoc.id,
                     ...paymentDoc.data()
@@ -288,7 +284,6 @@ export const fetchFeesForOrg = async(orgId: string): Promise<FeeItem[]> => {
                 orderBy("createdAt", "desc")
             );
             const snapshot = await getDocs(q);
-            console.log("Fetched fees for org cost:", snapshot.size);
             return snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -438,7 +433,6 @@ export const fetchFeesPaginated = async (
 
   const q = query(collection(db, "fees"), ...constraints);
   const snapshot = await getDocs(q);
-  console.log(`Fetched fees paginated cost: ${snapshot.size}`);
 
   const docs = snapshot.docs.map((doc) => {
     const data = { id: doc.id, ...doc.data() } as Fee;
@@ -538,7 +532,6 @@ export const getFeeSubmissionsCount = async (
         }
         const q = query(collection(db, "proofOfPayments"), ...constraints);
         const snapshot = await getCountFromServer(q);
-        console.log(snapshot.data().count);
         return snapshot.data().count;
     },
     CACHE_DURATIONS.COUNTS
@@ -592,7 +585,6 @@ export const fetchFeeSubmissionsPaginated = async (
 
   const q = query(collection(db, "proofOfPayments"), ...constraints);
   const snapshot = await getDocs(q);
-  console.log(`Fetched fee submissions paginated cost: ${snapshot.size}`);
 
   // Since we don't have feeTitle indexed at root in proofOfPayments yet, 
   // we filter by title in metadata if possible, but Firestore can't do that.
@@ -617,7 +609,6 @@ export async function fetchFee(feeId: string): Promise<Fee | null> {
         async () => {
             const feeRef = doc(db, "fees", feeId);
             const snapshot = await getDoc(feeRef);
-            console.log(`Fetched fee document cost for feeId ${feeId}: ${snapshot.exists() ? "found" : "not found"}`);
             if (snapshot.exists()) {
                 return { id: snapshot.id, ...snapshot.data() } as Fee;
             }
@@ -634,7 +625,6 @@ export async function fetchPaymentLogs(feeId: string) {
             const logsRef = collection(db, "fees", feeId, "paymentHistory");
             const q = query(logsRef, orderBy("paidAt", "desc"));
             const snapshot = await getDocs(q);
-            console.log(`Fetched payment logs cost for feeId ${feeId}: ${snapshot.size}`);
             return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         },
         CACHE_DURATIONS.FEES
@@ -652,7 +642,6 @@ export const getFeeByStudentId = async (studentId: string) => {
                 where("isArchived", "==", false)
             );
             const snapshot = await getDocs(q);
-            console.log(`Fetched fee by studentId cost for studentId ${studentId}: ${snapshot.size}`);
             if (!snapshot.empty) {
                 const feeDoc = snapshot.docs[0];
                 return {
@@ -693,7 +682,6 @@ export const archiveFeeDocuments = async (feeItemId: string) => {
         );
         
         const snapshot = await getDocs(q);
-        console.log(`Fetched fee documents for archiving cost for feeItemId ${feeItemId}: ${snapshot.size}`);
         const batchSize = 200; 
 
         if (!snapshot.empty) {
@@ -729,7 +717,6 @@ export const archiveFeeDocuments = async (feeItemId: string) => {
                 );
                 
                 const clearanceSnapshot = await getDocs(clearanceQuery);
-                console.log(`Fetched clearance documents cost for userId chunk ${i}-${i + maxInQuerySize}: ${clearanceSnapshot.size}`);
                 
                 if (!clearanceSnapshot.empty) {
                     const batch = writeBatch(db);
@@ -802,7 +789,6 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
         }
 
         const studentDataDoc = await getDoc(doc(db, "users", studentId));
-        console.log(`Fetched student data for bulk payment cost for studentId ${studentId}: ${studentDataDoc.exists() ? "found" : "not found"}`);
         const studentData = studentDataDoc.data();
         const currentUser = await getCurrentUserData(); // Assuming this is available in your scope
 
@@ -1045,7 +1031,6 @@ export const recordManualPaymentAndUpdateClearance = async (
         const clearanceRef = doc(db, 'clearanceStatus', studentId);
 
         const studentData = await getDoc(doc(db, "users", studentId));
-        console.log(`Fetched student data for manual payment cost for studentId ${studentId}: ${studentData.exists() ? "found" : "not found"}`);
         const currentUser = await getCurrentUserData() as unknown as Member;
 
         await runTransaction(db, async (transaction) => {

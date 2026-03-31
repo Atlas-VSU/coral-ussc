@@ -121,7 +121,6 @@ export default function FinesFeesSelectionPage({
   const grandTotal = (payFees ? feesPayableTotal : 0) + (payFines ? finesPayableTotal : 0);
 
   const handleContinue = () => {
-    console.log("Selected Finessss:", payFines);
     if (payFees || payFines) {
       onNext({
         fees: payFees ? payableFees : [],
