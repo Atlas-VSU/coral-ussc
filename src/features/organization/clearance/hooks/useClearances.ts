@@ -95,6 +95,7 @@ export function useClearances(
       cacheService.invalidateByPrefix('clearance:doc:')
       cacheService.invalidateByPrefix('clearance:all:')
       cacheService.invalidateByPrefix('clearance:count:')
+      cacheService.invalidateByPrefix('clearance:stats:')
 
       cursorsRef.current[currentPage - 1] = undefined
 

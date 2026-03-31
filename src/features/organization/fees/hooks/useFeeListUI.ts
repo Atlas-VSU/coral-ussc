@@ -24,7 +24,7 @@ export function useFeeListUI({
   const [generateOpen, setGenerateOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [filterStatus, setFilterStatus] = useState<"all" | "semester-membership" | "event-fee" | "charity-fee" | "organization-dues">("all");
-
+  
   const filtered = useMemo(() => {
     return aggregatedFees.filter(
       (f) => {

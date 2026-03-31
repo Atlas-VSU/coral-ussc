@@ -64,7 +64,7 @@ export default function FeeListPage() {
         JSON.stringify({ title: fee.title, academicYear: fee.academicYear, amount: fee.amount, semester: fee.semester, description: fee.description, type: fee.type })
       )
     } catch {}
-    router.push(`/org-fees/roster?title=${encodeURIComponent(fee.title)}&academic_year=${fee.academicYear}`)
+    router.push(`/org-fees/roster?title=${encodeURIComponent(fee.title)}&academic_year=${fee.academicYear}&semester=${fee.semester}`)
   }
 
   if (isLoading) {

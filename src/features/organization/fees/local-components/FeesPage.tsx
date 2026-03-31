@@ -13,14 +13,9 @@ import { useState } from "react";
 export function FeesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-    const { aggregatedFees } = useFeeList()
+    const { aggregatedFees, totalCollected, totalFees, totalStudents } = useFeeList()
     const { totalMembers } = usePaginatedMembers()
     
-    const totalCollected = aggregatedFees.reduce((sum, f) => sum + f.paidCount * f.amount, 0)
-    const avgCompletion = aggregatedFees.length > 0
-      ? Math.round(aggregatedFees.reduce((sum, f) => sum + (f.totalStudents > 0 ? (f.paidCount / f.totalStudents) * 100 : 0), 0) / aggregatedFees.length)
-      : 0
-
   return (
     <div className="flex flex-col gap-6 pb-24 lg:pb-0">
       <PageHeader
@@ -28,17 +23,12 @@ export function FeesPage() {
         title="Fees"
         context="2nd Semester · A.Y. 2025–2026"
         description="Management and tracking of Council/Organization Fees"
-        action={
-          <Button size="sm" onClick={() => setIsDialogOpen(true)}>
-            Add Fee
-          </Button>
-        }
       />
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
         <StatCard
           title="Total Fees"
-          value={aggregatedFees.length}
+          value={totalFees}
           description="Active fee categories"
           icon={CircleDollarSign}
         />
@@ -50,7 +40,7 @@ export function FeesPage() {
         />
         <StatCard
           title="Avg. Collection Rate"
-          value={`${avgCompletion}%`}
+          value={`${totalStudents > 0 ? (totalCollected / totalStudents).toFixed(2) : 0}%`}
           description="Overall completion"
           icon={Users}
         />

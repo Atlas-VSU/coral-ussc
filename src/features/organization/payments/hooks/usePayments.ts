@@ -77,6 +77,7 @@ export function usePayments() {
 
     try {
       const currentUser = await getCurrentUserData() as unknown as Member;
+      console.log(currentUser);
       if (!currentUser?.id) return;
       
       currentOrgIdRef.current = currentUser.id;
@@ -182,6 +183,7 @@ export function usePayments() {
       if (currentUser) {
         cacheService.invalidate(CACHE_KEYS.proofOfPayments(currentUser.uid));
         cacheService.invalidate(`payments:stats:${currentUser.uid}`);
+        cacheService.invalidateByPrefix('payments:proof:')
       }
       
       // Wipe ONLY the current page's cursor to force a fresh fetch of this view
