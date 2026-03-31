@@ -1,5 +1,9 @@
-import { LoginCard } from "@/features/auth/components/login";
+"use client";
 
-export default function LoginPage() {
-  return <LoginCard />;
+import { HomePageLayout } from "@/features/auth/components/homepage";
+
+export default function Home() {
+  return (
+      <HomePageLayout/>
+  );
 }

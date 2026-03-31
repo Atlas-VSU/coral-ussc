@@ -13,7 +13,9 @@ import { MembersList } from "@/features/organization/members/components/MembersL
 import { MembersTable } from "@/features/organization/members/components/MembersTable";
 import { MembersSkeleton } from "@/features/organization/members/components/MembersSkeleton";
 import { MembersFilters } from "@/features/organization/members/components/MembersFilters";
-import { PageHeader } from "@/components/organization/PageHeader";
+import { MembersPagination } from "@/features/organization/members/components/MembersPagination";
+import { ViewMode } from "./ViewToggle";
+import { PageHeader } from "@/components/organization/general/PageHeader";
 import {
   addStudentWithClearance,
   addUser,
@@ -29,7 +31,6 @@ import { usePaginatedMembers } from "@/features/organization/members/hooks/usePa
 import { createFinePerStudent } from "@/firebase/fines/create/fines";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, RefreshCcw, Upload, UserPlus } from "lucide-react";
-import { DataPagination } from "@/components/organization/DataPagination";
 
 export function MembersPage() {
   const {

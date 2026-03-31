@@ -5,8 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
-
-import { CardGridSkeleton } from "@/components/organization/Skeletons"
+import { CardGridSkeleton } from "@/components/organization/skeleton/CardGridSkeleton"
 import { ClearanceStatus } from "../../clearance/types"
 
 interface UnpaidCardViewProps {

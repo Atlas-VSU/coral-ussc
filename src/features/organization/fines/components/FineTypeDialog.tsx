@@ -24,7 +24,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../local-components/dialog"
+} from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,24 +34,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../local-components/alert-dialog"
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import type { FineType } from "../types"
 import { FineTypeForm } from "./FineTypeForm"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 
 interface FineTypeDialogProps {
   open: boolean

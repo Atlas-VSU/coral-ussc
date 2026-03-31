@@ -1,6 +1,6 @@
 "use client"
 
-import { TableSkeleton } from "@/components/organization/Skeletons"
+import { TableSkeleton } from "@/components/organization/skeleton/TableSkeleton"
 import { Eye } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
