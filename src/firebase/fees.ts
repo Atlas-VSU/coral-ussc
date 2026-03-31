@@ -4,7 +4,7 @@ import { db } from "./firebase.config";
 import { FeeGenerationSchema } from "@/features/organization/fees/utils/feeGenerationSchema";
 import z from "zod";
 import { Fee, FeeWithPaymentHistory, PaymentLog } from "@/features/organization/fees/types";
-import { getAllStudents, getMembersOfAnOrg } from "./members";
+import { getAllMembersOfAnOrg, getAllStudents, getMembersOfAnOrg } from "./members";
 import { setDate } from "date-fns";
 import { toast } from "sonner";
 import { getCurrentUserCount, getCurrentUserData } from "./users";
@@ -140,7 +140,7 @@ export const generateFeesForAllStudentsInAnOrg = async (
     onProgress?: (progress: GenerationProgress) => void,
     eventId?: string
 ): Promise<void> => {
-    const students = await getMembersOfAnOrg(currentUserData) as unknown as MemberData[];
+    const students = await getAllMembersOfAnOrg(currentUserData) as any;
     const totalCount = students.length;
     if (totalCount === 0) throw new Error("No students provided");
 
@@ -150,7 +150,6 @@ export const generateFeesForAllStudentsInAnOrg = async (
     const feesCollection = collection(db, "fees");
     const clearanceCollection = collection(db, "clearanceStatus");
     const now = Timestamp.now();
-
     // Firestore max 500 writes per batch (each student = 2 writes: fee + clearance)
     // So safe chunk size = 200 students = 400 writes — well within limits
     const CHUNK_SIZE = 200;
@@ -165,7 +164,6 @@ export const generateFeesForAllStudentsInAnOrg = async (
     // Process chunks in parallel — run up to CONCURRENCY chunks simultaneously
     // Firestore handles concurrent batches fine; keeps network idle time near zero
     const CONCURRENCY = 5;
-
     for (let i = 0; i < chunks.length; i += CONCURRENCY) {
         const parallelChunks = chunks.slice(i, i + CONCURRENCY);
 
@@ -234,7 +232,7 @@ export const generateFeesForAllStudentsInAnOrg = async (
                         .filter((s) => !!s.id)
                         .map((s) => recalculateClearanceStatus(s.id!))
                 );
-
+                
                 processedCount += chunk.length;
                 onProgress?.({
                     processedCount: Math.min(processedCount, totalCount),

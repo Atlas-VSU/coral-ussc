@@ -29,6 +29,7 @@ export function useFeeGeneration({ studentsCount, onSuccess, onOpenChange }: Use
   const [importProgress, setImportProgress] = useState(0);
   const [currentBatch, setCurrentBatch] = useState(0);
   const [totalBatches, setTotalBatches] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   const form = useForm<FeeGenerationFormData>({
     resolver: zodResolver(FeeGenerationSchema),
@@ -57,6 +58,7 @@ export function useFeeGeneration({ studentsCount, onSuccess, onOpenChange }: Use
     setImportProgress(0);
     setCurrentBatch(0);
     setTotalBatches(0);
+    setTotalCount(0);
 
     try {
       const currentUser = await getCurrentUserData();
@@ -73,6 +75,7 @@ export function useFeeGeneration({ studentsCount, onSuccess, onOpenChange }: Use
         currentUser,
         (progress) => {
           setImportProgress(progress.processedCount);
+          setTotalCount(progress.totalCount)
           setCurrentBatch(progress.currentBatch);
           setTotalBatches(progress.totalBatches);
         }
@@ -116,6 +119,7 @@ export function useFeeGeneration({ studentsCount, onSuccess, onOpenChange }: Use
     isGenerating,
     showConfirmDialog,
     setShowConfirmDialog,
+    totalCount,
     onFormSubmit,
     handleConfirmedGeneration,
     handleCancelConfirmation,

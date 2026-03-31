@@ -233,6 +233,32 @@ export const getMembersOfAnOrg = async (
   }
 };
 
+export const getAllMembersOfAnOrg = async (
+  currentUserData: Member,
+) => {
+  try {
+    const baseConstraints = buildBaseConstraints(currentUserData);
+    const constraints: QueryConstraint[] = [
+      where("isDeleted", "==", false),
+      where("role", "==", "user"),
+      orderBy("firstName", "asc"),
+    ];
+
+    const q = query(usersCollection, ...constraints);
+    const snapshot = await getDocs(q);
+
+    const members = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      member: { ...doc.data() },
+    })) as unknown as MemberData[];
+
+    return members;
+  } catch (error) {
+    handleFirestoreError(error, "fetch members of an org");
+    return [];
+  }
+};
+
 /**
  * getAllStudents — USE SPARINGLY.
  * This fetches ALL students with no pagination. For 9000+ records this is
