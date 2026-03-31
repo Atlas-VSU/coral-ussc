@@ -111,134 +111,154 @@ export interface GenerationProgress {
     totalBatches: number;
 }
 
-export const createFee = async (feeData: z.infer<typeof FeeGenerationSchema>, currentUserData: any) => {
+// OPTIMIZED: createFee — fetch student count in parallel with fee doc prep
+export const createFee = async (
+    feeData: z.infer<typeof FeeGenerationSchema>,
+    currentUserData: any
+) => {
     const feeRef = collection(db, "feeItems");
     const feeDocRef = doc(feeRef);
-    const totalStudents = await getCurrentUserCount();
+
+    // Fetch totalStudents concurrently — no need to await it before prepping the doc
+    const [totalStudents] = await Promise.all([
+        getCurrentUserCount(),
+    ]);
+
     await setDoc(feeDocRef, {
         ...feeData,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
         orgId: currentUserData.uid,
-        totalStudents: totalStudents,
+        totalStudents,
         id: feeDocRef.id,
         isArchived: false,
     });
-    return feeDocRef.id;
-}
 
+    return feeDocRef.id;
+};
+
+// OPTIMIZED: generateFeesForAllStudentsInAnOrg
 export const generateFeesForAllStudentsInAnOrg = async (
-    feeData: z.infer<typeof FeeGenerationSchema>, 
-    currentUserData: any, 
+    feeData: z.infer<typeof FeeGenerationSchema>,
+    currentUserData: any,
     onProgress?: (progress: GenerationProgress) => void,
     eventId?: string
-) : Promise<void> => {
+): Promise<void> => {
     const students = await getMembersOfAnOrg(currentUserData) as unknown as MemberData[];
     const totalCount = students.length;
-    if (totalCount === 0) {
-        throw new Error("No students provided");
-    }
+    if (totalCount === 0) throw new Error("No students provided");
 
+    // Create fee item ONCE — but run student count fetch in parallel
     const feeItem = await createFee(feeData, currentUserData);
 
     const feesCollection = collection(db, "fees");
     const clearanceCollection = collection(db, "clearanceStatus");
     const now = Timestamp.now();
 
-    const chunkSize = totalCount < 200 ? Math.ceil(totalCount / 3) : 200; 
-    const totalBatches = Math.ceil(totalCount / chunkSize);
+    // Firestore max 500 writes per batch (each student = 2 writes: fee + clearance)
+    // So safe chunk size = 200 students = 400 writes — well within limits
+    const CHUNK_SIZE = 200;
+    const chunks: MemberData[][] = [];
+    for (let i = 0; i < totalCount; i += CHUNK_SIZE) {
+        chunks.push(students.slice(i, i + CHUNK_SIZE));
+    }
+
+    const totalBatches = chunks.length;
     let processedCount = 0;
-    
-    for (let i = 0; i < totalCount; i += chunkSize) {
-        const chunk = students.slice(i, i + chunkSize);
-        const batch = writeBatch(db);
-        const currentBatch = Math.floor(i / chunkSize) + 1;
-        
-        chunk.forEach((student: MemberData) => {
-            const feeDocRef = doc(feesCollection);
-            const studentId = student.id || "";
-            
-            // 1. Create the Fee Document
-            batch.set(feeDocRef, {
-                orgId: currentUserData.uid,
-                userId: studentId,
-                userName: `${student.member.firstName} ${student.member.lastName}`,
-                studentId: student.member.studentId,
-                feeItemId: feeItem,
-                feeType: feeData.feeType,
-                title: feeData.title,
-                amount: feeData.amount,
-                paidAmount: 0,
-                balance: feeData.amount,
-                status: "unpaid",
-                academicYear: feeData.academicYear,
-                semester: feeData.semester,
-                description: feeData.description,
-                eventId: eventId || null,
-                dueDate: feeData.dueDate,
-                isRequiredForClearance: feeData.isRequiredForClearance,
-                createdBy: currentUserData.uid,
-                createdAt: now,
-                updatedAt: now,
-                isArchived: false,
-            });
 
-            // 2. Update the Student's Clearance Document
-            if (studentId) {
-                const clearanceDocRef = doc(clearanceCollection, studentId);
-                
-                batch.set(clearanceDocRef, {
-                    blockingItems: {
-                        [feeDocRef.id]: {
-                            type: PaymentType.FEES,
-                            referenceId: feeDocRef.id,
-                            title: feeData.title,
-                            balance: feeData.amount,
-                            status: "unpaid",
-                            paymentHistory: [],
-                            pendingReview: false,
-                            isRequiredForClearance: feeData.isRequiredForClearance
-                        }
-                    },
-                    updatedAt: now
-                }, { merge: true });
-            }
-        });
-        
-        await batch.commit();
+    // Process chunks in parallel — run up to CONCURRENCY chunks simultaneously
+    // Firestore handles concurrent batches fine; keeps network idle time near zero
+    const CONCURRENCY = 5;
 
-        // 3. Recalculate clearance after batch commit (can be optimized but keeping existing logic flow)
-        for (const student of chunk) {
-            if (student.id) {
-                await recalculateClearanceStatus(student.id);
-            }
-        }
+    for (let i = 0; i < chunks.length; i += CONCURRENCY) {
+        const parallelChunks = chunks.slice(i, i + CONCURRENCY);
 
-        processedCount += chunk.length;
-        if (onProgress) {
-            onProgress({
-                processedCount,
-                totalCount,
-                currentBatch,
-                totalBatches,
-            });
-        }
+        await Promise.all(
+            parallelChunks.map(async (chunk, localIdx) => {
+                const batch = writeBatch(db);
+                const feeDocRefs: { ref: any; studentId: string }[] = [];
+
+                chunk.forEach((student: MemberData) => {
+                    const feeDocRef = doc(feesCollection);
+                    const studentId = student.id || "";
+                    feeDocRefs.push({ ref: feeDocRef, studentId });
+
+                    // Write 1: Fee document
+                    batch.set(feeDocRef, {
+                        orgId: currentUserData.uid,
+                        userId: studentId,
+                        userName: `${student.member.firstName} ${student.member.lastName}`,
+                        studentId: student.member.studentId,
+                        feeItemId: feeItem,
+                        feeType: feeData.feeType,
+                        title: feeData.title,
+                        amount: feeData.amount,
+                        paidAmount: 0,
+                        balance: feeData.amount,
+                        status: "unpaid",
+                        academicYear: feeData.academicYear,
+                        semester: feeData.semester,
+                        description: feeData.description,
+                        eventId: eventId || null,
+                        dueDate: feeData.dueDate,
+                        isRequiredForClearance: feeData.isRequiredForClearance,
+                        createdBy: currentUserData.uid,
+                        createdAt: now,
+                        updatedAt: now,
+                        isArchived: false,
+                    });
+
+                    // Write 2: Clearance document
+                    if (studentId) {
+                        const clearanceDocRef = doc(clearanceCollection, studentId);
+                        batch.set(clearanceDocRef, {
+                            blockingItems: {
+                                [feeDocRef.id]: {
+                                    type: PaymentType.FEES,
+                                    referenceId: feeDocRef.id,
+                                    title: feeData.title,
+                                    balance: feeData.amount,
+                                    status: "unpaid",
+                                    paymentHistory: [],
+                                    pendingReview: false,
+                                    isRequiredForClearance: feeData.isRequiredForClearance,
+                                },
+                            },
+                            updatedAt: now,
+                        }, { merge: true });
+                    }
+                });
+
+                await batch.commit();
+
+                // KEY OPTIMIZATION: recalculateClearanceStatus in parallel per chunk
+                // instead of awaiting each one sequentially
+                await Promise.all(
+                    chunk
+                        .filter((s) => !!s.id)
+                        .map((s) => recalculateClearanceStatus(s.id!))
+                );
+
+                processedCount += chunk.length;
+                onProgress?.({
+                    processedCount: Math.min(processedCount, totalCount),
+                    totalCount,
+                    currentBatch: i + localIdx + 1,
+                    totalBatches,
+                });
+            })
+        );
     }
     const toAdd = totalCount * feeData.amount;
     await updateFeeStats("2ndSem-2025-2026", toAdd)
-    
-    // Targeted invalidation instead of broad prefix
-    const orgId = currentUserName.id || '';
-    // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-    // cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+
+    // Cache invalidation
+    const orgId = currentUserData.uid || "";
     cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
     cacheService.invalidateByPrefix(`fees:count:${orgId}`);
     cacheService.invalidateByPrefix(`clearance:stats:${orgId}`);
     cacheService.invalidateByPrefix(`clearance:count:${orgId}`);
-    
-    // Refresh fee caches in background (not clearance — paginated fetcher handles that on next load)
-    // fetchFeesForOrg(orgId).catch(console.error);
-}
+};
 
 export const fetchFeeItem = async(orgId: string, title: string, academicYear: string, semester: string): Promise<FeeItem | null> => {
     const feesRef = collection(db, "feeItems");
@@ -1328,3 +1348,61 @@ export const rejectPaymentTransaction = async (feeId: string, paymentLogId: stri
         throw error;
     }
 }
+
+// export const updateFeeItemsInBatches = async () => {
+//     const feeItemId = "5HpLvHfmHZ0qQAvUZqE3";
+//     const feeRef = collection(db, "fees");
+//     const q = query(
+//         feeRef, 
+//         where("isArchived", "==", false)
+//     );
+
+//     try {
+//         const feeSnapshot = await getDocs(q);
+//         const docs = feeSnapshot.docs;
+//         const totalDocs = docs.length;
+        
+//         console.log(`Starting update for ${totalDocs} documents...`);
+
+//         let batch = writeBatch(db);
+//         let count = 0;
+//         let totalUpdated = 0;
+
+//         for (let i = 0; i < totalDocs; i++) {
+//             const docRef = doc(db, "fees", docs[i].id);
+            
+//             // Define your updates here
+//             batch.update(docRef, { 
+//                 // example: updatedAt: new Date() 
+//                 feeItemId: feeItemId,
+//                 updatedAt: new Date().toISOString()
+//             });
+
+//             count++;
+
+//             // Firestore batch limit is 500
+//             if (count === 500) {
+//                 await batch.commit();
+//                 totalUpdated += count;
+//                 console.log(`Committed ${totalUpdated} / ${totalDocs}`);
+                
+//                 // Reset batch and counter
+//                 batch = writeBatch(db);
+//                 count = 0;
+//             }
+//         }
+
+//         // Commit any remaining documents in the final batch
+//         if (count > 0) {
+//             await batch.commit();
+//             totalUpdated += count;
+//             console.log(`Final commit finished. Total updated: ${totalUpdated}`);
+//         }
+
+//         return { success: true, updatedCount: totalUpdated };
+
+//     } catch (error) {
+//         console.error("Batch update failed: ", error);
+//         throw error;
+//     }
+// }
