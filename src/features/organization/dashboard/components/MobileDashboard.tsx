@@ -7,7 +7,7 @@ import { RecentPayments, DashboardPayment } from "./RecentPayments";
 import { Event } from "../types";
 import { Member } from "../../members/types";
 import { MobileMembersStats } from "./MobileMembersStats";
-import { PageHeader } from "@/components/organization/PageHeader";
+import { PageHeader } from "@/components/organization/general/PageHeader";
 
 interface StudentStats {
   totalStudents: number;

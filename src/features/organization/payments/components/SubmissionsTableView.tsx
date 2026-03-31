@@ -6,7 +6,7 @@ import { ProofOfPayment } from "../../fines/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { TableSkeleton } from "@/components/organization/Skeletons"
+import { TableSkeleton } from "@/components/organization/skeleton/TableSkeleton"
 
 interface SubmissionsTableViewProps {
   paginated: ProofOfPayment[]

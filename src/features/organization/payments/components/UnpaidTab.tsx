@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react" // 1. Import hooks
 import { ITEMS_PER_PAGE } from "../config"
-import { ViewMode, ViewToggle } from "@/components/organization/ViewToggle"
+import { ViewMode, ViewToggle } from "@/components/organization/general/ViewToggle"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { SearchInput } from "@/components/organization/SearchInput"
-import { DataPagination } from "@/components/organization/DataPagination"
+import { SearchInput } from "@/components/organization/general/SearchInput"
+import { DataPagination } from "@/components/organization/general/DataPagination"
 import { UnpaidCardView } from "./UnpaidCardView"
 import { UnpaidTableView } from "./UnpaidTableView"
 import { Button } from "@/components/ui/button"

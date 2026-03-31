@@ -1,7 +1,7 @@
 "use client"
 
 import { ShieldCheck } from "lucide-react"
-import { StatCard } from "@/components/organization/StatCard"
+import { StatCard } from "@/components/organization/general/StatCard"
 
 export function ClearanceStats({ stats }: { stats: { cleared: number; not_cleared: number; pending: number } }) {
   const cleared = stats.cleared

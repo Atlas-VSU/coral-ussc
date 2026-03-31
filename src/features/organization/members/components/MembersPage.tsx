@@ -14,8 +14,8 @@ import { MembersTable } from "@/features/organization/members/components/Members
 import { MembersSkeleton } from "@/features/organization/members/components/MembersSkeleton";
 import { MembersFilters } from "@/features/organization/members/components/MembersFilters";
 import { MembersPagination } from "@/features/organization/members/components/MembersPagination";
-import { ViewMode } from "@/features/organization/members/components/ViewToggle";
-import { PageHeader } from "@/components/organization/PageHeader";
+import { ViewMode } from "./ViewToggle";
+import { PageHeader } from "@/components/organization/general/PageHeader";
 import {
   addStudentWithClearance,
   addUser,
