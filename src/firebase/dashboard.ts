@@ -15,6 +15,7 @@ import { Member } from "@/features/organization/members/types";
 import { getCurrentUserData } from "./users";
 import { cacheService, CACHE_DURATIONS } from "@/services/cacheService";
 import { determineEventStatus } from "@/utils/eventStatusUtils";
+import { getStats } from "./stats/read/getStats";
 
 // Helper to transform event data from Firestore to our Event type
 const transformEventData = (doc: any): Event => {
@@ -508,57 +509,31 @@ export const getDashboardRecentPayments = async (count = 5) => {
 // Fees Collected
 // Scoped to current org, excludes archived, sums paidAmount
 export const getDashboardFeesCollected = async () => {
-  // try {
-  //   const currentUser = (await getCurrentUserData()) as unknown as Member;
-  //   if (!currentUser) return 0;
-
-  //   const orgId = (currentUser as any).id ?? "";
-
-  //   const feesSnapshot = await getDocs(query(
-  //     collection(db, "fees"),
-  //     where("orgId", "==", orgId),
-  //     where("isArchived", "==", false)
-  //   ));
-
-  //   let total = 0;
-  //   feesSnapshot.forEach(doc => {
-  //     total += doc.data().paidAmount || 0;
-  //   });
-  //   return total;
-  // } catch (error) {
-  //   console.error("Error getting fees collected:", error);
-  //   return 0;
-  // }
-  return 0;
+  try {
+    // const currentUser = (await getCurrentUserData()) as unknown as Member;
+    // if (!currentUser) return 0;
+    // const orgId = (currentUser as any).id ?? "";
+    const stats = await getStats("2ndSem-2025-2026"); 
+    return stats?.totalCollectedFees ?? 0;
+  } catch (error) {
+    console.error("Error getting fees collected:", error);
+    return 0;
+  }
 };
 
 // Unpaid Fines Amount
 // Scoped to current org, excludes archived, sums balance of fines per student incl partial payments
 export const getDashboardUnpaidFinesAmount = async () => {
-  // try {
+  try {
   //   const currentUser = (await getCurrentUserData()) as unknown as Member;
   //   if (!currentUser) return 0;
-
   //   const orgId = (currentUser as any).id ?? "";
-
-  //   const finesSnapshot = await getDocs(query(
-  //     collection(db, "fines"),
-  //     where("metadata.isArchived", "==", false),
-  //     where("orgId", "==", orgId),
-  //     where("status", "in", ["unpaid", "partial", "pending"]),
-  //     where("accumulatedAmount", ">", 0)
-  //   ));
-
-  //   let total = 0;
-  //   finesSnapshot.forEach(doc => {
-  //     total += doc.data().balance || 0;
-  //   });
-  //   return total;
-  // } catch (error) {
-  //   console.error("Error getting unpaid fines amount:", error);
-  //   return 0;
-  // }
-  return 0;
+    const stats = await getStats("2ndSem-2025-2026");
+    return stats?.totalUnpaidFines ?? 0;
+  } catch (error) {
+    console.error("Error getting unpaid fines amount:", error);
+    return 0;
+  }
 };
 
 // Clearance Rate

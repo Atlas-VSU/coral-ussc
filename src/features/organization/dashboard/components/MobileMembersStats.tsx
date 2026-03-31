@@ -221,12 +221,12 @@ export function MobileMembersStats({
       description: "Outstanding balance",
       icon: AlertTriangle,
     },
-    {
-      title: "Clearance Rate",
-      value: `${(clearanceRate * 100).toFixed(1)}%`,
-      description: `${clearedStudents} cleared · ${unclearedStudents} not`,
-      icon: ShieldCheck,
-    },
+    // {
+    //   title: "Clearance Rate",
+    //   value: `${(clearanceRate * 100).toFixed(1)}%`,
+    //   description: `${clearedStudents} cleared · ${unclearedStudents} not`,
+    //   icon: ShieldCheck,
+    // },
   ];
 
   return (

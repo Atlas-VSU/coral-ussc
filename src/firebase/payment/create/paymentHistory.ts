@@ -17,6 +17,7 @@ import { recalculateFees } from "@/firebase/fees/update/recalculate";
 import { getFineItemsByFineId} from "@/firebase/fines/read/fines";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { BlockingItem } from "@/features/organization/clearance/types";
+import { updateFineStats } from "@/firebase/stats/update/updateStats";
 
 export const addOnlineFinesPayment = async (fines: StudentFines, type:string, method: PaymentMethod, payRef?: string, senderNumber?:string) => {
     try {
@@ -128,7 +129,6 @@ export const addOfflineFinesPayment = async (fines: StudentFines, type:string, m
                 [`blockingItems.${item.id}.pendingReview`]: false,
             });
             }
-
             await recalculateClearanceStatus(clearanceRef.id)
         }
 

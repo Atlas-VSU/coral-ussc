@@ -13,6 +13,7 @@ import { recalculateClearanceStatus } from "@/firebase"
 import { recalculateFines } from "@/firebase/fines/update/recalculate"
 import { recalculateFees } from "@/firebase/fees/update/recalculate"
 import { cacheService, CACHE_KEYS } from "@/services/cacheService"
+import { updateFeeStats, updateFineStats } from "@/firebase/stats/update/updateStats"
 
 
 export const usePaymentApproval = () => {
@@ -37,6 +38,7 @@ export const usePaymentApproval = () => {
                 for (const item of items) {
                     if (item.paymentType === "fees") {
                         await verifyPaymentHistory(item.historyId!, verifier, "fees", item.refId, item.amount);
+                        await updateFeeStats("2ndSem-2025-2026", 0, item.amount);
                     }
                     if (item.paymentType === "fines") {
                         parentFine = item.parentFineId;
@@ -48,6 +50,7 @@ export const usePaymentApproval = () => {
                 if (parentFine !== "") {
                     const paymentHistory = await getPendingPaymentHistory(parentFine, "fines", payment.id!);
                     await verifyPaymentHistory(paymentHistory!.id, verifier, "fines", parentFine, totalFine, null, fineItemIds);
+                    await updateFineStats("2ndSem-2025-2026", 0, totalFine);
                 }
                 await recalculateClearanceStatus(paymentOwner.id!);
                 

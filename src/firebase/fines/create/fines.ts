@@ -15,6 +15,7 @@ import { updateFirstFineIssuedAt, updateLastFineIssuedAt } from "../update/fines
 import { PaymentType } from "@/constants/types";
 import { recalculateClearanceStatus } from "@/firebase/clearance";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
+import { updateFineStats } from "@/firebase/stats/update/updateStats";
 
 
 const finesCollection: CollectionReference<DocumentData> = collection(
@@ -453,6 +454,9 @@ export const generateFinesOnEvent = async (
   }
 
   await disableFineGeneration(event.id);
+
+  const toAdd = counts.absentTotal * (type.requiresTimeOut ? type.defaultAmount * 2 : type.defaultAmount) + counts.partialTotal * type.defaultAmount;
+  await updateFineStats("2ndSem-2025-2026", toAdd, 0);
 
   // ── CLEARANCE PHASE — runs only after ALL writes are done ─────────────────
   const clearanceTotal = allProcessedFines.length;

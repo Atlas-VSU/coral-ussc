@@ -13,6 +13,7 @@ import { createFinesPaymentHistory, createOnlinePaymentHistory } from "./payment
 import { FineItem, StudentFines } from "@/features/organization/fines/types";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { BlockingItem } from "@/features/organization/clearance/types";
+import { updateFeeStats, updateFineStats } from "@/firebase/stats/update/updateStats";
 
 export const createOnlineProofOfPayment = async (
     payment: PaymentFormData, type: string ) => {
@@ -176,7 +177,13 @@ export const createOfflineFinesProofOfPayment = async (
           parentFineId: fine.id!,
           academicYear: "2025-2026",
           semester: "2nd",
-          })
+        })
+        if (type === "fines") { 
+          await updateFineStats("2ndSem-2025-2026", 0, item.amount);
+        }
+        if (type === "fees") {
+          await updateFeeStats("2ndSem-2025-2026", 0, item.amount);
+        }
       }
         if (transaction)
         {
@@ -266,6 +273,13 @@ export const createBulkOfflineProofOfPayment = async (
          lastItem.academicYear = feeData.academicYear;
          lastItem.semester = feeData.semester;
        }
+    }
+
+    if (due.type === "fines") { 
+        await updateFineStats("2ndSem-2025-2026", 0, due.balance);
+    }
+    if (due.type === "fees") {
+        await updateFeeStats("2ndSem-2025-2026", 0, due.balance);
     }
   }
   await updateDoc(doc(db, "proofOfPayments", docRef.id), {
