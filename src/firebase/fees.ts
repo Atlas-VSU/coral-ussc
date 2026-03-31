@@ -18,6 +18,7 @@ import { getPaymentHistoryById } from "./payment/read/paymentHistory";
 import { recalculateFines } from "./fines/update/recalculate";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 import { FeeItem } from "@/app/(public)/payment/page";
+import { updateFeeStats, updateFineStats } from "./stats/update/updateStats";
 
 const currentUserName = await getCurrentUserData() as unknown as Member;
 
@@ -248,6 +249,8 @@ export const generateFeesForAllStudentsInAnOrg = async (
             })
         );
     }
+    const toAdd = totalCount * feeData.amount;
+    await updateFeeStats("2ndSem-2025-2026", toAdd)
 
     // Cache invalidation
     const orgId = currentUserData.uid || "";
@@ -982,9 +985,13 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
             if (Object.keys(clearanceUpdates).length > 0) {
                 transaction.update(clearanceRef, clearanceUpdates);
             }
-        });
-        await recalculateClearanceStatus(studentId);
 
+        const toDeductFees = totalAmount - totalFinesPaid;
+        await updateFineStats("2ndSem-2025-2026", 0,totalFinesPaid);
+        await updateFeeStats("2ndSem-2025-2026", 0,toDeductFees);
+        });
+
+        await recalculateClearanceStatus(studentId);
         const orgId = currentUserName.id || '';
         // Granular Invalidation
         items.forEach(item => {
@@ -1129,6 +1136,7 @@ export const recordManualPaymentAndUpdateClearance = async (
             });
         });
 
+        await updateFeeStats("2ndSem-2025-2026", 0, paymentAmount);
         await recalculateClearanceStatus(studentId);
 
         const orgId = currentUserName.id || '';
