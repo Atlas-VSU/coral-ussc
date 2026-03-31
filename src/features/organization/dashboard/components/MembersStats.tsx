@@ -218,18 +218,18 @@ export function MembersStats({
       description: "Outstanding fines balance",
       icon: AlertTriangle,
     },
-    {
-      title: "Clearance Rate",
-      value: `${(clearanceRate * 100).toFixed(1)}%`,
-      description: `${clearedStudents} cleared · ${unclearedStudents} uncleared`,
-      icon: ShieldCheck,
-    },
+    // {
+    //   title: "Clearance Rate",
+    //   value: `${(clearanceRate * 100).toFixed(1)}%`,
+    //   description: `${clearedStudents} cleared · ${unclearedStudents} uncleared`,
+    //   icon: ShieldCheck,
+    // },
   ];
 
   return (
     <div className="flex flex-col gap-4">
       {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4">
         {statCards.map(({ title, value, description, icon: Icon }) => (
           <Card key={title} className="border-border bg-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 pt-4 sm:px-6 sm:pt-5">
