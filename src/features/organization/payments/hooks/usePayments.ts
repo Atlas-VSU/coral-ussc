@@ -20,6 +20,8 @@ export function usePayments() {
   const submissionsCursorsRef = useRef<Record<number, any>>({});
   const unpaidCursorsRef = useRef<Record<number, any>>({});
   const currentOrgIdRef = useRef<string | null>(null)
+  const fetchRequestIdRef = useRef(0)
+  const unpaidRequestIdRef = useRef(0)
   
   const [unpaidPage, setUnpaidPage] = useState(1)
   const [submissionPage, setSubmissionPage] = useState(1)
@@ -72,12 +74,13 @@ export function usePayments() {
 
   // ── Fetch proof of payments ───────────────────────────────────────────────
   const fetchPayments = useCallback(async () => {
+    const requestId = ++fetchRequestIdRef.current;
     setLoadingSubmissions(true);
     const itemsPerPage = 10;
 
     try {
       const currentUser = await getCurrentUserData() as unknown as Member;
-      console.log(currentUser);
+      if (requestId !== fetchRequestIdRef.current) return;
       if (!currentUser?.id) return;
       
       currentOrgIdRef.current = currentUser.id;
@@ -96,8 +99,13 @@ export function usePayments() {
         filterStatus, 
         !!search
       );
+
+      if (requestId !== fetchRequestIdRef.current) return;
       
-      setTotalSubmissionCount(search ? count : await getProofOfPaymentsCount(currentUser.id, filterStatus));
+      const actualCount = search ? count : await getProofOfPaymentsCount(currentUser.id, filterStatus);
+      if (requestId !== fetchRequestIdRef.current) return;
+
+      setTotalSubmissionCount(actualCount);
       setPayments(docs);
       setSearchCount(count);
 
@@ -107,10 +115,14 @@ export function usePayments() {
       }
       
     } catch (error) {
-      toast.error("Could not load submitted payments.");
-      console.error(error);
+      if (requestId === fetchRequestIdRef.current) {
+        toast.error("Could not load submitted payments.");
+        console.error(error);
+      }
     } finally {
-      setLoadingSubmissions(false);
+      if (requestId === fetchRequestIdRef.current) {
+        setLoadingSubmissions(false);
+      }
     }
   }, [submissionPage, search, filterStatus, fetchStats]);
 
@@ -120,11 +132,13 @@ export function usePayments() {
 
   // ── Fetch Unpaid Records ──────────────────────────────────────────────────
   const fetchUnpaid = useCallback(async () => {
+    const requestId = ++unpaidRequestIdRef.current;
     setLoadingUnpaid(true);
     const itemsPerPage = 10;
 
     try {
       const currentUser = await getCurrentUserData() as unknown as Member;
+      if (requestId !== unpaidRequestIdRef.current) return;
       if (!currentUser?.id) return;
       
       currentOrgIdRef.current = currentUser.id;
@@ -134,8 +148,6 @@ export function usePayments() {
         ? (unpaidCursorsRef.current[unpaidPage - 2] ?? null) 
         : null;
       
-      // Note: Assuming fetchClearanceDocumentsPaginated returns 'lastVisible' 
-      // instead of or alongside 'allSnapshots' now
       const { docs, count, lastVisible } = await fetchClearanceDocumentsPaginated(
         currentUser.id,
         itemsPerPage,
@@ -146,7 +158,11 @@ export function usePayments() {
         true
       );
       
+      if (requestId !== unpaidRequestIdRef.current) return;
+
       const actualUnpaidCount = unpaidSearch ? count : await getCountOfUnclearedDocuments(currentUser.id);
+      if (requestId !== unpaidRequestIdRef.current) return;
+
       setTotalUnpaidCount(actualUnpaidCount);
       
       // Keep stats in sync with total unpaid
@@ -161,10 +177,14 @@ export function usePayments() {
       }
       
     } catch (error) {
-      toast.error("Could not load unpaid payments.");
-      console.error(error);
+      if (requestId === unpaidRequestIdRef.current) {
+        toast.error("Could not load unpaid payments.");
+        console.error(error);
+      }
     } finally {
-      setLoadingUnpaid(false);
+      if (requestId === unpaidRequestIdRef.current) {
+        setLoadingUnpaid(false);
+      }
     }
   }, [unpaidPage, unpaidSearch]);
 
@@ -188,6 +208,7 @@ export function usePayments() {
       
       // Wipe ONLY the current page's cursor to force a fresh fetch of this view
       submissionsCursorsRef.current[submissionPage - 1] = undefined;
+      
       await fetchPayments();
     } finally {
       setIsRefreshingSubmissions(false);

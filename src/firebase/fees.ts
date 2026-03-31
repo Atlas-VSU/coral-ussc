@@ -272,7 +272,8 @@ export const fetchFeeItem = async(orgId: string, title: string, academicYear: st
         limit(1)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs[0].data() as unknown as FeeItem;
+    if (snapshot.empty) return null;
+    return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as unknown as FeeItem;
 }
 
 export const fetchFeesForOrg = async(orgId: string): Promise<FeeItem[]> => {
