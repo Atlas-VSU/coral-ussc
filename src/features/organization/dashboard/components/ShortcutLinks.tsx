@@ -99,7 +99,7 @@ export function ShortcutLinks({
           </Button>
         </CardTitle>
         <CardDescription className="text-muted-foreground">
-          Recent and ongoing events
+          Ongoing events
         </CardDescription>
       </CardHeader>
 
@@ -138,16 +138,6 @@ export function ShortcutLinks({
                           Major
                         </Badge>
                       )}
-                      <Badge
-                        variant={event.status === "ongoing" ? "default" : "secondary"}
-                        className={`text-[10px] px-1.5 py-0 ${
-                          event.status === "ongoing"
-                            ? "bg-green-500 text-white"
-                            : ""
-                        }`}
-                      >
-                        {event.status === "ongoing" ? "Ongoing" : "Upcoming"}
-                      </Badge>
                     </div>
                   </div>
 

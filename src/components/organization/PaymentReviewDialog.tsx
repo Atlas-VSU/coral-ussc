@@ -14,8 +14,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { ReceiptData } from "./PaymentReceiptDialog"
+} from "../../features/organization/fees/local-components/dialog"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -78,8 +77,8 @@ interface PaymentReviewDialogProps {
   onApprove?: () => Promise<void>
   onReject?: (reason: string) => Promise<void>
   onViewReceipt?: (bool: boolean) => void
-  isProcessing?: boolean
-  isLoading?: boolean
+  isProcessing?: boolean,
+  isLoading?: boolean,
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -111,7 +110,7 @@ export function PaymentReviewDialog({
   }
 
   async function handleRejectConfirmed() {
-    if (!rejectReason.trim() || isLoading) return
+    if (!rejectReason.trim()) return
     setIsSubmitting(true)
     await onReject?.(rejectReason)
     setRejectOpen(false)
@@ -187,23 +186,23 @@ export function PaymentReviewDialog({
           </DialogHeader>
 
           {data && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 text-[#3b413a]">
               {/* Optional identity section */}
               {(data.studentName || data.typeLabel) && (
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     {data.studentName && (
                       <div>
-                        <Label className="text-muted-foreground">Student</Label>
+                        <Label className="font-bold">Student</Label>
                         <p className="mt-0.5 text-sm font-medium">{data.studentName}</p>
                         {data.studentId && (
-                          <p className="text-xs text-muted-foreground">{data.studentId}</p>
+                          <p className="text-xs">{data.studentId}</p>
                         )}
                       </div>
                     )}
                     {data.typeLabel && (
                       <div>
-                        <Label className="text-muted-foreground">Type</Label>
+                        <Label className="font-bold">Type</Label>
                         <p className="mt-0.5 text-sm font-medium">{data.typeLabel.toUpperCase()}</p>
                       </div>
                     )}
@@ -217,7 +216,7 @@ export function PaymentReviewDialog({
 
               {/* Receipt placeholder */}
              {data.paymentMethod !== "cash" && data.receiptContent && (
-                <div className="group relative h-48 w-full rounded-md border bg-muted/30">
+                <div className="group relative h-48 w-full rounded-md border bg-muted/3 ">
                   <img
                     src={data.receiptContent}
                     alt="Receipt"
@@ -244,29 +243,29 @@ export function PaymentReviewDialog({
               <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                 {data.paymentMethod && (
                   <div>
-                    <Label className="text-muted-foreground">Payment Method</Label>
+                    <Label className="font-bold">Payment Method</Label>
                     <p className="mt-0.5 text-sm font-medium">{data.paymentMethod.toUpperCase()}</p>
                   </div>
                 )}
                 {data.referenceNo && (
                   <div>
-                    <Label className="text-muted-foreground">Reference No.</Label>
+                    <Label className="font-bold">Reference No.</Label>
                     <p className="mt-0.5 text-sm font-mono">{data.referenceNo}</p>
                   </div>
                 )}
                 <div>
-                  <Label className="text-muted-foreground">Amount Paid</Label>
+                  <Label className="font-bold">Amount Paid</Label>
                   <p className="mt-0.5 text-sm font-medium">₱{data.amountPaid.toLocaleString()}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Date Submitted</Label>
+                  <Label className="font-bold">Date Submitted</Label>
                   <p className="mt-0.5 text-sm">{data.submittedAt}</p>
                 </div>
               </div>
 
               {data.notes && (
                 <div>
-                  <Label className="text-muted-foreground">Payment Notes</Label>
+                  <Label className="font-bold">Payment Notes</Label>
                   <p className="mt-1 rounded-md border border-border bg-muted/30 p-3 text-sm text-foreground">
                     {data.notes}
                   </p>
@@ -276,7 +275,7 @@ export function PaymentReviewDialog({
               {/* Decline remarks (read-only, shown for declined payments) */}
               {data.declineRemarks && (
                 <div>
-                  <Label className="text-muted-foreground">Decline Remarks</Label>
+                  <Label className="font-bold">Decline Remarks</Label>
                   <p className="mt-1 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
                     {data.declineRemarks}
                   </p>
@@ -375,17 +374,17 @@ export function PaymentReviewDialog({
             <Button
               variant="outline"
               onClick={() => { setRejectOpen(false); setRejectReason("") }}
-              disabled={isSubmitting || isLoading}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
-              disabled={!rejectReason.trim() || isSubmitting || isLoading}
+              disabled={!rejectReason.trim() || isSubmitting}
               onClick={handleRejectConfirmed}
               className="gap-2"
             >
-              {isSubmitting || isLoading && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+              {isSubmitting && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
               Reject
             </Button>
           </DialogFooter>

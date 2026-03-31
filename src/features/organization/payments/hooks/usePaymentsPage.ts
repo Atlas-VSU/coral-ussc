@@ -306,7 +306,7 @@ export function usePaymentsPage() {
       total: selectedTotal,
       date: paymentDate.toDate().toLocaleString(),
       verifiedByName: `${currentUser.firstName} ${currentUser.lastName}`,
-      paymentMethod: "Cash (Manual)",
+      paymentMethod: "Cash",
     })
 
     setReceiptOpen(true)
