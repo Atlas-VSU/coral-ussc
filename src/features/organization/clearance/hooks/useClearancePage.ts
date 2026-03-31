@@ -238,7 +238,7 @@ export function useClearancePage(orgId: string | undefined) {
         total: selection.total,
         date: new Date().toLocaleString(),
         verifiedByName: currentUser.firstName + " " + currentUser.lastName,
-        paymentMethod: "Cash (Manual)",
+        paymentMethod: "Cash",
       })
 
       setLogPaymentOpen(false)

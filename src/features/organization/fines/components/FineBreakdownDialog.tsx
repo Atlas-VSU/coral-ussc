@@ -10,10 +10,10 @@ import { FineItemDetailDialog } from "./FineItemDetailDialog";
 import { getFinesPaymentHistoriesByReferenceId} from "@/firebase/payment/read/paymentHistory";
 import { computeTotalPaid } from "../utils/fineComputations";
 import { ManualPaymentDialog } from "./ManualPaymentDialog";
-import { PaymentReviewDialog } from "../local-components/PaymentReviewDialog";
+import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog";
 import { useFineItems } from "../hooks/useFineItems";
 import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval";
-import PaymentReceiptDialog, { ReceiptData } from "../local-components/PaymentReceiptDialog";
+import PaymentReceiptDialog, { ReceiptData } from "../../../../components/organization/PaymentReceiptDialog";
 import { toast } from "sonner";
 import { FineBreakdownSkeleton } from "@/components/organization/FineBreakdownSkeleton";
 

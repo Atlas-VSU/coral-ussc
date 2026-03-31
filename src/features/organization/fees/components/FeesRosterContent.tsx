@@ -42,8 +42,7 @@ import {
 
 import { StudentFeeRow } from "../hooks/useFeesRoster";
 import { useFeesRosterUI } from "../hooks/useFeesRosterUI";
-// import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog";
-import { PaymentReviewDialog } from "../local-components/PaymentReviewDialog";
+import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog";
 const ITEMS_PER_PAGE = 10;
 
 export function FeesRosterContent({
@@ -390,7 +389,7 @@ export function FeesRosterContent({
           studentId: (selectedLog as any)?.studentId || "",
           studentName: (selectedLog as any)?.studentName || "",
           amountPaid: selectedLog?.amount || 0,
-          paymentMethod: selectedLog?.paymentMethod || "Cash (Manual)",
+          paymentMethod: selectedLog?.paymentMethod || "Cash",
           submittedAt: selectedLog?.paidAt
             ? (selectedLog as any)!.paidAt.toDate().toLocaleString().slice(0, 10)
             : "",
