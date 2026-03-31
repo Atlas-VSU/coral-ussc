@@ -81,9 +81,9 @@ export function ClearanceFilters({
           <RefreshCcw className={`size-4 ${isLoading ? 'animate-spin' : ''}`} />
           {isLoading ? 'Refreshing...' : 'Refresh'}
         </Button>
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={onExport}>
+        {/* <Button variant="outline" size="sm" className="gap-1.5" onClick={onExport}>
           <Download className="size-4" /> Export
-        </Button>
+        </Button> */}
         <ViewToggle viewMode={viewMode} onViewChange={onViewChange} />
       </div>
     </div>

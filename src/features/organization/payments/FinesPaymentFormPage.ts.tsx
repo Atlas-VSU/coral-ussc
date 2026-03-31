@@ -74,7 +74,6 @@ export default function FinesPaymentFormPage({
   const [restoredFromDraft, setRestoredFromDraft] = useState(false);
   const [lastDraftSavedAt, setLastDraftSavedAt] = useState<number | null>(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
-  console.log(selectedPaymentItems)
   const selectedFineItems = selectedPaymentItems?.fineItems.filter(f => !f.isPending) ?? [];
 
   const selectedTypes = useMemo(() => {

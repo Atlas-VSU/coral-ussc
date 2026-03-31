@@ -11,7 +11,6 @@ export const getStats = async (statId: string) => {
             if (docSnap.exists()) {
                 return { id: docSnap.id, ...docSnap.data() } as StatsData;
             } else {
-                console.log(`No stats found for statId: ${statId}`);
                 return null;
             }
         } catch (error) {

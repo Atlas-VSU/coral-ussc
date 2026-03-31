@@ -405,7 +405,6 @@ export function FeesRosterContent({
             ? (selectedLog as any)!.paidAt
                 .toDate()
                 .toLocaleString()
-                .slice(0, 10)
             : "",
           receiptContent: (selectedLog as any)?.receiptContent || "",
           referenceNo: selectedLog?.gcashReference || "",

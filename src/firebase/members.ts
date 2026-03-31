@@ -159,10 +159,6 @@ export const getPaginatedUsers = async (options: {
     const q = query(usersCollection, ...constraints);
     const snapshot = await getDocs(q);
 
-    console.log(
-      `[getPaginatedUsers] cost: ${snapshot.size} document reads | search: "${normalizedSearch || "none"}" | page size: ${pageSize}`
-    );
-
     const members = snapshot.docs.map((doc) => ({
       id: doc.id,
       member: { ...doc.data() },
@@ -219,10 +215,6 @@ export const getMembersOfAnOrg = async (
 
     const q = query(usersCollection, ...constraints);
     const snapshot = await getDocs(q);
-
-    console.log(
-      `[getMembersOfAnOrg] cost: ${snapshot.size} document reads | access level: ${currentUserData.accessLevel}`
-    );
 
     const members = snapshot.docs.map((doc) => ({
       id: doc.id,

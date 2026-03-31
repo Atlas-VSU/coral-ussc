@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { statusConfig } from "@/features/organization/fees/utils/statusConfig";
 import type { PaymentLog } from "@/features/organization/fees/types";
 import type { Member } from "@/features/organization/members/types";
+import { PaymentStatus } from "@/constants/status";
 
 export type Row = { student: Partial<Member>; log?: PaymentLog; status: string };
 
@@ -35,7 +36,7 @@ export function AllStudentsTable({
         </TableHeader>
         <TableBody>
           {rows.map(({ student, log, status }, index) => {
-            const config = status ? statusConfig[status] : statusConfig["unpaid"];
+            const config = log?.status ? statusConfig[log.status] : statusConfig["unpaid"];
             const Icon = config.icon;
             return (
               <TableRow key={`${student?.studentId || student?.id || "no-id"}-table-${index}`}>
@@ -49,13 +50,13 @@ export function AllStudentsTable({
                   </Badge>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {log ? `₱${(log.amount || 0).toLocaleString()}` : "—"}
+                  {log && log.status === PaymentStatus.VERIFIED ? `₱${(log.amount || 0).toLocaleString()}` : "—"}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
-                    {log?.paidAt ? (log.paidAt.toDate ? log.paidAt.toDate().toLocaleDateString() : log.paidAt.toString()) : "—"}
+                    {log?.paidAt && log.status === PaymentStatus.VERIFIED ? (log.paidAt.toDate ? log.paidAt.toDate().toLocaleDateString() : log.paidAt.toString()) : "—"}
                 </TableCell>
                 <TableCell>
-                  {log ? (
+                  {log && log.status === PaymentStatus.VERIFIED ? (
                     <Button size="sm" variant="outline" onClick={() => onViewDetails(log)}>
                       <Eye className="size-3 mr-1" /> View Details
                     </Button>
@@ -109,9 +110,9 @@ export function AllStudentsCards({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-foreground">
-                  {log ? `₱${(log.amount || 0).toLocaleString()}` : "—"}
+                  {log && log.status === PaymentStatus.VERIFIED ? `₱${(log.amount || 0).toLocaleString()}` : "—"}
                 </span>
-                {log ? (
+                {log && log.status === PaymentStatus.VERIFIED ? (
                   <Button size="sm" variant="outline" onClick={() => onViewDetails(log)}>
                     <Eye className="size-3 mr-1" /> View Details
                   </Button>
