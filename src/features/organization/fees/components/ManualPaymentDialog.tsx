@@ -188,10 +188,10 @@ export function ManualPaymentDialog({
               </div>
 
               <DialogFooter>
-                <Button type="button" className="hover:bg-black/20" variant="outline" onClick={() => onOpenChange(false)}>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" className="gap-1.5 bg-linear-to-r from-[#8BC34A] via-[#6ac947] to-[#55c72c] hover:text-white" disabled={isSubmitting}>
+                <Button type="submit" variant="success" className="gap-1.5" disabled={isSubmitting}>
                   <PenLine className="size-3.5" />
                   {isSubmitting ? (
                      <>

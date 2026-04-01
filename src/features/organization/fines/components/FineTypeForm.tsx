@@ -173,13 +173,14 @@ export function FineTypeForm({
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={onCancel} disabled={isSubmitting} className="!bg-white border-[#2E7D32]/30 text-[#1B5E20] hover:!bg-white">
+              <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
                 Cancel
               </Button>
               <Button 
+                variant="success"
                 type="submit" 
                 disabled={isSubmitting}
-                className="text-[#000000] gap-1.5 bg-linear-to-r from-[#8BC34A] via-[#6ac947] to-[#55c72c]"
+                className="gap-1.5"
               >
                 {isSubmitting ? (
                   <>

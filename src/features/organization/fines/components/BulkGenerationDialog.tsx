@@ -167,12 +167,12 @@ export function BulkGenerationDialog({ open, onOpenChange }: BulkGenerationDialo
             {!isDone &&(
             <div>
             {!isRunning ? (
-            <Button onClick={handleCreate}>
+            <Button variant="success" onClick={handleCreate}>
               <Upload className="h-4 w-4 mr-2" />
               Generate Fines
             </Button>
           ) : (
-            <Button disabled>
+            <Button variant="success" disabled>
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
               Generating...
             </Button>

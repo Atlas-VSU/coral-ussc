@@ -316,8 +316,9 @@ export function LogManualPaymentDialog({
             Cancel
           </Button>
           <Button
+            variant="success"
             disabled={selection.selectedRefIds.size === 0 || isProcessing}
-            className="gap-1.5 bg-[#1B5E20] text-white hover:bg-[#2E7D32] dark:bg-green-700 dark:hover:bg-green-600"
+            className="gap-1.5"
             onClick={onLogPayment}
           >
             {isProcessing ? (

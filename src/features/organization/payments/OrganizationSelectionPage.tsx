@@ -186,7 +186,8 @@ export default function OrganizationSelectionPage({
             onClick={handleContinue}
             disabled={!selectedOrg || isLoading || organizations.length === 0}
             size="lg"
-            className="w-full min-[400px]:w-auto gap-2 bg-[#1B5E20] hover:bg-[#2E7D32] text-white dark:bg-[#1B5E20] dark:hover:bg-[#2E7D32]"
+            variant="success"
+            className="w-full min-[400px]:w-auto gap-2"
           >
             Continue to Fees Selection
             <ChevronRight className="h-4 w-4" />

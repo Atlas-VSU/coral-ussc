@@ -1,9 +1,8 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { Zap, ChevronRight, CircleDollarSign, Loader2, RefreshCcw, Search } from "lucide-react"
+import { Zap, ChevronRight, CircleDollarSign, Loader2 } from "lucide-react"
 
-import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -11,21 +10,15 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { SearchInput } from "@/components/organization/general/SearchInput"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useFeeList } from "@/features/organization/fees/hooks/useFeeList"
 import { usePaginatedMembers } from "@/features/organization/members/hooks/usePaginatedMembers"
-// import { FeeGenerationDialog } from "@/features/organization/fees/components/AddFeeDialog"
-import { Member } from "@/features/organization/members/types"
 import { useFeeListUI } from "@/features/organization/fees/hooks/useFeeListUI"
 import { feeTypeLabels, feeTypeVariant } from "@/features/organization/fees/constants"
-import { SearchFilterBar } from "@/features/organization/fees/components/SearchFilterBar"
-// import { SearchFilterFee } from "@/features/organization/fees/components/SearchFilterFee"
 import { FeeGenerationDialog } from "./AddFeeDialog"
+import { FeesFilters } from "./FeesFilters"
 import { useState, useEffect } from "react"
 import { CardGridSkeleton } from "@/components/organization/skeleton/CardGridSkeleton"
 import { TableSkeleton } from "@/components/organization/skeleton/TableSkeleton"
-import { ViewToggle } from "@/components/organization/general/ViewToggle"
 import { Progress } from "@/components/ui/progress"
 import { DataPagination } from "@/components/organization/general/DataPagination"
 
@@ -34,13 +27,13 @@ const ITEMS_PER_PAGE = 9
 export default function FeeListPage() {
   const router = useRouter()
   const [navigatingId, setNavigatingId] = useState<string | null>(null)
-  const [localSearch, setLocalSearch] = useState("")
+  const [searchTerm, setSearchTerm] = useState("")
   const { aggregatedFees, isLoading: feesLoading, refetchFees } = useFeeList()
   const { totalMembers, isLoading: membersLoading } = usePaginatedMembers() 
   
   const {
-    state: { search, filterStatus, viewMode, generateOpen, currentPage, isLoading },
-    actions: { setSearch, setFilterStatus, setViewMode, setGenerateOpen, setCurrentPage, handleGenerationSuccess },
+    state: { search, filterStatus, viewMode, generateOpen, currentPage, isLoading, sortBy },
+    actions: { setSearch, setFilterStatus, setViewMode, setGenerateOpen, setCurrentPage, handleGenerationSuccess, setSortBy },
     computed: { filtered, paginated, totalPages }
   } = useFeeListUI({
     aggregatedFees,
@@ -51,21 +44,18 @@ export default function FeeListPage() {
   })
   
   useEffect(() => {
-    setLocalSearch(search)
+    setSearchTerm(search)
   }, [search])
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setSearch(localSearch)
+  const handleSearchCommit = () => {
+    setSearch(searchTerm)
     setCurrentPage(1)
   }
 
-  const handleRefresh = () => {
-    setLocalSearch("")
+  const handleSearchClear = () => {
+    setSearchTerm("")
     setSearch("")
-    setFilterStatus("all")
     setCurrentPage(1)
-    refetchFees()
   }
 
   const handleFeeClick = (fee: { title: string; academicYear: string; id: string; amount?: number; semester?: string; description?: string; type?: string }) => {
@@ -81,44 +71,34 @@ export default function FeeListPage() {
   }
 
   return (
-    <Card className="border-border bg-card">
-      <CardHeader>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">
-              Fee Categories
-            </CardTitle>
-            <CardDescription>{filtered.length} fee{filtered.length !== 1 ? "s" : ""} found</CardDescription>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
-              <SearchInput
-                placeholder="Search by title or type..."
-                value={localSearch}
-                onChange={v => setLocalSearch(v)}
-                className="w-48 sm:w-64"
-              />
-              <Button type="submit" variant="secondary" size="icon" disabled={isLoading}>
-                <Search className="h-4 w-4" />
-                <span className="sr-only">Search</span>
-              </Button>
-            </form>
-            <Select value={filterStatus} onValueChange={v => { setFilterStatus(v as any); setCurrentPage(1) }}>
-              <SelectTrigger className="w-28 sm:w-32">
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="mandatory">Mandatory</SelectItem>
-                <SelectItem value="voluntary">Voluntary</SelectItem>
-                <SelectItem value="event">Event</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={handleRefresh} variant="outline" disabled={isLoading}>
-              <RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              {isLoading ? 'Refreshing...' : 'Refresh'}
-            </Button>
-            <ViewToggle viewMode={viewMode} onViewChange={() => setViewMode(viewMode === "card" ? "table" : "card")} />
+    <div className="space-y-6">
+      {/* Filters Section */}
+      <FeesFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        onSearchCommit={handleSearchCommit}
+        onSearchClear={handleSearchClear}
+        onTypeFilter={(type) => {
+          setFilterStatus(type as any)
+          setCurrentPage(1)
+        }}
+        onSortBy={setSortBy}
+        typeFilter={filterStatus}
+        disabled={isLoading}
+        viewMode={viewMode}
+        onViewChange={setViewMode}
+      />
+
+      {/* Fee List Card */}
+      <Card className="border-border bg-card">
+        <CardHeader>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">
+                Fee Categories
+              </CardTitle>
+              <CardDescription>{filtered.length} fee{filtered.length !== 1 ? "s" : ""} found</CardDescription>
+            </div>
             <Button 
               className="gap-1.5 bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 disabled:bg-green-300 disabled:text-green-100" 
               onClick={() => setGenerateOpen(true)}
@@ -126,8 +106,8 @@ export default function FeeListPage() {
               <Zap className="size-4" /> Generate Fee
             </Button>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
+        
 
       <CardContent>
         {isLoading ? (
@@ -151,7 +131,7 @@ export default function FeeListPage() {
                   : "You haven't generated any fees for this academic year. Click the \"Generate Fee\" button to start."}
               </p>
               {(search || filterStatus !== "all") && (
-                <Button variant="outline" onClick={handleRefresh}>
+                <Button variant="outline" onClick={handleSearchClear}>
                   Clear Filters
                 </Button>
               )}
@@ -296,6 +276,7 @@ export default function FeeListPage() {
         studentsCount={totalMembers}
         onClose={handleGenerationSuccess}
       />
-    </Card>
+      </Card>
+    </div>
   )
 }

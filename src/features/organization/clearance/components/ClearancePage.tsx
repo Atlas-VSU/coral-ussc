@@ -1,6 +1,7 @@
 "use client"
 
 import { toast } from "sonner"
+import { useState, useEffect } from "react"
 
 // UI Components
 import { PageHeader } from "@/components/organization/general/PageHeader"
@@ -23,6 +24,8 @@ interface ClearancePageProps {
 }
 
 export default function ClearancePage({ orgId }: ClearancePageProps) {
+  const [searchTerm, setSearchTerm] = useState("")
+  
   const {
     clearances,
     loading,
@@ -59,6 +62,28 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
     hasNextPage
   } = useClearancePage(orgId)
 
+  useEffect(() => {
+    setSearchTerm(search)
+  }, [search])
+
+  const handleSearchCommit = () => {
+    setSearch(searchTerm)
+    setCurrentPage(1)
+  }
+
+  const handleSearchClear = () => {
+    setSearchTerm("")
+    setSearch("")
+    setCurrentPage(1)
+  }
+
+  const handleRefresh = () => {
+    setCurrentPage(1)
+    setFilterStatus("all")
+    handleSearchClear()
+    hardRefresh()
+  }
+
   return (
     <div className="flex flex-col gap-6 pb-5 lg:pb-0">
       <PageHeader
@@ -70,27 +95,22 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
 
       <ClearanceStats stats={stats} />
 
+      <ClearanceFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        onSearchCommit={handleSearchCommit}
+        onSearchClear={handleSearchClear}
+        filterStatus={filterStatus}
+        onFilterChange={setFilterStatus}
+        viewMode={viewMode}
+        onViewChange={setViewMode}
+        onRefresh={handleRefresh}
+        isLoading={loading}
+        disabled={loading}
+      />
+
       <Card className="border-border bg-card">
-        <CardHeader>
-          <ClearanceFilters
-            search={search}
-            onSearchChange={setSearch}
-            filterStatus={filterStatus}
-            onFilterChange={setFilterStatus}
-            onExport={() => toast.success("Export started (mock)")}
-            viewMode={viewMode}
-            onViewChange={setViewMode}
-            onRefresh={() => {
-              setCurrentPage(1);
-              setFilterStatus("all");
-              setSearch("");
-              hardRefresh();
-            }}
-            isLoading={loading}
-            currentPage={currentPage}
-            totalPages={totalPages}
-          />
-        </CardHeader>
+        <CardHeader></CardHeader>
         
         <CardContent>
           {viewMode === "card" ? (
