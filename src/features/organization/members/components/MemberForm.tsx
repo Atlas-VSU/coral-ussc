@@ -293,14 +293,13 @@ export function MemberForm({
                 type="button"
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
-                className="!bg-white !border-[#2E7D32]/30 text-[#1B5E20] hover:!bg-white hover:text-[#1B5E20]"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
+                variant="success"
                 disabled={!agreed || isSubmitting}
-                className="!bg-[#1B5E20] !text-white hover:!bg-[#0d4017] disabled:!bg-gray-300 disabled:!text-gray-600"
               >
                 {isSubmitting ? (
                   <>

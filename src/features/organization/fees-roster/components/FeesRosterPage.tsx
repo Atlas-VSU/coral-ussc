@@ -9,7 +9,7 @@ import { FeesRosterContent } from "./FeesRosterContent";
 import { useFeeAction } from "../hooks/useFeeAction";
 import PaymentReceiptDialog from "@/components/organization/receipt/PaymentReceiptDialog";
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 9;
 
 interface FeesRosterPageProps {
   title: string;

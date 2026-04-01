@@ -487,7 +487,6 @@ export function BulkImportDialog({
             variant="outline"
             onClick={handleClose}
             disabled={isImporting}
-            className="!bg-white !border-[#2E7D32]/30 text-[#1B5E20] hover:!bg-white hover:text-[#1B5E20] focus-visible:!ring-0 focus-visible:!ring-transparent focus-visible:!ring-offset-0 focus-visible:!outline-none disabled:!bg-white disabled:!text-[#2E7D32]/40"
           >
             Cancel
           </Button>

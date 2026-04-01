@@ -32,7 +32,10 @@ export default function EventsPage() {
       setViewMode("list");
     } else {
       const savedViewMode = localStorage.getItem("eventsViewMode") as ViewMode;
-      if (savedViewMode && (savedViewMode === "card" || savedViewMode === "list")) {
+      if (
+        savedViewMode &&
+        (savedViewMode === "card" || savedViewMode === "list")
+      ) {
         setViewMode(savedViewMode);
       }
     }
@@ -67,19 +70,28 @@ export default function EventsPage() {
   return (
     <div className="flex flex-col gap-6 pb-5 lg:pb-0">
       <EventsCacheLoader />
-
+ 
       <PageHeader
         variant="admin"
         title="Events Management"
         context="2nd Semester · A.Y. 2025–2026"
         description="Manage your organisation's events and track attendance"
         action={
-          <Button size="sm" className="gap-1.5" onClick={handleAddEventClick}>
-            <Plus className="size-4" />
-            Add Event
-          </Button>
+          <div className="hidden lg:flex">
+            <Button size="sm" className="gap-1.5" onClick={handleAddEventClick}>
+              <Plus className="size-4" /> Add Event
+            </Button>
+          </div>
         }
       />
+
+      <Button
+        size="sm"
+        className="lg:hidden w-full"
+        onClick={handleAddEventClick}
+      >
+        <Plus className="size-4" /> Add Event
+      </Button>
 
       {/* Search bar */}
       <div className="relative">
@@ -93,18 +105,23 @@ export default function EventsPage() {
           onChange={(e) => handleSearch(e.target.value)}
         />
         {searchQuery && (
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-1/2 -translate-y-1/2"
             onClick={() => handleSearch("")}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full
-                      bg-[#C0DD97] hover:bg-[#97C459] flex items-center justify-center transition-colors"
+            aria-label="Clear search"
           >
-            <X className="h-3 w-3 text-[#3B6D11]" />
-          </button>
+            <X className="h-3 w-3" />
+          </Button>
         )}
       </div>
 
       {/* Tab navigation + content */}
-      <Tabs value={currentTab} onValueChange={(v) => setCurrentTab(v as EventStatus)}>
+      <Tabs
+        value={currentTab}
+        onValueChange={(v) => setCurrentTab(v as EventStatus)}
+      >
         <EventsTabNavigation
           currentTab={currentTab}
           setCurrentTab={setCurrentTab}

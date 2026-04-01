@@ -347,7 +347,7 @@ export function AddEventDialog({
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" variant="success" disabled={loading}>
                   Create Event
                 </Button>
               </DialogFooter>

@@ -369,7 +369,7 @@ export function EditEventDialog({
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" variant="success" disabled={loading}>
                   Update Event
                 </Button>
               </DialogFooter>

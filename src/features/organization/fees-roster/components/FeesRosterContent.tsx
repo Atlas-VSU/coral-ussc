@@ -41,7 +41,7 @@ import { useFeesRosterUI } from "../hooks/useFeesRosterUI";
 import { PaymentReviewDialog } from "@/components/organization/receipt/PaymentReviewDialog";
 import { StatCard } from "@/components/organization/general/StatCard";
 import { StatCardsCarousel } from "@/components/organization/general/StatCardsCarousel";
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 9;
 
 export function FeesRosterContent({
   fee,
