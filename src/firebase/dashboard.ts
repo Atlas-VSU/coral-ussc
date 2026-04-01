@@ -15,6 +15,7 @@ import { Member } from "@/features/organization/members/types";
 import { getCurrentUserData } from "./users";
 import { cacheService, CACHE_DURATIONS } from "@/services/cacheService";
 import { determineEventStatus } from "@/utils/eventStatusUtils";
+import { getStats } from "./stats/read/getStats";
 
 // Helper to transform event data from Firestore to our Event type
 const transformEventData = (doc: any): Event => {
@@ -126,7 +127,6 @@ export const getDashboardUpcomingEvents = async (
         );
 
         const querySnapshot = await getDocs(eventsQuery);
-
         // Transform to our Event type
         return querySnapshot.docs.map(transformEventData);
       },
@@ -184,7 +184,6 @@ export const getDashboardOngoingEvents = async (
         eventsQuery = query(eventsQuery, limit(count));
 
         const querySnapshot = await getDocs(eventsQuery);
-
         // Filter for only ongoing events (has ongoing status or is currently ongoing)
         const events = querySnapshot.docs.map(transformEventData);
         return events.filter((event) => {
@@ -237,7 +236,6 @@ export const getDashboardEvents = async (
         eventsQuery = query(eventsQuery, limit(count));
 
         const querySnapshot = await getDocs(eventsQuery);
-
         return querySnapshot.docs.map(transformEventData);
         
       },
@@ -290,7 +288,6 @@ export const getDashboardRecentMembers = async (
         );
 
         const querySnapshot = await getDocs(membersQuery);
-
         // Transform to our Member type with only the needed fields for display
         return querySnapshot.docs.map((doc) => {
           const data = doc.data();
@@ -386,7 +383,6 @@ export const getDashboardStats = async (): Promise<{
             // Get total attendances count (reuse the dedicated function)
             getDashboardAttendeeCount(),
           ]);
-
         const totalStudents = studentsCount.data().count;
         const totalEvents = eventsSnapshot.size;
 
@@ -470,7 +466,7 @@ export const getDashboardRecentPayments = async (count = 5) => {
     );
 
     const snapshot = await getDocs(paymentsQuery);
-
+    
     return snapshot.docs.map((doc) => {
       const data = doc.data();
       return {
@@ -501,57 +497,31 @@ export const getDashboardRecentPayments = async (count = 5) => {
 // Fees Collected
 // Scoped to current org, excludes archived, sums paidAmount
 export const getDashboardFeesCollected = async () => {
-  // try {
-  //   const currentUser = (await getCurrentUserData()) as unknown as Member;
-  //   if (!currentUser) return 0;
-
-  //   const orgId = (currentUser as any).id ?? "";
-
-  //   const feesSnapshot = await getDocs(query(
-  //     collection(db, "fees"),
-  //     where("orgId", "==", orgId),
-  //     where("isArchived", "==", false)
-  //   ));
-
-  //   let total = 0;
-  //   feesSnapshot.forEach(doc => {
-  //     total += doc.data().paidAmount || 0;
-  //   });
-  //   return total;
-  // } catch (error) {
-  //   console.error("Error getting fees collected:", error);
-  //   return 0;
-  // }
-  return 0;
+  try {
+    // const currentUser = (await getCurrentUserData()) as unknown as Member;
+    // if (!currentUser) return 0;
+    // const orgId = (currentUser as any).id ?? "";
+    const stats = await getStats("2ndSem-2025-2026"); 
+    return stats?.totalCollectedFees ?? 0;
+  } catch (error) {
+    console.error("Error getting fees collected:", error);
+    return 0;
+  }
 };
 
 // Unpaid Fines Amount
 // Scoped to current org, excludes archived, sums balance of fines per student incl partial payments
 export const getDashboardUnpaidFinesAmount = async () => {
-  // try {
+  try {
   //   const currentUser = (await getCurrentUserData()) as unknown as Member;
   //   if (!currentUser) return 0;
-
   //   const orgId = (currentUser as any).id ?? "";
-
-  //   const finesSnapshot = await getDocs(query(
-  //     collection(db, "fines"),
-  //     where("metadata.isArchived", "==", false),
-  //     where("orgId", "==", orgId),
-  //     where("status", "in", ["unpaid", "partial", "pending"]),
-  //     where("accumulatedAmount", ">", 0)
-  //   ));
-
-  //   let total = 0;
-  //   finesSnapshot.forEach(doc => {
-  //     total += doc.data().balance || 0;
-  //   });
-  //   return total;
-  // } catch (error) {
-  //   console.error("Error getting unpaid fines amount:", error);
-  //   return 0;
-  // }
-  return 0;
+    const stats = await getStats("2ndSem-2025-2026");
+    return stats?.totalUnpaidFines ?? 0;
+  } catch (error) {
+    console.error("Error getting unpaid fines amount:", error);
+    return 0;
+  }
 };
 
 // Clearance Rate

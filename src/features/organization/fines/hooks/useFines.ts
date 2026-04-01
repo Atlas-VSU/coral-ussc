@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { StudentFines } from "@/features/organization/fines/types";
 import { fetchFinesPaginated, getFinesCount, countStudentsWithFines, countUnsettleFinesOfStudents } from "@/firebase/fines/read/fines";
 import { getCurrentUserData } from "@/firebase";
 import { Member } from "../../members/types";
 import { CACHE_KEYS, cacheService } from "@/services/cacheService";
 import { getDashboardUnpaidFinesAmount, getDashboardFeesCollected } from "@/firebase/dashboard";
+import { getStats } from "@/firebase/stats/read/getStats";
 
 
 interface UseFinesProps {
@@ -19,7 +20,7 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState(initialStatusFilter);
   const [totalCount, setTotalCount] = useState(0);
-  const [lastVisibleDocs, setLastVisibleDocs] = useState<any[]>([]);
+  const cursorsRef = useRef<Record<number, any>>({});
 
   // Stats
   const [totalStudentsWithFines, setTotalStudentsWithFines] = useState(0);
@@ -41,50 +42,33 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
         if (isMounted) setTotalCount(count);
 
         // 2. Fetch stats (these could be optimized with a single server-side call)
-        const [studentsCount, unsettledCount, unpaidTotal, /*collectedTotal*/] = await Promise.all([
+        const [studentsCount, unsettledCount, stats] = await Promise.all([
           countStudentsWithFines(),
           countUnsettleFinesOfStudents(),
-          getDashboardUnpaidFinesAmount(),
-          // getDashboardFeesCollected()
+          getStats("2ndSem-2025-2026")
         ]);
         if (isMounted) {
           setTotalStudentsWithFines(studentsCount);
           setTotalUnsettled(unsettledCount);
-          setTotalUnpaidFines(unpaidTotal);
-          // setTotalCollectedFines(collectedTotal);
+          setTotalUnpaidFines(stats?.totalUnpaidFines || 0);
+          setTotalCollectedFines(stats?.totalCollectedFines || 0);
         }
 
         // 3. Fetch paginated data
-        const isJump = currentPage > 1 && !lastVisibleDocs[currentPage - 2];
-        const effectivePageSize = isJump ? (currentPage * itemsPerPage) : itemsPerPage;
-        const effectiveCursor = isJump ? null : (currentPage > 1 ? lastVisibleDocs[currentPage - 2] : null);
+        const cursor = currentPage > 1 ? (cursorsRef.current[currentPage - 2] ?? null) : null;
 
-        const { docs: fetchedDocs, lastVisible, allSnapshots } = await fetchFinesPaginated(
+        const { docs: fetchedDocs, lastVisible } = await fetchFinesPaginated(
           currUser.id,
-          effectivePageSize,
-          effectiveCursor,
+          itemsPerPage,
+          cursor,
           search,
           filterStatus
         );
 
         if (isMounted) {
-          const docs = isJump ? fetchedDocs.slice((currentPage - 1) * itemsPerPage) : fetchedDocs;
-          setPaginatedFines(docs);
-          if (allSnapshots && allSnapshots.length > 0) {
-            setLastVisibleDocs(prev => {
-              const next = [...prev];
-              allSnapshots.forEach((snap, index) => {
-                const absoluteIndex = isJump ? index : ((currentPage - 1) * itemsPerPage + index);
-                if ((absoluteIndex + 1) % itemsPerPage === 0) {
-                  const pageNum = (absoluteIndex + 1) / itemsPerPage;
-                  next[pageNum - 1] = snap;
-                }
-              });
-              const finalAbsoluteIndex = isJump ? (allSnapshots.length - 1) : ((currentPage - 1) * itemsPerPage + allSnapshots.length - 1);
-              const finalPageNum = Math.ceil((finalAbsoluteIndex + 1) / itemsPerPage);
-              next[finalPageNum - 1] = allSnapshots[allSnapshots.length - 1];
-              return next;
-            });
+          setPaginatedFines(fetchedDocs);
+          if (lastVisible) {
+            cursorsRef.current[currentPage - 1] = lastVisible;
           }
           setIsLoading(false);
         }
@@ -104,13 +88,13 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
   const handleStatusFilterChange = (v: string) => {
     setFilterStatus(v);
     setCurrentPage(1);
-    setLastVisibleDocs([]);
+    cursorsRef.current = {};
   };
 
   const handleSearchChange = (v: string) => {
     setSearch(v);
     setCurrentPage(1);
-    setLastVisibleDocs([]);
+    cursorsRef.current = {};
   };
 
   const hardRefresh = async () => {
@@ -124,7 +108,7 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
     }
     setCurrentPage(1);
     setFilterStatus("all");
-    setLastVisibleDocs([]);
+    cursorsRef.current = {};
     setIsLoading(false);
     // The useEffect will trigger fetchData
   };
@@ -144,6 +128,7 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: Use
     totalUnsettled,
     totalUnpaidFines, // Note: Unpaid total sum across 9,000 needs aggregation doc
     totalCollectedFines, // Note: Collected total sum across 9,000 needs aggregation doc
-    hardRefresh,
+    hardRefresh, setPaginatedFines, setTotalCount,
+    setFilterStatus
   };
 }

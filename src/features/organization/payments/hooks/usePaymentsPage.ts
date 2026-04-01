@@ -6,13 +6,13 @@ import { ITEMS_PER_PAGE } from "../config"
 import { usePayments } from "./usePayments"
 import { ProofOfPayment } from "../../fines/types"
 import { PaymentStatus } from "@/constants/status"
-import { ViewMode } from "@/components/organization/ViewToggle"
-import { getCurrentUserData, getProgramById, getUserById } from "@/firebase"
+import { ViewMode } from "@/components/organization/general/ViewToggle"
+import { getCurrentUserData, getFee, getProgramById, getUserById } from "@/firebase"
 import { PaymentFormData } from "@/lib/validators"
 import { createBulkOfflineProofOfPayment } from "@/firebase/payment/create/proofOfPayment"
 import { generateReceiptId } from "../utils"
 import { Member, Program } from "../../members/types"
-import { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
+import { ReceiptData } from "@/components/organization/receipt/PaymentReceiptDialog"
 import { PaymentMethods, PaymentType } from "@/constants/types"
 import { usePaymentApproval } from "./usePaymentApproval"
 import { useDebounce } from "@/hooks/useDebounce"
@@ -117,7 +117,6 @@ export function usePaymentsPage() {
 
   // ── Derived: unpaid — server already filtered, just paginate in memory ────
   const unpaidTotalPages = Math.ceil(totalUnpaidCount / ITEMS_PER_PAGE)
-  const paginatedUnpaid = unpaidPayments;
 
   // ── Live unpaid record (keeps modal in sync after mutations) ──────────────
   const liveSelectedUnpaid = useMemo(
@@ -259,8 +258,19 @@ export function usePaymentsPage() {
       referenceId: selectedDues.length > 1 && isFine &&isFee ? "bulk_transaction" : isFine? selectedDues[0].parentFineId: selectedDues[0].referenceId,
     }
 
+    const feeItemKeys = []
+
+    if (isFee) {
+      for (const due of selectedDues) {
+        if (due.type === "fees") {
+          const feeItem = await getFee(due.referenceId)
+          feeItemKeys.push(feeItem.feeItemId)
+        }
+      }
+    }
+
     try {
-      await createBulkOfflineProofOfPayment(lineItems, receiptId, selectedDues, liveSelectedUnpaid.userId!, paymentDate)
+      await createBulkOfflineProofOfPayment(lineItems, receiptId, selectedDues, liveSelectedUnpaid.userId!, paymentDate, feeItemKeys)
     } catch (error) {
       toast.error("Failed to log payment. Please try again.")
       setLoading(false)
@@ -292,11 +302,11 @@ export function usePaymentsPage() {
       receiptId,
       studentName,
       studentId: liveSelectedUnpaid.studentId,
-      items: selectedDues.map(d => ({ name: d.title, type: d.type as "fees" | "fines", amount: d.balance })),
+      items: selectedDues.filter(d => d.balance > 0).map(d => ({ name: d.title, type: d.type as "fees" | "fines", amount: d.balance})) ?? [],
       total: selectedTotal,
       date: paymentDate.toDate().toLocaleString(),
       verifiedByName: `${currentUser.firstName} ${currentUser.lastName}`,
-      paymentMethod: "Cash (Manual)",
+      paymentMethod: "Cash",
     })
 
     setReceiptOpen(true)
@@ -336,7 +346,7 @@ export function usePaymentsPage() {
     unpaidPage, setUnpaidPage,
     unpaidViewMode, setUnpaidViewMode,
     filteredUnpaid: unpaidPayments,
-    unpaidTotalPages, paginatedUnpaid,
+    unpaidTotalPages,
     detailOpen, setDetailOpen,
     liveSelectedUnpaid,
     checkedDues, selectedDues, selectedTotal,

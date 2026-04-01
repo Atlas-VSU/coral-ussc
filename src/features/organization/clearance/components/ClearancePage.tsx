@@ -3,11 +3,11 @@
 import { toast } from "sonner"
 
 // UI Components
-import { PageHeader } from "@/components/organization/PageHeader"
+import { PageHeader } from "@/components/organization/general/PageHeader"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { DataPagination } from "@/components/organization/DataPagination"
-import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog"
-import PaymentReceiptDialog from "@/components/organization/PaymentReceiptDialog"
+import { DataPagination } from "@/components/organization/general/DataPagination"
+import { PaymentReviewDialog } from "@/components/organization/receipt/PaymentReviewDialog"
+import PaymentReceiptDialog from "@/components/organization/receipt/PaymentReceiptDialog"
 
 // Local Components & Hooks
 import { ClearanceStats } from "./ClearanceStats"
@@ -16,7 +16,7 @@ import { useClearancePage } from "../hooks/useClearancePage"
 import { ClearanceCard } from "./ClearanceCard"
 import { ClearanceTable } from "./ClearanceTable"
 import { LogManualPaymentDialog } from "./LogManualPaymentDialog"
-import { CardGridSkeleton } from "@/components/organization/Skeletons"
+import { CardGridSkeleton } from "@/components/organization/skeleton/CardGridSkeleton"
 
 interface ClearancePageProps {
   orgId: string | undefined

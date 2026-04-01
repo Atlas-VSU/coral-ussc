@@ -1,11 +1,11 @@
 "use client"
 
 import { Download, RefreshCcw, Search } from "lucide-react"
-import { SearchInput } from "@/components/organization/SearchInput"
+import { SearchInput } from "@/components/organization/general/SearchInput"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ViewToggle } from "@/components/organization/ViewToggle"
-import type { ViewMode } from "@/components/organization/ViewToggle"
+import { ViewToggle } from "@/components/organization/general/ViewToggle"
+import type { ViewMode } from "@/components/organization/general/ViewToggle"
 import { CardTitle } from "@/components/ui/card"
 import { useEffect, useState } from "react"
 
@@ -81,11 +81,10 @@ export function ClearanceFilters({
           <RefreshCcw className={`size-4 ${isLoading ? 'animate-spin' : ''}`} />
           {isLoading ? 'Refreshing...' : 'Refresh'}
         </Button>
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={onExport}>
+        {/* <Button variant="outline" size="sm" className="gap-1.5" onClick={onExport}>
           <Download className="size-4" /> Export
-        </Button>
+        </Button> */}
         <ViewToggle viewMode={viewMode} onViewChange={onViewChange} />
-        <p className="text-sm text-muted-foreground">Page {currentPage} of {totalPages == 0 ? 1 : totalPages}</p>
       </div>
     </div>
   )

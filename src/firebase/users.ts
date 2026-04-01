@@ -15,6 +15,7 @@ import {
   limit,
   documentId,
   writeBatch,
+  getCountFromServer,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { MemberFormData } from "@/lib/validators";
@@ -90,6 +91,41 @@ const waitForAuth = (): Promise<User | null> => {
   });
 };
 
+export const getCurrentUserCount = async () => {
+  try {
+    const currentUser = await getCurrentUserData() as unknown as Member;
+    if (currentUser.accessLevel === 1){
+      const querySnapshot = query(
+          usersCollection,
+          where("programId", "==", currentUser.programId ?? ""),
+          where("isDeleted", "==", false),
+          where("role", "==", "user")
+        );
+      return (await getCountFromServer(querySnapshot)).data().count;
+    } else if (currentUser.accessLevel === 2){
+      const querySnapshot = query(
+          usersCollection,
+          where("facultyId", "==", currentUser.facultyId ?? ""),
+          where("isDeleted", "==", false),
+          where("role", "==", "user")
+      );
+      return (await getCountFromServer(querySnapshot)).data().count;
+    }
+    else {
+      const querySnapshot = query(
+        usersCollection,
+        where("isDeleted", "==", false),
+        where("role", "==", "user")
+      );
+      return (await getCountFromServer(querySnapshot)).data().count;
+    }
+    
+  } catch (error) {
+    console.error("Error fetching current user:", error);
+    return null;
+  }
+}
+
 /**
  * Fetches the complete user document for the currently authenticated user.
  * This safely waits for Firebase Auth state to resolve before fetching.
@@ -111,7 +147,7 @@ export const getCurrentUserData = async () => {
       return null;
     }
 
-    return { uid: currentUser.uid, ...userDocSnap.data() };
+    return { uid: userDocSnap.data().id, ...userDocSnap.data() };
     
   } catch (error) {
     console.error("Error fetching current user:", error);
@@ -456,11 +492,9 @@ export const hardDeleteUsers = async (number: number) => {
     const batch = writeBatch(db);
     querySnapshot.docs.forEach((doc) => {
       count++;
-      console.log(`(Deleted count: ${count})`);
       batch.delete(doc.ref);
     });
     await batch.commit();
-    console.log(`Hard deleted ${querySnapshot.size} users.`);
   } catch (error) {
     handleFirestoreError(error, "hard delete users");
   }

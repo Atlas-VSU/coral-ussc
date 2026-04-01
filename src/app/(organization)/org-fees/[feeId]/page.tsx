@@ -1,6 +1,6 @@
 "use client";
 
-import FeesRosterPage from "@/features/organization/fees/components/FeesRosterPage";
+import FeesRosterPage from "@/features/organization/fees-roster/components/FeesRosterPage";
 import { useSearchParams } from "next/navigation";
 
 export default function FeesRoster() {
@@ -8,6 +8,7 @@ export default function FeesRoster() {
 
     const title = searchParams.get('title') ?? "";
     const academicYear = searchParams.get('academic_year') ?? "";
+    const semester = searchParams.get('semester') ?? "";
 
-    return <FeesRosterPage title={title} academicYear={academicYear} />;
+    return <FeesRosterPage title={title} academicYear={academicYear} semester={semester} />;
 }

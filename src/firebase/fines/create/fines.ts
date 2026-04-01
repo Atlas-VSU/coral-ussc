@@ -15,7 +15,7 @@ import { updateFirstFineIssuedAt, updateLastFineIssuedAt } from "../update/fines
 import { PaymentType } from "@/constants/types";
 import { recalculateClearanceStatus } from "@/firebase/clearance";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
-import { getAllFines, getAllUnpaidFinesforOrg } from "../read/fines";
+import { updateFineStats } from "@/firebase/stats/update/updateStats";
 
 
 const finesCollection: CollectionReference<DocumentData> = collection(
@@ -70,13 +70,8 @@ const handleFirestoreError = (error: any, context: string) => {
       const docRef = await addDoc(finesCollection, fineData);
 
         await recalculateClearanceStatus(userId);
-        const orgId = currentUser.uid || '';
-        cacheService.invalidate(CACHE_KEYS.clearanceDoc(userId));
-        cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
-        cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
+        // cacheService.invalidate(CACHE_KEYS.clearanceDoc(userId));
         
-        getAllFines().catch(console.error);
-        getAllUnpaidFinesforOrg().catch(console.error);
     } catch (error) {
       handleFirestoreError(error, `creating fine document on ID ${userId}`);
       return null;
@@ -178,12 +173,8 @@ export const createBulkFines = async (
     }
 
     const orgId = currentUser.uid || '';
-    cacheService.invalidate(CACHE_KEYS.finesAll(orgId));
-    cacheService.invalidate(CACHE_KEYS.finesUnpaid(orgId));
-    cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+    // cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
     
-    getAllFines().catch(console.error);
-    getAllUnpaidFinesforOrg().catch(console.error);
 
     result.success = true;
     report("done", `All ${result.committed} fine documents created successfully.`);
@@ -463,6 +454,9 @@ export const generateFinesOnEvent = async (
   }
 
   await disableFineGeneration(event.id);
+
+  const toAdd = counts.absentTotal * (type.requiresTimeOut ? type.defaultAmount * 2 : type.defaultAmount) + counts.partialTotal * type.defaultAmount;
+  await updateFineStats("2ndSem-2025-2026", toAdd, 0);
 
   // ── CLEARANCE PHASE — runs only after ALL writes are done ─────────────────
   const clearanceTotal = allProcessedFines.length;

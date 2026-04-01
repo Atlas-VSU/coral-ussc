@@ -4,7 +4,7 @@ import { Member, MemberData } from "@/features/organization/members/types";
 import { StudentFineItem } from "@/features/organization/payments/types";
 import { db } from "@/firebase/firebase.config";
 import { getCurrentUserData } from "@/firebase/users";
-import { collection, query, where, getDocs, CollectionReference, DocumentData, DocumentSnapshot, orderBy, limit, startAfter, getCountFromServer, getDoc, doc, onSnapshot } from "firebase/firestore";
+import { collection, query, where, getDocs, CollectionReference, DocumentData, DocumentSnapshot, orderBy, limit, startAfter, getCountFromServer, getDoc, doc, onSnapshot, connectFirestoreEmulator } from "firebase/firestore";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 
 const finesCollection: CollectionReference<DocumentData> = collection(
@@ -48,7 +48,7 @@ export const getFinesByStudents = async (students: MemberData[]) => {
               getDocs(query(
                 finesCollection,
                 where("studentId", "in", chunk),
-                where("metadata.isArchived", "==", false)
+                where("metadata.isArchived", "==", false),
               ))
             )
           );
@@ -76,14 +76,14 @@ export const getFineByStudentId = async (studentId: string) => {
             const fineQuery = query(
                 finesCollection,
                 where("studentId", "==", studentId),
-                where("metadata.isArchived", "==", false)
+                where("metadata.isArchived", "==", false),
+                limit(1)
             );
             const querySnapshot = await getDocs(fineQuery);
             if (!querySnapshot.empty) {
                 const fineDoc = querySnapshot.docs[0];
                 return { id: fineDoc.id, ...fineDoc.data() } as StudentFines;
             }
-            console.warn(`No fine document found for student ID: ${studentId}`);
             return null;
         },
         CACHE_DURATIONS.FINES
@@ -227,7 +227,7 @@ export const fetchFinesPaginated = async (
     constraints.push(startAfter(lastVisibleDoc));
   }
 
-  const q = query(finesCollection, ...constraints);
+  const q = query(finesCollection, ...constraints, limit(10));
   const snapshot = await getDocs(q);
 
   const docs = snapshot.docs.map((doc) => {
@@ -307,29 +307,6 @@ export const subscribeFines = (
   );
 };
 
-export const getAllFines = async () => {
-    const currUser = await getCurrentUserData() as unknown as Member;
-    console.warn("getAllFines is deprecated. Use fetchFinesPaginated instead.");
-    const { docs } = await fetchFinesPaginated(currUser.id || "", 100);
-    return docs;
-};
-
-
-export const getAllUnpaidFinesforOrg = async () => {
-  const currUser = await getCurrentUserData() as unknown as Member;
-  return cacheService.getOrFetch(
-    CACHE_KEYS.finesUnpaid(currUser.id || ''),
-    async () => {
-      const snapshot = await getDocs(query(finesCollection,
-        where("metadata.isArchived", "==", false),
-        where("orgId", "==", currUser.id),
-        where("status", "in", ["unpaid", "partial"]),
-        where("accumulatedAmount", ">", 0)));
-      return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as StudentFines[];
-    },
-    CACHE_DURATIONS.PAYMENTS
-  );
-}
  
 export const getFineItemsByIds = async (fineId:string, fineItemIds: string[]) => {
   const hash = fineItemIds.sort().join(',');
@@ -341,7 +318,6 @@ export const getFineItemsByIds = async (fineId:string, fineItemIds: string[]) =>
         const q = query(colRef, where("id", "in", fineItemIds));
         const snapshot = await getDocs(q);
         if (snapshot.empty) {
-          console.log("No items for fines found");
           return [];
         }
         return snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as FineItem[];

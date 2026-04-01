@@ -14,8 +14,8 @@ import { MembersTable } from "@/features/organization/members/components/Members
 import { MembersSkeleton } from "@/features/organization/members/components/MembersSkeleton";
 import { MembersFilters } from "@/features/organization/members/components/MembersFilters";
 import { MembersPagination } from "@/features/organization/members/components/MembersPagination";
-import { ViewMode } from "@/features/organization/members/components/ViewToggle";
-import { PageHeader } from "@/components/organization/PageHeader";
+import { ViewMode } from "./ViewToggle";
+import { PageHeader } from "@/components/organization/general/PageHeader";
 import {
   addStudentWithClearance,
   addUser,
@@ -30,7 +30,7 @@ import { BulkImportResultModal } from "@/features/organization/members/component
 import { usePaginatedMembers } from "@/features/organization/members/hooks/usePaginatedMembers";
 import { createFinePerStudent } from "@/firebase/fines/create/fines";
 import { Button } from "@/components/ui/button";
-import { RefreshCcw, Upload, UserPlus } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCcw, Upload, UserPlus } from "lucide-react";
 
 export function MembersPage() {
   const {
@@ -38,30 +38,34 @@ export function MembersPage() {
     faculties,
     programs,
     totalMembers,
-    totalPages,
     currentPage,
-    searchQuery,
+    totalPages,
+    hasNextPage,
+    hasPrevPage,
+    goToNextPage,
+    goToPrevPage,
     programFilter,
+    sortBy,
     viewMode,
     isLoading,
     isRefreshing,
     isSearchActive,
-    performSearch,
-    handleSearch,
+    searchInput,
+    handleSearchInputChange,
+    handleSearchCommit,
+    clearSearch,
     handleProgramFilter,
     handleSortBy,
-    handlePageChange,
     handleViewModeChange,
     refreshData,
   } = usePaginatedMembers();
 
-  // Local UI state
+  // ─── Local UI state ──────────────────────────────────────────────────────
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [isBulkImportOpenResult, setIsBulkImportOpenResult] = useState(false);
-  const [bulkImportResult, setBulkImportResult] =
-    useState<BulkImportResult | null>(null);
+  const [bulkImportResult, setBulkImportResult] = useState<BulkImportResult | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -71,6 +75,7 @@ export function MembersPage() {
   const [totalBatches, setTotalBatches] = useState(0);
   const [totalStudents, setTotalStudents] = useState(0);
 
+  // ─── Member actions ───────────────────────────────────────────────────────
   const handleAddMember = () => {
     setSelectedMember(null);
     setIsFormOpen(true);
@@ -87,20 +92,19 @@ export function MembersPage() {
   };
 
   const confirmDelete = async () => {
-    if (selectedMember && !isDeleting) {
-      setIsDeleting(true);
-      try {
-        await deleteUser(selectedMember.id);
-        toast.success("Member deleted successfully");
-        refreshData();
-      } catch (error) {
-        toast.error("Failed to delete member");
-        console.error(error);
-      } finally {
-        setIsDeleting(false);
-        setIsDeleteDialogOpen(false);
-        setSelectedMember(null);
-      }
+    if (!selectedMember || isDeleting) return;
+    setIsDeleting(true);
+    try {
+      await deleteUser(selectedMember.id);
+      toast.success("Member deleted successfully");
+      refreshData();
+    } catch (error) {
+      toast.error("Failed to delete member");
+      console.error(error);
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+      setSelectedMember(null);
     }
   };
 
@@ -125,9 +129,7 @@ export function MembersPage() {
       }
       refreshData();
     } catch (error) {
-      toast.error(
-        selectedMember ? "Failed to update member" : "Failed to add member"
-      );
+      toast.error(selectedMember ? "Failed to update member" : "Failed to add member");
       console.error(error);
     } finally {
       setIsFormSubmitting(false);
@@ -161,6 +163,8 @@ export function MembersPage() {
     }
   };
 
+  const isBusy = isLoading || isRefreshing;
+
   return (
     <div className="flex flex-col gap-6 pb-24 lg:pb-0">
       <PageHeader
@@ -174,11 +178,9 @@ export function MembersPage() {
               variant="outline"
               size="sm"
               onClick={refreshData}
-              disabled={isLoading || isRefreshing}
+              disabled={isBusy}
             >
-              <RefreshCcw
-                className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-              />
+              <RefreshCcw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
               Refresh
             </Button>
             <Button
@@ -197,18 +199,22 @@ export function MembersPage() {
         }
       />
 
+      {/* Filters — search wired to Enter-only commit */}
       <MembersFilters
         programs={programs}
-        onSearch={handleSearch}
+        searchTerm={searchInput}
+        onSearchChange={handleSearchInputChange}
+        onSearchCommit={handleSearchCommit}
+        onSearchClear={clearSearch}
         onProgramFilter={handleProgramFilter}
         onSortBy={handleSortBy}
-        searchTerm={searchQuery}
         programFilter={programFilter}
-        disabled={isLoading || isRefreshing}
-        viewMode={viewMode as ViewMode}
+        disabled={isBusy}
+        viewMode={viewMode}
         onViewChange={handleViewModeChange}
       />
 
+      {/* Member list */}
       {isLoading ? (
         <MembersSkeleton viewMode={viewMode} />
       ) : viewMode === "card" ? (
@@ -229,14 +235,42 @@ export function MembersPage() {
         />
       )}
 
-      {!isLoading && !isRefreshing && !isSearchActive && members.length > 0 && totalPages > 1 && (
-        <MembersPagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
+      {/* Prev / Next pagination — no page jumping */}
+      {!isBusy && members.length > 0 && (
+        <div className="flex items-center justify-between px-1 mb-4">
+          <p className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages}
+            {isSearchActive && (
+              <span className="ml-2 text-xs text-muted-foreground">
+                · searching "{searchInput}"
+              </span>
+            )}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToPrevPage}
+              disabled={!hasPrevPage || isBusy}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToNextPage}
+              disabled={!hasNextPage || isBusy}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
       )}
 
+
+      {/* Dialogs */}
       <MemberForm
         open={isFormOpen}
         onOpenChange={setIsFormOpen}

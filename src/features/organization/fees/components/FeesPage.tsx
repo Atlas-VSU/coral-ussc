@@ -9,15 +9,10 @@ import { getUsers } from "@/firebase/users";
 import { Member } from "@/features/organization/members/types";
 import { FeeGenerationDialog } from "./AddFeeDialog";
 import FeeListPage from "./FeeList";
-import { PageHeader } from "@/components/organization/PageHeader";
-import { StatCard } from "@/components/organization/StatCard";
 import { useFeeList } from "../hooks/useFeeList";
-import { Fee } from "../types";
 import { usePaginatedMembers } from "../../members/hooks/usePaginatedMembers";
-import { SearchInput } from "@/components/organization/SearchInput";
-import { ViewToggle } from "@/components/organization/ViewToggle";
-import { SearchFilterFee } from "./SearchFilterFee";
-import { useFeeListUI } from "../hooks/useFeeListUI";
+import { PageHeader } from "@/components/organization/general/PageHeader";
+import { StatCard } from "@/components/organization/general/StatCard";
 
 
 export function FeesPage() {

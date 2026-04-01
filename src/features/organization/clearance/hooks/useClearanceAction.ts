@@ -10,7 +10,7 @@ import { approvePaymentClearanceUpdate, logManualPaymentClearanceUpdate, rejectP
 import { recalculateClearanceStatus } from "@/firebase/clearance"
 import { PaymentType } from "@/constants/types"
 import { generateReceiptId } from "../../payments/utils"
-import { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
+import { ReceiptData } from "@/components/organization/receipt/PaymentReceiptDialog"
 import { set } from "zod"
 import { cacheService, CACHE_KEYS } from "@/services/cacheService"
 
@@ -19,7 +19,7 @@ export function useClearanceActions(
   clearances: ClearanceStatus[], 
   setClearances: React.Dispatch<React.SetStateAction<ClearanceStatus[]>>
 ) {
-  const { user: currentUser } = useAuth()
+  const { user: currentUser } = useAuth();
   const [receiptOpen, setReceiptOpen] = useState(false)
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
   
@@ -165,7 +165,7 @@ export function useClearanceActions(
         })
         
         const overallStatus = Object.values(updatedBlocking).some(
-          i => (i.status === "unpaid" || i.balance > 0) && i.isRequiredForClearance
+          i => (i.status === "unpaid") && i.isRequiredForClearance
         ) ? "not_cleared" : "cleared"
         
         return { ...cl, blockingItems: updatedBlocking, status: overallStatus }

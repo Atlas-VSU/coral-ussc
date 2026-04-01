@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { getProofOfPaymentByUserId } from "./payment/read/proofOfPayment";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 import { usePaymentApproval } from "@/features/organization/payments/hooks/usePaymentApproval";
+import { updateStudentStats } from "./stats/update/updateStats";
 
 
 export const getClearanceStats = async (orgId: string, statusFilter: string = "all") => {
@@ -90,17 +91,17 @@ export const fetchClearanceDocumentsPaginated = async (
     const cached = cacheService.get(key);
     if (cached) {
       // Color-coded logs matching cacheService.ts for a professional feel
-      console.log(
-        `%c[Cache Hit]%c ${key}`,
-        "color: #10b981; font-weight: bold;",
-        "color: inherit;"
-      );
+      // console.log(
+      //   `%c[Cache Hit]%c ${key}`,
+      //   "color: #10b981; font-weight: bold;",
+      //   "color: inherit;"
+      // );
     } else {
-      console.log(
-        `%c[Cache Miss]%c ${key}`,
-        "color: #f59e0b; font-weight: bold;",
-        "color: inherit;"
-      );
+      // console.log(
+      //   `%c[Cache Miss]%c ${key}`,
+      //   "color: #f59e0b; font-weight: bold;",
+      //   "color: inherit;"
+      // );
       cacheService.set(key, data, CACHE_DURATIONS.CLEARANCE);
     }
     
@@ -175,7 +176,7 @@ export const fetchClearanceStatus = async (userId: string) => {
         CACHE_KEYS.clearanceDoc(userId),
         async () => {
             const docRef = doc(db, 'clearanceStatus', userId);
-            const snapshot = await getDoc(docRef);
+          const snapshot = await getDoc(docRef);
             if (snapshot.exists()) {
                 return { id: snapshot.id, ...snapshot.data() } as ClearanceStatus;
             }
@@ -271,19 +272,6 @@ export const updateClearanceDocument = async (userId: string, orgId: string) => 
 }
 
 
-export const updateClearanceDocumentForAllStudents = async (orgId: string) => {
-    const clearanceRef = collection(db, 'clearanceStatus');
-    const q = query(
-        clearanceRef, 
-        where('orgId', '==', orgId), 
-        where('isArchived', '==', false)
-    );
-    const snapshot = await getDocs(q);
-    snapshot.docs.forEach(doc => {
-        updateClearanceDocument(doc.id, orgId);
-    });
-}
-
 export const addStudentWithClearance = async (studentId: string,studentData: any, orgId: string) => {
     try {
         const batch = writeBatch(db);
@@ -323,9 +311,11 @@ export const addStudentWithClearance = async (studentId: string,studentData: any
 
         // 4. Commit to Firestore
         await batch.commit();
-        console.log(`✅ Successfully added student ${studentData.firstName} and initialized clearance.`);
+        // console.log(`✅ Successfully added student ${studentData.firstName} and initialized clearance.`);
         
         cacheService.invalidate(CACHE_KEYS.clearanceDoc(studentRef.id));
+        
+      await updateStudentStats("2ndSem-2025-2026", 1);
 
         return studentRef.id;
     } catch (error) {
@@ -333,20 +323,6 @@ export const addStudentWithClearance = async (studentId: string,studentData: any
         throw error;
     }
 };
-
-export const updateClearanceDocumentForPaginatedStudents = async (orgId: string, userIds: string[]) => {
-    const clearanceRef = collection(db, 'clearanceStatus');
-    const q = query(
-        clearanceRef, 
-        where('userId', 'in', userIds), 
-        where('orgId', '==', orgId), 
-        where('isArchived', '==', false)
-    );
-    const snapshot = await getDocs(q);
-    snapshot.docs.forEach(doc => {
-        updateClearanceDocument(doc.id, orgId);
-    });
-}
 
 export const approvePaymentClearanceUpdate = async (
   clearanceId: string, 
@@ -535,6 +511,20 @@ export const rejectPaymentClearanceUpdate = async (
   // }
  };
 
+ export const fetchStats = async (orgId: string) => {
+  return cacheService.getOrFetch(`clearance:stats:${orgId}`, async () => {
+     if (!orgId) return;
+     const [cleared, not_cleared, pending] = await Promise.all([
+       getClearanceStats(orgId, "cleared"),
+       getClearanceStats(orgId, "not_cleared"),
+       getClearanceStats(orgId, "pending"),
+     ])
+     const stats = {cleared, not_cleared, pending}
+     return stats;
+   }
+   , CACHE_DURATIONS.COUNTS);
+   }
+
  
  export const logManualPaymentClearanceUpdate = async (
    clearanceId: string,
@@ -551,8 +541,6 @@ export const rejectPaymentClearanceUpdate = async (
   }
   let totalAmount = 0;
   items.forEach((item) => totalAmount += item.amount);
-  // Handle Bulk Payment separately - it should only be called ONCE
-  console.log(items);
     return await recordBulkManualPaymentAndUpdateClearance(
       studentId,
       items,
@@ -606,7 +594,6 @@ export const seedClearanceDocuments = async (orgId: string) => {
     const usersSnapshot = await getDocs(studentQuery);
 
     if (usersSnapshot.empty) {
-      console.log("No students found to seed.");
       return;
     }
 
@@ -674,7 +661,7 @@ export const seedClearanceDocuments = async (orgId: string) => {
       await batch.commit();
     }
 
-    console.log(`✅ Successfully seeded clearance documents for ${totalAddedCount} new students.`);
+    //console.log(`✅ Successfully seeded clearance documents for ${totalAddedCount} new students.`);
     cacheService.invalidateByPrefix('clearance:doc:');
   } catch (error) {
     console.error('❌ Error seeding clearance documents:', error);

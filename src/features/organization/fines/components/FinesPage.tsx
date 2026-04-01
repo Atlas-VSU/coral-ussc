@@ -1,32 +1,28 @@
 "use client";
 
-import { DataPagination } from "@/features/organization/fines/components/DataPagination";
-import { SearchInput } from "@/features/organization/fines/components/SearchInput";
-import { StatCard } from "@/components/organization/StatCard";
+import { DataPagination } from "@/components/organization/general/DataPagination";
+import { SearchInput } from "@/components/organization/general/SearchInput";
+import { StatCard } from "@/components/organization/general/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/features/organization/fines/local-components/Select";
+import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/components/ui/select";
 
 import { TableHeader, TableRow, TableHead, TableBody, TableCell, Table } from "@/components/ui/table";
-import { TableSkeleton, CardGridSkeleton } from "@/components/organization/Skeletons";
-import { ViewToggle } from "@/features/organization/fines/components/ViewToggle";
+import { TableSkeleton } from "@/components/organization/skeleton/TableSkeleton";
+import { CardGridSkeleton } from "@/components/organization/skeleton/CardGridSkeleton"
+import { ViewToggle } from "@/components/organization/general/ViewToggle";
 import { BulkGenerationDialog } from "@/features/organization/fines/components/BulkGenerationDialog";
-import { FineTypeForm } from "@/features/organization/fines/components/FineTypeForm";
 import { FineType, StudentFines } from "@/features/organization/fines/types";
-import { createFineType, deleteFineType, updateFineType } from "@/firebase/fines/create/fineType";
 import { Users, AlertTriangle, Banknote, CircleDollarSign, ChevronRight, Eye, RefreshCcw, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { countFinesOfStudents, countStudentsWithFines, countUnsettleFinesOfStudents, getAllFines } from "@/firebase/fines/read/fines";
 import { FineBreakdownDialog } from "@/features/organization/fines/components/FineBreakdownDialog";
-import { usePaymentApproval } from "@/features/organization/payments/hooks/usePaymentApproval";
 import { FineTypeDialog } from "@/features/organization/fines/components/FineTypeDialog";
 import { useFines } from "@/features/organization/fines/hooks/useFines";
 import { useFineTypes } from "@/features/organization/fines/hooks/useFineTypes";
 import { getVariantFineType } from "@/features/organization/fines/utils/getVariantFineType";
-import { PageHeader } from "@/components/organization/PageHeader";
+import { PageHeader } from "@/components/organization/general/PageHeader";
 
 export function FinesPage() {
   const ITEMS_PER_PAGE = 10;
@@ -55,6 +51,9 @@ export function FinesPage() {
     totalUnpaidFines,
     totalCollectedFines,
     hardRefresh,
+    setPaginatedFines,
+    setTotalCount,
+    setFilterStatus,
   } = useFines({ itemsPerPage: ITEMS_PER_PAGE });
 
   const {
@@ -94,8 +93,9 @@ export function FinesPage() {
   };
 
   const handleSuccess = async () => {
-    // markStatusChanged();
-    hardRefresh();
+    const newFines = paginatedFines.filter(f => f.studentId !== selectedFine?.studentId);
+    setPaginatedFines(newFines);
+    setTotalCount(prev => prev - 1);
   };
 
   useEffect(() => {
@@ -108,6 +108,14 @@ export function FinesPage() {
     setCurrentPage(1);
    }
 
+  const handleRefresh = async () => {
+    setSearch("");
+    setLocalSearch("");
+    setCurrentPage(1);
+    setFilterStatus("all");
+    await hardRefresh();
+  }
+
   return (
     <div className="flex flex-col gap-6 pb-24 lg:pb-0">
       <PageHeader
@@ -117,15 +125,7 @@ export function FinesPage() {
         description="Management and tracking of student fines"
         action={
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={hardRefresh}
-              disabled={isLoading}
-            >
-              <RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-              {isLoading ? "Refreshing..." : "Refresh"}
-            </Button>
+           
             {/* <Button size="sm" onClick={() => setIsBulkGenerateOpen(true)}>
               Bulk Generate
             </Button> */}
@@ -137,13 +137,12 @@ export function FinesPage() {
       />
 
       {/* Stats */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
-        <StatCard title="Students w/ Fines" value={totalStudentsWithFines} description="Have at least one fine" icon={Users} />
-        <StatCard title="Outstanding Balance" value={`₱${totalUnpaidFines}`} description="Total unpaid amount" icon={AlertTriangle} />
-        {/* <StatCard title="Total Collected" value={`₱${totalCollectedFines}`} description="Total approved payments" icon={Banknote} /> */}
-        <StatCard title="Unsettled" value={totalUnsettled} description="Students with outstanding fines" icon={CircleDollarSign} />
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <StatCard title="Students w/ Fines" value={totalStudentsWithFines.toLocaleString()} description="Have at least one fine" icon={Users} />
+        <StatCard title="Outstanding Balance" value={`₱${totalUnpaidFines.toLocaleString()}`} description="Total unpaid amount" icon={AlertTriangle} />
+        <StatCard title="Total Collected" value={`₱${totalCollectedFines.toLocaleString()}`} description="Total approved payments" icon={Banknote} />
+        <StatCard title="Unsettled" value={totalUnsettled.toLocaleString()} description="Students with outstanding fines" icon={CircleDollarSign} />
       </div>
-
       <Card className="border-border">
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -178,6 +177,15 @@ export function FinesPage() {
                   <SelectItem value="paid">Paid</SelectItem>
                 </SelectContent>
               </Select>
+               <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isLoading}
+              >
+                <RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+                {isLoading ? "Refreshing..." : "Refresh"}
+              </Button>
               <ViewToggle viewMode={viewMode} onViewChange={setViewMode} />
             </div>
           </div>

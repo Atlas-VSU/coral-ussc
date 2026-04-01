@@ -96,6 +96,10 @@ export default function EventAttendeesPage() {
     refreshData();
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) return;
+   }
+
   // REMOVED: The local useState and useEffect for fetching the event
   // have been removed to avoid fetching the same data twice.
 
@@ -197,7 +201,8 @@ export default function EventAttendeesPage() {
         {eventData && (
           <BulkFinesIssuance
             open={isBulkIssueFinesOpen}
-            onOpenChange={handleClose}
+            onOpenChange={handleOpenChange}  // blocks external close
+            onClose={handleClose}            // explicit close only when user clicks Close button
             event={eventData}
           />
         )}

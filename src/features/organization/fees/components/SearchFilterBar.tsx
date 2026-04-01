@@ -1,9 +1,9 @@
 // app/admin/fees/roster/components/SearchFilterBar.tsx
 import { RefreshCcw, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../local-components/Select";
-import { Button } from "../local-components/button";
-import { SearchInput } from "@/components/shared/SearchInput";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { SearchInput } from "@/components/organization/general/SearchInput";
 import { useEffect, useState } from "react";
 
 export function SearchFilterBar({
@@ -31,6 +31,13 @@ export function SearchFilterBar({
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSearchChange(localSearch);
+  }
+
+  const handleRefreshLocal = () => {
+    setLocalSearch("");
+    onSearchChange("");
+    onFilterChange("all");
+    handleRefresh();
   }
   
   return (
@@ -63,7 +70,7 @@ export function SearchFilterBar({
         </SelectContent>
       </Select>
 
-      <Button onClick={handleRefresh} variant="outline" disabled={isLoading}>
+      <Button onClick={handleRefreshLocal} variant="outline" disabled={isLoading}>
         <RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
         {isLoading ? 'Refreshing...' : 'Refresh'}
       </Button>

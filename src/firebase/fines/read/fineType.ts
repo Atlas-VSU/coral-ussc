@@ -35,7 +35,6 @@ export const getFineTypeById = async (fineTypeId : string) => {
                   isActive: doc.isActive,
               } as FineType;
           } else {
-            console.log("No such document!");
                 return null;
           }
       },

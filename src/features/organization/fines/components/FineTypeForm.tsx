@@ -18,7 +18,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Switch } from "../local-components/switch"; 
+import { Switch } from "@/components/ui/switch"; 
 import { FineType } from "../types";
 import { useFineTypeForm } from "../hooks/useFineTypeForm";
 import { FineTypeFormData } from "@/lib/validators";

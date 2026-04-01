@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -19,6 +20,19 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/org-dashboard", request.url));
     } 
   }
+  
+const isMaintenance = process.env.MAINTENANCE_MODE === "true";
+
+  // redirect to maintenance page if in maintenance mode and not already on it
+  if (isMaintenance && pathname !== "/maintenance") {
+    return NextResponse.redirect(new URL("/maintenance", request.url));
+  }
+
+
+  // prevent access to maintenance page when not in maintenance mode
+  if (!isMaintenance && pathname === "/maintenance") {
+  return NextResponse.redirect(new URL("/", request.url));
+}
 
   const isProtectedRoute = orgRoutes.some((route) => pathname.startsWith(route)) ||
     adminRoutes.some((route) => pathname.startsWith(route));

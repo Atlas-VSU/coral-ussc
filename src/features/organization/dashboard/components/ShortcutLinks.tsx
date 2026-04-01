@@ -53,9 +53,9 @@ export function ShortcutLinks({
         </>
       );
     } else if (timeInStart) {
-      return <span>In only: {formatTimeRange(timeInStart, timeInEnd)}</span>;
+      return <span>Time-in: {formatTimeRange(timeInStart, timeInEnd)}</span>;
     } else if (timeOutStart) {
-      return <span>Out only: {formatTimeRange(timeOutStart, timeOutEnd)}</span>;
+      return <span>Time-out: {formatTimeRange(timeOutStart, timeOutEnd)}</span>;
     }
     return <span className="text-muted-foreground">No time set</span>;
   };
@@ -99,7 +99,7 @@ export function ShortcutLinks({
           </Button>
         </CardTitle>
         <CardDescription className="text-muted-foreground">
-          Recent and ongoing events
+          Recent events
         </CardDescription>
       </CardHeader>
 
@@ -138,16 +138,6 @@ export function ShortcutLinks({
                           Major
                         </Badge>
                       )}
-                      <Badge
-                        variant={event.status === "ongoing" ? "default" : "secondary"}
-                        className={`text-[10px] px-1.5 py-0 ${
-                          event.status === "ongoing"
-                            ? "bg-green-500 text-white"
-                            : ""
-                        }`}
-                      >
-                        {event.status === "ongoing" ? "Ongoing" : "Upcoming"}
-                      </Badge>
                     </div>
                   </div>
 
@@ -157,12 +147,6 @@ export function ShortcutLinks({
                     <span className="flex items-center gap-1">
                       <MapPinIcon className="size-3" />
                       {event.location}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <UsersIcon className="size-3" />
-                      {event.status === "ongoing"
-                        ? `${event.attendees || 0} checked in`
-                        : "Not started"}
                     </span>
                   </div>
 

@@ -2,14 +2,14 @@
 
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PageHeader } from "@/components/organization/PageHeader"
-import { PaymentReviewDialog } from "@/components/organization/PaymentReviewDialog"
+import { PageHeader } from "@/components/organization/general/PageHeader"
+import { PaymentReviewDialog } from "@/components/organization/receipt/PaymentReviewDialog"
 import { PaymentStats } from "./components/PaymentStats"
 import { SubmissionsTab } from "./components/SubmissionsTab"
 import { UnpaidTab } from "./components/UnpaidTab"
 import { LogPaymentDialog } from "./components/LogPaymentDialog"
 import { usePaymentsPage } from "./hooks/usePaymentsPage"
-import PaymentReceiptDialog, { ReceiptData } from "@/components/organization/PaymentReceiptDialog"
+import PaymentReceiptDialog, { ReceiptData } from "@/components/organization/receipt/PaymentReceiptDialog"
 import { Timestamp } from "firebase/firestore"
 
 export default function PaymentsPage() {
@@ -28,7 +28,7 @@ export default function PaymentsPage() {
     unpaidSearch, setUnpaidSearch,
     unpaidPage, setUnpaidPage,
     unpaidViewMode, setUnpaidViewMode,
-    unpaidTotalPages, paginatedUnpaid,
+    unpaidTotalPages, filteredUnpaid,
     refreshAll,
     // unpaid detail
     detailOpen, setDetailOpen,
@@ -51,7 +51,7 @@ export default function PaymentsPage() {
       total: selectedPayment?.amount || 0,
       date: selectedPayment?.verifiedAt!.toDate().toLocaleString() || "N/A",
       verifiedByName: selectedPayment?.verifiedByName || "N/A",
-      paymentMethod: selectedPayment?.paymentMethod || "Cash (Manual)",
+      paymentMethod: selectedPayment?.paymentMethod || "Cash",
     });
     setReceiptOpen(true)
   }
@@ -113,7 +113,7 @@ export default function PaymentsPage() {
           />
         ) : (
           <UnpaidTab
-            paginatedUnpaid={paginatedUnpaid}
+            paginatedUnpaid={filteredUnpaid}
             unpaidTotalPages={unpaidTotalPages}
             unpaidPage={unpaidPage}
             unpaidSearch={unpaidSearch}

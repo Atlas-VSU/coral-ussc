@@ -74,7 +74,6 @@ export default function FinesPaymentFormPage({
   const [restoredFromDraft, setRestoredFromDraft] = useState(false);
   const [lastDraftSavedAt, setLastDraftSavedAt] = useState<number | null>(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
-
   const selectedFineItems = selectedPaymentItems?.fineItems.filter(f => !f.isPending) ?? [];
 
   const selectedTypes = useMemo(() => {
@@ -161,6 +160,8 @@ export default function FinesPaymentFormPage({
         amount:       fee.amount,
         paymentType:  "fees",
         parentFineId: "",
+        academicYear: fee.academicYear || "2025-2026",
+        semester:     fee.semester || "2nd",
       })),
       ...(selectedFineItems.filter(f => !f.isPaid && !f.isPending) ?? []).map(fine => ({
         refId:        fine.refId,
@@ -168,6 +169,8 @@ export default function FinesPaymentFormPage({
         amount:       fine.amount,
         paymentType:  "fines",
         parentFineId: fine.parentFineId,
+        academicYear: "2025-2026",
+        semester:     "2nd",
       })),
     ];
 

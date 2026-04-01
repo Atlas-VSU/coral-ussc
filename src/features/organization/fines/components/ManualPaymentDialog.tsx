@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { PaymentType } from "@/constants/types";
 import { PaymentFormData } from "@/lib/validators";
 import { addOfflineFinesPayment } from "@/firebase/payment/create/paymentHistory";
-import PaymentReceiptDialog, { ReceiptData, ReceiptItem } from "@/components/organization/PaymentReceiptDialog";
+import PaymentReceiptDialog, { ReceiptData, ReceiptItem } from "@/components/organization/receipt/PaymentReceiptDialog";
 import { getProofOfPaymentById } from "@/firebase/payment/read/proofOfPayment";
 import { string } from "zod";
 
@@ -64,6 +64,8 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
                         amount: item.amount,
                         type: item.paymentType as "fees" | "fines",
                         parentFineId: item.parentFineId,
+                        academicYear: "2025-2026",
+                        semester: "2nd",
                     };
                 })!,
                 total: proofData?.amount!,

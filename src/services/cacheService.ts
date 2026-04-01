@@ -175,18 +175,18 @@ class CacheService {
       this.metrics.hits++;
       keyMetrics.hits++;
       const duration = performance.now() - startTime;
-      console.log(`%c[Cache Hit] %c${key} %c(${duration.toFixed(2)}ms)`, 'color: #4CAF50; font-weight: bold', 'color: #2196F3', 'color: #9E9E9E');
+      // console.log(`%c[Cache Hit] %c${key} %c(${duration.toFixed(2)}ms)`, 'color: #4CAF50; font-weight: bold', 'color: #2196F3', 'color: #9E9E9E');
       return cached.data as T;
     }
 
     // Cache miss
     this.metrics.misses++;
     keyMetrics.misses++;
-    console.log(`%c[Cache Miss] %c${key}`, 'color: #F44336; font-weight: bold', 'color: #2196F3');
+    // console.log(`%c[Cache Miss] %c${key}`, 'color: #F44336; font-weight: bold', 'color: #2196F3');
     
     const data = await fetchFn();
     const duration = performance.now() - startTime;
-    console.log(`%c[Cache Populated] %c${key} %c(Fetched in ${duration.toFixed(2)}ms)`, 'color: #FF9800; font-weight: bold', 'color: #2196F3', 'color: #9E9E9E');
+    // console.log(`%c[Cache Populated] %c${key} %c(Fetched in ${duration.toFixed(2)}ms)`, 'color: #FF9800; font-weight: bold', 'color: #2196F3', 'color: #9E9E9E');
 
     // Store in cache
     this.cache.set(key, {
@@ -396,7 +396,7 @@ export const CACHE_KEYS = {
   feeRoster:    (orgId: string, title: string, year: string) => `fees:roster:${orgId}:${title}:${year}`,
   feeDoc:       (feeId: string) => `fees:doc:${feeId}`,
   feeLogs:      (feeId: string) => `fees:logs:${feeId}`,
-  feeSubmissionCount: (orgId: string, title: string, year: string, statusFilter: string, searchTerm: string) => `fees:submission-count:${orgId}:${title}:${year}:${statusFilter}:${searchTerm}`,
+  feeSubmissionCount: (orgId: string, title: string, year: string, semester: string, statusFilter: string, searchTerm: string) => `fees:submission-count:${orgId}:${title}:${year}:${semester}:${statusFilter}:${searchTerm}`,
 
   // Fines
   finesAll:        (orgId: string) => `fines:all:${orgId}`,
@@ -431,6 +431,15 @@ export const CACHE_KEYS = {
   clearanceCount: (orgId: string, statusFilter: string, searchTerm: string) => `clearance:count:${orgId}:${statusFilter}:${searchTerm}`,
 
   // Count aggregates
-  feesCount:      (orgId: string, title: string, year: string, status: string, search: string) => `fees:count:${orgId}:${title}:${year}:${status}:${search}`,
+  feesCount:      (orgId: string, title: string, year: string, semester: string, status: string, search: string) => `fees:count:${orgId}:${title}:${year}:${status}:${search}`,
   paymentsCount:  (orgId: string, statusFilter: string) => `payments:count:${orgId}:${statusFilter}`,
+
+  // Fees
+  totalCollectedAmount: (orgId: string) => `fees:totalCollectedAmount:${orgId}`,
+
+  // Fees
+  totalPaidAmountCount: (feeItemId: string) => `fees:totalPaidAmountCount:${feeItemId}`,
+  totalRejectedAmountCount: (feeItemId: string) => `fees:totalRejectedAmountCount:${feeItemId}`,
+  totalUnpaidAmountCount: (feeItemId: string) => `fees:totalUnpaidAmountCount:${feeItemId}`,
+  totalPendingAmountCount: (feeItemId: string) => `fees:totalPendingAmountCount:${feeItemId}`,
 };

@@ -13,26 +13,29 @@ import { toast } from "sonner";
 interface BulkFinesIssuanceProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onClose: () => void;
   event: Event;
 }
 
 export function BulkFinesIssuance({
   open,
   onOpenChange,
+  onClose,
   event
 }: BulkFinesIssuanceProps) {
   const [progress, setProgress] = useState<FineGenerationProgress | null>(null);
 
   const isRunning = progress?.phase === "preflight"
     || progress?.phase === "absent"
-    || progress?.phase === "partial";
+    || progress?.phase === "partial"
+    || progress?.phase === "clearance";
   const isDone  = progress?.phase === "done";
   const isError = progress?.phase === "error";
 
   const handleClose = () => {
     if (isRunning) return;
     setProgress(null);       // reset for next open
-    onOpenChange(false);
+    onClose();
   };
 
   const handleIssuance = async () => {
@@ -63,7 +66,7 @@ export function BulkFinesIssuance({
   const overallPct = totalUsers > 0 ? Math.round((totalDone / totalUsers) * 100) : 0;
 
   return (
-    <Dialog open={open} onOpenChange={isRunning ? undefined : handleClose}>
+    <Dialog open={open} onOpenChange={isRunning || isDone ? undefined : handleClose}>
       <DialogContent className="max-w-2xl w-[90vw] overflow-y-auto max-h-[90vh] py-8">
         <DialogHeader className="space-y-4">
           <DialogTitle className="text-xl">Event Fines Issuance</DialogTitle>
@@ -212,7 +215,7 @@ export function BulkFinesIssuance({
         )}
 
                 {/* ── DONE ────────────────────────────────────────────────────── */}
-        {isDone && progress && (
+        {isDone && progress && !isRunning && (
           <div className="space-y-6 py-4">
             <Card>
               <CardHeader>
@@ -302,7 +305,7 @@ export function BulkFinesIssuance({
           </Button>
             {!isDone &&(
             <div>
-            {!isRunning ? (
+            {!isRunning && !isDone? (
             <Button onClick={handleIssuance}>
               <Upload className="h-4 w-4 mr-2" />
               Issue Fines
