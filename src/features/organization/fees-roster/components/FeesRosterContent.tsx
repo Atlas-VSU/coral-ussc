@@ -140,6 +140,7 @@ export function FeesRosterContent({
 
   const { paginatedLogs, paginatedRows } = computed;
 
+
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   const {
@@ -209,20 +210,20 @@ export function FeesRosterContent({
       <div className="grid gap-4 sm:grid-cols-3">
       <StatCard
         title="Pending"
-        value={stats.pending}
+        value={stats.pending.toLocaleString()}
         description="Awaiting verification"
         icon={Clock}
       />
       <StatCard
         title="Verified"
-        value={stats.verified}
+        value={stats.verified.toLocaleString()}
         description="Payments confirmed"
         icon={CheckCircle}
       />
       {/* <StatCard title="Rejected" value={stats.rejected} description="Payments declined" icon={XCircle} /> */}
       <StatCard
         title="Unpaid"
-        value={stats.unpaid}
+        value={stats.unpaid.toLocaleString()}
         description="No submission yet"
         icon={MinusCircle}
       />
