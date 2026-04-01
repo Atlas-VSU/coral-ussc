@@ -294,14 +294,15 @@ export function PaymentReviewDialog({
                 {isPending ? (
                   <>
                     <Button
-                      variant="outline"
-                      className="gap-1.5 text-destructive hover:text-destructive"
+                      variant="destructive"
+                      className="gap-1.5"
                       onClick={() => setRejectOpen(true)}
                       disabled={isProcessing}
                     >
                       <XCircle className="size-4" /> Reject
                     </Button>
                     <Button 
+                      variant="success"
                       className="gap-1.5" 
                       onClick={() => setApproveConfirmOpen(true)}
                       disabled={isProcessing}
@@ -338,9 +339,9 @@ export function PaymentReviewDialog({
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setApproveConfirmOpen(false)} disabled={isProcessing}>
-              Cancel
+              Cancel  
             </Button>
-            <Button onClick={handleApproveConfirmed} disabled={isSubmitting} className="gap-2">
+            <Button variant="success" onClick={handleApproveConfirmed} disabled={isSubmitting} className="gap-2">
               {isSubmitting && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
               Yes, Approve
             </Button>

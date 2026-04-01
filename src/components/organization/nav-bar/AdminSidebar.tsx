@@ -110,9 +110,9 @@ export function AdminSidebar({ user, className }: { user?: User; className?: str
               <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
               <div className="absolute right-3 top-3 z-10">
                 <Button
-                  variant="ghost"
+                  variant="icon"
                   size="icon"
-                  className="size-8 text-[#616161] hover:bg-[#F5F5F5] hover:text-[#1B5E20]"
+                  className="size-8 text-[#616161]"
                   onClick={() => setOpen(false)}
                 >
                   <X className="size-4" />

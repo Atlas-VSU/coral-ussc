@@ -9,15 +9,17 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
+        default: "bg-primary text-primary-foreground [a&]:hover:bg-primary/90 [a&]:dark:hover:bg-primary/80",
         secondary:
-          "bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90",
+          "bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90 [a&]:dark:hover:bg-secondary/80",
         destructive:
-          "bg-destructive text-white focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40 [a&]:hover:bg-destructive/90",
+          "bg-destructive text-white focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40 [a&]:hover:bg-destructive/90 [a&]:dark:hover:bg-destructive/80",
         outline:
-          "border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-        ghost: "[a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 [a&]:hover:underline",
+          "border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground [a&]:dark:hover:bg-accent/60",
+        success:
+          "bg-green-600 text-white [a&]:hover:bg-green-700 [a&]:dark:hover:bg-green-600",
+        ghost: "[a&]:hover:bg-accent [a&]:hover:text-accent-foreground [a&]:dark:hover:bg-accent/60",
+        link: "text-primary underline-offset-4 [a&]:hover:underline [a&]:hover:text-primary/80 [a&]:dark:hover:text-primary/70",
       },
     },
     defaultVariants: {
