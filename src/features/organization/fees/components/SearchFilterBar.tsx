@@ -1,6 +1,5 @@
 // app/admin/fees/roster/components/SearchFilterBar.tsx
 import { RefreshCcw, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/organization/general/SearchInput";
@@ -43,21 +42,21 @@ export function SearchFilterBar({
   return (
     <>
       <div className="relative">
-      <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
-        <SearchInput
-          placeholder="Search by name or ID..."
-          value={localSearch}
-          onChange={v => setLocalSearch(v)} // Only update local state on keystroke
-          className="w-full sm:w-64"
-        />
-        <Button type="submit" variant="secondary" size="icon" disabled={isLoading}>
-          <Search className="h-4 w-4" />
-          <span className="sr-only">Search</span>
-        </Button>
-      </form>
+        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
+          <SearchInput
+            placeholder="Search by name or ID…"
+            value={localSearch}
+            onChange={v => setLocalSearch(v)}
+            className="w-full sm:w-64 h-9"
+          />
+          <Button type="submit" variant="secondary" size="icon" className="h-9 w-9" disabled={isLoading}>
+            <Search className="h-4 w-4" />
+            <span className="sr-only">Search</span>
+          </Button>
+        </form>
       </div>
       <Select value={filterStatus} onValueChange={onFilterChange}>
-        <SelectTrigger className="w-44">
+        <SelectTrigger className="w-44 h-9 text-sm">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>
@@ -70,7 +69,7 @@ export function SearchFilterBar({
         </SelectContent>
       </Select>
 
-      <Button onClick={handleRefreshLocal} variant="outline" disabled={isLoading}>
+      <Button onClick={handleRefreshLocal} variant="outline" size="sm" className="h-9" disabled={isLoading}>
         <RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
         {isLoading ? 'Refreshing...' : 'Refresh'}
       </Button>

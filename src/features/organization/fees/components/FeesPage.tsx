@@ -1,12 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { CircleDollarSign, DollarSign, Plus, Users, Zap } from "lucide-react";
+import { useState } from "react";
+import { CircleDollarSign, DollarSign, Users } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getUsers } from "@/firebase/users";
-import { Member } from "@/features/organization/members/types";
 import { FeeGenerationDialog } from "./AddFeeDialog";
 import FeeListPage from "./FeeList";
 import { useFeeList } from "../hooks/useFeeList";
@@ -28,11 +24,12 @@ export function FeesPage() {
       : 0
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="flex flex-col gap-6 pb-24 lg:pb-0">
       <PageHeader
-        title="Fees"
+        variant="admin"
+        title="Fees Management"
         context="2nd Semester · A.Y. 2025–2026"
-        description="Management and tracking of Council/Organization Fees"
+        description="Manage your organisation's fees and track collection progress"
       />
       
       <div className="grid gap-4 sm:grid-cols-3">
@@ -43,7 +40,6 @@ export function FeesPage() {
 
       <FeeListPage />
       
-
       <FeeGenerationDialog 
         open={isDialogOpen} 
         onOpenChange={setIsDialogOpen} 

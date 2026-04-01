@@ -1,6 +1,5 @@
 // app/admin/fees/roster/components/SearchFilterBar.tsx
 import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
 import { SearchInput } from "@/components/organization/general/SearchInput";
@@ -34,20 +33,20 @@ export function SearchFilterFee({
     <>
       <div className="relative">
         <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
-        <SearchInput
-          placeholder="Search Fees..."
-          value={localSearch}
-          onChange={v => setLocalSearch(v)} 
-          className="w-full sm:w-64"
-        />
-        <Button type="submit" variant="secondary" size="icon" disabled={isLoading}>
-          <Search className="h-4 w-4" />
-          <span className="sr-only">Search</span>
-        </Button>
-      </form>
+          <SearchInput
+            placeholder="Search fees by title or type…"
+            value={localSearch}
+            onChange={v => setLocalSearch(v)} 
+            className="w-full sm:w-64 h-9"
+          />
+          <Button type="submit" variant="secondary" size="icon" className="h-9 w-9" disabled={isLoading}>
+            <Search className="h-4 w-4" />
+            <span className="sr-only">Search</span>
+          </Button>
+        </form>
       </div>
       <Select value={filterStatus} onValueChange={onFilterChange}>
-        <SelectTrigger className="w-44">
+        <SelectTrigger className="w-44 h-9 text-sm">
           <SelectValue placeholder="Fee Type" />
         </SelectTrigger>
         <SelectContent>

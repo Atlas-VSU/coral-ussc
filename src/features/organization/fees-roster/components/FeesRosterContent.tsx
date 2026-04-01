@@ -210,20 +210,20 @@ export function FeesRosterContent({
       <div className="grid gap-4 sm:grid-cols-3">
       <StatCard
         title="Pending"
-        value={stats.pending.toLocaleString()}
+        value={stats.pending?.toLocaleString()}
         description="Awaiting verification"
         icon={Clock}
       />
       <StatCard
         title="Verified"
-        value={stats.verified.toLocaleString()}
+        value={stats.verified?.toLocaleString()}
         description="Payments confirmed"
         icon={CheckCircle}
       />
       {/* <StatCard title="Rejected" value={stats.rejected} description="Payments declined" icon={XCircle} /> */}
       <StatCard
         title="Unpaid"
-        value={stats.unpaid.toLocaleString()}
+        value={stats.unpaid?.toLocaleString()}
         description="No submission yet"
         icon={MinusCircle}
       />

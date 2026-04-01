@@ -22,9 +22,7 @@ export default function MaintenancePage() {
                 alt="Maintenance"
                 width={250}
                 height={190}
-                className="w-auto h-auto object-contain max-w-full max-h-[200px] lg:hidden"
-                
-                unoptimized
+                className="w-auto h-auto object-contain max-w-full max-h-[200px] lg:hidden"                
               />
             </div>
           </div>
@@ -39,7 +37,6 @@ export default function MaintenancePage() {
                 height={340}
                 className="w-auto h-auto object-contain max-w-full max-h-[380px]"
                 priority
-                unoptimized
               />
           </div>
 
