@@ -40,6 +40,8 @@ import {
 import { Event } from "../types";
 import { useEffect, useState } from "react";
 import { getEventById } from "@/firebase";
+import { StatCardsCarousel } from "@/components/organization/general/StatCardsCarousel";
+import { StatCard } from "@/components/organization/general/StatCard";
 
 interface MembersStatsProps {
   isLoading?: boolean;
@@ -208,55 +210,76 @@ export function MobileMembersStats({
       value: studentStats.totalStudents.toLocaleString(),
       description: `${studentStats.totalEvents} event${studentStats.totalEvents !== 1 ? "s" : ""} this semester`,
       icon: Users,
+      isComingSoon: false,
     },
     {
       title: "Fees Collected",
       value: `₱${feesCollected.toLocaleString()}`,
-      description: "Total fees paid",
+      // value: "Coming Soon",
+      description: "Total fees paid this semester",
       icon: Banknote,
+      isComingSoon: false,
     },
     {
       title: "Unpaid Fines",
       value: `₱${unpaidFinesAmount.toLocaleString()}`,
-      description: "Outstanding balance",
+      // value: "Coming Soon",
+      description: "Outstanding fines balance",
       icon: AlertTriangle,
+      isComingSoon: false,
     },
-    // {
-    //   title: "Clearance Rate",
-    //   value: `${(clearanceRate * 100).toFixed(1)}%`,
-    //   description: `${clearedStudents} cleared · ${unclearedStudents} not`,
-    //   icon: ShieldCheck,
-    // },
+    {
+      title: "Clearance Rate",
+      // value: `${(clearanceRate * 100).toFixed(1)}%`,
+      value: "Coming Soon",
+      // description: `${clearedStudents} cleared · ${unclearedStudents} uncleared`,
+      description: `Percentage of students cleared`,
+      icon: ShieldCheck,
+      isComingSoon: true,
+    },
   ];
 
   return (
     <div className="flex flex-col gap-4">
       {/* ── Stat Grid ── */}
-      <div className="grid grid-cols-2 gap-3">
-        {statCards.map(({ title, value, description, icon: Icon }) => (
-          <Card key={title} className="border-border bg-card">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-3 pt-3">
-              <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                {title}
-              </CardTitle>
-              <Icon className="size-3.5 text-primary" />
-            </CardHeader>
-            <CardContent className="px-3 pb-3">
-              {isLoading ? (
-                <>
-                  <Skeleton className="h-6 w-16 mb-1" />
-                  <Skeleton className="h-3 w-20" />
-                </>
-              ) : (
-                <>
-                  <div className="text-xl font-bold text-foreground">{value}</div>
-                  <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{description}</p>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <StatCardsCarousel className="grid-cols-4">
+              <StatCard
+                key="total-students"
+                title="Total Students"
+                value={studentStats.totalStudents.toLocaleString()}
+                description={`${studentStats.totalEvents} event${studentStats.totalEvents !== 1 ? "s" : ""} this semester`}
+                icon={Users}
+                isLoading={isLoading}
+                className={statCards[0].isComingSoon ? "opacity-60 cursor-not-allowed" : ""}
+              />
+              <StatCard
+                key="fees-collected"
+                title="Fees Collected"
+                value={`₱${feesCollected.toLocaleString()}`}
+                description="Total fees paid this semester"
+                icon={Banknote}
+                isLoading={isLoading}
+                className={statCards[1].isComingSoon ? "opacity-60 cursor-not-allowed" : ""}
+              />
+              <StatCard
+                key="unpaid-fines"
+                title="Unpaid Fines"
+                value={`₱${unpaidFinesAmount.toLocaleString()}`}
+                description="Outstanding fines balance"
+                icon={AlertTriangle}
+                isLoading={isLoading}
+                className={statCards[2].isComingSoon ? "opacity-60 cursor-not-allowed" : ""}
+              />
+              <StatCard
+                key="clearance-rate"
+                title="Clearance Rate"
+                value="Coming Soon"
+                description="Percentage of students cleared"
+                icon={ShieldCheck}
+                isLoading={isLoading}
+                className="opacity-60 cursor-not-allowed"
+              />
+            </StatCardsCarousel>
 
       {/* ── Chart Card ── */}
       <Card className="border-border bg-card gap-0">

@@ -3,6 +3,7 @@
 import { DataPagination } from "@/components/organization/general/DataPagination";
 import { SearchInput } from "@/components/organization/general/SearchInput";
 import { StatCard } from "@/components/organization/general/StatCard";
+import { StatCardsCarousel } from "@/components/organization/general/StatCardsCarousel";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/components/ui/select";
 import { TableHeader, TableRow, TableHead, TableBody, TableCell, Table } from "@/components/ui/table";
@@ -115,7 +116,7 @@ export function FinesPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 pb-24 lg:pb-0">
+    <div className="flex flex-col gap-6 pb-5 lg:pb-0">
       <PageHeader
         variant="admin"
         title="Fines Management"
@@ -132,12 +133,12 @@ export function FinesPage() {
       />
 
       {/* Stats */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+      <StatCardsCarousel className="grid-cols-4">
         <StatCard title="Students w/ Fines" value={totalStudentsWithFines.toLocaleString()} description="Have at least one fine" icon={Users} />
         <StatCard title="Outstanding Balance" value={`₱${totalUnpaidFines.toLocaleString()}`} description="Total unpaid amount" icon={AlertTriangle} />
         <StatCard title="Total Collected" value={`₱${totalCollectedFines.toLocaleString()}`} description="Total approved payments" icon={Banknote} />
         <StatCard title="Unsettled" value={totalUnsettled.toLocaleString()} description="Students with outstanding fines" icon={CircleDollarSign} />
-      </div>
+      </StatCardsCarousel>
 
       {/* Main Card - Following Payments pattern */}
       <Card className="border-border bg-card">

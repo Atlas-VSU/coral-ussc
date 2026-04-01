@@ -9,6 +9,7 @@ import { useFeeList } from "../hooks/useFeeList";
 import { usePaginatedMembers } from "../../members/hooks/usePaginatedMembers";
 import { PageHeader } from "@/components/organization/general/PageHeader";
 import { StatCard } from "@/components/organization/general/StatCard";
+import { StatCardsCarousel } from "@/components/organization/general/StatCardsCarousel";
 
 
 export function FeesPage() {
@@ -24,7 +25,7 @@ export function FeesPage() {
       : 0
 
   return (
-    <div className="flex flex-col gap-6 pb-24 lg:pb-0">
+    <div className="flex flex-col gap-6 pb-5 lg:pb-0">
       <PageHeader
         variant="admin"
         title="Fees Management"
@@ -32,11 +33,11 @@ export function FeesPage() {
         description="Manage your organisation's fees and track collection progress"
       />
       
-      <div className="grid gap-4 sm:grid-cols-3">
+      <StatCardsCarousel className="grid-cols-3">
         <StatCard title="Total Fees" value={aggregatedFees.length} description="Active fee categories" icon={CircleDollarSign} />
         <StatCard title="Total Collected" value={`₱${totalCollected.toLocaleString()}`} description="Across all fees" icon={DollarSign} />
         <StatCard title="Avg. Collection Rate" value={`${avgCompletion}%`} description="Overall completion" icon={Users} />
-      </div>
+      </StatCardsCarousel>
 
       <FeeListPage />
       

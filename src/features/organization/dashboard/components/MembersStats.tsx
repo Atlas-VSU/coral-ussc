@@ -51,6 +51,7 @@ import {
 import { Event } from "../types";
 import { ShortcutLinks } from "./ShortcutLinks";
 import { useDashboard } from "../hooks/useDashboard";
+import { StatCard } from "@/components/organization/general/StatCard";
 
 // ─── Custom Tooltip ───────────────────────────────────────────────────────────
 const CustomTooltip = ({
@@ -273,41 +274,43 @@ export function MembersStats({
     <div className="flex flex-col gap-4">
       {/* ── Stat Cards ── */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-4 lg:gap-4">
-        {statCards.map(
-          ({ title, value, description, icon: Icon, isComingSoon }) => (
-            <Card
-              key={title}
-              className={`border-border bg-card ${isComingSoon ? "opacity-60" : ""}`}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-4 pt-4 sm:px-6 sm:pt-5">
-                <CardTitle className="text-xs font-bold uppercase tracking-wider text-foreground">
-                  {title}
-                </CardTitle>
-                <Icon className="size-4 text-primary" />
-              </CardHeader>
-              <CardContent className="px-4 pb-4 sm:px-6 sm:pb-5">
-                {isLoading ? (
-                  <>
-                    <Skeleton className="h-8 w-24 mb-1" />
-                    <Skeleton className="h-3 w-32" />
-                  </>
-                ) : (
-                  <>
-                    <p
-                      className={`text-2xl font-bold ${isComingSoon ? "text-muted-foreground/50 text-lg italic" : "text-foreground"}`}
-                    >
-                      {value}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {description}
-                    </p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          ),
-        )}
-      </div>
+      <StatCard
+                      key="total-students"
+                      title="Total Students"
+                      value={studentStats.totalStudents.toLocaleString()}
+                      description={`${studentStats.totalEvents} event${studentStats.totalEvents !== 1 ? "s" : ""} this semester`}
+                      icon={Users}
+                      isLoading={isLoading}
+                      className={statCards[0].isComingSoon ? "opacity-60 cursor-not-allowed" : ""}
+                    />
+                    <StatCard
+                      key="fees-collected"
+                      title="Fees Collected"
+                      value={`₱${feesCollected.toLocaleString()}`}
+                      description="Total fees paid this semester"
+                      icon={Banknote}
+                      isLoading={isLoading}
+                      className={statCards[1].isComingSoon ? "opacity-10 cursor-not-allowed" : ""}
+                    />
+                    <StatCard
+                      key="unpaid-fines"
+                      title="Unpaid Fines"
+                      value={`₱${unpaidFinesAmount.toLocaleString()}`}
+                      description="Outstanding fines balance"
+                      icon={AlertTriangle}
+                      isLoading={isLoading}
+                      className={statCards[2].isComingSoon ? "opacity-60 cursor-not-allowed" : ""}
+                    />
+                    <StatCard
+                      key="clearance-rate"
+                      title="Clearance Rate"
+                      value="Coming Soon"
+                      description="Percentage of students cleared"
+                      icon={ShieldCheck}
+                      isLoading={isLoading}
+                      className="opacity-60 cursor-not-allowed"
+                    />
+                  </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* ── Chart Card ── */}

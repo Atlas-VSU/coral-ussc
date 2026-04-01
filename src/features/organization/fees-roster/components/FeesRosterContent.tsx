@@ -40,6 +40,7 @@ import { StudentFeeRow } from "../hooks/useFeesRoster";
 import { useFeesRosterUI } from "../hooks/useFeesRosterUI";
 import { PaymentReviewDialog } from "@/components/organization/receipt/PaymentReviewDialog";
 import { StatCard } from "@/components/organization/general/StatCard";
+import { StatCardsCarousel } from "@/components/organization/general/StatCardsCarousel";
 const ITEMS_PER_PAGE = 10;
 
 export function FeesRosterContent({
@@ -207,27 +208,27 @@ export function FeesRosterContent({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-      <StatCard
-        title="Pending"
-        value={stats.pending?.toLocaleString()}
-        description="Awaiting verification"
-        icon={Clock}
-      />
-      <StatCard
-        title="Verified"
-        value={stats.verified?.toLocaleString()}
-        description="Payments confirmed"
-        icon={CheckCircle}
-      />
-      {/* <StatCard title="Rejected" value={stats.rejected} description="Payments declined" icon={XCircle} /> */}
-      <StatCard
-        title="Unpaid"
-        value={stats.unpaid?.toLocaleString()}
-        description="No submission yet"
-        icon={MinusCircle}
-      />
-    </div>
+      <StatCardsCarousel className="grid-cols-3">
+        <StatCard
+          title="Pending"
+          value={stats.pending?.toLocaleString()}
+          description="Awaiting verification"
+          icon={Clock}
+        />
+        <StatCard
+          title="Verified"
+          value={stats.verified?.toLocaleString()}
+          description="Payments confirmed"
+          icon={CheckCircle}
+        />
+        {/* <StatCard title="Rejected" value={stats.rejected} description="Payments declined" icon={XCircle} /> */}
+        <StatCard
+          title="Unpaid"
+          value={stats.unpaid?.toLocaleString()}
+          description="No submission yet"
+          icon={MinusCircle}
+        />
+      </StatCardsCarousel>
 
       <Card className="border-border">
         <CardHeader>
