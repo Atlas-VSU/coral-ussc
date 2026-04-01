@@ -59,7 +59,7 @@ export default function FeesRosterPage({
 
   if (isLoading && !fee) {
     return (
-      <div className="flex flex-col gap-6 pb-24 lg:pb-0">
+      <div className="flex flex-col gap-6 pb-5 lg:pb-0">
         <div className="flex flex-col gap-1">
           <Skeleton className="h-4 w-16" />
           <Skeleton className="h-8 w-64" />
@@ -77,7 +77,7 @@ export default function FeesRosterPage({
 
   if (error || !fee) {
     return (
-      <div className="flex flex-col gap-6 pb-24 lg:pb-0">
+      <div className="flex flex-col gap-6 pb-5 lg:pb-0">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>

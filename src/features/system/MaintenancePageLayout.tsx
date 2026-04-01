@@ -53,6 +53,9 @@ export default function MaintenancePage() {
                 We're currently making improvements to the system. Everything
                 will be back up and running shortly.
               </p>
+              <p className="font-montserrat font-medium text-sm animate-fade-in-up animation-delay-300 text-primary mt-4 text-center lg:text-left lg:whitespace-nowrap">
+                For urgent concerns, contact USSC Baybay through ussc.baybay@vsu.edu.ph
+              </p>
             </div>
           </div>
         </div>
