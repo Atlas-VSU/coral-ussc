@@ -14,8 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataPagination } from "@/components/organization/general/DataPagination";
-import { SearchFilterBar } from "@/features/organization/fees/components/SearchFilterBar";
-import { ViewToggle } from "@/components/organization/general/ViewToggle";
+import { FeesRosterFilters } from "./FeesRosterFilters";
 import { TableSkeleton } from "@/components/organization/skeleton/TableSkeleton";
 import { CardGridSkeleton } from "@/components/organization/skeleton/CardGridSkeleton";
 import { SubmissionsView } from "@/features/organization/fees/components/SubmissionView";
@@ -59,6 +58,11 @@ export function FeesRosterContent({
   currentPage,
   setCurrentPage,
   search,
+  searchTerm,
+  setSearchTerm,
+  handleSearchCommit,
+  handleSearchClear,
+  handleRefresh,
   setSearch,
   filterStatus,
   setFilterStatus,
@@ -88,6 +92,11 @@ export function FeesRosterContent({
   currentPage: number;
   setCurrentPage: (page: number) => void;
   search: string;
+  searchTerm: string;
+  setSearchTerm: (s: string) => void;
+  handleSearchCommit: () => void;
+  handleSearchClear: () => void;
+  handleRefresh: () => void;
   setSearch: (s: string) => void;
   filterStatus: string;
   setFilterStatus: (s: string) => void;
@@ -165,13 +174,6 @@ export function FeesRosterContent({
     setCurrentPage: handlePageChange,
   } = actions;
 
-  const handleRefresh = async () => {
-    setFilterStatus("all");
-    setCurrentPage(1);
-    setSearch("");
-    await refetch();
-  };
-
   return (
     <div className="flex flex-col gap-6 pb-25 lg:pb-10">
       <div className="flex flex-col gap-1">
@@ -197,9 +199,8 @@ export function FeesRosterContent({
           </div>
 
           <Button
-            variant="outline"
+            variant="destructive"
             size="default"
-            className="gap-2 text-destructive hover:text-destructive border-destructive/20 hover:bg-destructive/10 w-full sm:w-auto"
             onClick={() => setArchiveDialogOpen(true)}
           >
             <Archive className="size-4" />
@@ -230,6 +231,24 @@ export function FeesRosterContent({
         />
       </StatCardsCarousel>
 
+      {/* ── Filters (Outside Card) ── */}
+      <FeesRosterFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        onSearchCommit={handleSearchCommit}
+        onSearchClear={handleSearchClear}
+        filterStatus={filterStatus}
+        onFilterChange={(v) => {
+          handleFilterStatus(v);
+          handlePageChange(1);
+        }}
+        showUnpaidFilter={dataView === "all-students"}
+        onRefresh={handleRefresh}
+        disabled={isLoading}
+        viewMode={viewMode}
+        onViewChange={() => setViewMode(viewMode === "card" ? "table" : "card")}
+      />
+
       <Card className="border-border">
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -242,24 +261,6 @@ export function FeesRosterContent({
                   Track and manage payments for this fee
                 </CardDescription>
               </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <SearchFilterBar
-                search={search}
-                onSearchChange={handleSearch}
-                filterStatus={filterStatus}
-                onFilterChange={handleFilterStatus}
-                showUnpaidFilter={dataView === "all-students"}
-                handleRefresh={handleRefresh}
-                isLoading={isLoading}
-              />
-              <ViewToggle
-                viewMode={viewMode}
-                onViewChange={() =>
-                  setViewMode(viewMode === "card" ? "table" : "card")
-                }
-              />
             </div>
           </div>
         </CardHeader>

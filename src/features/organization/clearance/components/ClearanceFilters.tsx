@@ -120,6 +120,17 @@ export function ClearanceFilters({
           </SelectContent>
         </Select>
 
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRefresh}
+          disabled={disabled || isLoading}
+          className="w-full h-10"
+        >
+          <RefreshCcw className={`h-4 w-4 mr-2 ${(disabled || isLoading) ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+
         {hasActiveFilters && (
           <div className="pt-2 border-t border-gray-200">
             <Button

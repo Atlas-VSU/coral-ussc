@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useFeesRoster } from "../hooks/useFeesRoster";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -24,6 +24,7 @@ export default function FeesRosterPage({
 }: FeesRosterPageProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [dataView, setDataView] = useState<"submissions" | "all-students">("submissions");
 
@@ -56,6 +57,29 @@ export default function FeesRosterPage({
     archiveFee,
     isSubmitting,
   } = useFeeAction(refetchStudentRow);
+
+  // Sync searchTerm with search
+  useEffect(() => {
+    setSearchTerm(search);
+  }, [search]);
+
+  const handleSearchCommit = () => {
+    setSearch(searchTerm);
+    setCurrentPage(1);
+  };
+
+  const handleSearchClear = () => {
+    setSearchTerm("");
+    setSearch("");
+    setCurrentPage(1);
+  };
+
+  const handleRefresh = async () => {
+    handleSearchClear();
+    setFilterStatus("all");
+    setCurrentPage(1);
+    refetch();
+  };
 
   if (isLoading && !fee) {
     return (
@@ -114,14 +138,20 @@ export default function FeesRosterPage({
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         search={search}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        handleSearchCommit={handleSearchCommit}
+        handleSearchClear={handleSearchClear}
+        handleRefresh={handleRefresh}
         setSearch={setSearch}
         filterStatus={filterStatus}
         setFilterStatus={setFilterStatus}
         dataView={dataView}
         setDataView={setDataView}
-        totalCount={totalCount} stats={stats}
+        totalCount={totalCount}
+        stats={stats}
         hasNextPage={hasNextPage}
-        />
-     </>
+      />
+    </>
   );
 }

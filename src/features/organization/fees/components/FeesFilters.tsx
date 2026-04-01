@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search, X } from "lucide-react";
+import { Search, X, RefreshCcw } from "lucide-react";
 import { useState } from "react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ViewToggle, ViewMode } from "@/components/organization/general/ViewToggle";
@@ -21,6 +21,7 @@ interface FeesFiltersProps {
   onTypeFilter: (type: string) => void;
   onSortBy: (sortBy: string) => void;
   typeFilter: string;
+  onRefresh: () => void;
   disabled?: boolean;
   viewMode: ViewMode;
   onViewChange: (mode: ViewMode) => void;
@@ -34,6 +35,7 @@ export function FeesFilters({
   onTypeFilter,
   onSortBy,
   typeFilter,
+  onRefresh,
   disabled = false,
   viewMode,
   onViewChange,
@@ -150,6 +152,17 @@ export function FeesFilters({
           </SelectContent>
         </Select>
 
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRefresh}
+          disabled={disabled}
+          className="w-full h-10"
+        >
+          <RefreshCcw className={`h-4 w-4 mr-2 ${disabled ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+
         {hasActiveFilters && (
           <div className="pt-2 border-t border-gray-200">
             <Button
@@ -225,6 +238,17 @@ export function FeesFilters({
               <SelectItem value="date-desc" className={lightSelectItemClass}>Date (Oldest First)</SelectItem>
             </SelectContent>
           </Select>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRefresh}
+            disabled={disabled}
+            className="h-9 px-3"
+          >
+            <RefreshCcw className={`h-4 w-4 mr-2 ${disabled ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
 
           {hasActiveFilters && (
             <Button

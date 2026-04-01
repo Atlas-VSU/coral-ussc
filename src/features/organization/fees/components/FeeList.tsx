@@ -58,6 +58,13 @@ export default function FeeListPage() {
     setCurrentPage(1)
   }
 
+  const handleRefresh = () => {
+    handleSearchClear()
+    setFilterStatus("all")
+    setSortBy("title-asc")
+    refetchFees()
+  }
+
   const handleFeeClick = (fee: { title: string; academicYear: string; id: string; amount?: number; semester?: string; description?: string; type?: string }) => {
     setNavigatingId(fee.id)
     // Stash basic fee metadata so the roster page can hydrate instantly
@@ -84,6 +91,7 @@ export default function FeeListPage() {
         }}
         onSortBy={setSortBy}
         typeFilter={filterStatus}
+        onRefresh={handleRefresh}
         disabled={isLoading}
         viewMode={viewMode}
         onViewChange={setViewMode}
@@ -100,7 +108,7 @@ export default function FeeListPage() {
               <CardDescription>{filtered.length} fee{filtered.length !== 1 ? "s" : ""} found</CardDescription>
             </div>
             <Button 
-              className="gap-1.5 bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 disabled:bg-green-300 disabled:text-green-100" 
+              variant="default"
               onClick={() => setGenerateOpen(true)}
             >
               <Zap className="size-4" /> Generate Fee

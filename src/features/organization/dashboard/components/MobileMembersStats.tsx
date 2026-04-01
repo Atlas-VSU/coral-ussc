@@ -305,14 +305,14 @@ export function MobileMembersStats({
                 setInternalSelectedEvent(event || null);
               }}
             >
-              <SelectTrigger className="w-full h-9 text-xs border-border">
+              <SelectTrigger className="w-full h-9 text-xs border-border py-1">
                 <SelectValue placeholder="Select event for analysis" />
               </SelectTrigger>
               <SelectContent className="max-h-72">
                 {Array.from(new Map(eventAttendance.map((e) => [e.id, e])).values()).map(
                   (event, index) => (
                     <SelectItem key={event.id} value={event.id} className="text-xs">
-                      <div className="flex flex-col gap-0.5">
+                      <div className="flex flex-col gap-0.5 text-left py-1">
                         <span className="font-medium text-foreground">
                           {String(index + 1).padStart(2, "0")}. {event.name}
                         </span>

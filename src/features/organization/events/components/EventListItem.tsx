@@ -309,17 +309,18 @@ export function EventListItem({
 
         {/* Action buttons */}
         {event.status !== "upcoming" && event.status !== "archived" && (
-          <div className="px-5 pb-4 flex flex-col sm:flex-row gap-2 border-t border-border pt-3">
+          <div className="flex flex-col sm:flex-row gap-2 px-5 pb-4">
             <Button
+              asChild
               variant="outline"
               size="sm"
-              className="w-full justify-center gap-1.5 text-xs font-semibold h-9 px-3"
+              className="justify-center gap-1.5 text-xs font-semibold h-9 px-3"
               onClick={handleViewAttendees}
               disabled={viewAttendeesLoading}
             >
               <Link
                 href={`/org-events/${event.id}/attendees`}
-                className="flex items-center gap-1.5 w-full justify-center"
+                className="items-center gap-1.5 w-full md:w-[50%] justify-center"
               >
                 {viewAttendeesLoading ? (
                   <>
@@ -338,8 +339,9 @@ export function EventListItem({
             {(event.status === "ongoing" || event.status === "completed") && (
               <Button
                 asChild
+                variant="default"
                 size="sm"
-                className="w-full justify-center gap-1.5 text-xs font-semibold h-9 px-3"
+                className="items-center gap-1.5 text-xs w-full md:w-[50%] justify-center"
                 onClick={handleLogAttendance}
                 disabled={logAttendanceLoading}
               >
