@@ -50,13 +50,13 @@ export function AllStudentsTable({
                   </Badge>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {log && log.status === PaymentStatus.VERIFIED ? `₱${(log.amount || 0).toLocaleString()}` : "—"}
+                  {log && (log.status === PaymentStatus.VERIFIED || log.status === PaymentStatus.PENDING) ? `₱${(log.amount || 0).toLocaleString()}` : "—"}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
-                    {log?.paidAt && log.status === PaymentStatus.VERIFIED ? (log.paidAt.toDate ? log.paidAt.toDate().toLocaleDateString() : log.paidAt.toString()) : "—"}
+                    {log?.paidAt && (log.status === PaymentStatus.VERIFIED || log.status === PaymentStatus.PENDING) ? (log.paidAt.toDate ? log.paidAt.toDate().toLocaleDateString() : log.paidAt.toString()) : "—"}
                 </TableCell>
                 <TableCell>
-                  {log && log.status === PaymentStatus.VERIFIED ? (
+                  {log && (log.status === PaymentStatus.VERIFIED || log.status === PaymentStatus.PENDING) ? (
                     <Button size="sm" variant="outline" onClick={() => onViewDetails(log)}>
                       <Eye className="size-3 mr-1" /> View Details
                     </Button>
@@ -110,9 +110,9 @@ export function AllStudentsCards({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-foreground">
-                  {log && log.status === PaymentStatus.VERIFIED ? `₱${(log.amount || 0).toLocaleString()}` : "—"}
+                  {log && (log.status === PaymentStatus.VERIFIED || log.status === PaymentStatus.PENDING)  ? `₱${(log.amount || 0).toLocaleString()}` : "—"}
                 </span>
-                {log && log.status === PaymentStatus.VERIFIED ? (
+                {log && (log.status === PaymentStatus.VERIFIED || log.status === PaymentStatus.PENDING) ? (
                   <Button size="sm" variant="outline" onClick={() => onViewDetails(log)}>
                     <Eye className="size-3 mr-1" /> View Details
                   </Button>
