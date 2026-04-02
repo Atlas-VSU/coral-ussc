@@ -12,15 +12,11 @@ import PaymentReceiptDialog from "@/components/organization/receipt/PaymentRecei
 const ITEMS_PER_PAGE = 9;
 
 interface FeesRosterPageProps {
-  title: string;
-  academicYear: string;
-  semester: string;
+  feeItemId: string
 }
 
 export default function FeesRosterPage({
-  title,
-  academicYear,
-  semester,
+  feeItemId
 }: FeesRosterPageProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -39,7 +35,7 @@ export default function FeesRosterPage({
     refetch,
     stats,
     hasNextPage,
-  } = useFeesRoster(title, academicYear, semester, {
+  } = useFeesRoster(feeItemId, {
     pageSize: ITEMS_PER_PAGE,
     currentPage,
     search,

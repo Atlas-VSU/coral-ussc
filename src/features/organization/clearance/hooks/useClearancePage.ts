@@ -115,7 +115,7 @@ export function useClearancePage(orgId: string | undefined) {
         });
         
         const overallStatus = Object.values(updatedBlocking).some(
-          i => (i.status === "unpaid" || i.balance > 0) && i.isRequiredForClearance
+          i => (i.status === "unpaid") && i.isRequiredForClearance
         ) ? "not_cleared" : "cleared";
         
         return { ...cl, blockingItems: updatedBlocking, status: overallStatus };

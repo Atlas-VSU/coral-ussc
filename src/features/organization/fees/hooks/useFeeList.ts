@@ -115,7 +115,7 @@ export function useFeeList() {
                 sumStudents += fee.totalStudents;
                 
                 return {
-                    id: `${groupKey}-${fee.feeType}-${fee.amount}`, 
+                    id: fee.id, 
                     title: fee.title,
                     type: fee.feeType,
                     amount: fee.amount,

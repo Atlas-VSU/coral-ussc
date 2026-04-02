@@ -145,7 +145,7 @@ export function FeesRosterFilters({
         <Button
           variant="outline"
           size="sm"
-          onClick={onRefresh}
+          onClick={handleClearAll}
           disabled={disabled}
           className="w-full h-10"
         >
@@ -226,7 +226,7 @@ export function FeesRosterFilters({
           <Button
             variant="outline"
             size="sm"
-            onClick={onRefresh}
+            onClick={handleClearAll}
             disabled={disabled}
             className="h-9 px-3"
           >
