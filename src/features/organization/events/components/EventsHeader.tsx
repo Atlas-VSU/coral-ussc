@@ -36,7 +36,7 @@ export function EventsHeader({ onSearch, onEventAdded }: EventsHeaderProps) {
               Events Management
             </h1>
             <p className="font-nunito-sans text-sm text-gray-600 dark:text-gray-400">
-              Manage your organisation's events and track attendance
+              Manage your organization's events and track attendance
             </p>
           </div>
         </div>

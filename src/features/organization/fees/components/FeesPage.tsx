@@ -30,7 +30,7 @@ export function FeesPage() {
         variant="admin"
         title="Fees Management"
         context="2nd Semester · A.Y. 2025–2026"
-        description="Manage your organisation's fees and track collection progress"
+        description="Manage your organization's fees and track collection progress"
       />
       
       <StatCardsCarousel className="grid-cols-3">

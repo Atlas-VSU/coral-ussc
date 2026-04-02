@@ -68,16 +68,16 @@ export default function EventsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 pb-5 lg:pb-0">
+    <div className="flex flex-col gap-4 sm:gap-6 pb-5 xl:pb-0">
       <EventsCacheLoader />
  
       <PageHeader
         variant="admin"
         title="Events Management"
         context="2nd Semester · A.Y. 2025–2026"
-        description="Manage your organisation's events and track attendance"
+        description="Manage your organization's events and track attendance"
         action={
-          <div className="hidden lg:flex">
+          <div className="hidden xl:flex">
             <Button size="sm" className="gap-1.5" onClick={handleAddEventClick}>
               <Plus className="size-4" /> Add Event
             </Button>
@@ -85,9 +85,10 @@ export default function EventsPage() {
         }
       />
 
+      {/* Mobile Add Event Button */}
       <Button
         size="sm"
-        className="lg:hidden w-full"
+        className="xl:hidden w-full h-11"
         onClick={handleAddEventClick}
       >
         <Plus className="size-4" /> Add Event
@@ -99,8 +100,8 @@ export default function EventsPage() {
         <Input
           ref={searchInputRef}
           type="text"
-          placeholder="Search events by name or location…"
-          className="pl-9 pr-9 h-10 bg-background"
+          placeholder="Search events…"
+          className="pl-9 pr-9 h-11 sm:h-10 bg-background text-base sm:text-sm"
           value={searchQuery}
           onChange={(e) => handleSearch(e.target.value)}
         />
@@ -108,11 +109,11 @@ export default function EventsPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="absolute right-2 top-1/2 -translate-y-1/2"
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9"
             onClick={() => handleSearch("")}
             aria-label="Clear search"
           >
-            <X className="h-3 w-3" />
+            <X className="h-4 w-4" />
           </Button>
         )}
       </div>
@@ -121,6 +122,7 @@ export default function EventsPage() {
       <Tabs
         value={currentTab}
         onValueChange={(v) => setCurrentTab(v as EventStatus)}
+        className="space-y-4 sm:space-y-6"
       >
         <EventsTabNavigation
           currentTab={currentTab}
@@ -129,17 +131,15 @@ export default function EventsPage() {
           isDesktop={!isMobile}
         />
 
-        <div className="flex flex-wrap items-center justify-between gap-3 mt-6">
-          <EventsFilters
-            onSetDate={handleDateChange}
-            onSortBy={handleSort}
-            viewMode={viewMode}
-            onViewChange={handleViewModeChange}
-            isDesktop={!isMobile}
-          />
-        </div>
+        <EventsFilters
+          onSetDate={handleDateChange}
+          onSortBy={handleSort}
+          viewMode={viewMode}
+          onViewChange={handleViewModeChange}
+          isDesktop={!isMobile}
+        />
 
-        <TabsContent value={currentTab} className="mt-6">
+        <TabsContent value={currentTab} className="mt-0">
           {loading ? (
             <EventsSkeletonLoader viewMode={viewMode} />
           ) : (
@@ -153,13 +153,11 @@ export default function EventsPage() {
       </Tabs>
 
       {!loading && totalPages > 0 && !searchQuery && (
-        <div className="flex justify-center mt-4">
-          <EventsPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
-        </div>
+        <EventsPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
       )}
 
       <AddEventDialog

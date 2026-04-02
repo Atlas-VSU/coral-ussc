@@ -197,7 +197,7 @@ export default function OrganizationLayout({
       />
       <div className="flex-1 flex flex-col min-w-0">
         <main className="flex-1">
-          <div className="mx-auto max-w-7xl pb-20 lg:pb-10 pt-18 px-5 sm:px-6 lg:px-8 lg:pt-10">
+          <div className="mx-auto max-w-7xl pb-20 xl:pb-10 pt-18 px-5 sm:px-6 xl:px-8 xl:pt-10">
             {children}
           </div>
         </main>

@@ -314,13 +314,13 @@ export function EventListItem({
               asChild
               variant="outline"
               size="sm"
-              className="justify-center gap-1.5 text-xs font-semibold h-9 px-3"
+              className="justify-center gap-1.5 text-xs w-full tablet:w-[50%] md:w-[50%] font-semibold h-9 px-3"
               onClick={handleViewAttendees}
               disabled={viewAttendeesLoading}
             >
               <Link
                 href={`/org-events/${event.id}/attendees`}
-                className="items-center gap-1.5 w-full md:w-[50%] justify-center"
+                
               >
                 {viewAttendeesLoading ? (
                   <>
@@ -341,7 +341,7 @@ export function EventListItem({
                 asChild
                 variant="default"
                 size="sm"
-                className="items-center gap-1.5 text-xs w-full md:w-[50%] justify-center"
+                className="items-center gap-1.5 text-xs w-full tablet:w-[50%] md:w-[50%] justify-center"
                 onClick={handleLogAttendance}
                 disabled={logAttendanceLoading}
               >

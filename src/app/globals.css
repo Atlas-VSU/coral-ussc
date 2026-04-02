@@ -234,6 +234,11 @@ body,
   }
 }
 
+@theme {
+  /* This creates a new 'tablet' breakpoint at 700px */
+  --breakpoint-tablet: 43.75rem; 
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
