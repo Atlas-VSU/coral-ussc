@@ -857,7 +857,7 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                         verifiedByName: adminName,
                         verifiedAt: Timestamp.now(),
                         rejectionReason: null,
-                        notes: `Bulk manual payment recorded by admin. Items: ${items.map(i => i.refId).join(', ')}`,
+                        notes: `Manual payment recorded from clearance page. Items: ${items.map(i => i.refId).join(', ')}`,
                         paymentType: overallPaymentType,
                         metadata: { items: itemDocsToUpdate.map(i => ({
                             refId: i.refId,
@@ -907,7 +907,7 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                 verifiedByName: adminName,
                 verifiedAt: Timestamp.now(),
                 rejectionReason: "",
-                notes: "Bulk manual payment recorded by admin",
+                notes: "Manual payment recorded from clearance page",
                 metadata: { items: itemDocsToUpdate.map(i => ({
                     refId: i.refId,
                     title: i.title,
