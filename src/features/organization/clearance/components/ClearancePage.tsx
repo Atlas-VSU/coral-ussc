@@ -18,6 +18,7 @@ import { ClearanceCard } from "./ClearanceCard"
 import { ClearanceTable } from "./ClearanceTable"
 import { LogManualPaymentDialog } from "./LogManualPaymentDialog"
 import { CardGridSkeleton } from "@/components/organization/skeleton/CardGridSkeleton"
+import { ITEMS_PER_PAGE } from "../config"
 
 interface ClearancePageProps {
   orgId: string | undefined
@@ -142,7 +143,7 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
             currentPage={currentPage}
             totalPages={totalPages}
             totalItems={totalCount}
-            itemsPerPage={10}
+            itemsPerPage={ITEMS_PER_PAGE}
             onPageChange={setCurrentPage}
             hasNextPage={hasNextPage}
           />

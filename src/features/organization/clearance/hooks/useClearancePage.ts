@@ -18,6 +18,7 @@ import { generateReceiptId } from "../../payments/utils"
 import { ProofOfPayment } from "../../fines/types"
 import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval"
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
+import { ITEMS_PER_PAGE } from "../config";
 
 export function useClearancePage(orgId: string | undefined) {
   const { user: currentUser } = useAuth()
@@ -32,11 +33,10 @@ export function useClearancePage(orgId: string | undefined) {
     not_cleared: 0,
     pending: 0,
   })
-  const pageSize = 10
 
   const { clearances, loading, totalCount, setClearances, hardRefresh: baseHardRefresh, hasNextPage } = useClearances(
     orgId,
-    pageSize,
+    ITEMS_PER_PAGE,
     search,
     filterStatus,
     currentPage
@@ -64,7 +64,7 @@ export function useClearancePage(orgId: string | undefined) {
   const selection = useManualPaymentSelection(logPaymentTarget)
 
   // Paginated and filtered data now comes directly from the server via useClearances
-  const totalPages = Math.ceil(totalCount / pageSize)
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
   const paginated = clearances // In server-side pagination, clearances only contains the current page
   const filtered = clearances // Simplified for backwards compatibility in UI if needed
 

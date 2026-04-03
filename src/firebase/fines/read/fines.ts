@@ -227,7 +227,7 @@ export const fetchFinesPaginated = async (
     constraints.push(startAfter(lastVisibleDoc));
   }
 
-  const q = query(finesCollection, ...constraints, limit(10));
+  const q = query(finesCollection, ...constraints);
   const snapshot = await getDocs(q);
 
   const docs = snapshot.docs.map((doc) => {
