@@ -54,8 +54,8 @@ export function AttendeesHeader({
         </div>
 
         {/* Right: action buttons */}
-        <div className="flex flex-wrap gap-3">
-          {(event.status === "ongoing" || event.status === "completed") && (
+        <div className={event.finesGenerated ? "flex flex-col sm:flex-col gap-2" : "flex flex-col sm:flex-row gap-2"}>
+          {(event.status === "ongoing" || event.status === "completed") && !event.finesGenerated && (
             <Button
               asChild
               className="justify-center gap-1.5 h-10 sm:h-9 text-xs font-bold"
