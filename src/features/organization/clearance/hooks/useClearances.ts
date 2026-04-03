@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { fetchClearanceDocumentsPaginated, getClearanceCount } from "@/firebase/clearance"
+import { fetchClearanceDocumentsPaginated, fetchStats, getClearanceCount } from "@/firebase/clearance"
 import { cacheService } from "@/services/cacheService"
 import type { ClearanceStatus } from "../types"
 
@@ -12,6 +12,11 @@ export function useClearances(
   statusFilter: string = "all",
   currentPage: number = 1
 ) {
+  const [stats, setStats] = useState<{ cleared: number; not_cleared: number; pending: number }>({
+    cleared: 0,
+    not_cleared: 0,
+    pending: 0,
+  })
   const [clearances, setClearances] = useState<ClearanceStatus[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -47,7 +52,29 @@ export function useClearances(
 
   useEffect(() => {
     fetchCount()
+    fetchStatsData()
   }, [fetchCount])
+
+  const fetchStatsData = useCallback(async () => {
+    if (!orgId) return
+
+    const cacheKey = `clearance:stats:${orgId}`
+    const cached = cacheService.get(cacheKey)
+    if (cached !== null && cached !== undefined) { 
+      const statsValue = typeof cached === 'object' && 'data' in (cached as any) 
+        ? (cached as any).data 
+        : cached;
+      setStats(statsValue as any)
+      return 
+    }
+
+    try {
+      setStats(await fetchStats(orgId) ?? stats)
+      cacheService.set(cacheKey, stats, 5 * 60 * 1000) 
+    } catch (err) {
+      console.error("Error fetching clearance stats:", err)
+    }
+  }, [orgId])
 
   const fetchData = useCallback(async () => {
     if (!orgId) return
@@ -102,7 +129,8 @@ export function useClearances(
 
       await Promise.all([
         fetchData(),
-        fetchCount()
+        fetchCount(),
+        fetchStatsData()
       ])
     } finally {
       setIsRefreshing(false)
@@ -116,6 +144,8 @@ export function useClearances(
     totalCount, 
     hasNextPage,
     setClearances, 
-    hardRefresh 
+    hardRefresh ,
+    stats,
+    fetchStatsData
   }
 }

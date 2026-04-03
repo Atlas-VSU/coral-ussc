@@ -28,13 +28,8 @@ export function useClearancePage(orgId: string | undefined) {
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [viewMode, setViewMode] = useState<ViewMode>("table")
   const [currentPage, setCurrentPage] = useState(1)
-  const [stats, setStats] = useState<{ cleared: number; not_cleared: number; pending: number }>({
-    cleared: 0,
-    not_cleared: 0,
-    pending: 0,
-  })
 
-  const { clearances, loading, totalCount, setClearances, hardRefresh: baseHardRefresh, hasNextPage } = useClearances(
+  const { clearances, loading, totalCount, setClearances, hardRefresh: baseHardRefresh, hasNextPage, stats, fetchStatsData } = useClearances(
     orgId,
     ITEMS_PER_PAGE,
     search,
@@ -258,14 +253,13 @@ export function useClearancePage(orgId: string | undefined) {
   const updateSearch = (v: string) => { setSearch(v); setPage(1) }
   const updateFilterStatus = (v: string) => { setFilterStatus(v); setPage(1) }
 
-    const handleHardRefresh = async () => {
-      if (!orgId) return;
-      cacheService.invalidate(`clearance:stats:${orgId}`)
-        await Promise.all([
-            baseHardRefresh(),
-            fetchStats(orgId)
-        ])
-    }
+  const handleHardRefresh = async () => {
+    if (!orgId) return;
+    cacheService.invalidate(`clearance:stats:${orgId}`)
+    await baseHardRefresh()
+  }
+
+
 
   return {
     // Data
