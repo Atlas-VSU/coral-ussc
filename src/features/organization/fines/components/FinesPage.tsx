@@ -167,24 +167,28 @@ export function FinesPage() {
           value={totalStudentsWithFines.toLocaleString()}
           description="Have at least one fine"
           icon={Users}
+          variant="info"
         />
         <StatCard
           title="Outstanding Balance"
           value={`₱${totalUnpaidFines.toLocaleString()}`}
           description="Total unpaid amount"
           icon={AlertTriangle}
+          variant="danger"
         />
         <StatCard
           title="Total Collected"
           value={`₱${totalCollectedFines.toLocaleString()}`}
           description="Total approved payments"
           icon={Banknote}
+          variant="success"
         />
         <StatCard
           title="Unsettled"
           value={totalUnsettled.toLocaleString()}
           description="Students with outstanding fines"
           icon={CircleDollarSign}
+          variant="warning"
         />
       </StatCardsCarousel>
 

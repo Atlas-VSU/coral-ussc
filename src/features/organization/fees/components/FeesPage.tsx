@@ -34,9 +34,27 @@ export function FeesPage() {
       />
       
       <StatCardsCarousel className="grid-cols-3">
-        <StatCard title="Total Fees" value={aggregatedFees.length} description="Active fee categories" icon={CircleDollarSign} />
-        <StatCard title="Total Collected" value={`₱${totalCollected.toLocaleString()}`} description="Across all fees" icon={DollarSign} />
-        <StatCard title="Avg. Collection Rate" value={`${avgCompletion}%`} description="Overall completion" icon={Users} />
+        <StatCard 
+          title="Total Fees" 
+          value={aggregatedFees.length} 
+          description="Active fee categories" 
+          icon={CircleDollarSign} 
+          variant="info"
+        />
+        <StatCard 
+          title="Total Collected" 
+          value={`₱${totalCollected.toLocaleString()}`} 
+          description="Across all fees" 
+          icon={DollarSign} 
+          variant="success"
+        />
+        <StatCard 
+          title="Avg. Collection Rate" 
+          value={`${avgCompletion}%`} 
+          description="Overall completion" 
+          icon={Users} 
+          variant="default"
+        />
       </StatCardsCarousel>
 
       <FeeListPage />

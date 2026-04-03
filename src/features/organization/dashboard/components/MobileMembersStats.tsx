@@ -250,6 +250,7 @@ export function MobileMembersStats({
                 description={`${studentStats.totalEvents} event${studentStats.totalEvents !== 1 ? "s" : ""} this semester`}
                 icon={Users}
                 isLoading={isLoading}
+                variant="info"
                 className={statCards[0].isComingSoon ? "opacity-60 cursor-not-allowed" : ""}
               />
               <StatCard
@@ -259,6 +260,7 @@ export function MobileMembersStats({
                 description="Total fees paid this semester"
                 icon={Banknote}
                 isLoading={isLoading}
+                variant="success"
                 className={statCards[1].isComingSoon ? "opacity-60 cursor-not-allowed" : ""}
               />
               <StatCard
@@ -268,6 +270,7 @@ export function MobileMembersStats({
                 description="Outstanding fines balance"
                 icon={AlertTriangle}
                 isLoading={isLoading}
+                variant="danger"
                 className={statCards[2].isComingSoon ? "opacity-60 cursor-not-allowed" : ""}
               />
               <StatCard
@@ -277,6 +280,7 @@ export function MobileMembersStats({
                 description="Percentage of students cleared"
                 icon={ShieldCheck}
                 isLoading={isLoading}
+                variant="neutral"
                 className="opacity-60 cursor-not-allowed"
               />
             </StatCardsCarousel>

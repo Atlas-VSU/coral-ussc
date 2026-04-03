@@ -1,6 +1,6 @@
 "use client"
 
-import { ShieldCheck } from "lucide-react"
+import { ShieldCheck, Clock, AlertTriangle } from "lucide-react"
 import { StatCard } from "@/components/organization/general/StatCard"
 import { StatCardsCarousel } from "@/components/organization/general/StatCardsCarousel"
 
@@ -11,9 +11,27 @@ export function ClearanceStats({ stats }: { stats: { cleared: number; not_cleare
 
   return (
     <StatCardsCarousel className="grid-cols-3">
-      <StatCard title="Cleared" value={cleared.toLocaleString()} description="Students fully cleared" icon={ShieldCheck} />
-      <StatCard title="Pending" value={pending.toLocaleString()} description="Awaiting requirements" icon={ShieldCheck} />
-      <StatCard title="Not Cleared" value={notCleared.toLocaleString()} description="Outstanding payments" icon={ShieldCheck} />
+      <StatCard 
+        title="Cleared" 
+        value={cleared.toLocaleString()} 
+        description="Students fully cleared" 
+        icon={ShieldCheck} 
+        variant="success"
+      />
+      <StatCard 
+        title="Pending" 
+        value={pending.toLocaleString()} 
+        description="Awaiting requirements" 
+        icon={Clock} 
+        variant="warning"
+      />
+      <StatCard 
+        title="Not Cleared" 
+        value={notCleared.toLocaleString()} 
+        description="Outstanding payments" 
+        icon={AlertTriangle} 
+        variant="danger"
+      />
     </StatCardsCarousel>
   )
 }
