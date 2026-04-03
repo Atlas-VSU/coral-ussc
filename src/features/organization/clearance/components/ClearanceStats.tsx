@@ -9,6 +9,7 @@ export function ClearanceStats({ stats }: { stats: { cleared: number; not_cleare
   const pending = stats.pending
   const notCleared = stats.not_cleared
 
+
   return (
     <StatCardsCarousel className="grid-cols-3">
       <StatCard 

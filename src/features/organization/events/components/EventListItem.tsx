@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import type { Event } from "../types"
 import { formatDate } from "@/utils/useGeneralUtils"
+import { cn } from "@/lib/utils"
 
 interface EventListItemProps {
   event: Event
@@ -309,12 +310,12 @@ export function EventListItem({
 
         {/* Action buttons */}
         {event.status !== "upcoming" && event.status !== "archived" && (
-          <div className="flex flex-col sm:flex-row gap-2 px-5 pb-4">
+          <div className={event.finesGenerated ? "grid gap-2 px-5 pb-4" : "flex flex-col sm:flex-row gap-2 px-5 pb-4"}>
             <Button
               asChild
               variant="outline"
               size="sm"
-              className="justify-center gap-1.5 text-xs w-full tablet:w-[50%] md:w-[50%] font-semibold h-9 px-3"
+              className={event.finesGenerated ? "justify-center gap-1.5 text-xs w-full font-semibold h-9 px-3" : "justify-center gap-1.5 text-xs w-full tablet:w-[50%] md:w-[50%] font-semibold h-9 px-3"}
               onClick={handleViewAttendees}
               disabled={viewAttendeesLoading}
             >
@@ -336,7 +337,7 @@ export function EventListItem({
               </Link>
             </Button>
 
-            {(event.status === "ongoing" || event.status === "completed") && (
+            {((event.status === "ongoing" || event.status === "completed") && !event.finesGenerated) && (
               <Button
                 asChild
                 variant="default"
