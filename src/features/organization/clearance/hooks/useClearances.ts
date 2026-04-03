@@ -31,46 +31,24 @@ export function useClearances(
   const fetchCount = useCallback(async () => {
     if (!orgId) return
 
-    const cacheKey = `clearance:count:${orgId}:${statusFilter}:${searchTerm}`
-    const cached = cacheService.get(cacheKey)
-    if (cached !== null && cached !== undefined) { 
-      const countValue = typeof cached === 'object' && 'data' in (cached as any) 
-        ? (cached as any).data 
-        : cached;
-      setTotalCount(countValue as any)
-      return 
-    }
-
     try {
       const count = await getClearanceCount(orgId, statusFilter, searchTerm)
-      cacheService.set(cacheKey, count, 5 * 60 * 1000) 
       setTotalCount(count)
     } catch (err) {
       console.error("Error fetching clearance count:", err)
     }
   }, [orgId, statusFilter, searchTerm])
 
-  useEffect(() => {
-    fetchCount()
-    fetchStatsData()
-  }, [fetchCount])
+  
 
   const fetchStatsData = useCallback(async () => {
     if (!orgId) return
 
-    const cacheKey = `clearance:stats:${orgId}`
-    const cached = cacheService.get(cacheKey)
-    if (cached !== null && cached !== undefined) { 
-      const statsValue = typeof cached === 'object' && 'data' in (cached as any) 
-        ? (cached as any).data 
-        : cached;
-      setStats(statsValue as any)
-      return 
-    }
-
     try {
-      setStats(await fetchStats(orgId) ?? stats)
-      cacheService.set(cacheKey, stats, 5 * 60 * 1000) 
+      const data = await fetchStats(orgId)
+      if (data) {
+        setStats(data)
+      }
     } catch (err) {
       console.error("Error fetching clearance stats:", err)
     }
@@ -111,8 +89,13 @@ export function useClearances(
   }, [orgId, pageSize, searchTerm, statusFilter, currentPage])
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    const init = async () => {
+      await fetchData()
+      await fetchStatsData()
+      await fetchCount()
+    }
+    init()
+  }, [fetchData, fetchStatsData, fetchCount])
 
   const hardRefresh = useCallback(async () => {
     if (!orgId || isRefreshing) return
