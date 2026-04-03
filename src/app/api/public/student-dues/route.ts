@@ -46,6 +46,11 @@ const isPendingSubmissionStatus = (status: unknown): boolean => {
   return status === "pending" || status === "pending";
 };
 
+const isVerifiedSubmissionStatus = (status: unknown): boolean => {
+  if (typeof status !== "string") return false;
+  return status === "verified";
+};
+
 const isBlockedByPaymentHistoryStatus = (status: unknown): boolean => {
   if (typeof status !== "string") return false;
   return status === "verified";
@@ -192,6 +197,12 @@ export async function GET(request: NextRequest) {
         orgId: string;
         feeAmount: number;
         fineAmount: number;
+        paymentSummary: {
+          pending: number;
+          verified: number;
+          rejected: number;
+          unpaid: number;
+        };
         fees: Array<{
           id: string;
           description: string;
@@ -201,7 +212,7 @@ export async function GET(request: NextRequest) {
           isPayable: boolean;
           academicYear: string;
           semester: string;
-          paymentState: "unpaid" | "pending" | "rejected";
+          paymentState: "unpaid" | "pending" | "rejected" | "verified";
         }>;
         fines: Array<{
           id: string;
@@ -211,7 +222,7 @@ export async function GET(request: NextRequest) {
           reason: string;
           latestRejectionReason?: string;
           isPayable: boolean;
-          paymentState: "unpaid" | "pending" | "rejected";
+          paymentState: "unpaid" | "pending" | "rejected" | "verified";
         }>;
         fineItems: Array<{
           refId: string,
@@ -238,32 +249,42 @@ export async function GET(request: NextRequest) {
         (paymentDoc) => paymentDoc.data() as PaymentLogRecord
       );
 
-      if (feePaymentLogs.some((log) => isBlockedByPaymentHistoryStatus(log.status))) continue;
-
       const latestRejectionReason = getLatestRejectedReason(feePaymentLogs);
       const hasPendingSubmission =
         isPendingSubmissionStatus(fee.status) ||
         feePaymentLogs.some((log) => isPendingSubmissionStatus(log.status));
-      const isPayable = !hasPendingSubmission;
-      const paymentState: "unpaid" | "pending" | "rejected" = hasPendingSubmission
+      const hasVerifiedSubmission = feePaymentLogs.some((log) => isVerifiedSubmissionStatus(log.status));
+      const isPayable = !hasPendingSubmission && !hasVerifiedSubmission;
+      const paymentState: "unpaid" | "pending" | "rejected" | "verified" = hasPendingSubmission
         ? "pending"
+        : hasVerifiedSubmission
+          ? "verified"
         : latestRejectionReason
           ? "rejected"
           : "unpaid";
 
       const outstanding = asNumber(fee.balance) > 0 ? asNumber(fee.balance) : asNumber(fee.amount);
-      if (outstanding <= 0) continue;
-
       const existing = grouped.get(fee.orgId) ?? {
         orgId: fee.orgId,
         feeAmount: 0,
         fineAmount: 0,
+        paymentSummary: {
+          pending: 0,
+          verified: 0,
+          rejected: 0,
+          unpaid: 0,
+        },
         fees: [],
         fines: [],
         fineItems:[],
       };
 
-      existing.feeAmount += outstanding;
+      if (paymentState === "pending") existing.paymentSummary.pending += 1;
+      else if (paymentState === "verified") existing.paymentSummary.verified += 1;
+      else if (paymentState === "rejected") existing.paymentSummary.rejected += 1;
+      else existing.paymentSummary.unpaid += 1;
+
+      existing.feeAmount += outstanding > 0 ? outstanding : 0;
       existing.fees.push({
         id: fee.id,
         description: fee.title || fee.feeType || "Outstanding Fee",
@@ -293,23 +314,22 @@ export async function GET(request: NextRequest) {
         (paymentDoc) => paymentDoc.data() as PaymentLogRecord
       );
 
-      if (finePaymentLogs.some((log) => isBlockedByPaymentHistoryStatus(log.status))) continue;
-
       const latestRejectionReason = getLatestRejectedReason(finePaymentLogs);
       const hasPendingSubmission =
         isPendingSubmissionStatus(fine.status) ||
         finePaymentLogs.some((log) => isPendingSubmissionStatus(log.status));
-      const isPayable = !hasPendingSubmission;
-      const paymentState: "unpaid" | "pending" | "rejected" = hasPendingSubmission
+      const hasVerifiedSubmission = finePaymentLogs.some((log) => isVerifiedSubmissionStatus(log.status));
+      const isPayable = !hasPendingSubmission && !hasVerifiedSubmission;
+      const paymentState: "unpaid" | "pending" | "rejected" | "verified" = hasPendingSubmission
         ? "pending"
+        : hasVerifiedSubmission
+          ? "verified"
         : latestRejectionReason
           ? "rejected"
           : "unpaid";
 
       const outstanding =
         asNumber(fine.balance) > 0 ? asNumber(fine.balance) : asNumber(fine.accumulatedAmount);
-      if (outstanding <= 0) continue;
-
       const items = [] 
       if (fine && fineItems) {
         for (const doc of fineItems.docs) {
@@ -333,12 +353,23 @@ export async function GET(request: NextRequest) {
         orgId: fine.orgId,
         feeAmount: 0,
         fineAmount: 0,
+        paymentSummary: {
+          pending: 0,
+          verified: 0,
+          rejected: 0,
+          unpaid: 0,
+        },
         fees: [],
         fines: [],
         fineItems: [],
       };
 
-      existing.fineAmount += outstanding;
+      if (paymentState === "pending") existing.paymentSummary.pending += 1;
+      else if (paymentState === "verified") existing.paymentSummary.verified += 1;
+      else if (paymentState === "rejected") existing.paymentSummary.rejected += 1;
+      else existing.paymentSummary.unpaid += 1;
+
+      existing.fineAmount += outstanding > 0 ? outstanding : 0;
       existing.fines.push({
         id: fine.id,
         description: fine.reason || "Outstanding Fine",
@@ -378,6 +409,7 @@ export async function GET(request: NextRequest) {
           outstandingAmount: due.feeAmount + due.fineAmount,
           feeAmount: due.feeAmount,
           fineAmount: due.fineAmount,
+          paymentSummary: due.paymentSummary,
           fees: due.fees,
           fines: due.fines,
           fineItems: due.fineItems,

@@ -22,6 +22,12 @@ export interface OrganizationData {
   name: string;
   acronym: string;
   outstandingAmount: number;
+  paymentSummary?: {
+    pending: number;
+    verified: number;
+    rejected: number;
+    unpaid: number;
+  };
 }
 
 export interface FeeItem {
@@ -61,6 +67,12 @@ export interface Fine {
 interface OrganizationDueData extends OrganizationData {
   feeAmount: number;
   fineAmount: number;
+  paymentSummary?: {
+    pending: number;
+    verified: number;
+    rejected: number;
+    unpaid: number;
+  };
   fees: FeeItem[];
   fines: Fine[];
   fineItems: FineItem[];
@@ -108,6 +120,7 @@ export default function PaymentPage() {
           name: org.name,
           acronym: org.acronym,
           outstandingAmount: Number(org.outstandingAmount ?? 0),
+          paymentSummary: org.paymentSummary ?? { pending: 0, verified: 0, rejected: 0, unpaid: 0 },
           feeAmount: Number(org.feeAmount ?? 0),
           fineAmount: Number(org.fineAmount ?? 0),
           fees: Array.isArray(org.fees) ? org.fees : [],
@@ -173,6 +186,7 @@ export default function PaymentPage() {
             name: org.name,
             acronym: org.acronym,
             outstandingAmount: org.outstandingAmount,
+            paymentSummary: org.paymentSummary,
           }))}
           currentStep={2}
           isLoading={isLoadingDues}

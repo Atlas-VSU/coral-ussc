@@ -22,8 +22,56 @@ interface Organization {
   name: string;
   acronym: string;
   outstandingAmount: number;
+  paymentSummary?: {
+    pending: number;
+    verified: number;
+    rejected: number;
+    unpaid: number;
+  };
   description?: string;
 }
+
+const getOrganizationStatus = (organization: Organization) => {
+  const summary = organization.paymentSummary ?? {
+    pending: 0,
+    verified: 0,
+    rejected: 0,
+    unpaid: 0,
+  };
+
+  if (summary.pending > 0) {
+    return {
+      label: "Pending review",
+      className: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300",
+    };
+  }
+
+  if (summary.verified > 0) {
+    return {
+      label: "Verified by admin",
+      className: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300",
+    };
+  }
+
+  if (summary.rejected > 0) {
+    return {
+      label: "Rejected",
+      className: "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300",
+    };
+  }
+
+  if (organization.outstandingAmount > 0 || summary.unpaid > 0) {
+    return {
+      label: "Outstanding dues",
+      className: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300",
+    };
+  }
+
+  return {
+    label: "No outstanding dues",
+    className: "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300",
+  };
+};
 
 interface OrganizationSelectionPageProps {
   studentData: StudentData;
@@ -117,7 +165,7 @@ export default function OrganizationSelectionPage({
               </div>
             ) : organizations.length === 0 ? (
               <div className="py-10 text-center space-y-2">
-                <p className="text-sm text-muted-foreground">No outstanding dues found for this student.</p>
+                <p className="text-sm text-muted-foreground">No organization payment records found for this student.</p>
                 {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
               </div>
             ) : (
@@ -145,6 +193,9 @@ export default function OrganizationSelectionPage({
                             <Badge variant="secondary" className="text-[10px] sm:text-xs shrink-0">
                               {org.acronym}
                             </Badge>
+                            <Badge variant="outline" className={`text-[10px] sm:text-xs shrink-0 ${getOrganizationStatus(org).className}`}>
+                              {getOrganizationStatus(org).label}
+                            </Badge>
                           </div>
                           {org.description && (
                             <p className="mb-2 text-xs sm:text-sm text-muted-foreground leading-relaxed break-words">
@@ -165,6 +216,15 @@ export default function OrganizationSelectionPage({
                               ₱{org.outstandingAmount.toFixed(2)}
                             </span>
                           </div>
+                          {org.paymentSummary && (org.paymentSummary.pending > 0 || org.paymentSummary.verified > 0 || org.paymentSummary.rejected > 0) && (
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              {org.paymentSummary.pending > 0 && `${org.paymentSummary.pending} pending`}
+                              {org.paymentSummary.pending > 0 && org.paymentSummary.verified > 0 ? " · " : ""}
+                              {org.paymentSummary.verified > 0 && `${org.paymentSummary.verified} verified`}
+                              {(org.paymentSummary.pending > 0 || org.paymentSummary.verified > 0) && org.paymentSummary.rejected > 0 ? " · " : ""}
+                              {org.paymentSummary.rejected > 0 && `${org.paymentSummary.rejected} rejected`}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <ChevronRight
