@@ -32,7 +32,7 @@ interface Organization {
   description?: string;
 }
 
-const getStatusBadge = (status: "unpaid" | "pending" | "rejected" | "verified") => {
+const getStatusBadge = (status: "unpaid" | "pending" | "rejected" | "verified" | "cleared") => {
   switch (status) {
     case "pending":
       return {
@@ -50,6 +50,15 @@ const getStatusBadge = (status: "unpaid" | "pending" | "rejected" | "verified") 
         className: "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300",
       };
     case "unpaid":
+      return {
+        label: "Unpaid",
+        className: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300",
+      };
+    case "cleared":
+      return {
+        label: "Cleared",
+        className: "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300",
+      };
     default:
       return {
         label: "Unpaid",
@@ -210,11 +219,13 @@ export default function OrganizationSelectionPage({
                               {org.acronym}
                             </Badge>
                             {(() => {
-                              const summaryStates: Array<"unpaid" | "pending" | "rejected" | "verified"> = org.statusStates && org.statusStates.length > 0
+                              const summaryStates: Array<"unpaid" | "pending" | "rejected" | "verified" | "cleared"> = org.statusStates && org.statusStates.length > 0
                                 ? org.statusStates
                                 : org.outstandingAmount > 0 || (org.paymentSummary?.unpaid ?? 0) > 0
                                   ? ["unpaid"]
-                                  : [];
+                                  : isPayable
+                                    ? []
+                                    : ["cleared"];
 
                               return summaryStates.map((status) => {
                                 const badge = getStatusBadge(status);
