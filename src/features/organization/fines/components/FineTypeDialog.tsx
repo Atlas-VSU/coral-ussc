@@ -143,7 +143,7 @@ export function FineTypeDialog({
                   Manage fine types, their amounts, and requirements.
                 </DialogDescription>
               </div>
-              <DialogClose className="absolute right-4 top-4 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-nonet data-[state=open]:text-muted-foreground z-20 p-0 rounded-md border-transparent hover:scale-125 hover:text-accent-foreground focus-visible:ring-accent/50 data-[state=open]:bg-accent">
+              <DialogClose className="absolute right-4 top-4 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:text-muted-foreground z-20 p-0 rounded-md border-transparent hover:scale-125 hover:text-accent-foreground focus-visible:ring-accent/50 data-[state=open]:bg-accent">
                 <X className="h-4 w-4 text-muted-foreground" />
                 <span className="sr-only">Close</span>
               </DialogClose>
