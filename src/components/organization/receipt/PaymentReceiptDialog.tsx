@@ -117,7 +117,7 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
 
             <hr />
             <div class="footer">
-              <p>Payment Method: ${data.paymentMethod.toLocaleUpperCase()}</p>
+              <p>Payment Method: ${data.paymentMethod?.toLocaleUpperCase()}</p>
               <p>Verified by ${data.verifiedByName}</p>
             </div>
             <p class="footer-note">This serves as an official proof of payment.</p>
@@ -150,7 +150,7 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Payment Receipts</DialogTitle>
+          <DialogTitle>Payment Receipt</DialogTitle>
           <DialogDescription>Preview before printing</DialogDescription>
         </DialogHeader>
 
@@ -223,7 +223,7 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
 
           {/* Footer */}
           <div className="text-center text-xs space-y-1">
-            <p>Payment Method: {data.paymentMethod.toLocaleUpperCase()}</p>
+            <p>Payment Method: {data.paymentMethod?.toLocaleUpperCase()}</p>
             <p>Verified by {data.verifiedByName}</p>
           </div>
 
