@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { Zap, ChevronRight, CircleDollarSign, Loader2 } from "lucide-react"
 
+import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {

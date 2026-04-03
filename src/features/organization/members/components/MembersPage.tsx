@@ -78,8 +78,7 @@ export function MembersPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [isBulkImportOpenResult, setIsBulkImportOpenResult] = useState(false);
-  const [bulkImportResult, setBulkImportResult] =
-    useState<BulkImportResult | null>(null);
+  const [bulkImportResult, setBulkImportResult] = useState<BulkImportResult | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -199,9 +198,7 @@ export function MembersPage() {
               onClick={refreshData}
               disabled={isBusy}
             >
-              <RefreshCcw
-                className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-              />
+              <RefreshCcw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
               Refresh
             </Button>
             <Button

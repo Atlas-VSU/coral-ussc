@@ -233,7 +233,7 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" className="!bg-white text-black" onClick={() => onOpenChange(false)}>
             Close
           </Button>
           <Button 
