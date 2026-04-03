@@ -187,6 +187,7 @@ export default function PaymentsPage() {
             onOpenReview={openReview}
             isLoading={isLoading}
             totalCount={totalSubmissionCount}
+            filterStatus={filterStatus}
           />
         ) : (
           <UnpaidTab
