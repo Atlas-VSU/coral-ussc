@@ -80,15 +80,27 @@ export default function FeesRosterPage({
   if (isLoading && !fee) {
     return (
       <div className="flex flex-col gap-6 pb-5 lg:pb-0">
-        <div className="flex flex-col gap-1">
-          <Skeleton className="h-4 w-16" />
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-96" />
-        </div>
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full" />
-          ))}
+        <div
+          className="rounded-xl px-4 sm:px-6 py-4 sm:py-6 animate-pulse"
+          style={{
+            background:
+              "linear-gradient(135deg, #ffffff 10%, #EAF3DE 100%, #C0DD97 100%)",
+            boxShadow: "0 4px 24px 0 rgba(5,140,17,0.08)",
+          }}
+        >
+          <div className="flex flex-col gap-4">
+            <Skeleton className="h-8 w-16 bg-white/50" />
+            <Skeleton className="h-8 w-64 bg-white/50" />
+            <Skeleton className="h-4 w-96 bg-white/50" />
+            <div
+              className="h-px w-full my-2 bg-white/50"
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-20 w-full bg-white" />
+              ))}
+            </div>
+          </div>
         </div>
         <Skeleton className="h-64 w-full" />
       </div>
@@ -98,13 +110,22 @@ export default function FeesRosterPage({
   if (error || !fee) {
     return (
       <div className="flex flex-col gap-6 pb-5 lg:pb-0">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            {error?.message || "Fee not found. Please check the title and academic year."}
-          </AlertDescription>
-        </Alert>
+        <div
+          className="rounded-xl px-4 sm:px-6 py-4 sm:py-6"
+          style={{
+            background:
+              "linear-gradient(135deg, #ffffff 10%, #EAF3DE 100%, #C0DD97 100%)",
+            boxShadow: "0 4px 24px 0 rgba(5,140,17,0.08)",
+          }}
+        >
+          <Alert variant="destructive" className="bg-white border-red-200">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              {error?.message || "Fee not found. Please check the title and academic year."}
+            </AlertDescription>
+          </Alert>
+        </div>
       </div>
     );
   }

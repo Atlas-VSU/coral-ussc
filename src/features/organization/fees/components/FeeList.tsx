@@ -4,12 +4,11 @@ import { useRouter } from "next/navigation"
 import { Zap, ChevronRight, CircleDollarSign, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { useFeeList } from "@/features/organization/fees/hooks/useFeeList"
 import { usePaginatedMembers } from "@/features/organization/members/hooks/usePaginatedMembers"
 import { useFeeListUI } from "@/features/organization/fees/hooks/useFeeListUI"
@@ -17,6 +16,7 @@ import { feeTypeLabels, feeTypeVariant } from "@/features/organization/fees/cons
 import { FeeGenerationDialog } from "./AddFeeDialog"
 import { FeesFilters } from "./FeesFilters"
 import { useState, useEffect } from "react"
+import React from "react"
 import { CardGridSkeleton } from "@/components/organization/skeleton/CardGridSkeleton"
 import { TableSkeleton } from "@/components/organization/skeleton/TableSkeleton"
 import { Progress } from "@/components/ui/progress"
@@ -153,56 +153,118 @@ export default function FeeListPage() {
                 ? Math.round((fee.paidCount / fee.totalStudents) * 100)
                 : 0
               return (
-                <Card
-                  key={fee.id}
-                  className={`group hover:shadow-md transition-shadow border-border bg-card overflow-hidden cursor-pointer ${navigatingId === fee.id ? "opacity-60 pointer-events-none" : ""}`}
-                  onClick={() => handleFeeClick(fee)}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-base font-semibold truncate mb-2">{fee.title}</CardTitle>
-                        <Badge variant={feeTypeVariant[fee.type]} className="w-fit text-xs">
-                          {feeTypeLabels[fee.type] || fee.type}
-                        </Badge>
-                      </div>
-                      {navigatingId === fee.id
-                        ? <Loader2 className="size-4 text-muted-foreground shrink-0 mt-0.5 animate-spin" />
-                        : <ChevronRight className="size-4 text-muted-foreground shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      }
-                    </div>
-                  </CardHeader>
-
-                  <Separator className="mx-0" />
-
-                  <CardContent className="pt-4 pb-3">
-                    {fee.description && (
-                      <p className="text-xs text-muted-foreground mb-4 line-clamp-2 leading-relaxed">{fee.description}</p>
-                    )}
-                    
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">Amount</span>
-                        <span className="text-sm font-semibold text-foreground">₱{fee.amount.toLocaleString()}</span>
+                <React.Fragment key={fee.id}>
+                  {/* Mobile Layout (< md) */}
+                  <Card
+                    className={`md:hidden group hover:shadow-md active:shadow-sm transition-all duration-200 border-border bg-card overflow-hidden ${navigatingId === fee.id ? "opacity-60 pointer-events-none" : ""}`}
+                    onClick={() => handleFeeClick(fee)}
+                  >
+                    <CardContent className="p-0">
+                      <div className="w-full p-3 flex items-center gap-3 text-left active:bg-muted/50 transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-sm text-foreground truncate">
+                              {fee.title}
+                            </h3>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Badge variant={feeTypeVariant[fee.type]} className="text-xs px-1.5 py-0.5">
+                              {feeTypeLabels[fee.type] || fee.type}
+                            </Badge>
+                            <span className="text-muted-foreground">•</span>
+                            <span className="text-xs text-muted-foreground">₱{fee.amount.toLocaleString()}</span>
+                          </div>
+                        </div>
+                        {navigatingId === fee.id
+                          ? <Loader2 className="size-4 text-muted-foreground shrink-0 animate-spin" />
+                          : <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+                        }
                       </div>
                       
-                      <div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-                          <span className="font-medium">Collection Progress</span>
-                          <span className="font-semibold">{fee.paidCount} / {fee.totalStudents}</span>
+                      <div className="overflow-hidden">
+                        <div className="px-3 pb-3 space-y-2 border-t border-border pt-2">
+                          <div className="flex items-center gap-2 text-xs">
+                            <Zap className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-muted-foreground">
+                              {fee.paidCount} / {fee.totalStudents} collected ({progress}%)
+                            </span>
+                          </div>
+                          <Progress value={progress} className="h-1.5" />
+                          {fee.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed pt-1">
+                              {fee.description}
+                            </p>
+                          )}
                         </div>
-                        <Progress value={progress} className="h-2" />
-                        <p className="text-xs text-muted-foreground mt-1">{progress}% collected</p>
                       </div>
-                    </div>
-                  </CardContent>
+                    </CardContent>
+                  </Card>
 
-                  <CardFooter className="pt-3 border-t border-border">
-                    <p className="text-xs text-muted-foreground">
-                      {fee.semester ? fee.semester + " Semester" : ""}{fee.academicYear ? " · " + fee.academicYear : ""}
-                    </p>
-                  </CardFooter>
-                </Card>
+                  {/* Desktop Layout (>= md) */}
+                  <Card
+                    className={`hidden md:flex group hover:shadow-lg transition-all duration-300 border-border bg-card overflow-hidden cursor-pointer h-full flex-col ${navigatingId === fee.id ? "opacity-60 pointer-events-none" : ""}`}
+                    onClick={() => handleFeeClick(fee)}
+                  >
+                    <CardHeader className="px-5 pt-5 pb-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap gap-1.5 mb-3">
+                            <Badge variant={feeTypeVariant[fee.type]} className="text-xs px-2.5 py-1">
+                              {feeTypeLabels[fee.type] || fee.type}
+                            </Badge>
+                          </div>
+                          <CardTitle className="text-base font-bold text-foreground leading-tight truncate">
+                            {fee.title}
+                          </CardTitle>
+                          {fee.description && (
+                            <p className="text-xs text-muted-foreground mt-2 line-clamp-2 leading-relaxed">{fee.description}</p>
+                          )}
+                        </div>
+                        {navigatingId === fee.id
+                          ? <Loader2 className="size-4 text-muted-foreground shrink-0 animate-spin opacity-0 group-hover:opacity-100 transition-opacity" />
+                          : <ChevronRight className="size-4 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        }
+                      </div>
+                    </CardHeader>
+
+                    <div className="border-t border-border mx-5" />
+
+                    <CardContent className="px-5 py-4 flex-1 flex flex-col gap-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                          <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Amount</p>
+                          <p className="text-sm font-semibold text-foreground">₱{fee.amount.toLocaleString()}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                          <Zap className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Collection Progress</p>
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground font-medium">{fee.paidCount} / {fee.totalStudents}</span>
+                              <span className="text-muted-foreground font-semibold">{progress}%</span>
+                            </div>
+                            <Progress value={progress} className="h-2" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-auto pt-3 border-t border-border">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Period</p>
+                        <p className="text-xs text-muted-foreground">
+                          {fee.semester ? fee.semester + " Semester" : ""}{fee.academicYear ? " · " + fee.academicYear : ""}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </React.Fragment>
               )
             })}
           </div>

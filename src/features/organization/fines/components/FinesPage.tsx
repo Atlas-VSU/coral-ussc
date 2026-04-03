@@ -18,8 +18,6 @@ import {
   TableCell,
   Table,
 } from "@/components/ui/table";
-import { TableSkeleton } from "@/components/organization/skeleton/TableSkeleton";
-import { CardGridSkeleton } from "@/components/organization/skeleton/CardGridSkeleton";
 import { BulkGenerationDialog } from "@/features/organization/fines/components/BulkGenerationDialog";
 import { FineType, StudentFines } from "@/features/organization/fines/types";
 import {
@@ -32,9 +30,10 @@ import {
   Eye,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { TableSkeleton } from "@/components/organization/skeleton/TableSkeleton";
+import { CardGridSkeleton } from "@/components/organization/skeleton/CardGridSkeleton";
+import React, { useState, useEffect } from "react";
 import { FineBreakdownDialog } from "@/features/organization/fines/components/FineBreakdownDialog";
 import { FineTypeDialog } from "@/features/organization/fines/components/FineTypeDialog";
 import { FinesFilters } from "@/features/organization/fines/components/FinesFilters";
@@ -319,72 +318,144 @@ export function FinesPage() {
               {paginatedFines.map((fine) => {
                 const cfg = getVariantFineType(fine.status);
                 return (
-                  <Card
-                    key={fine.studentId}
-                    className="group border-border bg-card hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => openBreakdown(fine)}
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <CardTitle className="text-base font-semibold truncate">
-                            {fine.userName}
-                          </CardTitle>
-                          <CardDescription className="text-xs mt-0.5">
-                            {fine.studentId}
-                          </CardDescription>
+                  <React.Fragment key={fine.id}>
+                    {/* Mobile Layout (< md) */}
+                    <Card
+                      className="md:hidden group hover:shadow-md active:shadow-sm transition-all duration-200 border-border bg-card overflow-hidden cursor-pointer"
+                      onClick={() => openBreakdown(fine)}
+                    >
+                      <CardContent className="p-0">
+                        <div className="w-full p-3 flex items-center gap-3 text-left active:bg-muted/50 transition-colors">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold text-sm text-foreground truncate">
+                                {fine.userName}
+                              </h3>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Badge variant={cfg} className="capitalize text-xs px-1.5 py-0.5">
+                                {fine.status}
+                              </Badge>
+                              <span className="text-muted-foreground">•</span>
+                              <span className="text-xs text-muted-foreground">{fine.studentId}</span>
+                            </div>
+                          </div>
+                          <ChevronRight className="size-4 text-muted-foreground shrink-0" />
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={cfg}
-                            className="capitalize text-xs shrink-0"
-                          >
-                            {fine.status}
-                          </Badge>
+                        
+                        <div className="overflow-hidden">
+                          <div className="px-3 pb-3 space-y-2 border-t border-border pt-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">Total</span>
+                              <span className="font-semibold text-foreground">₱{fine.accumulatedAmount.toLocaleString()}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">Paid</span>
+                              <span className="font-semibold text-green-600">₱{fine.paidAmount.toLocaleString()}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">Balance</span>
+                              <span className="font-semibold text-foreground">₱{fine.balance.toLocaleString()}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs pt-1">
+                              <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              <span className="text-muted-foreground">
+                                {fine.fineItemsCount.toLocaleString()} fine{fine.fineItemsCount !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Desktop Layout (>= md) */}
+                    <Card
+                      className="hidden md:flex group border-border bg-card hover:shadow-lg transition-all duration-300 cursor-pointer h-full flex-col overflow-hidden"
+                      onClick={() => openBreakdown(fine)}
+                    >
+                      <CardHeader className="px-5 pt-5 pb-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap gap-1.5 mb-3">
+                              <Badge
+                                variant={cfg}
+                                className="capitalize text-xs px-2.5 py-1"
+                              >
+                                {fine.status}
+                              </Badge>
+                            </div>
+                            <CardTitle className="text-base font-bold text-foreground leading-tight">
+                              {fine.userName}
+                            </CardTitle>
+                            <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">
+                              <span>{fine.studentId}</span>
+                            </div>
+                          </div>
                           <ChevronRight className="size-4 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
-                      </div>
-                    </CardHeader>
+                      </CardHeader>
 
-                    <Separator className="mx-0" />
+                      <div className="border-t border-border mx-5" />
 
-                    <CardContent className="flex flex-col gap-3 pt-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
-                            # Fines
-                          </p>
-                          <p className="text-sm font-semibold text-foreground">
-                            {fine.fineItemsCount.toLocaleString()}
-                          </p>
+                      <CardContent className="px-5 py-4 flex-1 flex flex-col gap-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">
+                              # Fines
+                            </p>
+                            <p className="text-sm font-semibold text-foreground">
+                              {fine.fineItemsCount.toLocaleString()}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
-                            Total Amount
-                          </p>
-                          <p className="text-sm font-semibold text-foreground">
-                            ₱{fine.accumulatedAmount.toLocaleString()}
-                          </p>
+
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                            <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">
+                              Total Amount
+                            </p>
+                            <p className="text-sm font-semibold text-foreground">
+                              ₱{fine.accumulatedAmount.toLocaleString()}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
-                            Amount Paid
-                          </p>
-                          <p className="text-sm font-semibold text-green-600">
-                            ₱{fine.paidAmount.toLocaleString()}
-                          </p>
+
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                            <Banknote className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">
+                              Amount Paid
+                            </p>
+                            <p className="text-sm font-semibold text-green-600">
+                              ₱{fine.paidAmount.toLocaleString()}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
-                            Balance
-                          </p>
-                          <p className="text-sm font-semibold text-foreground">
-                            ₱{fine.balance.toLocaleString()}
-                          </p>
+
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">
+                              Balance
+                            </p>
+                            <p className="text-sm font-semibold text-foreground">
+                              ₱{fine.balance.toLocaleString()}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  </React.Fragment>
                 );
               })}
             </div>

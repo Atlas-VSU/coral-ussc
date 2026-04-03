@@ -6,8 +6,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { statusConfig } from "@/features/organization/fees/utils/statusConfig";
 import type { PaymentLog } from "@/features/organization/fees/types";
+import { EmptyState } from "@/components/organization/general/EmptyState";
 
-export function PaymentTable({ logs, onViewDetails }: { logs: PaymentLog[]; onViewDetails: (log: PaymentLog) => void }) {
+export function PaymentTable({ 
+  logs, 
+  onViewDetails,
+  filterStatus = "all",
+}: { 
+  logs: PaymentLog[]; 
+  onViewDetails: (log: PaymentLog) => void;
+  filterStatus?: string;
+}) {
   return (
     <div className="rounded-md border border-border">
       <Table>
@@ -22,7 +31,14 @@ export function PaymentTable({ logs, onViewDetails }: { logs: PaymentLog[]; onVi
           </TableRow>
         </TableHeader>
         <TableBody>
-          {logs.map((log) => {
+          {logs.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="p-0 border-none">
+                <EmptyState filterStatus={filterStatus} type="submissions" />
+              </TableCell>
+            </TableRow>
+          ) : (
+            logs.map((log) => {
             const config = statusConfig[log?.status] || { label: log?.status || "Unknown", variant: "default" };
             const Icon = config?.icon ?? CheckCircle2;
             return (
@@ -45,21 +61,26 @@ export function PaymentTable({ logs, onViewDetails }: { logs: PaymentLog[]; onVi
                 </TableCell>
               </TableRow>
             );
-          })}
-          {logs.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
-                No payment submissions found
-              </TableCell>
-            </TableRow>
-          )}
+          }))}
         </TableBody>
       </Table>
     </div>
   );
 }
 
-export function PaymentCards({ logs, onViewDetails }: { logs: PaymentLog[]; onViewDetails: (log: PaymentLog) => void }) {
+export function PaymentCards({ 
+  logs, 
+  onViewDetails,
+  filterStatus = "all",
+}: { 
+  logs: PaymentLog[]; 
+  onViewDetails: (log: PaymentLog) => void;
+  filterStatus?: string;
+}) {
+  if (logs.length === 0) {
+    return <EmptyState filterStatus={filterStatus} type="submissions" />;
+  }
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {logs.map((log) => {
@@ -87,11 +108,6 @@ export function PaymentCards({ logs, onViewDetails }: { logs: PaymentLog[]; onVi
           </Card>
         );
       })}
-      {logs.length === 0 && (
-        <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-          <p className="text-sm text-muted-foreground">No payment submissions found</p>
-        </div>
-      )}
     </div>
   );
 }

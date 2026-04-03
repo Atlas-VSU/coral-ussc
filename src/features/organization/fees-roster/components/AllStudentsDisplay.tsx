@@ -9,6 +9,7 @@ import { statusConfig } from "@/features/organization/fees/utils/statusConfig";
 import type { PaymentLog } from "@/features/organization/fees/types";
 import type { Member } from "@/features/organization/members/types";
 import { PaymentStatus } from "@/constants/status";
+import { EmptyState } from "@/components/organization/general/EmptyState";
 
 export type Row = { student: Partial<Member>; log?: PaymentLog; status: string };
 
@@ -16,15 +17,17 @@ export function AllStudentsTable({
   rows,
   onViewDetails,
   onManualLog,
+  filterStatus = "all",
 }: {
   rows: Row[];
   onViewDetails: (log: PaymentLog) => void;
   onManualLog: (student: Partial<Member>) => void;
+  filterStatus?: string;
 }) {
   return (
     <div className="rounded-md border border-border">
       <Table>
-        <TableHeader>
+        <TableHeader> 
           <TableRow>
             <TableHead>Student ID</TableHead>
             <TableHead>Full Name</TableHead>
@@ -35,7 +38,14 @@ export function AllStudentsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map(({ student, log, status }, index) => {
+          {rows.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="p-0 border-none">
+                <EmptyState filterStatus={filterStatus} type="students" />
+              </TableCell>
+            </TableRow>
+          ) : (
+            rows.map(({ student, log, status }, index) => {
             const config = log?.status ? statusConfig[log.status] : statusConfig["unpaid"];
             const Icon = config.icon;
             return (
@@ -65,7 +75,7 @@ export function AllStudentsTable({
                       size="sm"
                       variant="outline"
                       className="gap-1.5 border-green-500/40 text-green-500 hover:text-green-800 dark:border-green-500/30 dark:hover:bg-[#8ff558]"
-                      onClick={() => onManualLog(student)}
+                      onClick={() => onManualLog(student)}  
                     >
                       <PenLine className="size-3" /> Log Payment
                     </Button>
@@ -73,7 +83,7 @@ export function AllStudentsTable({
                 </TableCell>
               </TableRow>
             );
-          })}
+          }))}
         </TableBody>
       </Table>
     </div>
@@ -84,11 +94,17 @@ export function AllStudentsCards({
   rows,
   onViewDetails,
   onManualLog,
+  filterStatus = "all",
 }: {
   rows: Row[];
   onViewDetails: (log: PaymentLog) => void;
   onManualLog: (student: Partial<Member>) => void;
+  filterStatus?: string;
 }) {
+  if (rows.length === 0) {
+    return <EmptyState filterStatus={filterStatus} type="students" />;
+  }
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {rows.map(({ student, log }, index) => {

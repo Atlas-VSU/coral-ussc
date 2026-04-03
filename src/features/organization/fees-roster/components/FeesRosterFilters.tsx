@@ -118,26 +118,43 @@ export function FeesRosterFilters({
             <SelectItem value="all" className={lightSelectItemClass}>
               All Status
             </SelectItem>
-            <SelectItem value="pending" className={lightSelectItemClass}>
-              Pending
-            </SelectItem>
             {!showUnpaidFilter && (
-              <SelectItem value="verified" className={lightSelectItemClass}>
-                Verified
-              </SelectItem>
+              <>
+                <SelectItem value="pending" className={lightSelectItemClass}>
+                  Pending
+                </SelectItem>
+                <SelectItem value="verified" className={lightSelectItemClass}>
+                  Verified
+                </SelectItem>
+                <SelectItem value="rejected" className={lightSelectItemClass}>
+                  Rejected
+                </SelectItem>
+              </>
             )}
-            <SelectItem value="rejected" className={lightSelectItemClass}>
-              Rejected
-            </SelectItem>
             {showUnpaidFilter && (
-              <SelectItem value="unpaid" className={lightSelectItemClass}>
-                Unpaid
+              <>
+              <SelectItem value="pending" className={lightSelectItemClass}>
+                Pending
               </SelectItem>
-            )}
-            {showUnpaidFilter && (
-              <SelectItem value="paid" className={lightSelectItemClass}>
-                Paid
+              {!showUnpaidFilter && (
+                <SelectItem value="verified" className={lightSelectItemClass}>
+                  Verified
+                </SelectItem>
+              )}
+              <SelectItem value="rejected" className={lightSelectItemClass}>
+                Rejected
               </SelectItem>
+              {showUnpaidFilter && (
+                <SelectItem value="unpaid" className={lightSelectItemClass}>
+                  Unpaid
+                </SelectItem>
+              )}
+              {showUnpaidFilter && (
+                <SelectItem value="paid" className={lightSelectItemClass}>
+                  Paid
+                </SelectItem>
+              )}
+              </>
             )}
           </SelectContent>
         </Select>
