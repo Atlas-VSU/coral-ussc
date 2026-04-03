@@ -79,11 +79,33 @@ export default function OrganizationSelectionPage({
 }: OrganizationSelectionPageProps) {
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
 
+  const isOrganizationPayable = (organization: Organization) => {
+    const summary = organization.paymentSummary;
+    if (summary) {
+      return summary.unpaid > 0 || summary.rejected > 0 || organization.outstandingAmount > 0;
+    }
+
+    const states = organization.statusStates ?? [];
+    return states.includes("unpaid") || states.includes("rejected") || organization.outstandingAmount > 0;
+  };
+
+  const hasPayableOrganizations = organizations.some((organization) => isOrganizationPayable(organization));
+
   const handleOrgSelect = (orgId: string) => {
+    const org = organizations.find((organization) => organization.id === orgId);
+    if (!org || !isOrganizationPayable(org)) {
+      return;
+    }
+
     setSelectedOrg(orgId);
   };
 
   const handleContinue = () => {
+    if (!hasPayableOrganizations) {
+      onBack();
+      return;
+    }
+
     if (selectedOrg) {
       onNext(selectedOrg);
     }
@@ -156,15 +178,24 @@ export default function OrganizationSelectionPage({
             ) : (
               <div className="space-y-3">
                 {organizations.map((org) => (
-                  <button
-                    key={org.id}
-                    onClick={() => handleOrgSelect(org.id)}
-                    className={`w-full text-left p-3 sm:p-4 rounded-lg border-2 transition-all hover:border-[#1B5E20]/50 hover:bg-[#1B5E20]/5 ${
-                      selectedOrg === org.id
-                        ? "border-[#1B5E20] bg-[#1B5E20]/5"
-                        : "border-border bg-card"
-                    }`}
-                  >
+                  (() => {
+                    const isPayable = isOrganizationPayable(org);
+
+                    return (
+                      <button
+                        key={org.id}
+                        onClick={() => handleOrgSelect(org.id)}
+                        disabled={!isPayable}
+                        className={`w-full text-left p-3 sm:p-4 rounded-lg border-2 transition-all ${
+                          isPayable
+                            ? "hover:border-[#1B5E20]/50 hover:bg-[#1B5E20]/5"
+                            : "opacity-70 cursor-not-allowed"
+                        } ${
+                          selectedOrg === org.id && isPayable
+                            ? "border-[#1B5E20] bg-[#1B5E20]/5"
+                            : "border-border bg-card"
+                        }`}
+                      >
                     <div className="flex items-start justify-between gap-2 sm:gap-4">
                       <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
                         <div className="p-1.5 sm:p-2 rounded-lg bg-[#1B5E20]/10 mt-1 shrink-0">
@@ -228,15 +259,22 @@ export default function OrganizationSelectionPage({
                               {org.paymentSummary.rejected > 0 && `${org.paymentSummary.rejected} rejected`}
                             </p>
                           )}
+                          {!isPayable && (
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              No payment needed for now. Current submissions are pending or already verified.
+                            </p>
+                          )}
                         </div>
                       </div>
                       <ChevronRight
                         className={`mt-1 hidden h-5 w-5 shrink-0 min-[400px]:block transition-transform ${
-                          selectedOrg === org.id ? "text-[#1B5E20] dark:text-[#8BC34A]" : "text-muted-foreground"
+                          selectedOrg === org.id && isPayable ? "text-[#1B5E20] dark:text-[#8BC34A]" : "text-muted-foreground"
                         }`}
                       />
                     </div>
-                  </button>
+                      </button>
+                    );
+                  })()
                 ))}
               </div>
             )}
@@ -247,11 +285,11 @@ export default function OrganizationSelectionPage({
         <div className="flex justify-end">
           <Button
             onClick={handleContinue}
-            disabled={!selectedOrg || isLoading || organizations.length === 0}
+            disabled={isLoading || organizations.length === 0 || (hasPayableOrganizations && !selectedOrg)}
             size="lg"
             className="w-full min-[400px]:w-auto gap-2 bg-[#1B5E20] hover:bg-[#2E7D32] text-white dark:bg-[#1B5E20] dark:hover:bg-[#2E7D32]"
           >
-            Continue to Fees Selection
+            {hasPayableOrganizations ? "Continue to Fees Selection" : "Exit"}
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
