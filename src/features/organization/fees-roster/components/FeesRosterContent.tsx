@@ -3,19 +3,11 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Archive, ArrowLeft, CheckCircle, Loader, Clock, XCircle, MinusCircle } from "lucide-react";
+import { AlertTriangle, Archive, ArrowLeft, CheckCircle, Loader, Clock, MinusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataPagination } from "@/components/organization/general/DataPagination";
-import { SearchFilterBar } from "@/features/organization/fees/components/SearchFilterBar";
-import { ViewToggle } from "@/components/organization/general/ViewToggle";
+import { FeesRosterFilters } from "./FeesRosterFilters";
 import { TableSkeleton } from "@/components/organization/skeleton/TableSkeleton";
 import { CardGridSkeleton } from "@/components/organization/skeleton/CardGridSkeleton";
 import { SubmissionsView } from "@/features/organization/fees/components/SubmissionView";
@@ -40,7 +32,8 @@ import { StudentFeeRow } from "../hooks/useFeesRoster";
 import { useFeesRosterUI } from "../hooks/useFeesRosterUI";
 import { PaymentReviewDialog } from "@/components/organization/receipt/PaymentReviewDialog";
 import { StatCard } from "@/components/organization/general/StatCard";
-const ITEMS_PER_PAGE = 10;
+import { StatCardsCarousel } from "@/components/organization/general/StatCardsCarousel";
+const ITEMS_PER_PAGE = 9;
 
 export function FeesRosterContent({
   fee,
@@ -58,6 +51,11 @@ export function FeesRosterContent({
   currentPage,
   setCurrentPage,
   search,
+  searchTerm,
+  setSearchTerm,
+  handleSearchCommit,
+  handleSearchClear,
+  handleRefresh,
   setSearch,
   filterStatus,
   setFilterStatus,
@@ -87,6 +85,11 @@ export function FeesRosterContent({
   currentPage: number;
   setCurrentPage: (page: number) => void;
   search: string;
+  searchTerm: string;
+  setSearchTerm: (s: string) => void;
+  handleSearchCommit: () => void;
+  handleSearchClear: () => void;
+  handleRefresh: () => void;
   setSearch: (s: string) => void;
   filterStatus: string;
   setFilterStatus: (s: string) => void;
@@ -164,116 +167,201 @@ export function FeesRosterContent({
     setCurrentPage: handlePageChange,
   } = actions;
 
-  const handleRefresh = async () => {
-    setFilterStatus("all");
-    setCurrentPage(1);
-    setSearch("");
-    await refetch();
-  };
-
   return (
-    <div className="flex flex-col gap-6 pb-25 lg:pb-10">
-      <div className="flex flex-col gap-1">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-fit -ml-2 text-muted-foreground hover:text-foreground"
-          onClick={() => router.back()}
-        >
-          <ArrowLeft className="size-4 mr-1" /> Back
-        </Button>
+    <div className="flex flex-col gap-6 pb-5 lg:pb-0">
+      {/* Header Card with Green Gradient */}
+      <div
+        className="rounded-xl px-4 sm:px-6 py-4 sm:py-6"
+        style={{
+          background:
+            "linear-gradient(135deg, #ffffff 10%, #EAF3DE 100%, #C0DD97 100%)",
+          boxShadow: "0 4px 24px 0 rgba(5,140,17,0.08)",
+        }}
+      >
+        <div className="flex flex-col gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-fit -ml-2 hover:bg-white/50 transition-colors"
+            style={{ color: "#058C11" }}
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="size-4 mr-1" /> Back
+          </Button>
 
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              {fee.title}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Fees Roster · {fee.semester ? fee.semester + " Semester" : ""}{" "}
-              {fee.academicYear ? " - " + fee.academicYear + " A.Y." : ""} · ₱
-              {(fee.amount || 0).toLocaleString()}
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex-1">
+              <h1 
+                className="text-2xl font-bold tracking-tight font-nunito mb-1"
+                style={{ color: "#27500A" }}
+              >
+                {fee.title}
+              </h1>
+              <p 
+                className="text-sm font-nunito-sans"
+                style={{ color: "#3B6D11" }}
+              >
+                Fees Roster · {fee.semester ? fee.semester + " Semester" : ""}{" "}
+                {fee.academicYear ? " - " + fee.academicYear + " A.Y." : ""} · ₱
+                {(fee.amount || 0).toLocaleString()}
+              </p>
+            </div>
+
+            <Button
+              variant="destructive"
+              size="default"
+              onClick={() => setArchiveDialogOpen(true)}
+              className="shrink-0"
+            >
+              <Archive className="size-4 mr-2" />
+              Archive Fee
+            </Button>
           </div>
 
-          <Button
-            variant="outline"
-            size="default"
-            className="gap-2 text-destructive hover:text-destructive border-destructive/20 hover:bg-destructive/10 w-full sm:w-auto"
-            onClick={() => setArchiveDialogOpen(true)}
-          >
-            <Archive className="size-4" />
-            Archive Fee
-          </Button>
-        </div>
-      </div>
+          {/* Decorative Separator */}
+          <div
+            className="h-px w-full my-2"
+            style={{
+              background:
+                "linear-gradient(to right, transparent, #97C459, transparent)",
+            }}
+          />
 
-      <div className="grid gap-4 sm:grid-cols-3">
-      <StatCard
-        title="Pending"
-        value={stats.pending.toLocaleString()}
-        description="Awaiting verification"
-        icon={Clock}
-      />
-      <StatCard
-        title="Verified"
-        value={stats.verified.toLocaleString()}
-        description="Payments confirmed"
-        icon={CheckCircle}
-      />
-      {/* <StatCard title="Rejected" value={stats.rejected} description="Payments declined" icon={XCircle} /> */}
-      <StatCard
-        title="Unpaid"
-        value={stats.unpaid.toLocaleString()}
-        description="No submission yet"
-        icon={MinusCircle}
-      />
-    </div>
-
-      <Card className="border-border">
-        <CardHeader>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex flex-col gap-3">
-              <div>
-                <CardTitle className="text-base text-foreground">
-                  Fee Payment Status
-                </CardTitle>
-                <CardDescription className="text-muted-foreground">
-                  Track and manage payments for this fee
-                </CardDescription>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div
+              className="flex items-center gap-3 p-3 rounded-lg"
+              style={{ background: "#ffffff" }}
+            >
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: "#FEF9E6" }}
+              >
+                <Clock className="h-5 w-5" style={{ color: "#D9A200" }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p 
+                  className="text-xs font-medium uppercase tracking-wider mb-0.5 font-nunito-sans"
+                  style={{ color: "#3B6D11" }}
+                >
+                  Pending
+                </p>
+                <p 
+                  className="text-lg font-bold font-nunito"
+                  style={{ color: "#27500A" }}
+                >
+                  {stats.pending?.toLocaleString()}
+                </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <SearchFilterBar
-                search={search}
-                onSearchChange={handleSearch}
-                filterStatus={filterStatus}
-                onFilterChange={handleFilterStatus}
-                showUnpaidFilter={dataView === "all-students"}
-                handleRefresh={handleRefresh}
-                isLoading={isLoading}
-              />
-              <ViewToggle
-                viewMode={viewMode}
-                onViewChange={() =>
-                  setViewMode(viewMode === "card" ? "table" : "card")
-                }
-              />
+            <div
+              className="flex items-center gap-3 p-3 rounded-lg"
+              style={{ background: "#ffffff" }}
+            >
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: "#E8F5E9" }}
+              >
+                <CheckCircle className="h-5 w-5" style={{ color: "#058C11" }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p 
+                  className="text-xs font-medium uppercase tracking-wider mb-0.5 font-nunito-sans"
+                  style={{ color: "#3B6D11" }}
+                >
+                  Verified
+                </p>
+                <p 
+                  className="text-lg font-bold font-nunito"
+                  style={{ color: "#27500A" }}
+                >
+                  {stats.verified?.toLocaleString()}
+                </p>
+              </div>
+            </div>
+
+            <div
+              className="flex items-center gap-3 p-3 rounded-lg"
+              style={{ background: "#ffffff" }}
+            >
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: "#FEF3F2" }}
+              >
+                <MinusCircle className="h-5 w-5" style={{ color: "#DC2626" }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p 
+                  className="text-xs font-medium uppercase tracking-wider mb-0.5 font-nunito-sans"
+                  style={{ color: "#3B6D11" }}
+                >
+                  Unpaid
+                </p>
+                <p 
+                  className="text-lg font-bold font-nunito"
+                  style={{ color: "#27500A" }}
+                >
+                  {stats.unpaid?.toLocaleString()}
+                </p>
+              </div>
             </div>
           </div>
-        </CardHeader>
-        <div className="flex items-center gap-2 justify-between px-6">
+        </div>
+      </div>
+
+      {/* ── Filters (Outside Card) ── */}
+      <FeesRosterFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        onSearchCommit={handleSearchCommit}
+        onSearchClear={handleSearchClear}
+        filterStatus={filterStatus}
+        onFilterChange={(v) => {
+          handleFilterStatus(v);
+          handlePageChange(1);
+        }}
+        showUnpaidFilter={dataView === "all-students"}
+        onRefresh={handleRefresh}
+        disabled={isLoading}
+        viewMode={viewMode}
+        onViewChange={() => setViewMode(viewMode === "card" ? "table" : "card")}
+      />
+
+      <div
+        className="rounded-xl px-4 sm:px-6 py-4 sm:py-6"
+        style={{
+          background:
+            "linear-gradient(135deg, #ffffff 10%, #EAF3DE 100%, #C0DD97 100%)",
+          boxShadow: "0 4px 24px 0 rgba(5,140,17,0.08)",
+        }}
+      >
+        <div className="pb-4">
           <Tabs
             value={dataView}
             onValueChange={(v) => handleDataView(v as any)}
           >
-            <TabsList>
-              <TabsTrigger value="submissions">Submissions</TabsTrigger>
-              <TabsTrigger value="all-students">All Students</TabsTrigger>
+            <TabsList 
+              className="grid w-full grid-cols-2 max-[510px]:h-auto max-[510px]:grid-cols-1 bg-white/50 border"
+              style={{ borderColor: "#97C459" }}
+            >
+              <TabsTrigger 
+                value="submissions" 
+                className="w-full max-[510px]:justify-center data-[state=active]:bg-white data-[state=active]:text-[#058C11] data-[state=active]:font-semibold"
+              >
+                Payment Submissions
+              </TabsTrigger>
+              <TabsTrigger 
+                value="all-students" 
+                className="w-full max-[510px]:justify-center data-[state=active]:bg-white data-[state=active]:text-[#058C11] data-[state=active]:font-semibold"
+              >
+                All Students
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
-        <CardContent>
+
+        <div className="bg-white rounded-lg p-4">
           {isLoading ? (
             viewMode === "table" ? (
               <TableSkeleton columns={6} rows={10} />
@@ -285,6 +373,7 @@ export function FeesRosterContent({
               logs={paginatedLogs}
               viewMode={viewMode}
               onViewDetails={handleViewDetails}
+              filterStatus={filterStatus}
             />
           ) : (
             <AllStudentsView
@@ -297,6 +386,7 @@ export function FeesRosterContent({
               onManualLog={(student) =>
                 handleManualLogRequest(student.id || "")
               }
+              filterStatus={filterStatus}
             />
           )}
           <DataPagination
@@ -307,8 +397,8 @@ export function FeesRosterContent({
             onPageChange={handlePageChange}
             hasNextPage={hasNextPage}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Archive Confirmation Dialog */}
       <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>

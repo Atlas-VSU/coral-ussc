@@ -143,14 +143,15 @@ export function FineTypeDialog({
                   Manage fine types, their amounts, and requirements.
                 </DialogDescription>
               </div>
-              <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 hover:bg-[#5bb651] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-20">
-                <X className="h-4 w-4 text-[#1B5E20]" />
+              <DialogClose className="absolute right-4 top-4 opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:text-muted-foreground z-20 p-0 rounded-md border-transparent hover:scale-125 hover:text-accent-foreground focus-visible:ring-accent/50 data-[state=open]:bg-accent">
+                <X className="h-4 w-4 text-muted-foreground" />
                 <span className="sr-only">Close</span>
               </DialogClose>
               <Button 
                 onClick={() => setShowAddForm(true)} 
                 size="sm"
-                className="text-[#000000]  gap-1.5 w-full sm:w-auto bg-linear-to-r from-[#8BC34A] via-[#6ac947] to-[#55c72c]"
+                variant="success"
+                className="gap-1.5 w-full sm:w-auto"
                 disabled={showAddForm || isProcessing}
               >
                 <Plus className="size-4" /> Add Fine Type
@@ -166,7 +167,7 @@ export function FineTypeDialog({
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-semibold">Add New Fine Type</CardTitle>
                     <Button 
-                      variant="ghost" 
+                      variant="icon" 
                       size="sm" 
                       onClick={() => setShowAddForm(false)}
                       disabled={isSubmitting}
@@ -196,7 +197,7 @@ export function FineTypeDialog({
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-semibold">Edit Fine Type</CardTitle>
                     <Button 
-                      variant="ghost" 
+                      variant="icon" 
                       size="sm" 
                       onClick={() => setEditingFine(null)}
                       disabled={isSubmitting}
@@ -249,11 +250,7 @@ export function FineTypeDialog({
                                 {fine.name}
                               </CardTitle>
                               <Badge 
-                                variant={fine.isActive ? "default" : "secondary"}
-                                className={cn(
-                                  "text-[10px] text-black",
-                                  fine.isActive && "bg-[#5bb651] hover:bg-[#3b9931]"
-                                )}
+                                variant={fine.isActive ? "default" : "secondary"}    
                               >
                                 {fine.isActive ? 'Active' : 'Inactive'}
                               </Badge>
@@ -263,9 +260,9 @@ export function FineTypeDialog({
                             </CardDescription>
                           </div>
                           <Button
-                            variant="ghost"
+                            variant="icon"
                             size="sm"
-                            className="h-8 w-8 p-0 text-[#000000] !hover:bg-[#5bb651]"
+                            className="h-8 w-8 p-0"
                             onClick={() => toggleCardExpansion(fine.id!)}
                           >
                             {expandedCards.has(fine.id!) ? (
@@ -319,7 +316,7 @@ export function FineTypeDialog({
                       <CardFooter className="pt-2 border-t">
                         <div className="flex items-center justify-end gap-1 w-full">
                           <Button
-                            variant="ghost"
+                            variant="icon"
                             size="sm"
                             className="h-8 w-8 p-0"
                             onClick={() => setEditingFine(fine)}
@@ -329,7 +326,7 @@ export function FineTypeDialog({
                             <Edit className="size-3.5 text-[#1B5E20]" />
                           </Button>
                           <Button
-                            variant="ghost"
+                            variant="icon"
                             size="sm"
                             className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                             onClick={() => setDeleteTarget(fine)}

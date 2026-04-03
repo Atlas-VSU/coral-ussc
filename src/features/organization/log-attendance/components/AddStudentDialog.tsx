@@ -311,18 +311,13 @@ export function AddStudentDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
-              className="flex-1"
-              style={{ borderColor: "#97C459", color: "#27500A" }}
             >
               Cancel
             </Button>
             <Button
               type="submit"
+              variant="success"
               disabled={isSubmitting}
-              className="flex-1 text-white border-0"
-              style={{
-                background: "linear-gradient(135deg, #058C11, #38B000)",
-              }}
             >
               {isSubmitting ? (
                 <>

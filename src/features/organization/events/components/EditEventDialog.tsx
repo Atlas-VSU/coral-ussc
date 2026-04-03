@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -361,17 +362,22 @@ export function EditEventDialog({
               />
 
               <DialogFooter>
-                <Button
+                <LoadingButton
                   variant="outline"
                   type="button"
                   onClick={handleOpenChange}
                   disabled={loading}
                 >
                   Cancel
-                </Button>
-                <Button type="submit" disabled={loading}>
+                </LoadingButton>
+                <LoadingButton 
+                  type="submit" 
+                  variant="success" 
+                  isLoading={loading}
+                  loadingText="Updating..."
+                >
                   Update Event
-                </Button>
+                </LoadingButton>
               </DialogFooter>
             </form>
           </Form>

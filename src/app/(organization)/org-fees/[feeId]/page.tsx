@@ -6,9 +6,8 @@ import { useSearchParams } from "next/navigation";
 export default function FeesRoster() {
     const searchParams = useSearchParams();
 
-    const title = searchParams.get('title') ?? "";
-    const academicYear = searchParams.get('academic_year') ?? "";
-    const semester = searchParams.get('semester') ?? "";
+    const feeItemId = searchParams.get('feeItemId') ?? "";
 
-    return <FeesRosterPage title={title} academicYear={academicYear} semester={semester} />;
+    //return <FeesRosterPage title={title} academicYear={academicYear} semester={semester} />;
+    return <FeesRosterPage feeItemId={feeItemId} />;
 }

@@ -293,12 +293,12 @@ export function EventCard({ event, onEdit, onArchive, onUnarchive, onDelete, onI
 
         {/* Action Buttons */}
         {event.status !== "upcoming" && event.status !== "archived" && (
-          <div className="mt-auto pt-3 border-t border-border flex flex-col gap-2">
+          <div className={event.finesGenerated ? "mt-auto pt-3 border-t border-border flex flex-col gap-2" : "mt-auto pt-3 border-t border-border flex flex-col gap-2"}>
             <Button
               asChild
               variant="outline"
               size="sm"
-              className="w-full justify-center gap-1.5 h-10 sm:h-9 text-xs font-semibold"
+              className={event.finesGenerated ? "w-full justify-center gap-1.5 h-10 sm:h-9 text-xs font-semibold" : "w-full justify-center gap-1.5 h-10 sm:h-9 text-xs font-semibold"}
               onClick={handleViewAttendees}
               disabled={viewAttendeesLoading}
             >
@@ -311,7 +311,7 @@ export function EventCard({ event, onEdit, onArchive, onUnarchive, onDelete, onI
               </Link>
             </Button>
 
-            {(event.status === "ongoing" || event.status === "completed") && (
+            {(event.status === "ongoing" || event.status === "completed") && !event.finesGenerated && (
               <Button
                 asChild
                 size="sm"

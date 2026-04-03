@@ -26,7 +26,7 @@ import { SearchByIdForm } from "./Search/SearchByIdForm";
 import { SearchByNameForm } from "./Search/SearchByNameForm";
 import { StudentDetails } from "./Search/StudentDetails";
 import { NoStudentFound } from "./Search/NoStudentFound";
-import { ProcessingOverlay } from "./Search/ProcessingOverlay";
+// import { ProcessingOverlay } from "./Search/ProcessingOverlay";
 
 import { toast } from "sonner";
 import { Member } from "../../members/types";
@@ -360,7 +360,7 @@ export function AttendanceForm({
       {/* Search loading overlay - only for form submission, not for searching */}
       {isLoading && <LoadingOverlay />}
       {/* Processing check-in/out overlay */}
-      {isProcessing && (
+      {/* {isProcessing && (
         <ProcessingOverlay
           type={type}
           showNames={showNames}
@@ -370,7 +370,7 @@ export function AttendanceForm({
               searchResult.student?.lastName || ""
           }
         />
-      )}
+      )} */}
 
       <WarningDialog
         open={warningDialog.open}

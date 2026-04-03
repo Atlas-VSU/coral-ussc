@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { BulkFinesProgress } from "../types";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 
 interface BulkGenerationDialogProps {
   open: boolean;
@@ -166,17 +167,15 @@ export function BulkGenerationDialog({ open, onOpenChange }: BulkGenerationDialo
           </Button>
             {!isDone &&(
             <div>
-            {!isRunning ? (
-            <Button onClick={handleCreate}>
+            <LoadingButton 
+              variant="success" 
+              onClick={handleCreate}
+              isLoading={isRunning}
+              loadingText="Generating..."
+            >
               <Upload className="h-4 w-4 mr-2" />
               Generate Fines
-            </Button>
-          ) : (
-            <Button disabled>
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-              Generating...
-            </Button>
-          )}
+            </LoadingButton>
           </div>  
             )}
         </DialogFooter>

@@ -717,7 +717,7 @@ export default function FinesPaymentFormPage({
           >
             <div className="mx-auto max-w-2xl">
               {status === "submitting" ? (
-                <div className="w-full rounded-md bg-[#1B5E20] text-white dark:bg-[#1B5E20] px-4 py-2.5 flex items-center justify-center gap-2 font-medium">
+                <div className="w-full rounded-md bg-green-600 text-white px-4 py-2.5 flex items-center justify-center gap-2 font-medium">
                   <Loader2 className="size-4 animate-spin" />
                   Submitting payment…
                 </div>
@@ -732,8 +732,9 @@ export default function FinesPaymentFormPage({
                   </div>
                   <Button
                     type="submit"
+                    variant="success"
                     disabled={!image?.file}
-                    className="bg-[#1B5E20] hover:bg-[#2E7D32] text-white dark:bg-[#1B5E20] dark:hover:bg-[#2E7D32] gap-2"
+                    className="gap-2"
                   >
                     Submit Payment
                   </Button>

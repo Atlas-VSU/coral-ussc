@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { Member } from "../../members/types";
 import { ClearanceStatus } from "../../clearance/types";
+import { ITEMS_PER_PAGE } from "../config";
 
 export function usePayments() {
   const [payments, setPayments] = useState<ProofOfPayment[]>([])
@@ -76,7 +77,6 @@ export function usePayments() {
   const fetchPayments = useCallback(async () => {
     const requestId = ++fetchRequestIdRef.current;
     setLoadingSubmissions(true);
-    const itemsPerPage = 10;
 
     try {
       const currentUser = await getCurrentUserData() as unknown as Member;
@@ -93,7 +93,7 @@ export function usePayments() {
 
       const { docs, count, lastVisible } = await getProofOfPaymentsPaginated(
         currentUser.id,
-        itemsPerPage,
+        ITEMS_PER_PAGE,
         cursor,
         search,
         filterStatus, 
@@ -134,7 +134,6 @@ export function usePayments() {
   const fetchUnpaid = useCallback(async () => {
     const requestId = ++unpaidRequestIdRef.current;
     setLoadingUnpaid(true);
-    const itemsPerPage = 10;
 
     try {
       const currentUser = await getCurrentUserData() as unknown as Member;
@@ -150,7 +149,7 @@ export function usePayments() {
       
       const { docs, count, lastVisible } = await fetchClearanceDocumentsPaginated(
         currentUser.id,
-        itemsPerPage,
+        ITEMS_PER_PAGE,
         cursor,
         unpaidSearch,
         "not_cleared",
