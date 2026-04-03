@@ -51,6 +51,14 @@ export function FeesRosterFilters({
     onFilterChange("all");
   };
 
+  const handleRefreshAll = () => {
+    if(hasActiveFilters || searchTerm !== '') {
+      handleClearAll();
+    } else {
+      onRefresh();
+    }
+  };
+
   const hasActiveFilters = searchTerm !== "" || filterStatus !== "all";
 
   // ── SearchInput component (reused in mobile + desktop) ───────────────────
@@ -162,7 +170,7 @@ export function FeesRosterFilters({
         <Button
           variant="outline"
           size="sm"
-          onClick={handleClearAll}
+          onClick={handleRefreshAll}
           disabled={disabled}
           className="w-full h-10"
         >
@@ -243,7 +251,7 @@ export function FeesRosterFilters({
           <Button
             variant="outline"
             size="sm"
-            onClick={handleClearAll}
+            onClick={handleRefreshAll}
             disabled={disabled}
             className="h-9 px-3"
           >

@@ -75,6 +75,7 @@ export default function FeesRosterPage({
     setFilterStatus("all");
     setCurrentPage(1);
     refetch();
+    console.log("refetching")
   };
 
   if (isLoading && !fee) {
