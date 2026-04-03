@@ -22,6 +22,7 @@ interface Organization {
   name: string;
   acronym: string;
   outstandingAmount: number;
+  statusStates?: Array<"unpaid" | "pending" | "rejected" | "verified">;
   paymentSummary?: {
     pending: number;
     verified: number;
@@ -31,46 +32,30 @@ interface Organization {
   description?: string;
 }
 
-const getOrganizationStatus = (organization: Organization) => {
-  const summary = organization.paymentSummary ?? {
-    pending: 0,
-    verified: 0,
-    rejected: 0,
-    unpaid: 0,
-  };
-
-  if (summary.pending > 0) {
-    return {
-      label: "Pending review",
-      className: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300",
-    };
+const getStatusBadge = (status: "unpaid" | "pending" | "rejected" | "verified") => {
+  switch (status) {
+    case "pending":
+      return {
+        label: "Pending review",
+        className: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300",
+      };
+    case "verified":
+      return {
+        label: "Verified by admin",
+        className: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300",
+      };
+    case "rejected":
+      return {
+        label: "Rejected",
+        className: "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300",
+      };
+    case "unpaid":
+    default:
+      return {
+        label: "Unpaid",
+        className: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300",
+      };
   }
-
-  if (summary.verified > 0) {
-    return {
-      label: "Verified by admin",
-      className: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300",
-    };
-  }
-
-  if (summary.rejected > 0) {
-    return {
-      label: "Rejected",
-      className: "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300",
-    };
-  }
-
-  if (organization.outstandingAmount > 0 || summary.unpaid > 0) {
-    return {
-      label: "Outstanding dues",
-      className: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300",
-    };
-  }
-
-  return {
-    label: "No outstanding dues",
-    className: "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300",
-  };
 };
 
 interface OrganizationSelectionPageProps {
@@ -161,7 +146,7 @@ export default function OrganizationSelectionPage({
             {isLoading ? (
               <div className="py-10 text-center text-muted-foreground text-sm flex items-center justify-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Loading organizations with outstanding dues...
+                Loading organizations...
               </div>
             ) : organizations.length === 0 ? (
               <div className="py-10 text-center space-y-2">
@@ -193,9 +178,27 @@ export default function OrganizationSelectionPage({
                             <Badge variant="secondary" className="text-[10px] sm:text-xs shrink-0">
                               {org.acronym}
                             </Badge>
-                            <Badge variant="outline" className={`text-[10px] sm:text-xs shrink-0 ${getOrganizationStatus(org).className}`}>
-                              {getOrganizationStatus(org).label}
-                            </Badge>
+                            {(() => {
+                              const summaryStates: Array<"unpaid" | "pending" | "rejected" | "verified"> = org.statusStates && org.statusStates.length > 0
+                                ? org.statusStates
+                                : org.outstandingAmount > 0 || (org.paymentSummary?.unpaid ?? 0) > 0
+                                  ? ["unpaid"]
+                                  : [];
+
+                              return summaryStates.map((status) => {
+                                const badge = getStatusBadge(status);
+
+                                return (
+                                  <Badge
+                                    key={status}
+                                    variant="outline"
+                                    className={`text-[10px] sm:text-xs shrink-0 ${badge.className}`}
+                                  >
+                                    {badge.label}
+                                  </Badge>
+                                );
+                              });
+                            })()}
                           </div>
                           {org.description && (
                             <p className="mb-2 text-xs sm:text-sm text-muted-foreground leading-relaxed break-words">

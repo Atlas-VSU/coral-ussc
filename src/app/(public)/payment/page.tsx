@@ -22,6 +22,7 @@ export interface OrganizationData {
   name: string;
   acronym: string;
   outstandingAmount: number;
+  statusStates?: Array<"unpaid" | "pending" | "rejected" | "verified">;
   paymentSummary?: {
     pending: number;
     verified: number;
@@ -99,6 +100,27 @@ export default function PaymentPage() {
   const selectedOrganization = useMemo(() => {
     return organizationDues.find((org) => org.id === selectedOrgId) || null;
   }, [organizationDues, selectedOrgId]);
+
+  const getOrganizationStatusStates = (org: OrganizationDueData) => {
+    const states = new Set<"unpaid" | "pending" | "rejected" | "verified">();
+
+    for (const fee of org.fees) {
+      states.add(fee.paymentState ?? "unpaid");
+    }
+
+    for (const fine of org.fines) {
+      states.add(fine.paymentState ?? "unpaid");
+    }
+
+    const orderedStates: Array<"pending" | "verified" | "rejected" | "unpaid"> = [
+      "pending",
+      "verified",
+      "rejected",
+      "unpaid",
+    ];
+
+    return orderedStates.filter((state) => states.has(state));
+  };
 
   const loadStudentDues = async (studentId: string) => {
     setIsLoadingDues(true);
@@ -186,6 +208,7 @@ export default function PaymentPage() {
             name: org.name,
             acronym: org.acronym,
             outstandingAmount: org.outstandingAmount,
+            statusStates: getOrganizationStatusStates(org),
             paymentSummary: org.paymentSummary,
           }))}
           currentStep={2}
