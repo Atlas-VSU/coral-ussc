@@ -82,11 +82,11 @@ export default function OrganizationSelectionPage({
   const isOrganizationPayable = (organization: Organization) => {
     const summary = organization.paymentSummary;
     if (summary) {
-      return summary.unpaid > 0 || summary.rejected > 0 || organization.outstandingAmount > 0;
+      return summary.unpaid > 0 || summary.rejected > 0;
     }
 
     const states = organization.statusStates ?? [];
-    return states.includes("unpaid") || states.includes("rejected") || organization.outstandingAmount > 0;
+    return states.includes("unpaid") || states.includes("rejected");
   };
 
   const hasPayableOrganizations = organizations.some((organization) => isOrganizationPayable(organization));
