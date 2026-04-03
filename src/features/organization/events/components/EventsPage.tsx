@@ -20,7 +20,7 @@ import { useEventFineTypes } from "@/features/organization/events/hooks/useEvent
 import type { ViewMode } from "@/features/organization/events/components/ViewToggle";
 
 export default function EventsPage() {
-  const [currentTab, setCurrentTab] = useState<EventStatus>("ongoing");
+  const [currentTab, setCurrentTab] = useState<EventStatus>("completed");
   const [viewMode, setViewMode] = useState<ViewMode>("card");
   const [addOpen, setAddOpen] = useState(false);
   const isMobile = useIsMobile();

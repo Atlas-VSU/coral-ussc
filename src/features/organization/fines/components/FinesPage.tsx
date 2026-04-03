@@ -306,7 +306,7 @@ export function FinesPage() {
                           ₱{fine.paidAmount.toLocaleString()}
                         </TableCell>
                         <TableCell className="text-right text-sm font-medium text-foreground whitespace-nowrap">
-                          ₱{fine.balance.toLocaleString()}
+                          ₱{fine.balance < 0 ? "0" : fine.balance.toLocaleString()}
                         </TableCell>
                         <TableCell>
                           <ChevronRight className="size-4 text-muted-foreground" />
@@ -359,7 +359,7 @@ export function FinesPage() {
                             </div>
                             <div className="flex items-center justify-between text-xs">
                               <span className="text-muted-foreground">Balance</span>
-                              <span className="font-semibold text-foreground">₱{fine.balance.toLocaleString()}</span>
+                              <span className="font-semibold text-foreground">₱{fine.balance < 0 ? "0" : fine.balance.toLocaleString()}</span>
                             </div>
                             <div className="flex items-center gap-2 text-xs pt-1">
                               <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
