@@ -3,6 +3,8 @@ import { FineType } from "@/features/organization/fines/types";
 import { getAllFineTypes } from "@/firebase/fines/read/fineType";
 import { createFineType, updateFineType, deleteFineType } from "@/firebase/fines/create/fineType";
 import { toast } from "sonner";
+import { cacheService, CACHE_KEYS } from "@/services/cacheService";
+import { getCurrentUserData } from "@/firebase/users";
 
 export function useFineTypes() {
   const [fineTypes, setFineTypes] = useState<FineType[]>([]);
@@ -24,7 +26,12 @@ export function useFineTypes() {
     setIsFormSubmitting(true);
     try {
       await createFineType(data);
-      fetchFineTypes();
+      // invalidate cache to force fresh fetch
+      const currentUser = await getCurrentUserData();
+      if (currentUser?.uid) {
+        cacheService.invalidate(CACHE_KEYS.fineTypesAll(currentUser.uid));
+      }
+      await fetchFineTypes();
       toast.success(`${data.name} was added successfully`);
       onSuccess?.();
     } catch (error) {
@@ -42,7 +49,12 @@ export function useFineTypes() {
     setIsFormSubmitting(true);
     try {
       await updateFineType(fineTypeId, data);
-      fetchFineTypes();
+      // invalidate cache to force fresh fetch
+      const currentUser = await getCurrentUserData();
+      if (currentUser?.uid) {
+        cacheService.invalidate(CACHE_KEYS.fineTypesAll(currentUser.uid));
+      }
+      await fetchFineTypes();
       toast.success(`${data.name} was updated successfully`);
       onSuccess?.();
     } catch (error) {
@@ -59,7 +71,12 @@ export function useFineTypes() {
     setIsFormSubmitting(true);
     try {
       await deleteFineType(fineTypeId);
-      fetchFineTypes();
+      // invalidate cache to force fresh fetch
+      const currentUser = await getCurrentUserData();
+      if (currentUser?.uid) {
+        cacheService.invalidate(CACHE_KEYS.fineTypesAll(currentUser.uid));
+      }
+      await fetchFineTypes();
       toast.success(`Fine type was deleted successfully`);
       onSuccess?.();
     } catch (error) {

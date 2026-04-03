@@ -233,10 +233,14 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
         </div>
 
         <DialogFooter>
-          <Button variant="outline" className="!bg-white text-black" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>
-          <Button onClick={handlePrint} className="bg-linear-to-r from-[#8BC34A] via-[#6ac947] to-[#55c72c]">Print</Button>
+          <Button 
+          variant="default"
+          onClick={handlePrint}>
+            Print
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

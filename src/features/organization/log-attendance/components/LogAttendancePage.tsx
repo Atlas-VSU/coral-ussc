@@ -71,7 +71,7 @@ export default function LogAttendancePage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-6 pb-24 lg:pb-0">
+      <div className="flex flex-col gap-6 pb-5 lg:pb-0">
         {/* Breadcrumb skeleton */}
         <Skeleton className="h-5 w-64" />
 
@@ -145,7 +145,7 @@ export default function LogAttendancePage() {
 
   if (!event) {
     return (
-      <div className="flex flex-col gap-6 pb-24 lg:pb-0">
+      <div className="flex flex-col gap-6 pb-5 lg:pb-0">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -207,7 +207,7 @@ export default function LogAttendancePage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 pb-24 lg:pb-0">
+    <div className="flex flex-col gap-6 pb-5 lg:pb-0">
       {/* Breadcrumb */}
       <Breadcrumb>
         <BreadcrumbList>

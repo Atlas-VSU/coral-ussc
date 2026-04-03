@@ -20,7 +20,7 @@ import { useEventFineTypes } from "@/features/organization/events/hooks/useEvent
 import type { ViewMode } from "@/features/organization/events/components/ViewToggle";
 
 export default function EventsPage() {
-  const [currentTab, setCurrentTab] = useState<EventStatus>("ongoing");
+  const [currentTab, setCurrentTab] = useState<EventStatus>("completed");
   const [viewMode, setViewMode] = useState<ViewMode>("card");
   const [addOpen, setAddOpen] = useState(false);
   const isMobile = useIsMobile();
@@ -32,7 +32,10 @@ export default function EventsPage() {
       setViewMode("list");
     } else {
       const savedViewMode = localStorage.getItem("eventsViewMode") as ViewMode;
-      if (savedViewMode && (savedViewMode === "card" || savedViewMode === "list")) {
+      if (
+        savedViewMode &&
+        (savedViewMode === "card" || savedViewMode === "list")
+      ) {
         setViewMode(savedViewMode);
       }
     }
@@ -65,21 +68,31 @@ export default function EventsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 pb-24 lg:pb-0">
+    <div className="flex flex-col gap-4 sm:gap-6 pb-5 xl:pb-0">
       <EventsCacheLoader />
-
+ 
       <PageHeader
         variant="admin"
         title="Events Management"
         context="2nd Semester · A.Y. 2025–2026"
-        description="Manage your organisation's events and track attendance"
+        description="Manage your organization's events and track attendance"
         action={
-          <Button size="sm" className="gap-1.5" onClick={handleAddEventClick}>
-            <Plus className="size-4" />
-            Add Event
-          </Button>
+          <div className="hidden xl:flex">
+            <Button size="sm" className="gap-1.5" onClick={handleAddEventClick}>
+              <Plus className="size-4" /> Add Event
+            </Button>
+          </div>
         }
       />
+
+      {/* Mobile Add Event Button */}
+      <Button
+        size="sm"
+        className="xl:hidden w-full h-11"
+        onClick={handleAddEventClick}
+      >
+        <Plus className="size-4" /> Add Event
+      </Button>
 
       {/* Search bar */}
       <div className="relative">
@@ -87,24 +100,30 @@ export default function EventsPage() {
         <Input
           ref={searchInputRef}
           type="text"
-          placeholder="Search events by name or location…"
-          className="pl-9 pr-9 h-10 bg-background"
+          placeholder="Search events…"
+          className="pl-9 pr-9 h-11 sm:h-10 bg-background text-base sm:text-sm"
           value={searchQuery}
           onChange={(e) => handleSearch(e.target.value)}
         />
         {searchQuery && (
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9"
             onClick={() => handleSearch("")}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full
-                      bg-[#C0DD97] hover:bg-[#97C459] flex items-center justify-center transition-colors"
+            aria-label="Clear search"
           >
-            <X className="h-3 w-3 text-[#3B6D11]" />
-          </button>
+            <X className="h-4 w-4" />
+          </Button>
         )}
       </div>
 
       {/* Tab navigation + content */}
-      <Tabs value={currentTab} onValueChange={(v) => setCurrentTab(v as EventStatus)}>
+      <Tabs
+        value={currentTab}
+        onValueChange={(v) => setCurrentTab(v as EventStatus)}
+        className="space-y-4 sm:space-y-6"
+      >
         <EventsTabNavigation
           currentTab={currentTab}
           setCurrentTab={setCurrentTab}
@@ -112,17 +131,15 @@ export default function EventsPage() {
           isDesktop={!isMobile}
         />
 
-        <div className="flex flex-wrap items-center justify-between gap-3 mt-6">
-          <EventsFilters
-            onSetDate={handleDateChange}
-            onSortBy={handleSort}
-            viewMode={viewMode}
-            onViewChange={handleViewModeChange}
-            isDesktop={!isMobile}
-          />
-        </div>
+        <EventsFilters
+          onSetDate={handleDateChange}
+          onSortBy={handleSort}
+          viewMode={viewMode}
+          onViewChange={handleViewModeChange}
+          isDesktop={!isMobile}
+        />
 
-        <TabsContent value={currentTab} className="mt-6">
+        <TabsContent value={currentTab} className="mt-0">
           {loading ? (
             <EventsSkeletonLoader viewMode={viewMode} />
           ) : (
@@ -136,13 +153,11 @@ export default function EventsPage() {
       </Tabs>
 
       {!loading && totalPages > 0 && !searchQuery && (
-        <div className="flex justify-center mt-4">
-          <EventsPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
-        </div>
+        <EventsPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
       )}
 
       <AddEventDialog

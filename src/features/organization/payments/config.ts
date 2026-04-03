@@ -1,7 +1,7 @@
 
 import { CheckCircle, XCircle, Clock } from "lucide-react"
 
-export const ITEMS_PER_PAGE = 10
+export const ITEMS_PER_PAGE = 9
 
 export const statusConfig: Record<string, {
   label: string

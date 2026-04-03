@@ -2,6 +2,7 @@
 
 import { PenLine, CreditCard, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { LoadingButton } from "@/components/ui/loading-button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -312,26 +313,20 @@ export function LogManualPaymentDialog({
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>
+          <LoadingButton variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>
             Cancel
-          </Button>
-          <Button
-            disabled={selection.selectedRefIds.size === 0 || isProcessing}
-            className="gap-1.5 bg-[#1B5E20] text-white hover:bg-[#2E7D32] dark:bg-green-700 dark:hover:bg-green-600"
+          </LoadingButton>
+          <LoadingButton
+            variant="success"
+            disabled={selection.selectedRefIds.size === 0}
+            className="gap-1.5"
             onClick={onLogPayment}
+            isLoading={isProcessing}
+            loadingText="Logging Payment..."
           >
-            {isProcessing ? (
-              <>
-                <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
-                Logging Payment...
-              </>
-            ) : (
-              <>
-                <PenLine className="size-3.5" />
-                Log Payment
-              </>
-            )}
-          </Button>
+            <PenLine className="size-3.5" />
+            Log Payment
+          </LoadingButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Check, X, FileImage, Calendar, Hash, CreditCard, XCircle, CheckCircle } from "lucide-react"
 import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
+import { LoadingButton } from "@/components/ui/loading-button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
@@ -294,14 +295,15 @@ export function PaymentReviewDialog({
                 {isPending ? (
                   <>
                     <Button
-                      variant="outline"
-                      className="gap-1.5 text-destructive hover:text-destructive"
+                      variant="destructive"
+                      className="gap-1.5"
                       onClick={() => setRejectOpen(true)}
                       disabled={isProcessing}
                     >
                       <XCircle className="size-4" /> Reject
                     </Button>
                     <Button 
+                      variant="success"
                       className="gap-1.5" 
                       onClick={() => setApproveConfirmOpen(true)}
                       disabled={isProcessing}
@@ -338,12 +340,16 @@ export function PaymentReviewDialog({
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setApproveConfirmOpen(false)} disabled={isProcessing}>
-              Cancel
+              Cancel  
             </Button>
-            <Button onClick={handleApproveConfirmed} disabled={isSubmitting} className="gap-2">
-              {isSubmitting && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+            <LoadingButton 
+              variant="success" 
+              onClick={handleApproveConfirmed} 
+              isLoading={isSubmitting}
+              loadingText="Approving..."
+            >
               Yes, Approve
-            </Button>
+            </LoadingButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -378,15 +384,15 @@ export function PaymentReviewDialog({
             >
               Cancel
             </Button>
-            <Button
+            <LoadingButton
               variant="destructive"
-              disabled={!rejectReason.trim() || isSubmitting}
+              disabled={!rejectReason.trim()}
               onClick={handleRejectConfirmed}
-              className="gap-2"
+              isLoading={isSubmitting}
+              loadingText="Rejecting..."
             >
-              {isSubmitting && <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />}
               Reject
-            </Button>
+            </LoadingButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

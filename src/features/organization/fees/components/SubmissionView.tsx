@@ -6,13 +6,15 @@ export function SubmissionsView({
   logs,
   viewMode,
   onViewDetails,
+  filterStatus = "all",
 }: {
   logs: PaymentLog[];
   viewMode: "card" | "table";
   onViewDetails: (log: PaymentLog) => void;
+  filterStatus?: string;
 }) {
   if (viewMode === "table") {
-    return <PaymentTable logs={logs} onViewDetails={onViewDetails} />;
+    return <PaymentTable logs={logs} onViewDetails={onViewDetails} filterStatus={filterStatus} />;
   }
-  return <PaymentCards logs={logs} onViewDetails={onViewDetails} />;
+  return <PaymentCards logs={logs} onViewDetails={onViewDetails} filterStatus={filterStatus} />;
 }

@@ -111,15 +111,16 @@ export function PaymentDetailDialog({
         {log.status === "pending" && (
           <DialogFooter className="gap-2 sm:gap-0 font-medium">
             <Button 
-              variant="outline" 
-              className="flex-1 text-destructive hover:bg-destructive/10" 
+              variant="destructive" 
+              className="flex-1 gap-2" 
               onClick={() => onReject(feeId, log.id)}
               disabled={isSubmitting}
             >
-              <XCircle className="size-4 mr-1" /> Reject
+              <XCircle className="size-4" /> Reject
             </Button>
             <Button 
-              className="flex-1 bg-primary hover:bg-primary/90 gap-2" 
+              variant="success"
+              className="flex-1 gap-2" 
               onClick={() => onApprove(feeId, log.id)}
               disabled={isSubmitting}
             >

@@ -49,7 +49,7 @@ export function DashboardLayout() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 pb-5 lg:pb-0">
       <PageHeader
         variant="admin"
         title="Dashboard"
@@ -67,7 +67,7 @@ export function DashboardLayout() {
       />
 
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-10">
         <RecentPayments
           isLoading={isLoading}
           payments={recentPayments}

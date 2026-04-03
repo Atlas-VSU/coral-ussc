@@ -1,10 +1,12 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/organization/general/PageHeader"
 import { PaymentReviewDialog } from "@/components/organization/receipt/PaymentReviewDialog"
 import { PaymentStats } from "./components/PaymentStats"
+import { PaymentsFilters } from "./components/PaymentsFilters"
 import { SubmissionsTab } from "./components/SubmissionsTab"
 import { UnpaidTab } from "./components/UnpaidTab"
 import { LogPaymentDialog } from "./components/LogPaymentDialog"
@@ -42,6 +44,54 @@ export default function PaymentsPage() {
     stats, totalUnpaidCount
   } = usePaymentsPage()
 
+  // Local search states for filters
+  const [searchTerm, setSearchTerm] = useState(search)
+  const [unpaidSearchTerm, setUnpaidSearchTerm] = useState(unpaidSearch)
+
+  // Sync with hook state
+  useEffect(() => {
+    setSearchTerm(search)
+  }, [search])
+
+  useEffect(() => {
+    setUnpaidSearchTerm(unpaidSearch)
+  }, [unpaidSearch])
+
+  // Submissions tab handlers
+  const handleSearchCommit = () => {
+    setSearch(searchTerm)
+    setSubmissionPage(1)
+  }
+
+  const handleSearchClear = () => {
+    setSearchTerm("")
+    setSearch("")
+    setSubmissionPage(1)
+  }
+
+  const handleSubmissionsRefresh = () => {
+    handleSearchClear()
+    setFilterStatus("all")
+    refetchPayments()
+  }
+
+  // Unpaid tab handlers
+  const handleUnpaidSearchCommit = () => {
+    setUnpaidSearch(unpaidSearchTerm)
+    setUnpaidPage(1)
+  }
+
+  const handleUnpaidSearchClear = () => {
+    setUnpaidSearchTerm("")
+    setUnpaidSearch("")
+    setUnpaidPage(1)
+  }
+
+  const handleUnpaidRefresh = () => {
+    handleUnpaidSearchClear()
+    refetchUnpaids()
+  }
+
   const handleViewReceipt = () => {
     setReceiptData({
       receiptId: selectedPayment?.receiptCode || "N/A",
@@ -68,7 +118,7 @@ export default function PaymentsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 pb-24 lg:pb-0">
+    <div className="flex flex-col gap-6 pb-5 lg:pb-0">
       <PageHeader
         variant="admin"
         title="Payment Submissions"
@@ -77,6 +127,40 @@ export default function PaymentsPage() {
       />
 
       <PaymentStats {...stats} />
+
+      {/* ── Filters (Outside Card) ── */}
+      {dataView === "submissions" ? (
+        <PaymentsFilters
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onSearchCommit={handleSearchCommit}
+          onSearchClear={handleSearchClear}
+          statusFilter={filterStatus}
+          onStatusChange={(v) => {
+            setFilterStatus(v)
+            setSubmissionPage(1)
+          }}
+          viewMode={viewMode}
+          onViewChange={setViewMode}
+          onRefresh={handleSubmissionsRefresh}
+          disabled={isLoading || isLoadingUnpaid}
+          showStatusFilter={true}
+        />
+      ) : (
+        <PaymentsFilters
+          searchTerm={unpaidSearchTerm}
+          onSearchChange={setUnpaidSearchTerm}
+          onSearchCommit={handleUnpaidSearchCommit}
+          onSearchClear={handleUnpaidSearchClear}
+          statusFilter="all"
+          onStatusChange={() => {}}
+          viewMode={unpaidViewMode}
+          onViewChange={setUnpaidViewMode}
+          onRefresh={handleUnpaidRefresh}
+          disabled={isLoading || isLoadingUnpaid}
+          showStatusFilter={false}
+        />
+      )}
 
       {/* ── Main Card ── */}
       <Card className="border-border bg-card">
@@ -98,33 +182,23 @@ export default function PaymentsPage() {
             paginated={paginated}
             totalPages={totalPages}
             currentPage={submissionPage}
-            search={search}
-            filterStatus={filterStatus}
             viewMode={viewMode}
             onPageChange={setSubmissionPage}
-            onSearchChange={setSearch}
-            onStatusChange={setFilterStatus}
-            onViewChange={setViewMode}
             onOpenReview={openReview}
             isLoading={isLoading}
-            refetchPayments={handleRefresh}
-            isLoadingUnpaid={isLoadingUnpaid}
             totalCount={totalSubmissionCount}
+            filterStatus={filterStatus}
           />
         ) : (
           <UnpaidTab
             paginatedUnpaid={filteredUnpaid}
             unpaidTotalPages={unpaidTotalPages}
             unpaidPage={unpaidPage}
-            unpaidSearch={unpaidSearch}
             unpaidViewMode={unpaidViewMode}
             onPageChange={setUnpaidPage}
-            onSearchChange={setUnpaidSearch}
             onViewChange={setUnpaidViewMode}
             onOpenDetail={openUnpaidDetail}
             isLoading={isLoadingUnpaid}
-            refetchPayments={handleRefresh}
-            isLoadingUnpaid={isLoadingUnpaid}
             totalCount={totalUnpaidCount}
           />
         )}

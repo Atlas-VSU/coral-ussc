@@ -1,5 +1,5 @@
 import { PenLine } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { LoadingButton } from "@/components/ui/loading-button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
@@ -184,24 +184,17 @@ export function LogPaymentDialog({
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button
-            disabled={selectedDues.length === 0 || isLoading || isSubmitting}
+          <LoadingButton variant="outline" onClick={() => onOpenChange(false)}>Cancel</LoadingButton>
+          <LoadingButton
+            disabled={selectedDues.length === 0}
             className="gap-1.5 bg-[#1B5E20] text-white hover:bg-[#2E7D32] dark:bg-green-700 dark:hover:bg-green-600"
             onClick={onLogPayment}
+            isLoading={isLoading || isSubmitting}
+            loadingText="Logging Payment..."
           >
-            {isLoading || isSubmitting ? (
-              <>
-                <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
-                Logging Payment...
-              </>
-            ) : (
-              <>
-                <PenLine className="size-3.5" />
-                Log Payment
-              </>
-            )}
-          </Button>
+            <PenLine className="size-3.5" />
+            Log Payment
+          </LoadingButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

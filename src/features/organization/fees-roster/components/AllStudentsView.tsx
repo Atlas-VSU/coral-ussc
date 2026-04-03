@@ -8,14 +8,16 @@ export function AllStudentsView({
   viewMode,
   onViewDetails,
   onManualLog,
+  filterStatus = "all",
 }: {
   rows: Row[];
   viewMode: "card" | "table";
   onViewDetails: (log: PaymentLog) => void;
   onManualLog: (student: Partial<Member>) => void;
+  filterStatus?: string;
 }) {
   if (viewMode === "table") {
-    return <AllStudentsTable rows={rows} onViewDetails={onViewDetails} onManualLog={onManualLog} />;
+    return <AllStudentsTable rows={rows} onViewDetails={onViewDetails} onManualLog={onManualLog} filterStatus={filterStatus} />;
   }
-  return <AllStudentsCards rows={rows} onViewDetails={onViewDetails} onManualLog={onManualLog} />;
+  return <AllStudentsCards rows={rows} onViewDetails={onViewDetails} onManualLog={onManualLog} filterStatus={filterStatus} />;
 }

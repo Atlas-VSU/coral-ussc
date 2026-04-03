@@ -166,7 +166,6 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                                 <Button 
                                     size="sm" 
                                     variant="outline" 
-                                    className="border-[#2E7D32]/30 text-[#1B5E20] hover:bg-[#AED581]/20"
                                     onClick={() => setPaymentOpen(true)}
                                 >
                                     Review Payment
@@ -377,8 +376,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                                     {/* View details */}
                                     <Button
                                         size="sm"
-                                        variant="outline"
-                                        className="self-end gap-1.5 text-xs h-8 !bg-[#95e969] border-[#2E7D32]/30 text-[#0c3b0f] !hover:bg-[#57871f]"
+                                        variant="default"   
                                         onClick={() => openFineDetail(item)}
                                     >
                                         <Eye className="size-3.5" />

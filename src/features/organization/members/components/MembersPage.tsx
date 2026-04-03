@@ -30,7 +30,20 @@ import { BulkImportResultModal } from "@/features/organization/members/component
 import { usePaginatedMembers } from "@/features/organization/members/hooks/usePaginatedMembers";
 import { createFinePerStudent } from "@/firebase/fines/create/fines";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, RefreshCcw, Upload, UserPlus } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  RefreshCcw,
+  Upload,
+  UserPlus,
+} from "lucide-react";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 export function MembersPage() {
   const {
@@ -65,7 +78,8 @@ export function MembersPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [isBulkImportOpenResult, setIsBulkImportOpenResult] = useState(false);
-  const [bulkImportResult, setBulkImportResult] = useState<BulkImportResult | null>(null);
+  const [bulkImportResult, setBulkImportResult] =
+    useState<BulkImportResult | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -74,6 +88,7 @@ export function MembersPage() {
   const [currentBatch, setCurrentBatch] = useState(0);
   const [totalBatches, setTotalBatches] = useState(0);
   const [totalStudents, setTotalStudents] = useState(0);
+  const [value, setValue] = useState("");
 
   // ─── Member actions ───────────────────────────────────────────────────────
   const handleAddMember = () => {
@@ -129,7 +144,9 @@ export function MembersPage() {
       }
       refreshData();
     } catch (error) {
-      toast.error(selectedMember ? "Failed to update member" : "Failed to add member");
+      toast.error(
+        selectedMember ? "Failed to update member" : "Failed to add member",
+      );
       console.error(error);
     } finally {
       setIsFormSubmitting(false);
@@ -142,7 +159,9 @@ export function MembersPage() {
     setIsImporting(true);
     try {
       const result = (await processFileForBulkImport(file, (progress) => {
-        setImportProgress((progress.processedCount / progress.totalCount) * 100);
+        setImportProgress(
+          (progress.processedCount / progress.totalCount) * 100,
+        );
         setCurrentBatch(progress.currentBatch);
         setTotalBatches(progress.totalBatches);
         setTotalStudents(progress.totalCount);
@@ -166,21 +185,23 @@ export function MembersPage() {
   const isBusy = isLoading || isRefreshing;
 
   return (
-    <div className="flex flex-col gap-6 pb-24 lg:pb-0">
+    <div className="flex flex-col gap-6 pb-5 lg:pb-0">
       <PageHeader
         variant="admin"
         title="Members"
         context="2nd Semester · A.Y. 2025–2026"
         description={`${totalMembers} total member${totalMembers !== 1 ? "s" : ""} in your organization`}
         action={
-          <div className="flex flex-wrap gap-2">
+          <div className="hidden lg:flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={refreshData}
               disabled={isBusy}
             >
-              <RefreshCcw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+              <RefreshCcw
+                className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+              />
               Refresh
             </Button>
             <Button
@@ -198,6 +219,55 @@ export function MembersPage() {
           </div>
         }
       />
+
+      <Select
+        value={value}
+        onValueChange={(value) => {
+          switch (value) {
+            case "refresh":
+              refreshData();
+              break;
+            case "bulk-import":
+              setIsBulkImportOpen(true);
+              break;
+            case "add-member":
+              handleAddMember();
+              break;
+          }
+          setValue("")
+        }}
+
+        
+      >
+        <SelectTrigger className="lg:hidden w-full">
+          <SelectValue placeholder="Actions" />
+        </SelectTrigger>
+
+        <SelectContent>
+          <SelectItem value="refresh" disabled={isBusy}>
+            <div className="flex items-center">
+              <RefreshCcw
+                className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </div>
+          </SelectItem>
+
+          <SelectItem value="bulk-import">
+            <div className="flex items-center">
+              <Upload className="mr-2 h-4 w-4" />
+              Bulk Import
+            </div>
+          </SelectItem>
+
+          <SelectItem value="add-member">
+            <div className="flex items-center">
+              <UserPlus className="mr-2 h-4 w-4" />
+              Add Member
+            </div>
+          </SelectItem>
+        </SelectContent>
+      </Select>
 
       {/* Filters — search wired to Enter-only commit */}
       <MembersFilters
@@ -268,7 +338,6 @@ export function MembersPage() {
           </div>
         </div>
       )}
-
 
       {/* Dialogs */}
       <MemberForm

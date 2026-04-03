@@ -4,6 +4,7 @@ import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { FineItem, StudentFines } from "../types";
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
@@ -205,14 +206,15 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
                         </div>
                         <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => { onOpenChange(false) }}>Cancel</Button>
-                        <Button type="submit" className="gap-1.5" disabled={isSubmitting}>
-                            <PenLine className="size-3.5" /> {isSubmitting ? (
-                                <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                                    { "Processing..."}
-                                </>
-                            ) : ("Mark as Paid")}
-                        </Button>
+                        <LoadingButton 
+                            type="submit" 
+                            variant="success" 
+                            className="gap-1.5" 
+                            isLoading={isSubmitting}
+                            loadingText="Processing..."
+                        >
+                            <PenLine className="size-3.5" /> Mark as Paid
+                        </LoadingButton>
                         </DialogFooter>
                         </div>
                         </form>

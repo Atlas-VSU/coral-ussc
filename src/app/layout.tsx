@@ -34,7 +34,7 @@ export default function RootLayout({
         className={`${montserrat.variable} antialiased`}
         suppressHydrationWarning
       >
-        <NextTopLoader
+        <NextTopLoader  
           color="var(--accent)"
           shadow="0 0 10px var(--accent), 0 0 5px var(--accent)"
         />

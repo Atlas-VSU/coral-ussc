@@ -254,14 +254,12 @@ export const generateFeesForAllStudentsInAnOrg = async (
     cacheService.invalidateByPrefix(`clearance:count:${orgId}`);
 };
 
-export const fetchFeeItem = async(orgId: string, title: string, academicYear: string, semester: string): Promise<FeeItem | null> => {
+export const fetchFeeItem = async(orgId: string, feeItemId: string): Promise<FeeItem | null> => {
     const feesRef = collection(db, "feeItems");
     const q = query(
         feesRef,
         where("orgId", "==", orgId),
-        where("title", "==", title),
-        where("academicYear", "==", academicYear),
-        where("semester", "==", semester),
+        where("id", "==", feeItemId),
         where("isArchived", "==", false),
         limit(1)
     );
@@ -389,8 +387,7 @@ export const getTotalPendingAmountCount = async(feeItemId: string): Promise<numb
  */
 export const fetchFeesPaginated = async (
   orgId: string,
-  title: string,
-  academicYear: string,
+  feeItemId: string,
   pageSize: number = 10,
   lastVisibleDoc: any = null,
   searchTerm: string = "",
@@ -398,8 +395,7 @@ export const fetchFeesPaginated = async (
 ) => {
   let constraints: any[] = [
     where("orgId", "==", orgId),
-    where("title", "==", title),
-    where("academicYear", "==", academicYear),
+    where("feeItemId", "==", feeItemId),
     where("isArchived", "==", false),
   ];
 
@@ -452,20 +448,16 @@ export const fetchFeesPaginated = async (
  */
 export const getFeesCount = async (
   orgId: string,
-  title: string,
-  academicYear: string,
-  semester: string,
+  feeItemId: string,
   statusFilter: string = "all",
   searchTerm: string = ""
 ) => {
   return cacheService.getOrFetch(
-    CACHE_KEYS.feesCount(orgId, title, academicYear, semester, statusFilter, searchTerm),
+    CACHE_KEYS.feesCount(orgId, feeItemId, statusFilter, searchTerm),
     async () => {
       const constraints: any[] = [
         where("orgId", "==", orgId),
-        where("title", "==", title),
-        where("academicYear", "==", academicYear),
-        where("semester", "==", semester),
+        where("feeItemId", "==", feeItemId),
         where("isArchived", "==", false),
       ];
 
@@ -495,14 +487,11 @@ export const getFeesCount = async (
 export const getFeeSubmissionsCount = async (
   orgId: string,
   feeId: string,
-  title: string,
-  academicYear: string,
-  semester: string,
   statusFilter: string = "all",
   searchTerm: string = ""
 ) => {
   return cacheService.getOrFetch(
-    CACHE_KEYS.feeSubmissionCount(orgId, title, academicYear, semester, statusFilter, searchTerm),
+    CACHE_KEYS.feeSubmissionCount(orgId, feeId, statusFilter, searchTerm),
         async () => {
         let constraints: any[] = [
             where("orgId", "==", orgId),
@@ -543,9 +532,7 @@ export const getFeeSubmissionsCount = async (
  */
 export const fetchFeeSubmissionsPaginated = async (
   orgId: string,
-  feeTitle: string,
-  academicYear: string,
-  semester: string,
+  feeItemId: string,
   pageSize: number = 10,
   lastVisibleDoc: any = null,
   statusFilter: string = "all",
@@ -592,7 +579,7 @@ export const fetchFeeSubmissionsPaginated = async (
     ...doc.data(),
   }));
 
-  docs = docs.filter((doc : any) => doc.metadata.items?.find((item: any) => item.title === feeTitle && item.academicYear === academicYear && item.semester === semester));
+  docs = docs.filter((doc : any) => doc.itemKeys?.includes(feeItemId));
   return {
     docs,
     lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
@@ -870,7 +857,7 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                         verifiedByName: adminName,
                         verifiedAt: Timestamp.now(),
                         rejectionReason: null,
-                        notes: `Bulk manual payment recorded by admin. Items: ${items.map(i => i.refId).join(', ')}`,
+                        notes: `Manual payment recorded from clearance page. Items: ${items.map(i => i.refId).join(', ')}`,
                         paymentType: overallPaymentType,
                         metadata: { items: itemDocsToUpdate.map(i => ({
                             refId: i.refId,
@@ -920,7 +907,7 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                 verifiedByName: adminName,
                 verifiedAt: Timestamp.now(),
                 rejectionReason: "",
-                notes: "Bulk manual payment recorded by admin",
+                notes: "Manual payment recorded from clearance page",
                 metadata: { items: itemDocsToUpdate.map(i => ({
                     refId: i.refId,
                     title: i.title,
