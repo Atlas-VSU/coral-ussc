@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import {
@@ -173,24 +173,17 @@ export function FineTypeForm({
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
+              <LoadingButton variant="outline" onClick={onCancel} disabled={isSubmitting}>
                 Cancel
-              </Button>
-              <Button 
+              </LoadingButton>
+              <LoadingButton 
                 variant="success"
                 type="submit" 
-                disabled={isSubmitting}
-                className="gap-1.5"
+                isLoading={isSubmitting}
+                loadingText={initialData ? "Saving..." : "Adding..."}
               >
-                {isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                    {initialData ? "Saving..." : "Adding..."}
-                  </>
-                ) : (
-                  initialData ? "Save Changes" : "Add Fine Type"
-                )}
-              </Button>
+                {initialData ? "Save Changes" : "Add Fine Type"}
+              </LoadingButton>
             </DialogFooter>
           </form>
         </Form>

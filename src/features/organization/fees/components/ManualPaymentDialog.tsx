@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
 import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -191,17 +192,16 @@ export function ManualPaymentDialog({
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" variant="success" className="gap-1.5" disabled={isSubmitting}>
+                <LoadingButton 
+                  type="submit" 
+                  variant="success" 
+                  className="gap-1.5" 
+                  isLoading={isSubmitting}
+                  loadingText="Processing..."
+                >
                   <PenLine className="size-3.5" />
-                  {isSubmitting ? (
-                     <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                        Processing...
-                     </>
-                  ) : (
-                    "Mark as Paid"
-                  )}
-                </Button>
+                  Mark as Paid
+                </LoadingButton>
               </DialogFooter>
             </div>
           </form>

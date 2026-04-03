@@ -7,7 +7,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -288,30 +288,23 @@ export function MemberForm({
             </div>
 
             <DialogFooter>
-              <Button
+              <LoadingButton
                 variant="outline"
                 type="button"
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
               >
                 Cancel
-              </Button>
-              <Button
+              </LoadingButton>
+              <LoadingButton
                 type="submit"
                 variant="success"
-                disabled={!agreed || isSubmitting}
+                disabled={!agreed}
+                isLoading={isSubmitting}
+                loadingText={member ? "Saving..." : "Adding..."}
               >
-                {isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-                    {member ? "Saving..." : "Adding..."}
-                  </>
-                ) : member ? (
-                  "Save Changes"
-                ) : (
-                  "Add Member"
-                )}
-              </Button>
+                {member ? "Save Changes" : "Add Member"}
+              </LoadingButton>
             </DialogFooter>
           </form>
         </Form>

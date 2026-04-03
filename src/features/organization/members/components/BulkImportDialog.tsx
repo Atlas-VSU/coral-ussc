@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import {
   Card,
   CardContent,
@@ -490,21 +491,16 @@ export function BulkImportDialog({
           >
             Cancel
           </Button>
-          {!isImporting ? (
-            <Button
-              onClick={handleImport}
-              disabled={!file || !agreed}
-              className="!bg-[#1B5E20] !text-white hover:!bg-[#0d4017] disabled:!bg-gray-300 disabled:!text-gray-600"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Import Members
-            </Button>
-          ) : (
-            <Button disabled className="!bg-[#1B5E20] !text-white">
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
-              Importing...
-            </Button>
-          )}
+          <LoadingButton
+            onClick={handleImport}
+            disabled={!file || !agreed}
+            className="!bg-[#1B5E20] !text-white hover:!bg-[#0d4017] disabled:!bg-gray-300 disabled:!text-gray-600"
+            isLoading={isImporting}
+            loadingText="Importing..."
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Import Members
+          </LoadingButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>
