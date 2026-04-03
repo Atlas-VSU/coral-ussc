@@ -143,6 +143,36 @@ const getLatestRejectedReason = (logs: PaymentLogRecord[]): string | undefined =
   return rejectedLogs[0]?.reason;
 };
 
+const normalizePaymentState = (
+  status: unknown
+): "unpaid" | "pending" | "rejected" | "verified" => {
+  if (status === "pending") return "pending";
+  if (status === "verified") return "verified";
+  if (status === "rejected") return "rejected";
+  return "unpaid";
+};
+
+const getLatestPaymentHistoryState = (
+  logs: PaymentLogRecord[]
+): "pending" | "verified" | "rejected" | undefined => {
+  const latest = logs
+    .map((log) => ({
+      status: log.status,
+      updatedAt: Math.max(
+        toMillis(log.verifiedAt),
+        toMillis(log.metaData?.updatedAt),
+        toMillis(log.createdAt)
+      ),
+    }))
+    .filter(
+      (entry): entry is { status: "pending" | "verified" | "rejected"; updatedAt: number } =>
+        entry.status === "pending" || entry.status === "verified" || entry.status === "rejected"
+    )
+    .sort((a, b) => b.updatedAt - a.updatedAt)[0];
+
+  return latest?.status;
+};
+
 const buildOrgDisplay = (orgId: string, data: Record<string, unknown> | undefined) => {
   const acronym =
     String(data?.acronym ?? "").trim() ||
@@ -250,18 +280,11 @@ export async function GET(request: NextRequest) {
       );
 
       const latestRejectionReason = getLatestRejectedReason(feePaymentLogs);
-      const hasPendingSubmission =
-        isPendingSubmissionStatus(fee.status) ||
-        feePaymentLogs.some((log) => isPendingSubmissionStatus(log.status));
-      const hasVerifiedSubmission = feePaymentLogs.some((log) => isVerifiedSubmissionStatus(log.status));
-      const isPayable = !hasPendingSubmission && !hasVerifiedSubmission;
-      const paymentState: "unpaid" | "pending" | "rejected" | "verified" = hasPendingSubmission
-        ? "pending"
-        : hasVerifiedSubmission
-          ? "verified"
-        : latestRejectionReason
-          ? "rejected"
-          : "unpaid";
+      const latestHistoryState = getLatestPaymentHistoryState(feePaymentLogs);
+      const paymentState: "unpaid" | "pending" | "rejected" | "verified" = latestHistoryState
+        ? normalizePaymentState(latestHistoryState)
+        : normalizePaymentState(fee.status);
+      const isPayable = paymentState === "unpaid" || paymentState === "rejected";
 
       const outstanding = asNumber(fee.balance) > 0 ? asNumber(fee.balance) : asNumber(fee.amount);
       const existing = grouped.get(fee.orgId) ?? {
@@ -315,18 +338,11 @@ export async function GET(request: NextRequest) {
       );
 
       const latestRejectionReason = getLatestRejectedReason(finePaymentLogs);
-      const hasPendingSubmission =
-        isPendingSubmissionStatus(fine.status) ||
-        finePaymentLogs.some((log) => isPendingSubmissionStatus(log.status));
-      const hasVerifiedSubmission = finePaymentLogs.some((log) => isVerifiedSubmissionStatus(log.status));
-      const isPayable = !hasPendingSubmission && !hasVerifiedSubmission;
-      const paymentState: "unpaid" | "pending" | "rejected" | "verified" = hasPendingSubmission
-        ? "pending"
-        : hasVerifiedSubmission
-          ? "verified"
-        : latestRejectionReason
-          ? "rejected"
-          : "unpaid";
+      const latestHistoryState = getLatestPaymentHistoryState(finePaymentLogs);
+      const paymentState: "unpaid" | "pending" | "rejected" | "verified" = latestHistoryState
+        ? normalizePaymentState(latestHistoryState)
+        : normalizePaymentState(fine.status);
+      const isPayable = paymentState === "unpaid" || paymentState === "rejected";
 
       const outstanding =
         asNumber(fine.balance) > 0 ? asNumber(fine.balance) : asNumber(fine.accumulatedAmount);
