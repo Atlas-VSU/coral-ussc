@@ -33,7 +33,7 @@ export const getClearanceStats = async (orgId: string, statusFilter: string = "a
  */
 export const fetchClearanceDocumentsPaginated = async (
   orgId: string,
-  pageSize: number = 10,
+  pageSize: number = 9,
   lastVisibleDoc: any = null,
   searchTerm: string = "",
   statusFilter: string = "all",

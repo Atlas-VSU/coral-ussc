@@ -191,7 +191,7 @@ export const getUnpaidFineItemsByFineId = async (fine: StudentFines) => {
  */
 export const fetchFinesPaginated = async (
   orgId: string,
-  pageSize: number = 10,
+  pageSize: number = 9,
   lastVisibleDoc: any = null,
   searchTerm: string = "",
   statusFilter: string = "all"
@@ -227,7 +227,7 @@ export const fetchFinesPaginated = async (
     constraints.push(startAfter(lastVisibleDoc));
   }
 
-  const q = query(finesCollection, ...constraints, limit(10));
+  const q = query(finesCollection, ...constraints, limit(9));
   const snapshot = await getDocs(q);
 
   const docs = snapshot.docs.map((doc) => {

@@ -388,7 +388,7 @@ export const getTotalPendingAmountCount = async(feeItemId: string): Promise<numb
 export const fetchFeesPaginated = async (
   orgId: string,
   feeItemId: string,
-  pageSize: number = 10,
+  pageSize: number = 9,
   lastVisibleDoc: any = null,
   searchTerm: string = "",
   statusFilter: string = "all"
@@ -533,7 +533,7 @@ export const getFeeSubmissionsCount = async (
 export const fetchFeeSubmissionsPaginated = async (
   orgId: string,
   feeItemId: string,
-  pageSize: number = 10,
+  pageSize: number = 9,
   lastVisibleDoc: any = null,
   statusFilter: string = "all",
   searchTerm: string = ""

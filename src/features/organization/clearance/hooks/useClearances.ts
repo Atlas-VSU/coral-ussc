@@ -7,7 +7,7 @@ import type { ClearanceStatus } from "../types"
 
 export function useClearances(
   orgId: string | undefined,
-  pageSize: number = 10,
+  pageSize: number = 9,
   searchTerm: string = "",
   statusFilter: string = "all",
   currentPage: number = 1
