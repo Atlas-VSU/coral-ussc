@@ -1,17 +1,22 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { fetchClearanceDocumentsPaginated, getClearanceCount } from "@/firebase/clearance"
+import { fetchClearanceDocumentsPaginated, fetchStats, getClearanceCount } from "@/firebase/clearance"
 import { cacheService } from "@/services/cacheService"
 import type { ClearanceStatus } from "../types"
 
 export function useClearances(
   orgId: string | undefined,
-  pageSize: number = 10,
+  pageSize: number = 9,
   searchTerm: string = "",
   statusFilter: string = "all",
   currentPage: number = 1
 ) {
+  const [stats, setStats] = useState<{ cleared: number; not_cleared: number; pending: number }>({
+    cleared: 0,
+    not_cleared: 0,
+    pending: 0,
+  })
   const [clearances, setClearances] = useState<ClearanceStatus[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -26,28 +31,28 @@ export function useClearances(
   const fetchCount = useCallback(async () => {
     if (!orgId) return
 
-    const cacheKey = `clearance:count:${orgId}:${statusFilter}:${searchTerm}`
-    const cached = cacheService.get(cacheKey)
-    if (cached !== null && cached !== undefined) { 
-      const countValue = typeof cached === 'object' && 'data' in (cached as any) 
-        ? (cached as any).data 
-        : cached;
-      setTotalCount(countValue as any)
-      return 
-    }
-
     try {
       const count = await getClearanceCount(orgId, statusFilter, searchTerm)
-      cacheService.set(cacheKey, count, 5 * 60 * 1000) 
       setTotalCount(count)
     } catch (err) {
       console.error("Error fetching clearance count:", err)
     }
   }, [orgId, statusFilter, searchTerm])
 
-  useEffect(() => {
-    fetchCount()
-  }, [fetchCount])
+  
+
+  const fetchStatsData = useCallback(async () => {
+    if (!orgId) return
+
+    try {
+      const data = await fetchStats(orgId)
+      if (data) {
+        setStats(data)
+      }
+    } catch (err) {
+      console.error("Error fetching clearance stats:", err)
+    }
+  }, [orgId])
 
   const fetchData = useCallback(async () => {
     if (!orgId) return
@@ -84,8 +89,13 @@ export function useClearances(
   }, [orgId, pageSize, searchTerm, statusFilter, currentPage])
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    const init = async () => {
+      await fetchData()
+      await fetchStatsData()
+      await fetchCount()
+    }
+    init()
+  }, [fetchData, fetchStatsData, fetchCount])
 
   const hardRefresh = useCallback(async () => {
     if (!orgId || isRefreshing) return
@@ -102,7 +112,8 @@ export function useClearances(
 
       await Promise.all([
         fetchData(),
-        fetchCount()
+        fetchCount(),
+        fetchStatsData()
       ])
     } finally {
       setIsRefreshing(false)
@@ -116,6 +127,8 @@ export function useClearances(
     totalCount, 
     hasNextPage,
     setClearances, 
-    hardRefresh 
+    hardRefresh ,
+    stats,
+    fetchStatsData
   }
 }

@@ -66,7 +66,7 @@ export function AdminSidebar({ user, className }: { user?: User; className?: str
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "hidden shrink-0 border-r border-[#E0E0E0] bg-white lg:flex lg:flex-col transition-[width] duration-200 ease-in-out sticky top-0 h-svh",
+          "hidden shrink-0 border-r border-[#E0E0E0] bg-white xl:flex xl:flex-col transition-[width] duration-200 ease-in-out sticky top-0 h-svh",
           collapsed ? "w-15" : "w-60",
           className
         )}
@@ -97,7 +97,7 @@ export function AdminSidebar({ user, className }: { user?: User; className?: str
       </aside>
 
       {/* Mobile top bar */}
-      <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-[#E0E0E0] bg-white px-4 lg:hidden" suppressHydrationWarning>
+      <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-[#E0E0E0] bg-white px-4 xl:hidden" suppressHydrationWarning>
         {mounted ? (
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
@@ -110,9 +110,9 @@ export function AdminSidebar({ user, className }: { user?: User; className?: str
               <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
               <div className="absolute right-3 top-3 z-10">
                 <Button
-                  variant="ghost"
+                  variant="icon"
                   size="icon"
-                  className="size-8 text-[#616161] hover:bg-[#F5F5F5] hover:text-[#1B5E20]"
+                  className="size-8 text-[#616161]"
                   onClick={() => setOpen(false)}
                 >
                   <X className="size-4" />

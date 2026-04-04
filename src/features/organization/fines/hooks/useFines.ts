@@ -13,7 +13,7 @@ interface UseFinesProps {
   itemsPerPage?: number;
 }
 
-export function useFines({ initialStatusFilter = "all", itemsPerPage = 10 }: UseFinesProps = {}) {
+export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseFinesProps = {}) {
   const [paginatedFines, setPaginatedFines] = useState<StudentFines[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);

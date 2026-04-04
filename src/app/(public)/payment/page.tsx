@@ -22,6 +22,13 @@ export interface OrganizationData {
   name: string;
   acronym: string;
   outstandingAmount: number;
+  statusStates?: Array<"unpaid" | "pending" | "rejected" | "verified">;
+  paymentSummary?: {
+    pending: number;
+    verified: number;
+    rejected: number;
+    unpaid: number;
+  };
 }
 
 export interface FeeItem {
@@ -61,6 +68,12 @@ export interface Fine {
 interface OrganizationDueData extends OrganizationData {
   feeAmount: number;
   fineAmount: number;
+  paymentSummary?: {
+    pending: number;
+    verified: number;
+    rejected: number;
+    unpaid: number;
+  };
   fees: FeeItem[];
   fines: Fine[];
   fineItems: FineItem[];
@@ -88,6 +101,27 @@ export default function PaymentPage() {
     return organizationDues.find((org) => org.id === selectedOrgId) || null;
   }, [organizationDues, selectedOrgId]);
 
+  const getOrganizationStatusStates = (org: OrganizationDueData) => {
+    const states = new Set<"unpaid" | "pending" | "rejected" | "verified">();
+
+    for (const fee of org.fees) {
+      states.add(fee.paymentState ?? "unpaid");
+    }
+
+    for (const fine of org.fines) {
+      states.add(fine.paymentState ?? "unpaid");
+    }
+
+    const orderedStates: Array<"pending" | "verified" | "rejected" | "unpaid"> = [
+      "pending",
+      "verified",
+      "rejected",
+      "unpaid",
+    ];
+
+    return orderedStates.filter((state) => states.has(state));
+  };
+
   const loadStudentDues = async (studentId: string) => {
     setIsLoadingDues(true);
     setDuesError(null);
@@ -108,6 +142,7 @@ export default function PaymentPage() {
           name: org.name,
           acronym: org.acronym,
           outstandingAmount: Number(org.outstandingAmount ?? 0),
+          paymentSummary: org.paymentSummary ?? { pending: 0, verified: 0, rejected: 0, unpaid: 0 },
           feeAmount: Number(org.feeAmount ?? 0),
           fineAmount: Number(org.fineAmount ?? 0),
           fees: Array.isArray(org.fees) ? org.fees : [],
@@ -173,6 +208,8 @@ export default function PaymentPage() {
             name: org.name,
             acronym: org.acronym,
             outstandingAmount: org.outstandingAmount,
+            statusStates: getOrganizationStatusStates(org),
+            paymentSummary: org.paymentSummary,
           }))}
           currentStep={2}
           isLoading={isLoadingDues}

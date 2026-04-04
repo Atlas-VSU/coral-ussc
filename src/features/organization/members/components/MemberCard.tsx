@@ -3,7 +3,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Pencil, Trash2, Mail, Building2, Hash } from "lucide-react";
+import {
+  Pencil,
+  Trash2,
+  Mail,
+  Building2,
+  Hash,
+  ChevronRight,
+} from "lucide-react";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface MemberCardProps {
   memberData: MemberData;
@@ -20,6 +29,8 @@ export function MemberCard({
   onEdit,
   onDelete,
 }: MemberCardProps) {
+  const [expanded, setExpanded] = useState(false);
+
   const getProgramName = (programId: string) => {
     const program = programs.find((p) => p.id === programId);
     if (!program) {
@@ -57,127 +68,222 @@ export function MemberCard({
   };
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-200 border border-gray-200 bg-white overflow-hidden h-full flex flex-col hover:border-gray-300">
-      <CardContent className="p-0 flex flex-col flex-grow">
-        {/* Member Header */}
-        <div className="p-5 space-y-4">
-          <div className="flex items-start gap-4">
-            <Avatar className="h-12 w-12 border border-gray-200">
-              <AvatarFallback className="bg-linear-to-r from-[#b8d390] via-[#51a555] to-[#225825] text-white font-semibold text-sm">
+    <>
+      {/* Mobile Layout (< md) - Compact expandable card */}
+      <Card className="md:hidden group hover:shadow-md active:shadow-sm transition-all duration-200 border border-gray-200 bg-white overflow-hidden">
+        <CardContent className="p-0">
+          {/* Tappable header row */}
+          <div className="w-full p-3 flex items-center gap-3 text-left active:bg-gray-50 transition-colors">
+            <Avatar className="h-10 w-10 border border-gray-200 shrink-0">
+              <AvatarFallback className="bg-linear-to-r from-[#b8d390] via-[#51a555] to-[#225825] text-white font-semibold text-xs">
                 {getInitials(
                   memberData.member.firstName,
                   memberData.member.lastName,
                 )}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1 min-w-0 space-y-2">
-              <div>
-                <h3 className="font-semibold text-lg text-gray-900 break-words leading-tight tracking-tight">
-                  {memberData.member.firstName} {memberData.member.lastName}
-                </h3>
-                <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <Badge
-                    variant="secondary"
-                    className="bg-gray-100 text-gray-700 border-gray-200 font-medium text-xs px-2 py-1 tracking-wide"
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-sm text-gray-900 truncate">
+                {memberData.member.firstName} {memberData.member.lastName}
+              </h3>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-xs text-gray-500 truncate">
+                  {getProgramName(memberData.member.programId)}
+                </span>
+                <span className="text-gray-300">•</span>
+                <span className="text-xs text-gray-500 shrink-0">
+                  {memberData.member.yearLevel
+                    ? getYearLevelText(memberData.member.yearLevel)
+                    : "N/A"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Expandable details */}
+          <div
+            className={cn(
+              "grid transition-all duration-200 ease-in-out grid-rows-[1fr]",
+            )}
+          >
+            <div className="overflow-hidden">
+              <div className="px-3 pb-3 space-y-2 border-t border-gray-100 pt-2">
+                {/* Compact details list */}
+                <div className="flex items-center gap-2 text-xs">
+                  <Mail className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                  <span className="text-gray-600 truncate">
+                    {memberData.member.email || "No email"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <Building2 className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                  <span className="text-gray-600 truncate">
+                    {getFacultyName(memberData.member.facultyId as string)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <Hash className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                  <span className="text-gray-600 font-mono">
+                    {memberData.member.studentId}
+                  </span>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 h-9 text-xs font-medium"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(memberData);
+                    }}
                   >
-                    {getProgramName(memberData.member.programId)}
-                  </Badge>
-                  {memberData.member.yearLevel !== undefined &&
-                  memberData.member.yearLevel !== 0 ? (
-                    <Badge
-                      variant="outline"
-                      className="text-xs font-medium border-gray-300 text-gray-600 tracking-wide"
-                    >
-                      {getYearLevelText(memberData.member.yearLevel)}
-                    </Badge>
-                  ) : (
-                    <Badge
-                      variant="outline"
-                      className="text-xs font-medium border-gray-300 text-gray-600 tracking-wide"
-                    >
-                      N/A
-                    </Badge>
+                    <Pencil className="h-3.5 w-3.5 mr-1.5 text-green-700" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 h-9 text-xs font-medium text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(memberData);
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Desktop Layout (>= md) - Original full card */}
+      <Card className="hidden md:flex group hover:shadow-lg transition-all duration-200 border border-gray-200 bg-white overflow-hidden h-full flex-col hover:border-gray-300">
+        <CardContent className="p-0 flex flex-col flex-grow">
+          {/* Member Header */}
+          <div className="p-5 space-y-4">
+            <div className="flex items-start gap-4">
+              <Avatar className="h-12 w-12 border border-gray-200">
+                <AvatarFallback className="bg-linear-to-r from-[#b8d390] via-[#51a555] to-[#225825] text-white font-semibold text-sm">
+                  {getInitials(
+                    memberData.member.firstName,
+                    memberData.member.lastName,
                   )}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0 space-y-2">
+                <div>
+                  <h3 className="font-semibold text-lg text-gray-900 break-words leading-tight tracking-tight">
+                    {memberData.member.firstName} {memberData.member.lastName}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <Badge
+                      variant="secondary"
+                      className="bg-gray-100 text-gray-700 border-gray-200 font-medium text-xs px-2 py-1 tracking-wide"
+                    >
+                      {getProgramName(memberData.member.programId)}
+                    </Badge>
+                    {memberData.member.yearLevel !== undefined &&
+                    memberData.member.yearLevel !== 0 ? (
+                      <Badge
+                        variant="outline"
+                        className="text-xs font-medium border-gray-300 text-gray-600 tracking-wide"
+                      >
+                        {getYearLevelText(memberData.member.yearLevel)}
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="text-xs font-medium border-gray-300 text-gray-600 tracking-wide"
+                      >
+                        N/A
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-gray-200"></div>
+
+            {/* Member Details */}
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="w-7 h-7 bg-gray-100 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Mail className="h-3.5 w-3.5 text-gray-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">
+                    Email
+                  </p>
+                  <p className="text-sm text-gray-700 break-all leading-relaxed">
+                    {memberData.member.email || "No email provided"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-7 h-7 bg-gray-100 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Building2 className="h-3.5 w-3.5 text-gray-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">
+                    Faculty
+                  </p>
+                  <p className="text-sm text-gray-700 break-words leading-relaxed">
+                    {getFacultyName(memberData.member.facultyId as string)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-7 h-7 bg-gray-100 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Hash className="h-3.5 w-3.5 text-gray-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">
+                    Student ID
+                  </p>
+                  <p className="text-sm font-semibold text-gray-900 font-mono tracking-wide leading-relaxed break-all">
+                    {memberData.member.studentId}
+                  </p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="border-t border-gray-200"></div>
+          {/* Spacer to push the buttons to the bottom */}
+          <div className="flex-grow min-h-[10px]"></div>
 
-          {/* Member Details */}
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="w-7 h-7 bg-gray-100 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Mail className="h-3.5 w-3.5 text-gray-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">
-                  Email
-                </p>
-                <p className="text-sm text-gray-700 break-all leading-relaxed">
-                  {memberData.member.email || "No email provided"}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-7 h-7 bg-gray-100 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Building2 className="h-3.5 w-3.5 text-gray-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">
-                  Faculty
-                </p>
-                <p className="text-sm text-gray-700 break-words leading-relaxed">
-                  {getFacultyName(memberData.member.facultyId as string)}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="w-7 h-7 bg-gray-100 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Hash className="h-3.5 w-3.5 text-gray-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider">
-                  Student ID
-                </p>
-                <p className="text-sm font-semibold text-gray-900 font-mono tracking-wide leading-relaxed break-all">
-                  {memberData.member.studentId}
-                </p>
-              </div>
-            </div>
+          {/* Action Buttons */}
+          <div className="flex border-t border-gray-200 mt-auto bg-gray-50/50">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex-1 rounded-none h-11 text-sm font-medium hover:bg-gray-100 transition-colors duration-150"
+              onClick={() => onEdit(memberData)}
+            >
+              <Pencil className="h-4 w-4 mr-2 text-green-700" />
+              Edit
+            </Button>
+            <div className="border-r border-gray-200 h-11" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex-1 rounded-none h-11 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors duration-150"
+              onClick={() => onDelete(memberData)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
           </div>
-        </div>
-
-        {/* Spacer to push the buttons to the bottom */}
-        <div className="flex-grow min-h-[10px]"></div>
-
-        {/* Action Buttons */}
-        <div className="flex border-t border-gray-200 mt-auto bg-gray-50/50">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex-1 rounded-none h-11 text-sm font-medium hover:bg-gray-100 transition-colors duration-150"
-            onClick={() => onEdit(memberData)}
-          >
-            <Pencil className="h-4 w-4 mr-2 text-green-700" />
-            Edit
-          </Button>
-          <div className="border-r border-gray-200 h-11" />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex-1 rounded-none h-11 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors duration-150"
-            onClick={() => onDelete(memberData)}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </>
   );
 }

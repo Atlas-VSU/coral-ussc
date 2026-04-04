@@ -396,7 +396,7 @@ export const CACHE_KEYS = {
   feeRoster:    (orgId: string, title: string, year: string) => `fees:roster:${orgId}:${title}:${year}`,
   feeDoc:       (feeId: string) => `fees:doc:${feeId}`,
   feeLogs:      (feeId: string) => `fees:logs:${feeId}`,
-  feeSubmissionCount: (orgId: string, title: string, year: string, semester: string, statusFilter: string, searchTerm: string) => `fees:submission-count:${orgId}:${title}:${year}:${semester}:${statusFilter}:${searchTerm}`,
+  feeSubmissionCount: (orgId: string, feeItemId: string, statusFilter: string, searchTerm: string) => `fees:submission-count:${orgId}:${feeItemId}:${statusFilter}:${searchTerm}`,
 
   // Fines
   finesAll:        (orgId: string) => `fines:all:${orgId}`,
@@ -431,7 +431,7 @@ export const CACHE_KEYS = {
   clearanceCount: (orgId: string, statusFilter: string, searchTerm: string) => `clearance:count:${orgId}:${statusFilter}:${searchTerm}`,
 
   // Count aggregates
-  feesCount:      (orgId: string, title: string, year: string, semester: string, status: string, search: string) => `fees:count:${orgId}:${title}:${year}:${status}:${search}`,
+  feesCount:      (orgId: string, feeItemId: string, statusFilter: string, searchTerm: string) => `fees:count:${orgId}:${feeItemId}:${statusFilter}:${searchTerm}`,
   paymentsCount:  (orgId: string, statusFilter: string) => `payments:count:${orgId}:${statusFilter}`,
 
   // Fees

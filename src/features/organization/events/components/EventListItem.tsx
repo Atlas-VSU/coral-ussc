@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import type { Event } from "../types"
 import { formatDate } from "@/utils/useGeneralUtils"
+import { cn } from "@/lib/utils"
 
 interface EventListItemProps {
   event: Event
@@ -43,7 +44,10 @@ function formatTime(time: string | null | undefined) {
   return `${h12}:${minutes} ${ampm}`
 }
 
-function formatTimeRange(start: string | null | undefined, end: string | null | undefined) {
+function formatTimeRange(
+  start: string | null | undefined,
+  end: string | null | undefined,
+) {
   if (!start || !end) return null
   return `${formatTime(start)} – ${formatTime(end)}`
 }
@@ -66,20 +70,34 @@ function StatusBadge({ status }: { status: Event["status"] }) {
       )
     case "completed":
       return (
-        <Badge variant="outline" className="bg-muted text-muted-foreground font-semibold text-xs">
+        <Badge
+          variant="outline"
+          className="bg-muted text-muted-foreground font-semibold text-xs"
+        >
           Completed
         </Badge>
       )
     case "archived":
       return (
-        <Badge variant="outline" className="text-muted-foreground font-semibold text-xs">
+        <Badge
+          variant="outline"
+          className="text-muted-foreground font-semibold text-xs"
+        >
           Archived
         </Badge>
       )
   }
 }
 
-export function EventListItem({ event, onEdit, onArchive, onUnarchive, onDelete, onIssueFine, onMarkAsCompleted }: EventListItemProps) {
+export function EventListItem({
+  event,
+  onEdit,
+  onArchive,
+  onUnarchive,
+  onDelete,
+  onIssueFine,
+  onMarkAsCompleted,
+}: EventListItemProps) {
   const [opLoading, setOpLoading] = useState(false)
   const [viewAttendeesLoading, setViewAttendeesLoading] = useState(false)
   const [logAttendanceLoading, setLogAttendanceLoading] = useState(false)
@@ -90,17 +108,29 @@ export function EventListItem({ event, onEdit, onArchive, onUnarchive, onDelete,
 
   const handleArchive = async () => {
     setOpLoading(true)
-    try { await onArchive(event) } finally { setOpLoading(false) }
+    try {
+      await onArchive(event)
+    } finally {
+      setOpLoading(false)
+    }
   }
 
   const handleUnarchive = async () => {
     setOpLoading(true)
-    try { await onUnarchive(event) } finally { setOpLoading(false) }
+    try {
+      await onUnarchive(event)
+    } finally {
+      setOpLoading(false)
+    }
   }
 
   const handleDelete = async () => {
     setOpLoading(true)
-    try { await onDelete(event) } finally { setOpLoading(false) }
+    try {
+      await onDelete(event)
+    } finally {
+      setOpLoading(false)
+    }
   }
 
   const handleViewAttendees = () => {
@@ -123,10 +153,10 @@ export function EventListItem({ event, onEdit, onArchive, onUnarchive, onDelete,
               event.status === "ongoing"
                 ? "bg-[#1B5E20]"
                 : event.status === "upcoming"
-                ? "bg-blue-400"
-                : event.status === "completed"
-                ? "bg-muted-foreground/40"
-                : "bg-muted-foreground/20"
+                  ? "bg-blue-400"
+                  : event.status === "completed"
+                    ? "bg-muted-foreground/40"
+                    : "bg-muted-foreground/20"
             }`}
           />
 
@@ -137,13 +167,18 @@ export function EventListItem({ event, onEdit, onArchive, onUnarchive, onDelete,
               <div className="flex flex-wrap items-center gap-2 mb-1">
                 <StatusBadge status={event.status} />
                 {event.majorEvent && (
-                  <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-300 font-semibold text-xs">
+                  <Badge
+                    variant="outline"
+                    className="bg-amber-50 text-amber-800 border-amber-300 font-semibold text-xs"
+                  >
                     <StarIcon className="h-3 w-3 mr-1 fill-amber-600" />
                     Major
                   </Badge>
                 )}
               </div>
-              <h3 className="text-sm font-bold text-foreground leading-snug truncate">{event.name}</h3>
+              <h3 className="text-sm font-bold text-foreground leading-snug truncate">
+                {event.name}
+              </h3>
 
               <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -152,14 +187,22 @@ export function EventListItem({ event, onEdit, onArchive, onUnarchive, onDelete,
                 </span>
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                   <MapPinIcon className="h-3.5 w-3.5" />
-                  <span className="truncate max-w-[160px]">{event.location}</span>
+                  <span className="truncate max-w-[160px]">
+                    {event.location}
+                  </span>
                 </span>
                 {(hasTimeIn || hasTimeOut) && (
                   <span className="flex items-center gap-1 text-xs text-muted-foreground">
                     <ClockIcon className="h-3.5 w-3.5" />
-                    {hasTimeIn && <span>In: {formatTimeRange(timeInStart, timeInEnd)}</span>}
+                    {hasTimeIn && (
+                      <span>In: {formatTimeRange(timeInStart, timeInEnd)}</span>
+                    )}
                     {hasTimeIn && hasTimeOut && <span className="mx-1">·</span>}
-                    {hasTimeOut && <span>Out: {formatTimeRange(timeOutStart, timeOutEnd)}</span>}
+                    {hasTimeOut && (
+                      <span>
+                        Out: {formatTimeRange(timeOutStart, timeOutEnd)}
+                      </span>
+                    )}
                   </span>
                 )}
               </div>
@@ -172,42 +215,90 @@ export function EventListItem({ event, onEdit, onArchive, onUnarchive, onDelete,
                   <UsersIcon className="h-4 w-4 text-muted-foreground" />
                   {event.status === "upcoming" ? "—" : event.attendees}
                 </div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Attendees</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                  Attendees
+                </p>
               </div>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0"
+                  >
                     <MoreHorizontalIcon className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
                   {event.status === "archived" ? (
                     <>
-                      <DropdownMenuItem onClick={handleUnarchive} disabled={opLoading}>
-                        {opLoading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Unarchiving…</> : "Unarchive"}
+                      <DropdownMenuItem
+                        onClick={handleUnarchive}
+                        disabled={opLoading}
+                      >
+                        {opLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Unarchiving…
+                          </>
+                        ) : (
+                          "Unarchive"
+                        )}
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleDelete} className="text-destructive" disabled={opLoading}>
-                        {opLoading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Deleting…</> : "Delete"}
+                      <DropdownMenuItem
+                        onClick={handleDelete}
+                        className="text-destructive"
+                        disabled={opLoading}
+                      >
+                        {opLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Deleting…
+                          </>
+                        ) : (
+                          "Delete"
+                        )}
                       </DropdownMenuItem>
                     </>
                   ) : (
                     <>
-                      {!event.finesGenerated && event.status === "completed" && (
-                        <DropdownMenuItem onClick={() => onIssueFine(event)} disabled={opLoading}>
-                          Issue Fines
-                        </DropdownMenuItem>
-                      )}
+                      {!event.finesGenerated &&
+                        event.status === "completed" && (
+                          <DropdownMenuItem
+                            onClick={() => onIssueFine(event)}
+                            disabled={opLoading}
+                          >
+                            Issue Fines
+                          </DropdownMenuItem>
+                        )}
                       {event.status === "ongoing" && (
-                        <DropdownMenuItem onClick={() => onMarkAsCompleted(event)} disabled={opLoading}>
+                        <DropdownMenuItem
+                          onClick={() => onMarkAsCompleted(event)}
+                          disabled={opLoading}
+                        >
                           Mark as Completed
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuItem onClick={() => onEdit(event)} disabled={opLoading}>
+                      <DropdownMenuItem
+                        onClick={() => onEdit(event)}
+                        disabled={opLoading}
+                      >
                         Edit Event
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleArchive} className="text-destructive" disabled={opLoading}>
-                        {opLoading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Archiving…</> : "Archive"}
+                      <DropdownMenuItem
+                        onClick={handleArchive}
+                        className="text-destructive"
+                        disabled={opLoading}
+                      >
+                        {opLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Archiving…
+                          </>
+                        ) : (
+                          "Archive"
+                        )}
                       </DropdownMenuItem>
                     </>
                   )}
@@ -219,37 +310,55 @@ export function EventListItem({ event, onEdit, onArchive, onUnarchive, onDelete,
 
         {/* Action buttons */}
         {event.status !== "upcoming" && event.status !== "archived" && (
-          <div className="px-5 pb-4 flex flex-col sm:flex-row gap-2 border-t border-border pt-3">
+          <div className={event.finesGenerated ? "grid gap-2 px-5 pb-4" : "flex flex-col sm:flex-row gap-2 px-5 pb-4"}>
             <Button
               asChild
               variant="outline"
               size="sm"
-              className="flex-1 justify-center gap-1.5 h-10 sm:h-9 text-xs font-semibold"
+              className={event.finesGenerated ? "justify-center gap-1.5 text-xs w-full font-semibold h-9 px-3" : "justify-center gap-1.5 text-xs w-full tablet:w-[50%] md:w-[50%] font-semibold h-9 px-3"}
               onClick={handleViewAttendees}
               disabled={viewAttendeesLoading}
             >
-              <Link href={`/org-events/${event.id}/attendees`}>
+              <Link
+                href={`/org-events/${event.id}/attendees`}
+                
+              >
                 {viewAttendeesLoading ? (
-                  <><Loader2 className="h-3.5 w-3.5 animate-spin" />Loading…</>
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Loading…
+                  </>
                 ) : (
-                  <><UsersIcon className="h-3.5 w-3.5" />View Attendees</>
+                  <>
+                    <UsersIcon className="h-3.5 w-3.5" />
+                    View Attendees
+                  </>
                 )}
               </Link>
             </Button>
 
-            {(event.status === "ongoing" || event.status === "completed") && (
+            {((event.status === "ongoing" || event.status === "completed") && !event.finesGenerated) && (
               <Button
                 asChild
+                variant="default"
                 size="sm"
-                className="flex-1 justify-center gap-1.5 h-10 sm:h-9 text-xs font-bold"
+                className="items-center gap-1.5 text-xs w-full tablet:w-[50%] md:w-[50%] justify-center"
                 onClick={handleLogAttendance}
                 disabled={logAttendanceLoading}
               >
                 <Link href={`/org-events/${event.id}/log-attendance`}>
                   {logAttendanceLoading ? (
-                    <><Loader2 className="h-3.5 w-3.5 animate-spin" />Loading…</>
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Loading…
+                    </>
                   ) : (
-                    <><UserPlusIcon className="h-3.5 w-3.5" />{event.status === "completed" ? "Log Special Attendance" : "Log Attendance"}</>
+                    <>
+                      <UserPlusIcon className="h-3.5 w-3.5" />
+                      {event.status === "completed"
+                        ? "Log Special Attendance"
+                        : "Log Attendance"}
+                    </>
                   )}
                 </Link>
               </Button>

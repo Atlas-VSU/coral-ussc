@@ -22,9 +22,7 @@ export default function MaintenancePage() {
                 alt="Maintenance"
                 width={250}
                 height={190}
-                className="w-auto h-auto object-contain max-w-full max-h-[200px] lg:hidden"
-                
-                unoptimized
+                className="w-auto h-auto object-contain max-w-full max-h-[200px] lg:hidden"                
               />
             </div>
           </div>
@@ -39,7 +37,6 @@ export default function MaintenancePage() {
                 height={340}
                 className="w-auto h-auto object-contain max-w-full max-h-[380px]"
                 priority
-                unoptimized
               />
           </div>
 
@@ -55,6 +52,9 @@ export default function MaintenancePage() {
               <p className="font-montserrat text-lg sm:text-xl lg:text-[24px] leading-relaxed text-primary animate-fade-in-up animation-delay-600 font-medium text-center lg:text-left">
                 We're currently making improvements to the system. Everything
                 will be back up and running shortly.
+              </p>
+              <p className="font-montserrat font-medium text-sm animate-fade-in-up animation-delay-300 text-primary mt-4 text-center lg:text-left lg:whitespace-nowrap">
+                For urgent concerns, contact USSC Baybay through ussc.baybay@vsu.edu.ph
               </p>
             </div>
           </div>

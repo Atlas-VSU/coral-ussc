@@ -14,9 +14,7 @@ export interface StudentFeeRow extends Fee {
 }
 
 export function useFeesRoster(
-  title: string,
-  academicYear: string,
-  semester: string,
+  feeItemId: string,
   options: {
     pageSize?: number;
     currentPage?: number;
@@ -26,7 +24,7 @@ export function useFeesRoster(
   } = {}
 ) {
     const {
-      pageSize = 10,
+      pageSize = 9,
       currentPage = 1,
       search = "",
       filterStatus = "all",
@@ -35,7 +33,7 @@ export function useFeesRoster(
 
     const [fee, setFee] = useState<BaseFeeData | null>(() => {
       try {
-        const stash = sessionStorage.getItem(`fee-prefetch:${title}:${academicYear}`)
+        const stash = sessionStorage.getItem(`fee-prefetch:${feeItemId}`)
         if (stash) return JSON.parse(stash) as BaseFeeData
       } catch {}
       return null
@@ -64,7 +62,7 @@ export function useFeesRoster(
     });
 
     const fetchData = useCallback(async () => {
-        if (!title || !academicYear) return;
+        if (!feeItemId) return;
 
         setIsLoading(true);
         setError(null);
@@ -76,14 +74,14 @@ export function useFeesRoster(
 
             // Fetch the reference fee document once
             if (!feeRef.current) {
-              const { docs: feeDocs } = await fetchFeesPaginated(orgId, title, academicYear, 1);
+              const { docs: feeDocs } = await fetchFeesPaginated(orgId, feeItemId, 1);
               if (feeDocs.length > 0) {
                 feeRef.current = feeDocs[0];
                 setFee(feeDocs[0]);
               }
             }
 
-            const feeData = await fetchFeeItem(orgId, title, academicYear, semester);
+            const feeData = await fetchFeeItem(orgId, feeItemId);
             if (!feeData) return;
 
             // Page 1 has no cursor. Page N uses the stored last-doc of page N-1.
@@ -94,8 +92,7 @@ export function useFeesRoster(
             if (dataView === "all-students") {
                 const { docs, lastVisible } = await fetchFeesPaginated(
                   orgId,
-                  title,
-                  academicYear,
+                  feeItemId,
                   pageSize,
                   cursor,
                   search,
@@ -125,9 +122,7 @@ export function useFeesRoster(
             } else {
                 const { docs, lastVisible } = await fetchFeeSubmissionsPaginated(
                   orgId,
-                  title,
-                  academicYear,
-                  semester,
+                  feeItemId,
                   pageSize,
                   cursor,
                   filterStatus,
@@ -182,26 +177,25 @@ export function useFeesRoster(
             setIsLoading(false);
         }
     // cursorsRef is a ref — safe to omit from deps, it never changes identity
-    }, [title, academicYear, dataView, currentPage, pageSize, search, filterStatus]);
+    }, [feeItemId, dataView, currentPage, pageSize, search, filterStatus]);
 
     const fetchTotalCount = useCallback(async () => {
         try {
             const user = await getCurrentUserData() as any;
             if (!user?.uid) return;
-            const feeData = await fetchFeeItem(user.uid, title, academicYear, semester);
             const orgId = user.uid;
 
             if (dataView === "all-students") {
-                const count = await getFeesCount(orgId, title, academicYear, semester, filterStatus, search);
+                const count = await getFeesCount(orgId, feeItemId, filterStatus, search);
                 setTotalCount(count);
-            } else if (feeData) {
-                const count = await getFeeSubmissionsCount(orgId, feeData.id, title, academicYear, semester, filterStatus, search);
+            } else {
+                const count = await getFeeSubmissionsCount(orgId, feeItemId, filterStatus, search);
                 setTotalCount(count);
             }
         } catch (err) {
             console.error("Error fetching total count:", err);
         }
-    }, [title, academicYear, filterStatus, search, dataView]);
+    }, [feeItemId, filterStatus, search, dataView]);
 
     useEffect(() => {
         fetchData();
@@ -211,7 +205,7 @@ export function useFeesRoster(
     // Only wipe the cursor for the current page so we re-fetch just this page
     const hardRefresh = useCallback(async () => {
         const user = await getCurrentUserData();
-        if (user && title && academicYear) {
+        if (user && feeItemId) {
             cacheService.invalidateByPrefix('fees:doc:');
             cacheService.invalidateByPrefix('fees:logs:');
             cacheService.invalidateByPrefix('fees:roster:');
@@ -225,7 +219,7 @@ export function useFeesRoster(
         }
         cursorsRef.current[dataView][currentPage - 1] = undefined;
         await fetchData();
-    }, [title, academicYear, dataView, currentPage, fetchData]);
+    }, [feeItemId, dataView, currentPage, fetchData]);
 
     const refetchStudentRow = useCallback(async (feeId: string) => {
         try {
@@ -264,7 +258,7 @@ export function useFeesRoster(
     }, []);
 
     const fetchStatistics = useCallback(async () => {
-        const cacheKey = `fees:stats:${title}:${academicYear}`;
+        const cacheKey = `fees:stats:${feeItemId}`;
         const cached = cacheService.get(cacheKey);
         if (cached) { setStats(cached as any); return; }
 
@@ -274,10 +268,10 @@ export function useFeesRoster(
             const orgId = user.uid;
 
             const [pending, verified, rejected, unpaid] = await Promise.all([
-                getFeesCount(orgId, title, academicYear, "pending", ""),
-                getFeesCount(orgId, title, academicYear, "paid", ""),
-                getFeesCount(orgId, title, academicYear, "rejected", ""),
-                getFeesCount(orgId, title, academicYear, "unpaid", "")
+                getFeesCount(orgId, feeItemId, "pending", ""),
+                getFeesCount(orgId, feeItemId, "paid", ""),
+                getFeesCount(orgId, feeItemId, "rejected", ""),
+                getFeesCount(orgId, feeItemId, "unpaid", "")
             ]);
 
             const result = { pending, verified, rejected, unpaid };
@@ -286,11 +280,11 @@ export function useFeesRoster(
         } catch (err) {
             console.error("Error fetching statistics:", err);
         }
-    }, [title, academicYear]);
+    }, [feeItemId]);
 
     useEffect(() => {
         fetchStatistics();
-    }, [title, academicYear]);
+    }, [feeItemId]);
 
     return {
         fee,

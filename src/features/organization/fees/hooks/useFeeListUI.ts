@@ -24,9 +24,10 @@ export function useFeeListUI({
   const [generateOpen, setGenerateOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [filterStatus, setFilterStatus] = useState<"all" | "semester-membership" | "event-fee" | "charity-fee" | "organization-dues">("all");
+  const [sortBy, setSortBy] = useState<string>("title-asc");
   
   const filtered = useMemo(() => {
-    return aggregatedFees.filter(
+    let result = aggregatedFees.filter(
       (f) => {
         const matchesSearch = f.title.toLowerCase().includes(search.toLowerCase()) ||
         feeTypeLabels[f.type]?.toLowerCase().includes(search.toLowerCase());
@@ -34,7 +35,31 @@ export function useFeeListUI({
         return matchesSearch && matchesFilter;
       }
     );
-  }, [aggregatedFees, search, filterStatus]);
+
+    // Apply sorting
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "title-asc":
+          return a.title.localeCompare(b.title);
+        case "title-desc":
+          return b.title.localeCompare(a.title);
+        case "amount-asc":
+          return a.amount - b.amount;
+        case "amount-desc":
+          return b.amount - a.amount;
+        case "date-asc":
+          // Assuming newer is higher in list (newest first)
+          return -1;
+        case "date-desc":
+          // Oldest first
+          return 1;
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [aggregatedFees, search, filterStatus, sortBy]);
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   
@@ -62,6 +87,7 @@ export function useFeeListUI({
       generateOpen,
       currentPage,
       isLoading,
+      sortBy,
     },
     actions: {
       setSearch: handleSearchChange,
@@ -70,6 +96,7 @@ export function useFeeListUI({
       setGenerateOpen,
       setCurrentPage,
       handleGenerationSuccess,
+      setSortBy,
     },
     computed: {
       filtered,

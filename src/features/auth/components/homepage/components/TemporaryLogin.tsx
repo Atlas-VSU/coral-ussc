@@ -1,8 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
-import { Loader2, Mail, Lock, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import {
+  Loader2,
+  Mail,
+  Lock,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+} from "lucide-react";
 import {
   getIdToken,
   sendPasswordResetEmail,
@@ -17,12 +25,29 @@ export function TemporaryLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const router = useRouter();
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Clear errors on Escape
+      if (e.key === "Escape") {
+        setError(null);
+        setEmailError(null);
+        setPasswordError(null);
+        setSuccessMessage(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
@@ -165,26 +190,6 @@ export function TemporaryLogin() {
 
           {/* Login Form */}
           <div className="relative w-full max-w-md z-10 animate-fade-in-up mx-auto my-auto">
-            {/* Error Display */}
-            {error && (
-              <div className="mb-4 animate-fade-in-up">
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              </div>
-            )}
-
-            {/* Success Message Display */}
-            {successMessage && (
-              <div className="mb-4 animate-fade-in-up">
-                <Alert variant="default">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{successMessage}</AlertDescription>
-                </Alert>
-              </div>
-            )}
-
             {/* Login Form Container */}
             {/* Malakas Maganda BG */}
             <form
@@ -211,7 +216,7 @@ export function TemporaryLogin() {
                 <h2 className="text-3xl font-black text-[#1F7700]">
                   USSC Connect
                 </h2>
-                <p className="text-sm font-semibold text-[#1F7700] mt-1 leading-relaxed">
+                <p className="text-sm font-semibold text-[#1F7700] mt-1 leading-snug">
                   Welcome Admin! Enter your credentials to sign in and access
                   your dashboard.
                 </p>
@@ -239,10 +244,19 @@ export function TemporaryLogin() {
                     } rounded-xl bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 autofill:shadow-[inset_0_0_0px_1000px_rgb(255,255,255)]`}
                     disabled={isLoading}
                     placeholder="Enter your email"
+                    aria-invalid={!!emailError}
+                    aria-describedby={emailError ? "email-error" : undefined}
+                    autoComplete="email"
                   />
                 </div>
                 {emailError && (
-                  <p className="text-red-500 text-sm">{emailError}</p>
+                  <p
+                    id="email-error"
+                    className="text-red-500 text-sm mt-1"
+                    role="alert"
+                  >
+                    {emailError}
+                  </p>
                 )}
               </div>
 
@@ -258,22 +272,67 @@ export function TemporaryLogin() {
                   <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#1F7700]" />
                   <input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={handlePasswordChange}
-                    className={`w-full h-11 pl-10 pr-4 border ${
+                    className={`w-full h-10 sm:h-11 lg:h-[50px] pl-10 sm:pl-11 pr-12 border-1 ${
                       passwordError
                         ? "border-red-500 focus:ring-red-500"
                         : "border-[#2a9902] focus:ring-[#1F7700]"
                     } rounded-xl bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 autofill:shadow-[inset_0_0_0px_1000px_rgb(255,255,255)]`}
                     disabled={isLoading}
                     placeholder="Enter your password"
+                    aria-invalid={!!passwordError}
+                    aria-describedby={
+                      passwordError ? "password-error" : undefined
+                    }
+                    autoComplete="current-password"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1F7700] hover:text-[#1b6600] transition-colors p-1 focus:outline-none focus:ring-2 focus:ring-[#1F7700] rounded"
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                    tabIndex={0}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" />
+                    ) : (
+                      <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
+                    )}
+                  </button>
                 </div>
                 {passwordError && (
-                  <p className="text-red-500 text-sm">{passwordError}</p>
+                  <p
+                    id="password-error"
+                    className="text-red-500 text-sm mt-1"
+                    role="alert"
+                  >
+                    {passwordError}
+                  </p>
                 )}
               </div>
+                            {/* Error Display */}
+              {error && (
+                <div className="mb-1 animate-fade-in-up">
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                </div>
+              )}
+
+              {/* Success Message Display */}
+              {successMessage && (
+                <div className="mb-1 animate-fade-in-up">
+                  <Alert className="bg-green-50 border-green-200 text-green-800">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <AlertDescription>{successMessage}</AlertDescription>
+                  </Alert>
+                </div>
+              )}
 
               {/* Remember Me and Forgot Password */}
               <div className="flex items-center justify-between w-full">
@@ -314,24 +373,25 @@ export function TemporaryLogin() {
                     </span>
                   </label>
                 </div>
-
+                {/* 
                 <button
                   type="button"
                   onClick={handlePasswordReset}
-                  className="font-semibold text-sm text-[#288605] underline hover:text-[#1b6600] transition-colors duration-200"
                   tabIndex={isLoading ? -1 : 0}
                   aria-disabled={isLoading}
                 >
                   Forgot password?
-                </button>
+                </button> */}
               </div>
 
               {/* Sign In Button */}
               <button
                 type="submit"
-                className="w-full h-14 flex items-center gap-4 px-5 rounded-xl text-white font-semibold text-sm transition-all duration-200 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full sm:max-w-[190px] h-12 sm:h-12 lg:h-10 bg-[#288605] text-white font-semibold text-sm sm:text-base lg:text-[15px] rounded-xl hover:bg-[#1b6600] transition-all duration-200 mx-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-xl active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#1F7700] focus:ring-offset-1"
                 style={{ backgroundColor: "#269000" }}
                 disabled={isLoading}
+                aria-busy={isLoading}
+                aria-live="polite"
               >
                 <span className="flex-1 text-center">
                   {isLoading ? "Signing in..." : "Sign in"}

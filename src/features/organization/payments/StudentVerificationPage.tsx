@@ -267,7 +267,7 @@ export default function StudentVerificationPage({ onVerified, currentStep }: Stu
             )}
 
             {/* Submit Button */}
-            <Button type="submit" className="w-full mb-6 bg-[#1B5E20] hover:bg-[#2E7D32] text-white dark:bg-[#1B5E20] dark:hover:bg-[#2E7D32]" disabled={isVerifying}>
+            <Button type="submit" variant="success" className="w-full mb-6" disabled={isVerifying}>
               {isVerifying ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
