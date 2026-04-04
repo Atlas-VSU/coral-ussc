@@ -22,7 +22,7 @@ export const getProofOfPaymentById = async (proofOfPaymentId: string) => {
 
 export const getProofOfPaymentsPaginated = async (
   orgId: string,
-  pageSize: number = 10,
+  pageSize: number = 9,
   lastVisibleDoc: any = null,
   searchTerm: string = "",
   statusFilter: string = "all",

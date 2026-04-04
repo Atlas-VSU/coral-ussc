@@ -24,7 +24,7 @@ export function useFeesRoster(
   } = {}
 ) {
     const {
-      pageSize = 10,
+      pageSize = 9,
       currentPage = 1,
       search = "",
       filterStatus = "all",
