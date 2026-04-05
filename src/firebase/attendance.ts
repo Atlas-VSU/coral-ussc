@@ -142,9 +142,6 @@ export const logAttendance = async ({
       await updateDoc(doc(db, "eventAttendees", recordDoc.id), updateData);
     }
 
-    //for special attendance where fines are already generated, we may use removeFinesOnSpecialAttendance
-    //for now, it will be costly to put it here if there are no way of checking if an event's finesGenerated is true or false.
-
     // Invalidate related caches after successful update
     cacheService.invalidateByPrefix(`event-attendees:${eventId}`);
     cacheService.invalidateByPrefix(`recent-attendance:${eventId}`);
