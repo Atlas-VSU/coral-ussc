@@ -307,12 +307,13 @@ export function MembersStats({
                     <StatCard
                       key="clearance-rate"
                       title="Clearance Rate"
-                      value="Coming Soon"
+                      value = {`${(clearanceRate).toFixed(1)}%`}
+                      // value="Coming Soon"
                       description="Percentage of students cleared"
                       icon={ShieldCheck}
                       isLoading={isLoading}
                       variant="neutral"
-                      className="opacity-60 cursor-not-allowed"
+                      className={statCards[3].isComingSoon ? "opacity-60 cursor-not-allowed" : ""}
                     />
                   </div>
 

@@ -16,6 +16,7 @@ import { getCurrentUserData } from "./users";
 import { cacheService, CACHE_DURATIONS } from "@/services/cacheService";
 import { determineEventStatus } from "@/utils/eventStatusUtils";
 import { getStats } from "./stats/read/getStats";
+import { fetchStats } from "./clearance";
 
 // Helper to transform event data from Firestore to our Event type
 const transformEventData = (doc: any): Event => {
@@ -254,7 +255,7 @@ export const getDashboardEvents = async (
  * Optimized to fetch only what's needed for the dashboard display
  */
 export const getDashboardRecentMembers = async (
-  count = 10
+  count = 5
 ): Promise<Member[]> => {
   try {
     // Use cache with a specific key for this dashboard section
@@ -526,6 +527,16 @@ export const getDashboardUnpaidFinesAmount = async () => {
 
 // Clearance Rate
 export const getDashboardClearanceRate = async () => {
+  try {
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    const clearanceStat = await fetchStats(currentUser.id!)
+    const total = (clearanceStat?.cleared || 0) + (clearanceStat?.not_cleared || 0) + (clearanceStat?.pending || 0);
+    return total > 0 ? ((clearanceStat?.cleared || 0) / total) * 100 : 0;
+    
+  }catch (error) {
+    console.error("Error getting clearance rate:", error);
+    return 0;
+  }
   // try {
   //   const currentUser = (await getCurrentUserData()) as unknown as Member;
   //   if (!currentUser) return 0;

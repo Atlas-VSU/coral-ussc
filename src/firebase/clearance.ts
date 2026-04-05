@@ -33,7 +33,7 @@ export const getClearanceStats = async (orgId: string, statusFilter: string = "a
  */
 export const fetchClearanceDocumentsPaginated = async (
   orgId: string,
-  pageSize: number = 10,
+  pageSize: number = 9,
   lastVisibleDoc: any = null,
   searchTerm: string = "",
   statusFilter: string = "all",
@@ -661,7 +661,7 @@ export const seedClearanceDocuments = async (orgId: string) => {
       await batch.commit();
     }
 
-    //console.log(`✅ Successfully seeded clearance documents for ${totalAddedCount} new students.`);
+    console.log(`✅ Successfully seeded clearance documents for ${totalAddedCount} new students.`);
     cacheService.invalidateByPrefix('clearance:doc:');
   } catch (error) {
     console.error('❌ Error seeding clearance documents:', error);
