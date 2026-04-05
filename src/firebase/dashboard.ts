@@ -255,7 +255,7 @@ export const getDashboardEvents = async (
  * Optimized to fetch only what's needed for the dashboard display
  */
 export const getDashboardRecentMembers = async (
-  count = 10
+  count = 5
 ): Promise<Member[]> => {
   try {
     // Use cache with a specific key for this dashboard section
