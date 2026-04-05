@@ -1,8 +1,5 @@
-import { FineItem } from "@/features/organization/fines/types";
-import { fetchClearanceStatus, recalculateClearanceStatus } from "@/firebase/clearance";
 import { db } from "@/firebase/firebase.config";
-import { updateFineStats } from "@/firebase/stats/update/updateStats";
-import { updateDoc, doc, Timestamp, getDocs, collection, query, where, limit, deleteDoc, deleteField } from "firebase/firestore";
+import { updateDoc, doc, Timestamp } from "firebase/firestore";
 
 
 export const updateLastFineIssuedAt = async (fineId: string) => { 
