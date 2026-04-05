@@ -143,6 +143,13 @@ export function FinesPage() {
         description="Track and manage student fines with real-time payment status"
         action={
           <div className="hidden lg:flex">
+            {/* PLEASE DON'T REMOVE THIS YET */}
+            {/* NOTE: THIS IS THE BUTTON TO TRIGGER BULK GENERATION OF FINES CONTAINER FOR ALL STUDENTS OR MEMBERS THAT ARE ALREADY ADDED IN THE DATABASE */}
+            {/* USING THIS MEANS A BRUTEFORCE SINCE A FINES CONTAINER SHOULD BE MADE TOGETHER WITH THE CLEARANCE AS SOON AS A STUDENT WAS ADDED TO THE SYSTEM */}
+            {/* <Button size="sm" onClick={() => setIsBulkGenerateOpen(true)}>
+              Seed Fines to All Users
+            </Button> */}
+            
             <Button size="sm" onClick={handleAddFineType} className="gap-1.5">
               <Eye className="h-4 w-4" />
               View Fine Types
