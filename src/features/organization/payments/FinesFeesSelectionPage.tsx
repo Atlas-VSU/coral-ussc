@@ -104,6 +104,7 @@ export default function FinesFeesSelectionPage({
 
   const payableFees = useMemo(() => fees.filter((fee) => fee.isPayable !== false), [fees]);
   const payableFineItems = useMemo(() => fineItems.filter((fine) => fine.isPending !== true), [fineItems]);
+  const pendingFines = useMemo(() => fineItems.filter((fine) => fine.isPending === true), [fineItems]);
   const payableFines = useMemo(() => payableFineItems.length>0? fines : [], [fines]);
 
   const feesPayableTotal = useMemo(() => {
@@ -315,7 +316,7 @@ export default function FinesFeesSelectionPage({
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Pay All Fines Toggle */}
-              {fines.length > 0 && (
+              {pendingFines.length>0 || payableFines.length > 0  && (
                 <>
                   <div
                     className={`flex items-center space-x-2 p-4 rounded-lg border-2 transition-colors ${
@@ -406,7 +407,7 @@ export default function FinesFeesSelectionPage({
                 })}
               </div>
 
-              {fines.length === 0 && (
+              {!hasPayableFineItems && pendingFines.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   <CheckCircle2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">No outstanding fines</p>

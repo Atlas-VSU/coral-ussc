@@ -20,6 +20,7 @@ type FeeRecord = {
 type FineRecord = {
   id: string;
   orgId?: string;
+  fineItemsCount?: number;
   reason?: string | null;
   balance?: number;
   accumulatedAmount?: number;
@@ -383,7 +384,7 @@ export async function GET(request: NextRequest) {
       if (paymentState === "pending") existing.paymentSummary.pending += 1;
       else if (paymentState === "verified") existing.paymentSummary.verified += 1;
       else if (paymentState === "rejected") existing.paymentSummary.rejected += 1;
-      else existing.paymentSummary.unpaid += 1;
+      else if (paymentState === "unpaid" && fine.fineItemsCount! > 0) existing.paymentSummary.unpaid += 1;
 
       existing.fineAmount += outstanding > 0 ? outstanding : 0;
       existing.fines.push({

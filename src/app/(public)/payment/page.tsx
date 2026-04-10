@@ -109,7 +109,9 @@ export default function PaymentPage() {
     }
 
     for (const fine of org.fines) {
-      states.add(fine.paymentState ?? "unpaid");
+      if (org.fineItems.length > 0) {
+        states.add(fine.paymentState ?? "unpaid");
+      }
     }
 
     const orderedStates: Array<"pending" | "verified" | "rejected" | "unpaid"> = [

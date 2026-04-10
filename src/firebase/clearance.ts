@@ -661,7 +661,7 @@ export const seedClearanceDocuments = async (orgId: string) => {
       await batch.commit();
     }
 
-    //console.log(`✅ Successfully seeded clearance documents for ${totalAddedCount} new students.`);
+    console.log(`✅ Successfully seeded clearance documents for ${totalAddedCount} new students.`);
     cacheService.invalidateByPrefix('clearance:doc:');
   } catch (error) {
     console.error('❌ Error seeding clearance documents:', error);

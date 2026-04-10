@@ -301,7 +301,7 @@ export default function OrganizationSelectionPage({
             variant="success"
             className="w-full min-[400px]:w-auto gap-2"
           >
-            {hasPayableOrganizations ? "Continue to Fees Selection" : "Exit"}
+            {hasPayableOrganizations ? "Continue to Payment Selection" : "Exit"}
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
