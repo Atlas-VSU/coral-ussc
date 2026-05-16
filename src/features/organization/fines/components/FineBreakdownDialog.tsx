@@ -93,16 +93,24 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
     }
 
     const confirmWaive = async () => {
-        const result = await _waiveFinePayment(fines as StudentFines, itemToWaive as FineItem);
-        const receipt = result?.receipt as ReceiptData;
-        setReceiptData(receipt);
-        setPaymentOpen(false);
-        console.log("Waive confirmed for fine item:", itemToWaive?.id,"reason:", waiveReason.trim());
-        setWaiveOpen(false);
-        setItemToWaive(null);
-        setWaiveReason("");
-        setReceiptOpen(true);
-        toast.success("A Fine item was waived successfully.");
+        try {
+            setIsSubmitting(true);
+            await _waiveFinePayment(fines as StudentFines, itemToWaive as FineItem);
+            setWaiveOpen(false);
+            setItemToWaive(null);
+            setWaiveReason("");
+            if (onSuccess && fines) {
+                onSuccess(fines);
+                onOpenChange(false);
+            }
+            toast.success("A Fine item was waived successfully.");
+        }catch(error) {
+            console.error("Failed to waive fine item:", error);
+            toast.error("Failed to waive fine item. Please try again or contact the developer.");
+        }
+        finally {
+            setIsSubmitting(false);
+        }
     }
     
     const getVariant = (status: string) => {
@@ -513,10 +521,11 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                                 >
                                     Cancel
                                 </Button>
-                                <Button
-                                    variant="default"
-                                    // disabled={!waiveReason.trim()}
-                                    onClick={confirmWaive}
+                                <Button 
+                                variant="default"
+                                className="gap-1.5" 
+                                onClick={confirmWaive}
+                                disabled={isSubmitting}
                                 >
                                     <ShieldCheckIcon className="size-3.5" />
                                     Confirm Waive
