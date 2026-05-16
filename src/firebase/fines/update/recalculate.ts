@@ -27,6 +27,9 @@ export const recalculateFines = async (fineId: string, addedAmount?: number | nu
 
         let newStatus =  fineData.status;
         let newBalance = fineData.balance;
+        let newWaivedAmount = fineData.waivedAmount || null;
+        let newWaivedAt = fineData.waivedAt || null;
+        let newWaivedBy = fineData.waivedBy || null;
 
         let newAccumulatedAmount = fineData.accumulatedAmount;
         if (addedAmount != null) {
@@ -57,6 +60,10 @@ export const recalculateFines = async (fineId: string, addedAmount?: number | nu
             else{
                 newStatus = FineStatus.PARTIAL;
             }
+            newWaivedAmount = (newWaivedAmount || 0) + waivedAmount;
+            newWaivedAt = Timestamp.now();
+            const currUser = await getCurrentUserData() as unknown as Member;
+            newWaivedBy = currUser.firstName + " " + currUser.lastName;
         }
 
         const fineItemsRef = collection(db, "fines", fineId, "fineItems");
@@ -72,13 +79,11 @@ export const recalculateFines = async (fineId: string, addedAmount?: number | nu
             paidAmount: newPaidAmount,
             balance: newBalance,
             status: newStatus,
+            waivedAmount: newWaivedAmount,
+            waivedAt: newWaivedAt,
+            waivedBy: newWaivedBy,
             "metadata.updatedAt": Timestamp.now(),
         });
-        
-        const currUser = await getCurrentUserData() as unknown as Member;
-        const orgId = currUser.id || '';
-        // cacheService.invalidate(CACHE_KEYS.fineDoc(fineId));
-        // cacheService.invalidate(CACHE_KEYS.clearanceDoc(fineData.userId));
 
 
         return { 

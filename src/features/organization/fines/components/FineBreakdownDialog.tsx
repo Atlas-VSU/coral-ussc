@@ -53,7 +53,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
         totalPending,
     } = useFineItems(fines || ({} as StudentFines));
   
-    const { _approvePayment, _rejectPayment } = usePaymentApproval();
+    const { _approvePayment, _rejectPayment, _waiveFinePayment } = usePaymentApproval();
     
     const fetchFineItems = useCallback(async (fineId: string) => {
         try {
@@ -92,12 +92,17 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
         setWaiveOpen(true);
     }
 
-    const confirmWaive = () => {
-        // TODO: wire up backend waive action for itemToWaive using waiveReason.
-        console.log("Waive confirmed for fine item:", itemToWaive?.id, "reason:", waiveReason.trim());
+    const confirmWaive = async () => {
+        const result = await _waiveFinePayment(fines as StudentFines, itemToWaive as FineItem);
+        const receipt = result?.receipt as ReceiptData;
+        setReceiptData(receipt);
+        setPaymentOpen(false);
+        console.log("Waive confirmed for fine item:", itemToWaive?.id,"reason:", waiveReason.trim());
         setWaiveOpen(false);
         setItemToWaive(null);
         setWaiveReason("");
+        setReceiptOpen(true);
+        toast.success("A Fine item was waived successfully.");
     }
     
     const getVariant = (status: string) => {
