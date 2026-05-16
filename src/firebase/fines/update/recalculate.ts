@@ -52,7 +52,6 @@ export const recalculateFines = async (fineId: string, addedAmount?: number | nu
             }
         }
         if (waived && waivedAmount) {
-            newAccumulatedAmount -= waivedAmount;
             newBalance -= waivedAmount;
             if(newBalance <= 0){
                 newStatus = FineStatus.WAIVED;

@@ -77,7 +77,7 @@ export const markFineItemsAsNotPending = async (fineId: string, fineItemIds: str
 export const markFineItemAsWaived = async (fineId: string, fineItem: FineItem, waiveReason?: string) => {
      try {
         const fineItemsRef = doc(db, "fines", fineId, "fineItems", fineItem.id);
-        const waivedReason = waiveReason ? waiveReason : null; 
+        const waivedReason = waiveReason ? waiveReason : ""; 
         const currUser = await getCurrentUserData() as unknown as Member;
         await updateDoc(fineItemsRef, {
             isPaid: true,

@@ -123,6 +123,9 @@ export function FinesFilters({
             <SelectItem value="paid" className={lightSelectItemClass}>
               Paid
             </SelectItem>
+            <SelectItem value="waived" className={lightSelectItemClass}>
+              Waived
+            </SelectItem>
           </SelectContent>
         </Select>
 
@@ -194,6 +197,9 @@ export function FinesFilters({
               </SelectItem>
               <SelectItem value="paid" className={lightSelectItemClass}>
                 Paid
+              </SelectItem>
+              <SelectItem value="waived" className={lightSelectItemClass}>
+                Waived
               </SelectItem>
             </SelectContent>
           </Select>
