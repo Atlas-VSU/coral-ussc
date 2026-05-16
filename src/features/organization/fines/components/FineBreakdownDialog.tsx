@@ -1,4 +1,6 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Banknote, AlertTriangle, XIcon, CalendarIcon, UserIcon, ShieldCheckIcon, MessageSquareIcon, Eye, PenLine } from "lucide-react";
 import { appealStatusConfig } from "../config";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +42,9 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
     const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [waiveOpen, setWaiveOpen] = useState(false);
+    const [itemToWaive, setItemToWaive] = useState<FineItem | null>(null);
+    const [waiveReason, setWaiveReason] = useState("");
     // const _fines = useRef(fines).current; // To hold the initial fines data for reference in callbacks without causing re-renders]
 
     const {
@@ -79,6 +84,20 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
             setSelectedItem(item);
             setItemOpen(true);
         }
+    }
+
+    const handleWaive = (item: FineItem) => {
+        setItemToWaive(item);
+        setWaiveReason("");
+        setWaiveOpen(true);
+    }
+
+    const confirmWaive = () => {
+        // TODO: wire up backend waive action for itemToWaive using waiveReason.
+        console.log("Waive confirmed for fine item:", itemToWaive?.id, "reason:", waiveReason.trim());
+        setWaiveOpen(false);
+        setItemToWaive(null);
+        setWaiveReason("");
     }
     
     const getVariant = (status: string) => {
@@ -373,15 +392,29 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                                         )
                                     })()}
 
-                                    {/* View details */}
-                                    <Button
-                                        size="sm"
-                                        variant="default"   
-                                        onClick={() => openFineDetail(item)}
-                                    >
-                                        <Eye className="size-3.5" />
-                                        View Full Details
-                                    </Button>
+                                    {/* Actions */}
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <Button
+                                            size="sm"
+                                            variant="default"
+                                            className="flex-1 min-w-[10rem]"
+                                            onClick={() => openFineDetail(item)}
+                                        >
+                                            <Eye className="size-3.5" />
+                                            View Full Details
+                                        </Button>
+                                        {!item.isWaived && !item.isPaid && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="gap-1.5 border-[#2E7D32]/30 text-[#1B5E20] hover:bg-[#AED581]/20"
+                                                onClick={() => handleWaive(item)}
+                                            >
+                                                <ShieldCheckIcon className="size-3.5" />
+                                                Waive Fine
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             )
                         })}
@@ -415,12 +448,77 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                     )}   
                     
                     {selectedItem && (
-                        <FineItemDetailDialog 
-                            open={itemOpen} 
-                            onOpenChange={(open) => setItemOpen(open)} 
+                        <FineItemDetailDialog
+                            open={itemOpen}
+                            onOpenChange={(open) => setItemOpen(open)}
                             fineItem={selectedItem}
                         />
                     )}
+
+                    <Dialog open={waiveOpen} onOpenChange={setWaiveOpen}>
+                        <DialogContent className="max-w-md !bg-white border-[#2E7D32]/30">
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2 text-[#1B5E20] font-bold">
+                                    <ShieldCheckIcon className="size-4 shrink-0" />
+                                    Waive this fine?
+                                </DialogTitle>
+                                <DialogDescription className="text-[#2E7D32]/70">
+                                    This removes the outstanding balance for this fine item. This action cannot be undone.
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            {itemToWaive && (
+                                <div className="flex items-center justify-between gap-3 rounded-md border border-[#2E7D32]/30 bg-[#AED581]/10 px-4 py-3">
+                                    <div className="flex flex-col gap-0.5 min-w-0">
+                                        <span className="text-sm font-semibold text-[#1B5E20] truncate">
+                                            {itemToWaive.fineTypeName}
+                                        </span>
+                                        <span className="text-xs text-[#2E7D32]/70 truncate">
+                                            #{itemToWaive.itemNumber}
+                                            {itemToWaive.eventName ? ` · ${itemToWaive.eventName}` : ""}
+                                        </span>
+                                    </div>
+                                    <span className="text-base font-bold text-[#1B5E20] shrink-0">
+                                        ₱{itemToWaive.amount.toLocaleString()}
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* <div className="flex flex-col gap-2">
+                                <Label htmlFor="waive-reason" className="text-sm font-medium text-[#1B5E20]">
+                                    Reason for waiving <span className="text-red-600">*</span>
+                                </Label>
+                                <Textarea
+                                    id="waive-reason"
+                                    value={waiveReason}
+                                    onChange={(e) => setWaiveReason(e.target.value)}
+                                    placeholder="Explain why this fine is being waived (e.g. valid excuse, duplicate fine, administrative error)…"
+                                    className="min-h-24 border-[#2E7D32]/30 focus-visible:ring-[#2E7D32]/30"
+                                />
+                                <p className="text-xs text-[#2E7D32]/70">
+                                    This reason will be recorded and visible to the student.
+                                </p>
+                            </div> */}
+
+                            <DialogFooter className="gap-2 sm:gap-2">
+                                <Button
+                                    variant="outline"
+                                    className="border-[#2E7D32]/30 text-[#1B5E20] hover:bg-[#AED581]/20"
+                                    onClick={() => setWaiveOpen(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    variant="default"
+                                    // disabled={!waiveReason.trim()}
+                                    onClick={confirmWaive}
+                                >
+                                    <ShieldCheckIcon className="size-3.5" />
+                                    Confirm Waive
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
 
                     <PaymentReceiptDialog
                         open={receiptOpen}
