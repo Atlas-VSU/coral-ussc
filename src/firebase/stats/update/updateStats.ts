@@ -2,7 +2,7 @@ import { createStats, StatsData } from "../create/addStats";
 import { getStats } from "../read/getStats";
 import { getCurrentUserData } from "@/firebase/users";
 
-export const updateFineStats = async (customId: string, toAdd?: number, toDeduct?: number) => { 
+export const updateFineStats = async (customId: string, toAdd?: number, toDeduct?: number, toWaive?: number) => { 
     try {
         let statsData = null;
         statsData = await getStats(customId) as StatsData;
@@ -14,6 +14,11 @@ export const updateFineStats = async (customId: string, toAdd?: number, toDeduct
             if (toDeduct) { 
                 statsData.totalUnpaidFines -= toDeduct;
                 statsData.totalCollectedFines += toDeduct;
+            }
+            //Since waiving means no collection, we only deduct from total fines and total unpaid fines.
+            if(toWaive){
+                statsData.totalUnpaidFines -= toWaive;
+                statsData.totalFines -= toWaive;
             }
         } else {
             const currUser = await getCurrentUserData();

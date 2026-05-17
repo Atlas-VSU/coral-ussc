@@ -1,8 +1,10 @@
 import { db } from "@/firebase/firebase.config";
-import { collection, doc, getDocs, query, updateDoc, where, writeBatch } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, updateDoc, where, writeBatch, Timestamp } from "firebase/firestore";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { getCurrentUserData } from "@/firebase/users";
 import { Member } from "@/features/organization/members/types";
+import { FineItem } from "@/features/organization/fines/types";
+import { recalculateFines } from "./recalculate";
 
 
 export const markFineItemsAsPaid = async (fineId: string, fineItemId?: string) => {
@@ -69,5 +71,43 @@ export const markFineItemsAsNotPending = async (fineId: string, fineItemIds: str
     } catch (error) {
         console.error("Error marking fine items as paid:", error);
         throw error;
+    }
+}
+
+export const markFineItemAsWaived = async (fineId: string, fineItem: FineItem, waiveReason?: string) => {
+     try {
+        const fineItemsRef = doc(db, "fines", fineId, "fineItems", fineItem.id);
+        const waivedReason = waiveReason ? waiveReason : ""; 
+        const currUser = await getCurrentUserData() as unknown as Member;
+        await updateDoc(fineItemsRef, {
+            isPaid: true,
+            isWaived: true,
+            isPending: false,
+            waivedAt: Timestamp.now(),
+            waivedReason: waivedReason,
+            waivedBy: currUser.firstName + " " + currUser.lastName,
+        });
+         //Needs recalculation on parent fine, because what if only one fine item was waived when theres many
+         //overall fines should reflect on the parent of fineitems
+        await recalculateFines(fineId, null, null, true, fineItem.amount);
+         
+        const fineRef = doc(db, "fines", fineId);
+        const fineSnap = await getDoc(fineRef);
+        if (fineSnap.exists()) {
+            const fineData = fineSnap.data();
+            const clearanceRef = doc(db, 'clearanceStatus', fineData.userId);
+            //Clearance blocking items are updated also and both waived and paid items are treated the same here since they both should not hinder clearance
+            //this can be changed, if we separate treatment of waived and paid on clearance, we need also to refactor all other dependencies on these status labels (such as basis for clearance as cleared or not)
+            await updateDoc(clearanceRef, {
+                [`blockingItems.${fineItem.id}.balance`]: 0,
+                [`blockingItems.${fineItem.id}.status`]: fineData.status === "waived" || fineData.status === "paid" ? "paid" : "unpaid",
+                [`blockingItems.${fineItem.id}.pendingReview`]: false,
+            });
+        }
+
+
+    } catch (error) {
+        console.error("Error waiving fine item:", error);
+        throw new Error("Failed to waive fine item. Please try again.");
     }
 }

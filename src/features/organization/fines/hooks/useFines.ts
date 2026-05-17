@@ -4,7 +4,6 @@ import { fetchFinesPaginated, getFinesCount, countStudentsWithFines, countUnsett
 import { getCurrentUserData } from "@/firebase";
 import { Member } from "../../members/types";
 import { CACHE_KEYS, cacheService } from "@/services/cacheService";
-import { getDashboardUnpaidFinesAmount, getDashboardFeesCollected } from "@/firebase/dashboard";
 import { getStats } from "@/firebase/stats/read/getStats";
 
 
@@ -21,6 +20,7 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
   const [filterStatus, setFilterStatus] = useState(initialStatusFilter);
   const [totalCount, setTotalCount] = useState(0);
   const cursorsRef = useRef<Record<number, any>>({});
+  const [refreshKey, setRefreshKey] = useState(false);
 
   // Stats
   const [totalStudentsWithFines, setTotalStudentsWithFines] = useState(0);
@@ -83,12 +83,16 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
     return () => {
       isMounted = false;
     };
-  }, [filterStatus, search, currentPage, itemsPerPage]);
+  }, [filterStatus, search, currentPage, itemsPerPage, refreshKey]);
 
   const handleStatusFilterChange = (v: string) => {
     setFilterStatus(v);
     setCurrentPage(1);
     cursorsRef.current = {};
+  };
+
+  const refreshFineItems = () => { 
+    cacheService.invalidateByPrefix('fines:items:');
   };
 
   const handleSearchChange = (v: string) => {
@@ -109,6 +113,7 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
     setCurrentPage(1);
     setFilterStatus("all");
     cursorsRef.current = {};
+    setRefreshKey(prev => !prev); 
     setIsLoading(false);
     // The useEffect will trigger fetchData
   };
@@ -129,6 +134,6 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
     totalUnpaidFines, // Note: Unpaid total sum across 9,000 needs aggregation doc
     totalCollectedFines, // Note: Collected total sum across 9,000 needs aggregation doc
     hardRefresh, setPaginatedFines, setTotalCount,
-    setFilterStatus
+    setFilterStatus, refreshFineItems
   };
 }

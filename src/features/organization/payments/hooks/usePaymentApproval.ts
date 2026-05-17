@@ -1,11 +1,11 @@
 import { rejectPaymentProof, verifyPaymentProof } from "@/firebase/payment/update/proofOfPayment"
-import { FineItem, ProofOfPayment } from "../../fines/types"
+import { FineItem, ProofOfPayment, StudentFines } from "../../fines/types"
 import { generateReceiptId } from "../utils"
 import { getPendingPaymentHistory } from "@/firebase/payment/read/paymentHistory"
 import { getCurrentUserData, searchUserByStudentId } from "@/firebase/users"
 import { Member } from "../../members/types"
 import { rejectPaymentHistory, verifyPaymentHistory } from "@/firebase/payment/update/paymentHistory"
-import { markFineItemsAsNotPending, markFineItemsAsPaid } from "@/firebase/fines/update/fineItemsStatus"
+import { markFineItemAsWaived, markFineItemsAsNotPending, markFineItemsAsPaid } from "@/firebase/fines/update/fineItemsStatus"
 import { toast } from "sonner"
 import { ReceiptData } from "@/components/organization/receipt/PaymentReceiptDialog"
 import { Timestamp } from "firebase/firestore"
@@ -133,9 +133,30 @@ export const usePaymentApproval = () => {
     }
 
 
+    const _waiveFinePayment = async (fines: StudentFines, item: FineItem) => {
+        try {
+            const paymentOwner = await searchUserByStudentId(fines.studentId);
+            if (paymentOwner === null) {
+                toast.error("Payment owner not found, cannot verify payment.")
+                return;
+            };
+
+            //recalculation of clearance is still necessary I think because waiving a fine might change the clearance status of the student, especially if the waived fine was the only remaining blocking item. 
+            await markFineItemAsWaived(fines.id!, item);
+            await recalculateClearanceStatus(paymentOwner.id!);
+            await updateFineStats("2ndSem-2025-2026", 0, 0, item.amount);
+                
+        } catch (error) {
+            console.error("Failed payment approval.", error)
+            toast.error("Failed payment approval, please contact the developer")
+            
+        }
+    }
+
 
     return {
         _approvePayment,
-        _rejectPayment
+        _rejectPayment,
+        _waiveFinePayment
     }
 }
