@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Banknote, AlertTriangle, XIcon, CalendarIcon, UserIcon, ShieldCheckIcon, MessageSquareIcon, Eye, PenLine } from "lucide-react";
+import { Banknote, AlertTriangle, XIcon, CalendarIcon, UserIcon, ShieldCheckIcon, MessageSquareIcon, Eye, PenLine, Loader2 } from "lucide-react";
 import { appealStatusConfig } from "../config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,7 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
         totalPending,
     } = useFineItems(fines || ({} as StudentFines));
   
-    const { _approvePayment, _rejectPayment } = usePaymentApproval();
+    const { _approvePayment, _rejectPayment, _waiveFinePayment } = usePaymentApproval();
     
     const fetchFineItems = useCallback(async (fineId: string) => {
         try {
@@ -92,12 +92,25 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
         setWaiveOpen(true);
     }
 
-    const confirmWaive = () => {
-        // TODO: wire up backend waive action for itemToWaive using waiveReason.
-        console.log("Waive confirmed for fine item:", itemToWaive?.id, "reason:", waiveReason.trim());
-        setWaiveOpen(false);
-        setItemToWaive(null);
-        setWaiveReason("");
+    const confirmWaive = async () => {
+        try {
+            setIsSubmitting(true);
+            await _waiveFinePayment(fines as StudentFines, itemToWaive as FineItem);
+            setWaiveOpen(false);
+            setItemToWaive(null);
+            setWaiveReason("");
+            if (onSuccess && fines) {
+                onSuccess(fines);
+                onOpenChange(false);
+            }
+            toast.success("A Fine item was waived successfully.");
+        }catch(error) {
+            console.error("Failed to waive fine item:", error);
+            toast.error("Failed to waive fine item. Please try again or contact the developer.");
+        }
+        finally {
+            setIsSubmitting(false);
+        }
     }
     
     const getVariant = (status: string) => {
@@ -508,13 +521,14 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                                 >
                                     Cancel
                                 </Button>
-                                <Button
-                                    variant="default"
-                                    // disabled={!waiveReason.trim()}
-                                    onClick={confirmWaive}
+                                <Button 
+                                variant="default"
+                                className="gap-1.5" 
+                                onClick={confirmWaive}
+                                disabled={isSubmitting}
                                 >
-                                    <ShieldCheckIcon className="size-3.5" />
-                                    Confirm Waive
+                                    {isSubmitting ? <Loader2 className="size-3.5 animate-spin" /> : <ShieldCheckIcon className="size-3.5" />}
+                                    {isSubmitting ? "Waiving..." : "Confirm Waive"}
                                 </Button>
                             </DialogFooter>
                         </DialogContent>

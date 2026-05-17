@@ -74,6 +74,7 @@ export function FinesPage() {
     setPaginatedFines,
     setTotalCount,
     setFilterStatus,
+    refreshFineItems
   } = useFines({ itemsPerPage: ITEMS_PER_PAGE });
 
   const {
@@ -131,6 +132,7 @@ export function FinesPage() {
       (f) => f.studentId !== selectedFine?.studentId,
     );
     setPaginatedFines(newFines);
+    refreshFineItems();
     setTotalCount((prev) => prev - 1);
   };
 
