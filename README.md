@@ -1,187 +1,128 @@
-# Attendance Logging System
+# CORAL - Centralized Online Record for Attendance and Logging
 
-> **Veris Basic Tier** · Attendance Management · ₱2 / student / year
+## USSC Instance
 
-[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3-06B6D4?logo=tailwindcss)](https://tailwindcss.com/)
-[![Vercel](https://img.shields.io/badge/Deployed-Vercel-black?logo=vercel)](https://coral-ussc.vercel.app/)
-[![License](https://img.shields.io/badge/License-Educational%20Use-green)](#license)
+This is the CORAL deployment for the University Student Supreme Council (USSC). CORAL is a student attendance management system designed for tracking participation in intramurals, faction events, and other academic activities. This platform provides an approach to record, monitor, and analyze student attendance data in real-time.
 
----
+## What is CORAL?
 
-## Table of Contents
+CORAL (Centralized Online Record for Attendance and Logging) is a modern web-based application that allows organizers to efficiently manage attendance for university events, intramurals, and faction activities. The system eliminates the need for paper-based attendance tracking by providing digital tools for event creation, attendance recording, and data analysis.
 
-- [About Veris](#about-veris)
-- [Veris Basic Tier](#veris-basic-tier)
-- [Features](#features)
-- [Screenshots / Demo](#screenshots--demo)
-- [Technology Stack](#technology-stack)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [Firebase Setup Guide](#firebase-setup-guide)
-- [Changelog](#changelog)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [Development Team](#development-team)
-- [License](#license)
+Built with responsiveness in mind, CORAL works seamlessly across desktop and mobile devices, making it accessible for organizers on the go.
 
----
+## Deployment
 
-## About Veris
+A live demo of the system is available at [https://coral-ussc.vercel.app/]
 
-**Veris** is a modern, web-based attendance management system built for universities, student councils, and academic organizations. It replaces paper-based tracking with a fully digital, real-time solution for managing events, members, and attendance records.
+## Version 1.2.1
 
-### Veris Basic Tier
+The latest release introduces significant UI/UX improvements, enhanced responsiveness, and better user experience across all devices. Key improvements include:
 
-This repository hosts the **USSC (University Student Supreme Council)** deployment of Veris Basic Tier.
+- Responsive member card designs with both regular and compact views
+- Improved bulk import functionality with better mobile support
+- Enhanced authentication flow and navigation
+- Fixed layout issues in forms and dialogs
+- Comprehensive documentation updates
 
-🔗 **Live Deployment:** [https://coral-ussc.vercel.app/](https://coral-ussc.vercel.app/)
+### Key Features
 
----
+1. **Authentication**
 
-## Veris Basic Tier
+   - Secure user login and registration system
+   - Role-based access control with organization-specific permissions
+   - Password recovery functionality
+   - Optimized navigation for authenticated and non-authenticated users
+   - (Note: External authentication providers like Google Sign-in will be added in future versions)
 
-| Detail | Value |
-|---|---|
-| **Plan** | Basic — Attendance Management |
-| **Price** | ₱2 / student / year |
-| **Minimum** | 100 students |
-| **Floor Price** | ₱200 / year |
+2. **Dashboard**
 
-The **Basic Tier** is designed for student organizations and councils that need a reliable, no-frills attendance management solution with all the essential tools — at an affordable per-student price.
+   - At-a-glance attendance statistics and metrics
+   - Interactive graphs displaying attendance trends
+   - Quick access to recently created events
+   - Recently added members/students list
+   - Responsive design for all screen sizes
 
-### What's Included
+3. **Event Management**
 
-| Feature | Included |
-|---|---|
-| Secure login | ✅ |
-| Dashboard with real-time attendance trends | ✅ |
-| Create & manage unlimited events | ✅ |
-| Real-time attendee tracking & timestamps | ✅ |
-| Quick check-in via student ID or name | ✅ |
-| Member directory with bulk import | ✅ |
-| Unlimited members & events | ✅ |
+   - Create, update, and archive events
+   - Configure event details: name, date, time-in/time-out ranges
+   - Designate events as major or minor
+   - Add descriptive notes and event information
+   - Mobile-friendly event creation and management
+   - (Calendar view of upcoming and past events will be added in the fture)
 
-> **Note:** Upgrading to a higher Veris tier unlocks QR code scanning, kiosk mode, advanced analytics, multi-organization support, and priority support.
+4. **Attendee Tracking**
 
----
+   - Comprehensive attendee lists for each event
+   - Timestamp recording for check-in/check-out
+   - Attendance status visualization
+   - Exportable attendance records
+   - Search and filter capabilities
 
-## Features
+5. **Attendance Logging**
 
-### 1. 🔐 Authentication
-- Secure email/password login and registration
-- Role-based access control with organization-specific permissions
-- Password recovery functionality
-- Optimized navigation for authenticated and guest users
+   - Simple check-in process via student ID or name
+   - Real-time display of checked-in students
+   - Search and filter functionality
+   - Loading skeletons for improved user experience
+   - (Coming soon: kiosk mode, self check-in, and QR scanning)
 
-### 2. 📊 Dashboard
-- Real-time attendance statistics and metrics
-- Interactive graphs displaying attendance trends over time
-- Quick access to recently created events
-- Recently added members/students list
-- Fully responsive across all screen sizes
+6. **Member Management**
+   - Bulk import functionality with downloadable templates
+   - Manual member addition with responsive forms
+   - Searchable member directory with instant results
+   - Pagination for large member lists
+   - Multiple view options (standard and compact card layouts)
+   - Mobile-optimized member management interface
 
-### 3. 📅 Event Management
-- Create, update, and archive unlimited events
-- Configure event details: name, date, time-in/time-out windows
-- Designate events as major or minor
-- Add notes and descriptive event information
-- Mobile-friendly event creation and management
+## Recent Improvements
 
-### 4. 👥 Real-Time Attendee Tracking
-- Comprehensive attendee lists per event
-- Timestamp recording for check-in and check-out
-- Attendance status visualization
-- Exportable attendance records
-- Search and filter capabilities
+### UI/UX Enhancements
 
-### 5. ✅ Quick Check-In
-- Simple check-in via student ID or full name
-- Real-time display of checked-in students
-- Search and filter functionality
-- Loading skeleton states for better UX
+- **Member List Component**: Completely redesigned with responsive card layouts, proper spacing, and pagination
+- **Bulk Import Dialog**: Fixed layout issues, improved mobile experience, and enhanced file upload section
+- **Navigation**: Improved header behavior based on authentication status
+- **Loading States**: Added skeleton loaders to replace static messages or content
 
-### 6. 📋 Member Directory
-- Bulk import functionality with downloadable CSV templates
-- Manual member addition via responsive forms
-- Searchable member directory with instant results
-- Pagination support for large member lists
-- Multiple card view options (standard and compact layouts)
-- Mobile-optimized interface
+### Component Architecture
 
----
+- Refactored large components into smaller, focused ones for better maintainability
+- Created reusable components for lists, cards, search, and pagination
+- Implemented proper responsive design with tailored mobile and desktop experiences
 
-## Screenshots / Demo
+### Documentation
 
-> _Screenshots and GIF walkthroughs will be added here in a future update._
+- Comprehensive README with detailed project information
+- Clear feature documentation and system capabilities
+- Updated deployment information and technology stack details
 
-🔗 Try the live system at [https://coral-ussc.vercel.app/](https://coral-ussc.vercel.app/)
+## Coming Soon
 
----
-
-## Technology Stack
-
-| Layer | Technology |
-|---|---|
-| **Frontend Framework** | Next.js 16 (App Router) |
-| **Language** | TypeScript 5 |
-| **UI Components** | ShadcnUI |
-| **Styling** | Tailwind CSS |
-| **State Management** | React Context API |
-| **Authentication** | Firebase Authentication |
-| **Database** | Firebase Firestore |
-| **Form Handling** | React Hook Form + Zod |
-| **Deployment** | Vercel |
-
----
-
-## Project Structure
-
-```
-coral-ussc/
-├── public/                   # Static assets
-├── src/
-│   ├── app/                  # Next.js App Router structure
-│   │   ├── (auth)/           # Authentication pages (login, register, reset)
-│   │   ├── (dashboard)/      # Protected dashboard and feature pages
-│   │   └── (public)/         # Public-facing landing pages
-│   ├── components/           # Shared/reusable UI components
-│   │   ├── NavBar/           # Navigation bar components
-│   │   └── ui/               # Base UI elements (shadcn)
-│   ├── features/             # Feature-based organization
-│   │   ├── auth/             # Authentication components and logic
-│   │   ├── dashboard/        # Dashboard widgets and charts
-│   │   ├── events/           # Event management features
-│   │   └── organization/     # Member/organization management
-│   └── lib/                  # Utility functions and shared logic
-├── .env.local.example        # Environment variable template
-├── next.config.ts            # Next.js configuration
-├── tailwind.config.ts        # Tailwind CSS configuration
-└── tsconfig.json             # TypeScript configuration
-```
-
----
+- Admin portal for system-wide configuration
+- QR code-based check-in system
+- Self-service attendance kiosk mode
+- Mobile application for on-the-go attendance tracking
+- Advanced reporting and analytics
+- Integration with university information systems
 
 ## Getting Started
 
 ### Prerequisites
 
-- **Node.js** 16.8 or later
-- **npm**, **yarn**, or **pnpm**
-- A **Firebase** project (for authentication and Firestore database)
+- Node.js 16.8 or later
+- npm, yarn, or pnpm package manager
+- A Firebase project (for authentication and database)
 
 ### Installation
 
-1. **Clone the repository:**
+1. Clone the repository:
 
 ```bash
 git clone https://github.com/Atlas-VSU/coral-ussc.git
 cd coral-ussc
 ```
 
-2. **Install dependencies:**
+2. Install dependencies:
 
 ```bash
 npm install
@@ -191,9 +132,37 @@ yarn install
 pnpm install
 ```
 
-3. **Configure environment variables** (see [Environment Variables](#environment-variables))
+3. Set up environment variables:
+   
+   Copy the example environment file and configure it with your USSC Firebase credentials:
+   
+   ```bash
+   cp .env.local.example .env.local
+   ```
+   
+   Then edit `.env.local` with your Firebase configuration. You'll need both client and admin SDK credentials:
+   
+   **Client SDK (Browser-side):**
+   ```
+   NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+   NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
+   ```
+   
+   **Admin SDK (Server-side):**
+   ```
+   FIREBASE_PROJECT_ID=your_project_id
+   FIREBASE_CLIENT_EMAIL=your_service_account_email
+   FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+   ```
+   
+   > **Important:** Never commit your `.env.local` file to version control. It contains sensitive credentials.
 
-4. **Run the development server:**
+4. Run the development server:
 
 ```bash
 npm run dev
@@ -203,128 +172,85 @@ yarn dev
 pnpm dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
----
-
-## Environment Variables
-
-Copy the example file and fill in your credentials:
-
-```bash
-cp .env.local.example .env.local
-```
-
-### Client SDK (Browser-side)
-
-```env
-NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
-```
-
-### Admin SDK (Server-side)
-
-```env
-FIREBASE_PROJECT_ID=your_project_id
-FIREBASE_CLIENT_EMAIL=your_service_account_email
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-```
-
-> ⚠️ **Never commit `.env.local` to version control.** It contains sensitive credentials. It is already listed in `.gitignore`.
-
----
+5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 ## Firebase Setup Guide
 
-### Client SDK
+To obtain the required Firebase credentials for the USSC instance:
+
+### Client SDK Configuration
 
 1. Go to the [Firebase Console](https://console.firebase.google.com/)
-2. Select your project (or create a new one)
-3. Navigate to **Project Settings** → **Your apps**
-4. Add or select a web app and copy the config object — these are your `NEXT_PUBLIC_FIREBASE_*` values
+2. Select your USSC project (or create a new one)
+3. Click on the gear icon ⚙️ next to "Project Overview" and select "Project settings"
+4. Scroll down to "Your apps" section
+5. If you haven't added a web app, click the web icon (</>) to add one
+6. Copy the Firebase configuration object - these are your `NEXT_PUBLIC_FIREBASE_*` values
 
-### Admin SDK
+### Admin SDK Configuration
 
-1. In Firebase Console, go to **Project Settings → Service Accounts**
-2. Click **Generate new private key** and download the JSON file
-3. Extract `project_id`, `client_email`, and `private_key` into your `.env.local`
+1. In Firebase Console, go to Project Settings > Service Accounts
+2. Click "Generate new private key"
+3. Download the JSON file (keep it secure!)
+4. Extract the following values from the JSON:
+   - `project_id` → `FIREBASE_PROJECT_ID`
+   - `client_email` → `FIREBASE_CLIENT_EMAIL`
+   - `private_key` → `FIREBASE_PRIVATE_KEY` (keep the quotes and newlines)
 
-### Firestore Database
+### Firestore Database Setup
 
-1. In Firebase Console, go to **Firestore Database**
-2. Click **Create database** and select **Production mode**
-3. Choose a region closest to your users
+1. In Firebase Console, go to Firestore Database
+2. Click "Create database"
+3. Choose production mode (or test mode for development)
+4. Select a location close to your users
+5. The database will be created with the required security rules
 
-### Firebase Authentication
+### Firebase Authentication Setup
 
-1. In Firebase Console, go to **Authentication → Sign-in method**
-2. Enable **Email/Password** authentication
-3. Add your deployment domain to **Authorized domains**
+1. In Firebase Console, go to Authentication
+2. Click "Get started" if not already enabled
+3. Enable the sign-in methods you want to use (Email/Password is required)
+4. Configure authorized domains for your deployment
 
----
+## Technology Stack
 
-## Changelog
+- **Frontend Framework**: Next.js 16 (App Router)
+- **UI Component Library**: ShadcnUI with Tailwind CSS
+- **State Management**: React Context API
+- **Authentication**: Firebase Authentication
+- **Database**: Firebase Firestore
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS with responsive design
+- **Form Handling**: React Hook Form with Zod validation
+- **Deployment**: Vercel
 
-### v1.2.1 — Latest
+## Project Structure
 
-- ✨ Responsive member card designs (standard and compact views)
-- ✨ Improved bulk import with better mobile support
-- 🐛 Fixed layout issues in forms and dialogs
-- 🔧 Enhanced authentication flow and navigation
-- 📝 Comprehensive documentation update
-
-### v1.2.0
-
-- 🚀 Initial public deployment of USSC instance
-- 📊 Dashboard with real-time attendance charts
-- 👥 Full member management and bulk import
-- 📅 Event creation and attendee tracking
-
----
-
-## Roadmap
-
-The following features are planned for upcoming Veris tiers and releases:
-
-- [ ] QR code-based check-in system
-- [ ] Self-service attendance kiosk mode
-- [ ] Google Sign-in (OAuth)
-- [ ] Admin portal for system-wide configuration
-- [ ] Mobile application (iOS & Android)
-- [ ] Advanced reporting and analytics exports
-- [ ] Calendar view for events
-- [ ] Integration with university information systems
-- [ ] Multi-organization / multi-council support
-
----
-
-## Contributing
-
-Contributions are welcome! To contribute:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature-name`
-3. Commit your changes: `git commit -m "feat: add your feature"`
-4. Push to your branch: `git push origin feature/your-feature-name`
-5. Open a Pull Request
-
-Please follow the existing code style and include meaningful commit messages.
-
----
+```
+src/
+├── app/                  # Next.js App Router structure
+│   ├── (auth)/           # Authentication related pages
+│   ├── (dashboard)/      # Dashboard and authenticated features
+│   └── (public)/         # Public facing pages
+├── components/           # Shared UI components
+│   ├── NavBar/           # Navigation components
+│   └── ui/               # Basic UI elements (shadcn)
+├── features/             # Feature-based organization
+│   ├── auth/             # Authentication related components
+│   ├── dashboard/        # Dashboard components and logic
+│   ├── events/           # Event management features
+│   └── organization/     # Organization and member management
+└── lib/                  # Utility functions and shared logic
+```
 
 ## Development Team
 
-Veris is spearheaded by the Faculty of Computing - Supreme Student Council (FC-SSC) of Academic Year 2025-2026 aimed at improving attendance tracking systems for educational institutions. The system is built with scalability and extensibility in mind, allowing for future enhancements across Veris service tiers.
+CORAL is being developed as a student project aimed at improving attendance tracking systems for educational institutions. The system is built with scalability and extensibility in mind, allowing for future enhancements and integrations.
 
----
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed for **educational and within VSU use only**.
-
-© 2026 Veris Basic Tier · Faculty of Computing - Supreme Student Council (FC-SSC)
+This project is licensed for educational and non-commercial use only.
