@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Banknote, AlertTriangle, XIcon, CalendarIcon, UserIcon, ShieldCheckIcon, MessageSquareIcon, Eye, PenLine } from "lucide-react";
+import { Banknote, AlertTriangle, XIcon, CalendarIcon, UserIcon, ShieldCheckIcon, MessageSquareIcon, Eye, PenLine, Loader2 } from "lucide-react";
 import { appealStatusConfig } from "../config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -527,8 +527,8 @@ export function FineBreakdownDialog({ open, onOpenChange, fines, onSuccess }: Fi
                                 onClick={confirmWaive}
                                 disabled={isSubmitting}
                                 >
-                                    <ShieldCheckIcon className="size-3.5" />
-                                    Confirm Waive
+                                    {isSubmitting ? <Loader2 className="size-3.5 animate-spin" /> : <ShieldCheckIcon className="size-3.5" />}
+                                    {isSubmitting ? "Waiving..." : "Confirm Waive"}
                                 </Button>
                             </DialogFooter>
                         </DialogContent>
