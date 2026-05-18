@@ -16,6 +16,7 @@ const handleFirestoreError = (error: any, context: string) => {
   throw new Error(`Failed to ${context}`);
 };
 
+
 // Main function to get programs based on user role
 export const getPrograms = async () => {
   try {
