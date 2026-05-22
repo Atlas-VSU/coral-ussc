@@ -40,8 +40,8 @@ export type MemberFormData = z.infer<typeof memberSchema>;
 export const fineTypeSchema = z.object({
   name: z.string().min(1, "Fine type name is required"),
   description: z.string().min(1, "Fine type description is required"),
-  defaultAmount: z.number().min(1, "Amount must be greater than 0.").max(10000, "Amount must be less than 10,000."), 
-  requiresTimeIn: z.boolean(), 
+  defaultAmount: z.number().min(1, "Amount must be greater than 0.").max(10000, "Amount must be less than 10,000."),
+  requiresTimeIn: z.boolean(),
   requiresTimeOut: z.boolean().optional(),
   majorEventsOnly: z.boolean(),
 }).refine(
@@ -75,26 +75,26 @@ export const paymentSchema = z.object({
   paymentHistoryId: z.string().optional(),
   referenceId: z.string().optional(),
 })
-.superRefine((values, ctx) => {
-  if (values.paymentMethod === "gcash") {
-    const phoneRegex = /^([+]?63|0)9\d{9}$/;
-    
-    if (!values.senderNumber || !phoneRegex.test(values.senderNumber)) {
+  .superRefine((values, ctx) => {
+    if (values.paymentMethod === "gcash") {
+      const phoneRegex = /^([+]?63|0)9\d{9}$/;
+
+      if (!values.senderNumber || !phoneRegex.test(values.senderNumber)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "A valid phone number is required for GCash payments",
+          path: ["senderNumber"],
+        });
+      }
+    }
+
+    if ((values.paymentMethod === "bank_transfer" || values.paymentMethod === "gcash") && (!values.referenceNumber)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "A valid phone number is required for GCash payments",
-        path: ["senderNumber"], 
+        message: "Reference number is required",
+        path: ["referenceNumber"],
       });
     }
-  }
-
-  if ((values.paymentMethod === "bank_transfer" || values.paymentMethod === "gcash") && (!values.referenceNumber || values.referenceNumber.length < 10)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Reference number is required",
-      path: ["referenceNumber"],
-    });
-  }
-});
+  });
 
 export type PaymentFormData = z.infer<typeof paymentSchema>; 
