@@ -19,6 +19,7 @@ import { PageHeader } from "@/components/organization/general/PageHeader";
 import {
   addStudentWithClearance,
   addUser,
+  assignExistingFeesToStudent,
   checkStudentIdExist,
   deleteUser,
   getCurrentUserData,
@@ -28,7 +29,7 @@ import {
 import { toast } from "sonner";
 import { BulkImportResultModal } from "@/features/organization/members/components/BulkImportResultModal";
 import { usePaginatedMembers } from "@/features/organization/members/hooks/usePaginatedMembers";
-import { createFinePerStudent } from "@/firebase/fines/create/fines";
+import { assignExistingFinesToStudent, createFinePerStudent } from "@/firebase/fines/create/fines";
 import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
@@ -133,11 +134,21 @@ export function MembersPage() {
           toast.error("Student ID already exists. Please use a different one.");
           return;
         }
+ 
         const userId = await addUser(data);
         const currentUser = (await getCurrentUserData()) as unknown as Member;
+ 
         if (data.role === "user" && userId) {
-          await addStudentWithClearance(userId, data, currentUser.id!);
-          await createFinePerStudent(userId, data);
+          await Promise.all([
+            createFinePerStudent(userId, data),
+            addStudentWithClearance(userId, data, currentUser.id!),
+          ]);
+          const orgContext = { uid: currentUser.id! };
+ 
+          await Promise.all([
+            assignExistingFeesToStudent(userId, data, orgContext),
+            assignExistingFinesToStudent(userId, data, orgContext),
+          ]);
         }
         toast.success("Member added successfully");
       }
