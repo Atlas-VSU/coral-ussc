@@ -699,6 +699,7 @@ export const assignExistingFinesToStudent = async (
     }
  
     if (totalFineAmount > 0) {
+        await updateFineStats("2ndSem-2025-2026", totalFineAmount, 0);
         await recalculateClearanceStatus(userId);
     }
 };
