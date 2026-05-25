@@ -291,6 +291,7 @@ export const assignExistingFeesToStudent = async (
  
     const CHUNK_SIZE = 100;
     const feeItemDocs = feeItemsSnap.docs;
+    let totalAmount = 0;
  
     for (let i = 0; i < feeItemDocs.length; i += CHUNK_SIZE) {
         const chunk = feeItemDocs.slice(i, i + CHUNK_SIZE);
@@ -342,6 +343,7 @@ export const assignExistingFeesToStudent = async (
                     isRequiredForClearance: feeItem.isRequiredForClearance,
                 };
             }
+            totalAmount += feeItem.amount;
         });
  
         if (Object.keys(blockingItems).length > 0) {
@@ -354,7 +356,7 @@ export const assignExistingFeesToStudent = async (
  
         await batch.commit();
     }
- 
+    await updateFeeStats("2ndSem-2025-2026",totalAmount, 0);
     await recalculateClearanceStatus(userId);
 };
 
