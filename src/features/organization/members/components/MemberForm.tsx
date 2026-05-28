@@ -300,8 +300,8 @@ export function MemberForm({
               <LoadingButton
                 type="submit"
                 variant="success"
-                disabled={!agreed}
-                isLoading={isSubmitting}
+                disabled={!agreed || isSubmitting || form.formState.isSubmitting}
+                isLoading={isSubmitting || form.formState.isSubmitting}
                 loadingText={member ? "Saving..." : "Adding..."}
               >
                 {member ? "Save Changes" : "Add Member"}

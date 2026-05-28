@@ -36,7 +36,7 @@ const submitPaymentSchema = z.object({
         message: "A valid sender number is required for GCash payments.",
       });
     }
-    if (!values.referenceNumber || values.referenceNumber.trim().length < 10) {
+    if (!values.referenceNumber) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["referenceNumber"],
