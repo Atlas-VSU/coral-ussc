@@ -87,6 +87,14 @@ export const paymentSchema = z.object({
         });
       }
     }
+
+    if ((values.paymentMethod === "bank_transfer" || values.paymentMethod === "gcash") && (!values.referenceNumber)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Reference number is required",
+        path: ["referenceNumber"],
+      });
+    }
   });
 
 export type PaymentFormData = z.infer<typeof paymentSchema>; 
