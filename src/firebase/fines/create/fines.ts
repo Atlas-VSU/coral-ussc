@@ -1,6 +1,6 @@
 import { db } from "@/firebase/firebase.config";
 import { getAllUsers, getCurrentUserData } from "@/firebase/users";
-import { collection, addDoc, writeBatch, doc, CollectionReference, DocumentData, Timestamp, getCountFromServer, setDoc } from "firebase/firestore";
+import { collection, addDoc, writeBatch, doc, CollectionReference, DocumentData, Timestamp, getCountFromServer, setDoc, query, where, getDocs, increment, runTransaction } from "firebase/firestore";
 import { getFineTypeById } from "../read/fineType";
 import { Member } from "@/features/organization/members/types";
 import { getNonAttendeesForEvent, getPartialAttendeesForEvent } from "@/firebase/attendance";
@@ -485,4 +485,221 @@ export const generateFinesOnEvent = async (
   // ── DONE ──────────────────────────────────────────────────────────────────
   const grandTotal = counts.absentDone + counts.partialDone;
   report("done", `All ${grandTotal.toLocaleString()} fine items written successfully.`);
+};
+
+
+/**
+ * Safely converts any date-like value to a Firestore Timestamp.
+ * Uses duck-typing (.toDate) instead of instanceof to avoid SDK version mismatch bugs.
+ */
+const toTimestamp = (val: any, fallback: Timestamp): Timestamp => {
+    if (!val) return fallback;
+    // Firestore Timestamp — has .toDate()
+    if (typeof val.toDate === "function") {
+        try {
+            const d: Date = val.toDate();
+            if (d instanceof Date && !isNaN(d.getTime())) {
+                return Timestamp.fromDate(d);
+            }
+        } catch {
+            return fallback;
+        }
+    }
+    // Plain JS Date
+    if (val instanceof Date && !isNaN(val.getTime())) {
+        return Timestamp.fromDate(val);
+    }
+    // ISO string
+    if (typeof val === "string") {
+        const d = new Date(val);
+        if (!isNaN(d.getTime())) return Timestamp.fromDate(d);
+    }
+    return fallback;
+};
+
+/**
+ * For a newly added student, iterate over all events where fine generation
+ * has already been run (fineGenerationDone == true). Mark them as absent
+ * and create fineItem documents under their fine record — exactly mirroring
+ * what generateFinesOnEvent does for bulk absent users.
+ *
+ * Call this AFTER createFinePerStudent() so the parent fine doc exists.
+ */
+export const assignExistingFinesToStudent = async (
+    userId: string,
+    studentData: {
+        firstName: string;
+        lastName: string;
+        studentId: string;
+    },
+    currentUserData: { uid: string }
+): Promise<void> => {
+    const orgId = currentUserData.uid;
+    const userName = `${studentData.firstName} ${studentData.lastName}`;
+ 
+    const issuer = (await getCurrentUserData()) as unknown as Member;
+    const issuerName = issuer
+        ? `${issuer.firstName} ${issuer.lastName}`
+        : "Unknown Issuer";
+ 
+    const eventsRef = collection(db, "events");
+    const eventsQuery = query(
+        eventsRef,
+        where("finesGenerated", "==", true), 
+        where("isDeleted", "==", false)
+    );
+    const eventsSnap = await getDocs(eventsQuery);
+ 
+    if (eventsSnap.empty) return; 
+
+    const finesRef = collection(db, "fines");
+    const fineQuery = query(
+        finesRef,
+        where("userId", "==", userId),
+        where("orgId", "==", orgId),
+    );
+    const fineSnap = await getDocs(fineQuery);
+ 
+    if (fineSnap.empty) {
+        console.error(`No fine document found for userId ${userId}. Did createFinePerStudent run first?`);
+        return;
+    }
+ 
+    const fineDoc = fineSnap.docs[0]; 
+    const fineDocRef = fineDoc.ref;
+    const parentFineId = fineDoc.id;
+ 
+    const clearanceRef = doc(db, "clearanceStatus", userId);
+    const fineItemsCollection = collection(db, "fines", parentFineId, "fineItems")
+    const now = Timestamp.now();
+ 
+    const eventDocs = eventsSnap.docs;
+    const CHUNK_SIZE = 20;
+ 
+    let totalFineAmount = 0;
+    let itemNumberOffset = 0; 
+
+    const currentFineData = fineDoc.data();
+    let nextItemNumber = (currentFineData.fineItemsCount ?? 0) + 1;
+ 
+    for (let i = 0; i < eventDocs.length; i += CHUNK_SIZE) {
+        const chunk = eventDocs.slice(i, i + CHUNK_SIZE);
+        const batch = writeBatch(db);
+ 
+        const blockingItems: Record<string, object> = {};
+        let chunkTotalAmount = 0;
+        let chunkItemCount = 0;
+ 
+        for (const eventDoc of chunk) {
+            const event = eventDoc.data();
+ 
+            const fineType = await getFineTypeById(event.fineTypeId);
+            if (!fineType) {
+                console.warn(`Fine type ${event.fineTypeId} not found for event ${eventDoc.id}, skipping.`);
+                continue;
+            }
+
+            const amount = fineType.requiresTimeOut
+                ? fineType.defaultAmount * 2
+                : fineType.defaultAmount;
+ 
+            const eventDate = toTimestamp(event.date, now);
+            const eventName: string = event.name ?? "Unknown Event";
+ 
+            const fineItemRef = doc(fineItemsCollection);
+ 
+            batch.set(fineItemRef, {
+                itemNumber: nextItemNumber,
+                fineTypeId: fineType.id,
+                fineTypeName: fineType.name,
+                eventId: eventDoc.id,
+                eventName,
+                eventDate,
+                amount,
+                reason: `Fine for being absent in event ${eventName}`,
+                issuedBy: issuerName,
+                issuedAt: now,
+                isWaived: false,
+                waivedBy: null,
+                waivedReason: null,
+                waivedAt: null,
+                appealNotes: null,
+                appealedAt: null,
+                appealStatus: null,
+                appealResolvedAt: null,
+                appealResolvedBy: null,
+                metadata: {
+                    createdAt: now,
+                    updatedAt: now,
+                },
+                isPaid: false,
+                isArchived: false,
+                isPending: false,
+
+                parentFineId,
+                userId,
+                studentId: studentData.studentId,
+                userName,
+                orgId,
+            });
+ 
+            blockingItems[fineItemRef.id] = {
+                type: PaymentType.FINES,
+                referenceId: fineItemRef.id,
+                parentFineId,
+                title: eventName,
+                balance: amount,
+                status: "unpaid",
+                pendingReview: false,
+                isRequiredForClearance: true,
+            };
+ 
+            chunkTotalAmount += amount;
+            chunkItemCount++;
+            nextItemNumber++;
+        }
+ 
+        if (chunkItemCount === 0) continue; 
+ 
+        batch.update(fineDocRef, {
+            accumulatedAmount: increment(chunkTotalAmount),
+            balance: increment(chunkTotalAmount),
+            fineItemsCount: increment(chunkItemCount),
+            lastFineIssuedAt: now,
+            "metadata.updatedAt": now,
+        });
+ 
+        batch.set(
+            clearanceRef,
+            {
+                blockingItems,
+                updatedAt: now,
+            },
+            { merge: true }
+        );
+ 
+        await batch.commit();
+ 
+        totalFineAmount += chunkTotalAmount;
+    }
+ 
+    if (totalFineAmount > 0) {
+        try {
+            await runTransaction(db, async (transaction) => {
+                const latestFineDoc = await transaction.get(fineDocRef);
+                if (!latestFineDoc.exists()) return;
+                const data = latestFineDoc.data();
+                if (!data.firstFineIssuedAt) {
+                    transaction.update(fineDocRef, { firstFineIssuedAt: now });
+                }
+            });
+        } catch (e) {
+            console.warn("Could not set firstFineIssuedAt:", e);
+        }
+    }
+ 
+    if (totalFineAmount > 0) {
+        await updateFineStats("2ndSem-2025-2026", totalFineAmount, 0);
+        await recalculateClearanceStatus(userId);
+    }
 };

@@ -1,5 +1,5 @@
 import { Member, MemberData } from "@/features/organization/members/types";
-import { collection, deleteField, doc, getCountFromServer, getDoc, getDocs, limit, orderBy, query, runTransaction, setDoc, startAfter, Timestamp, updateDoc, where, writeBatch } from "firebase/firestore";
+import { collection, deleteField, doc, getCountFromServer, getDoc, getDocs, increment, limit, orderBy, query, runTransaction, setDoc, startAfter, Timestamp, updateDoc, where, writeBatch } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { FeeGenerationSchema } from "@/features/organization/fees/utils/feeGenerationSchema";
 import z from "zod";
@@ -252,6 +252,112 @@ export const generateFeesForAllStudentsInAnOrg = async (
     cacheService.invalidateByPrefix(`fees:count:${orgId}`);
     cacheService.invalidateByPrefix(`clearance:stats:${orgId}`);
     cacheService.invalidateByPrefix(`clearance:count:${orgId}`);
+};
+
+
+/**
+ * Assigns ALL existing (non-archived) fee items of an org to a newly added student.
+ * - Creates a `fees` document per fee item for the student
+ * - Adds each fee as a blockingItem in the student's `clearanceStatus` doc
+ * - Increments `totalStudents` on each feeItem doc
+ *
+ * Call this right after addStudentWithClearance() when role === "user".
+ */
+export const assignExistingFeesToStudent = async (
+    userId: string,
+    studentData: {
+        firstName: string;
+        lastName: string;
+        studentId: string;
+    },
+    currentUserData: { uid: string }
+): Promise<void> => {
+    const orgId = currentUserData.uid;
+ 
+    const feeItemsRef = collection(db, "feeItems");
+    const feeItemsQuery = query(
+        feeItemsRef,
+        where("orgId", "==", orgId),
+        where("isArchived", "==", false)
+    );
+    const feeItemsSnap = await getDocs(feeItemsQuery);
+ 
+    if (feeItemsSnap.empty) return;
+ 
+    const feesCollection = collection(db, "fees");
+    const clearanceRef = doc(db, "clearanceStatus", userId);
+    const now = Timestamp.now();
+    const userName = `${studentData.firstName} ${studentData.lastName}`;
+ 
+    const CHUNK_SIZE = 100;
+    const feeItemDocs = feeItemsSnap.docs;
+    let totalAmount = 0;
+ 
+    for (let i = 0; i < feeItemDocs.length; i += CHUNK_SIZE) {
+        const chunk = feeItemDocs.slice(i, i + CHUNK_SIZE);
+        const batch = writeBatch(db);
+        const blockingItems: Record<string, object> = {};
+ 
+        chunk.forEach((feeItemDoc) => {
+            const feeItem = feeItemDoc.data();
+            const feeDocRef = doc(feesCollection);
+ 
+            batch.set(feeDocRef, {
+                orgId,
+                userId,
+                userName,
+                studentId: studentData.studentId,
+                feeItemId: feeItemDoc.id,
+                feeType: feeItem.feeType,
+                title: feeItem.title,
+                amount: feeItem.amount,
+                paidAmount: 0,
+                balance: feeItem.amount,
+                status: "unpaid",
+                academicYear: feeItem.academicYear ?? "2025-2026",
+                semester: feeItem.semester ?? "2nd",
+                description: feeItem.description ?? "",
+                eventId: feeItem.eventId ?? null,
+                dueDate: feeItem.dueDate ?? null,
+                isRequiredForClearance: feeItem.isRequiredForClearance,
+                createdBy: orgId,
+                createdAt: now,
+                updatedAt: now,
+                isArchived: false,
+            });
+ 
+            batch.update(feeItemDoc.ref, {
+                totalStudents: increment(1),
+                updatedAt: now,
+            });
+ 
+            if (feeItem.isRequiredForClearance) {
+                blockingItems[feeDocRef.id] = {
+                    type: PaymentType.FEES,
+                    referenceId: feeDocRef.id,
+                    title: feeItem.title,
+                    balance: feeItem.amount,
+                    status: "unpaid",
+                    paymentHistory: [],
+                    pendingReview: false,
+                    isRequiredForClearance: feeItem.isRequiredForClearance,
+                };
+            }
+            totalAmount += feeItem.amount;
+        });
+ 
+        if (Object.keys(blockingItems).length > 0) {
+            batch.set(
+                clearanceRef,
+                { blockingItems, updatedAt: now },
+                { merge: true }
+            );
+        }
+ 
+        await batch.commit();
+    }
+    await updateFeeStats("2ndSem-2025-2026",totalAmount, 0);
+    await recalculateClearanceStatus(userId);
 };
 
 export const fetchFeeItem = async(orgId: string, feeItemId: string): Promise<FeeItem | null> => {
