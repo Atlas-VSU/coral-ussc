@@ -14,12 +14,13 @@ import { recalculateFines } from "@/firebase/fines/update/recalculate"
 import { recalculateFees } from "@/firebase/fees/update/recalculate"
 import { cacheService, CACHE_KEYS } from "@/services/cacheService"
 import { updateFeeStats, updateFineStats } from "@/firebase/stats/update/updateStats"
+import { getActiveTerm } from "@/firebase/term"
 
 
 export const usePaymentApproval = () => {
-
     const _approvePayment = async (payment: ProofOfPayment) => {
         try {
+            const term = await getActiveTerm();
             const verifier = await getCurrentUserData() as unknown as Member;
             const paymentOwner = await searchUserByStudentId(payment.studentId);
             if (paymentOwner === null) {
@@ -38,7 +39,7 @@ export const usePaymentApproval = () => {
                 for (const item of items) {
                     if (item.paymentType === "fees") {
                         await verifyPaymentHistory(item.historyId!, verifier, "fees", item.refId, item.amount);
-                        await updateFeeStats("2ndSem-2025-2026", 0, item.amount);
+                        await updateFeeStats(`${term!.AY}-${term!.semester}-${verifier.orgId}`, 0, item.amount);
                     }
                     if (item.paymentType === "fines") {
                         parentFine = item.parentFineId;
@@ -50,7 +51,7 @@ export const usePaymentApproval = () => {
                 if (parentFine !== "") {
                     const paymentHistory = await getPendingPaymentHistory(parentFine, "fines", payment.id!);
                     await verifyPaymentHistory(paymentHistory!.id, verifier, "fines", parentFine, totalFine, null, fineItemIds);
-                    await updateFineStats("2ndSem-2025-2026", 0, totalFine);
+                    await updateFineStats(`${term!.AY}-${term!.semester}-${verifier.orgId}`, 0, totalFine);
                 }
                 await recalculateClearanceStatus(paymentOwner.id!);
                 
@@ -67,6 +68,8 @@ export const usePaymentApproval = () => {
                     date: Timestamp.now().toDate().toLocaleString(),
                     verifiedByName: verifier.firstName + " " + verifier.lastName,
                     paymentMethod: payment.paymentMethod,
+                    AY: term!.AY,
+                    semester: term!.semester,
                 };
 
                 return {
@@ -135,6 +138,7 @@ export const usePaymentApproval = () => {
 
     const _waiveFinePayment = async (fines: StudentFines, item: FineItem) => {
         try {
+            const term = await getActiveTerm();
             const paymentOwner = await searchUserByStudentId(fines.studentId);
             if (paymentOwner === null) {
                 toast.error("Payment owner not found, cannot verify payment.")
@@ -144,7 +148,7 @@ export const usePaymentApproval = () => {
             //recalculation of clearance is still necessary I think because waiving a fine might change the clearance status of the student, especially if the waived fine was the only remaining blocking item. 
             await markFineItemAsWaived(fines.id!, item);
             await recalculateClearanceStatus(paymentOwner.id!);
-            await updateFineStats("2ndSem-2025-2026", 0, 0, item.amount);
+            await updateFineStats(`${term!.AY}-${term!.semester}-${fines.orgId}`, 0, 0, item.amount);
                 
         } catch (error) {
             console.error("Failed payment approval.", error)

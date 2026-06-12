@@ -73,3 +73,4 @@ export const checkForDuplicateTerms = async (AY: string, sem: string) => {
         return null;
     }
 }
+

@@ -36,6 +36,8 @@ export type ProofOfPayment = {
     notes?: string;
     metadata: {items?: {amount: number, title:string, parentFineId: string, paymentType:string, refId:string,historyId?: string}[], semester?: string, academicYear?: string };
     isArchived: boolean;
+    academicYear?: string;
+    semester?: string;
 }
 
 export type FinesPaymentLog = {
@@ -102,6 +104,8 @@ export type FineItem = {
   appealResolvedAt?: Timestamp;
   isPaid: boolean;
   isPending?: boolean;
+  academicYear?: string;
+  semester?: string;
 }
 
 // Add "clearance" to your phase type

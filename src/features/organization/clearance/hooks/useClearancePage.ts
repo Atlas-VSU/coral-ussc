@@ -19,6 +19,7 @@ import { ProofOfPayment } from "../../fines/types"
 import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval"
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { ITEMS_PER_PAGE } from "../config";
+import { getActiveTerm } from "@/firebase/term"
 
 export function useClearancePage(orgId: string | undefined) {
   const { user: currentUser } = useAuth()
@@ -29,7 +30,7 @@ export function useClearancePage(orgId: string | undefined) {
   const [viewMode, setViewMode] = useState<ViewMode>("table")
   const [currentPage, setCurrentPage] = useState(1)
 
-  const { clearances, loading, totalCount, setClearances, hardRefresh: baseHardRefresh, hasNextPage, stats, fetchStatsData } = useClearances(
+  const { clearances, loading, totalCount, setClearances, hardRefresh: baseHardRefresh, hasNextPage, stats, fetchStatsData, AY, sem } = useClearances(
     orgId,
     ITEMS_PER_PAGE,
     search,
@@ -200,6 +201,7 @@ export function useClearancePage(orgId: string | undefined) {
         new Date().toISOString().slice(0, 10),
         receipt
       )
+      const term = await getActiveTerm();
 
       // Invalidate the individual doc cache since it was updated
       cacheService.invalidate(CACHE_KEYS.clearanceDoc(logPaymentTarget.id));
@@ -219,6 +221,8 @@ export function useClearancePage(orgId: string | undefined) {
         date: new Date().toLocaleString(),
         verifiedByName: currentUser.firstName + " " + currentUser.lastName,
         paymentMethod: "Cash",
+        AY: term!.AY,
+        semester: term!.semester,
       })
 
       setLogPaymentOpen(false)
@@ -272,6 +276,8 @@ export function useClearancePage(orgId: string | undefined) {
     reviewData,
     stats,
     hasNextPage,
+    AY,
+    sem,
     
     // UI State
     search,

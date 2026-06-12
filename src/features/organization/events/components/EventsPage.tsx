@@ -54,6 +54,8 @@ export default function EventsPage() {
     loading,
     currentPage,
     totalPages,
+    AY,
+    sem,
     handlePageChange,
     handleSearch,
     handleSort,
@@ -74,7 +76,7 @@ export default function EventsPage() {
       <PageHeader
         variant="admin"
         title="Events Management"
-        context="2nd Semester · A.Y. 2025–2026"
+        context={`${sem} Semester · A.Y. ${AY}`}
         description="Manage your organization's events and track attendance"
         action={
           <div className="hidden xl:flex">

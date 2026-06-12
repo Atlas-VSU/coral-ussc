@@ -10,6 +10,7 @@ import {
 import { db } from "./firebase.config";
 import { Member, Program } from "@/features/organization/members/types";
 import { getCurrentUserData } from "./users";
+import { getOrgById } from "./organization";
 
 const handleFirestoreError = (error: any, context: string) => {
   console.error(`Error ${context}:`, error);
@@ -22,16 +23,17 @@ export const getPrograms = async () => {
   try {
     const currentUser = (await getCurrentUserData()) as Member | null;
     if (!currentUser) return [];
+    const org = await getOrgById(currentUser.orgId!);
 
-    if (currentUser.accessLevel == 1) {
-      const program = await getProgramById(currentUser.programId)
+    if (currentUser.accessLevel == 1 && org) {
+      const program = await getProgramById(org.programId!)
       return program ? [program] : []
     }
-    else if (currentUser.accessLevel == 2) {
+    else if (currentUser.accessLevel == 2 && org) {
       const programsCollection = collection(db, "programs");
       const q = query(
         programsCollection,
-        where("facultyId", "==", currentUser.facultyId)
+        where("facultyId", "==", org.facultyId)
       );
       const querySnapshot = await getDocs(q);
       return querySnapshot.docs.map((doc) => ({
@@ -80,17 +82,19 @@ export const getProgramByFacultyId = async () => {
     const currentUser = (await getCurrentUserData()) as Member | null;
     if (!currentUser) return null;
 
+    const org = await getOrgById(currentUser.orgId!);
+
     // Check if user is a student first
-    if (currentUser.accessLevel == 1) {
-      const program = await getProgramById(currentUser.programId);
+    if (currentUser.accessLevel == 1 && org) {
+      const program = await getProgramById(org.programId!);
       // **FIX:** Now correctly calls the fixed getProgramById function.
       return program ? [program] : null;
     }
-    else if (currentUser.accessLevel == 2) {
+    else if (currentUser.accessLevel == 2 && org) {
       const programsCollection = collection(db, "programs");
       const q = query(
         programsCollection,
-        where("facultyId", "==", currentUser.facultyId)
+        where("facultyId", "==", org.facultyId)
       );
       const querySnapshot = await getDocs(q);
       return querySnapshot.docs.map((doc) => ({

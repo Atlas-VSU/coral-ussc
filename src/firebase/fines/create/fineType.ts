@@ -5,6 +5,7 @@ import { FineTypeFormData } from "@/lib/validators";
 import { collection, addDoc, Timestamp, updateDoc, doc } from "firebase/firestore";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { getAllFineTypes } from "../read/fineType";
+import { Member } from "@/features/organization/members/types";
 
 
   // Centralized error handler
@@ -17,7 +18,7 @@ const handleFirestoreError = (error: any, context: string) => {
 export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : string) => {
   try {
     //for now orgId = userId
-    const currentUser = await getCurrentUserData();
+    const currentUser = await getCurrentUserData() as unknown as Member;
     if (!currentUser) {
       throw new Error("User not authenticated");
     }
@@ -30,13 +31,13 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
             requiresTimeOut: fineTypeData.requiresTimeOut || false,
             majorEventsOnly: fineTypeData.majorEventsOnly,
             isActive : true,
-            orgId : orgId? orgId : currentUser.uid,
+            orgId : orgId? orgId : currentUser.orgId,
             metadata: {
                 createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now(),
             }
         });
-        const currentOrgId = orgId ? orgId : currentUser.uid;
+        const currentOrgId = orgId ? orgId : currentUser.orgId;
 
         // cacheService.invalidate(CACHE_KEYS.clearanceAll(currentOrgId));
     } catch (error) {
@@ -48,7 +49,7 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
   export const updateFineType = async (fineTypeId: string, fineTypeData : FineType) => {
     try {
       //for now orgId = userId
-      const currentUser = await getCurrentUserData();
+      const currentUser = await getCurrentUserData() as unknown as Member;
       if (!currentUser) {
         throw new Error("User not authenticated");
       }
@@ -61,13 +62,13 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
               requiresTimeOut: fineTypeData.requiresTimeOut || false,
               majorEventsOnly: fineTypeData.majorEventsOnly,
               isActive : true,
-              orgId : currentUser.uid,
+              orgId : currentUser.orgId,
               metadata: {
                   createdAt: Timestamp.now(),
                   updatedAt: Timestamp.now(),
               }
           });
-          const currentOrgId = currentUser.uid;
+          const currentOrgId = currentUser.orgId;
           // cacheService.invalidate(CACHE_KEYS.clearanceAll(currentOrgId));
       } catch (error) {
           handleFirestoreError(error, `updating fine type`);
@@ -78,7 +79,7 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
     export const deleteFineType = async (fineTypeId: string) => {
       try {
         //for now orgId = userId
-        const currentUser = await getCurrentUserData();
+        const currentUser = await getCurrentUserData() as unknown as Member;
         if (!currentUser) {
           throw new Error("User not authenticated");
         }
@@ -89,7 +90,7 @@ export const createFineType = async (fineTypeData : FineTypeFormData, orgId? : s
                     updatedAt: Timestamp.now(),
                 }
             });
-            const currentOrgId = currentUser.uid;
+            const currentOrgId = currentUser.orgId;
             // cacheService.invalidate(CACHE_KEYS.clearanceAll(currentOrgId));
         } catch (error) {
             handleFirestoreError(error, `deleting fine type`);

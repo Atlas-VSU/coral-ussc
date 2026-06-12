@@ -74,7 +74,8 @@ export function FinesPage() {
     setPaginatedFines,
     setTotalCount,
     setFilterStatus,
-    refreshFineItems
+    refreshFineItems,
+    AY,sem,
   } = useFines({ itemsPerPage: ITEMS_PER_PAGE });
 
   const {
@@ -141,7 +142,7 @@ export function FinesPage() {
       <PageHeader
         variant="admin"
         title="Fines Management"
-        context="2nd Semester · A.Y. 2025–2026"
+        context={`${sem} Semester · A.Y. ${AY}`}
         description="Track and manage student fines with real-time payment status"
         action={
           <div className="hidden lg:flex">

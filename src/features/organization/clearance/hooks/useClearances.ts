@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { fetchClearanceDocumentsPaginated, fetchStats, getClearanceCount } from "@/firebase/clearance"
 import { cacheService } from "@/services/cacheService"
 import type { ClearanceStatus } from "../types"
+import { getActiveTerm } from "@/firebase/term"
 
 export function useClearances(
   orgId: string | undefined,
@@ -23,6 +24,8 @@ export function useClearances(
   const [totalCount, setTotalCount] = useState(0)
   const [hasNextPage, setHasNextPage] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false) // Lock to prevent spam
+  const [AY, setAY] = useState<string>("")
+  const [sem, setSem] = useState<string>("")
 
   // Store cursors in a ref — NOT state — so updating them never triggers a re-render
   const cursorsRef = useRef<Record<number, any>>({})
@@ -48,6 +51,11 @@ export function useClearances(
       const data = await fetchStats(orgId)
       if (data) {
         setStats(data)
+      }
+      const term = await getActiveTerm()
+      if (term) {
+        setAY(term.AY)
+        setSem(term.semester)
       }
     } catch (err) {
       console.error("Error fetching clearance stats:", err)
@@ -129,6 +137,8 @@ export function useClearances(
     setClearances, 
     hardRefresh ,
     stats,
-    fetchStatsData
+    fetchStatsData,
+    AY,
+    sem
   }
 }

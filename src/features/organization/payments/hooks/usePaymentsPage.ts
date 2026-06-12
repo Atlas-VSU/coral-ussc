@@ -18,6 +18,7 @@ import { usePaymentApproval } from "./usePaymentApproval"
 import { useDebounce } from "@/hooks/useDebounce"
 import { Timestamp } from "firebase/firestore"
 import { BlockingItem, ClearanceStatus } from "../../clearance/types"
+import { getActiveTerm } from "@/firebase/term"
 
 export function usePaymentsPage() {
   const {
@@ -43,7 +44,7 @@ export function usePaymentsPage() {
     currentOrgIdRef,
     filterStatus,
     setFilterStatus,
-    stats,
+    stats, AY,sem,
   } = usePayments()
 
   // ── Tab ───────────────────────────────────────────────────────────────────
@@ -237,6 +238,7 @@ export function usePaymentsPage() {
     if (!liveSelectedUnpaid || selectedDues.length === 0) return
     setLoading(true)
 
+    const term = await getActiveTerm();
     const receiptId = generateReceiptId()
     const studentName = liveSelectedUnpaid.userName;
     let isFine = false, isFee = false, totalAmount = 0
@@ -307,6 +309,8 @@ export function usePaymentsPage() {
       date: paymentDate.toDate().toLocaleString(),
       verifiedByName: `${currentUser.firstName} ${currentUser.lastName}`,
       paymentMethod: "Cash",
+      AY: term!.AY,
+      semester: term!.semester
     })
 
     setReceiptOpen(true)
@@ -356,6 +360,7 @@ export function usePaymentsPage() {
     receiptOpen, setReceiptOpen, receiptData, setReceiptData,
     stats,
     refetchPayments,refetchUnpaids, refreshAll, totalUnpaidCount, totalSubmissionCount,
-    submissionPage, setSubmissionPage, searchCount
+    submissionPage, setSubmissionPage, searchCount,
+    AY, sem,
   }
 }

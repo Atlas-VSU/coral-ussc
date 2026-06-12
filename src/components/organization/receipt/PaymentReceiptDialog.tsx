@@ -21,6 +21,8 @@ export interface ReceiptData {
   date: string
   verifiedByName: string
   paymentMethod: string
+  AY: string
+  semester: string
 }
 
 type Props = {
@@ -101,7 +103,7 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
             <hr />
             <div class="row"><span>Receipt No.</span><span class="value">${data.receiptId}</span></div>
             <div class="row"><span>Date</span><span>${data.date}</span></div>
-            <div class="row"><span>Term</span><span>2nd Semester, A.Y. 2025-2026</span></div>
+            <div class="row"><span>Term</span><span>${data.semester} Semester, A.Y. ${data.AY}</span></div>
 
             <hr />
             <p class="section-label">Received From</p>
@@ -182,7 +184,7 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
           </div>
           <div className="flex justify-between text-xs mt-1">
             <span>Term</span>
-            <span>2nd Semester, A.Y. 2025-2026</span>
+            <span>{data.semester} Semester, A.Y. {data.AY}</span>
           </div>
 
 

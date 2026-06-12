@@ -3,6 +3,7 @@ import { Event } from "../types";
 import { getPaginatedEvents, getEvents } from "@/firebase";
 import { EventStatus } from "../types";
 import { cacheService, CACHE_DURATIONS } from "@/services/cacheService";
+import { getActiveTerm } from "@/firebase/term";
 
 interface SortOptions {
   field: string;
@@ -21,6 +22,8 @@ export function useEventsData(currentTab: EventStatus) {
     field: "date",
     direction: "desc",
   });
+  const [AY, setAY] = useState<string>("");
+  const [sem, setSem] = useState<string>("");
 
   const searchCacheLoadedRef = useRef(false);
   // Keep a ref copy so fetchEvents can always read the latest value
@@ -157,7 +160,9 @@ export function useEventsData(currentTab: EventStatus) {
         },
         CACHE_DURATIONS.UI_STATE
       );
-
+      const term = await getActiveTerm();
+      setAY(term!.AY);
+      setSem(term!.semester);
       setEvents(cachedViewData.events);
       setTotalEvents(cachedViewData.totalCount);
     } catch (error) {
@@ -223,6 +228,8 @@ export function useEventsData(currentTab: EventStatus) {
     loading,
     currentPage,
     totalPages: Math.ceil(totalEvents / itemsPerPage),
+    AY,
+    sem,
     handlePageChange,
     handleSearch,
     handleSort,

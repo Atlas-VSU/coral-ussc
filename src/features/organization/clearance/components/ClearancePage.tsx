@@ -37,6 +37,8 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
     reviewData,
     stats, 
     search,
+    AY,
+    sem,
     setSearch,
     filterStatus,
     setFilterStatus,
@@ -90,7 +92,7 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
       <PageHeader
         variant="admin"
         title="Clearance Management"
-        context="2nd Semester · A.Y. 2025–2026"
+        context={`${sem} Semester · A.Y. ${AY}`}
         description="Review and manage student clearance statuses"
       />
 

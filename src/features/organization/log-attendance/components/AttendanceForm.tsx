@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { StudentDetailsOutsideOrg } from "./Search/StudentDetailsOutsideOrg";
 import { searchUserByStudentId } from "@/firebase";
 import { WarningDialog } from "./WarningDialog";
+import { getOrgById } from "@/firebase/organization";
 
 interface AttendanceFormProps {
   event: Event;
@@ -223,11 +224,12 @@ export function AttendanceForm({
       }
 
       const student = await searchUserByStudentId(studentId);
+      const org = await getOrgById(currentUserData!.orgId!);
       const studentName = showNames
         ? `${student?.firstName} ${student?.lastName}`
         : "This student";
       // Determine if warning is needed
-      if (currentUserData?.accessLevel === 1 && currentUserData.programId !== student?.programId) {
+      if (currentUserData?.accessLevel === 1 && org!.programId !== student?.programId) {
         setWarningDialog({
           open: true,
           title: "Program Mismatch Detected",
@@ -240,7 +242,7 @@ export function AttendanceForm({
           },
         });
         return;
-      } else if (currentUserData?.accessLevel === 2 && currentUserData.facultyId !== student?.facultyId) {
+      } else if (currentUserData?.accessLevel === 2 && org!.facultyId !== student?.facultyId) {
         setWarningDialog({
           open: true,
           title: "Faculty Mismatch Detected",

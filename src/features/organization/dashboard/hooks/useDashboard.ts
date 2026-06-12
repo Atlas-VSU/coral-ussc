@@ -15,6 +15,8 @@ import {
 import { Event } from "../types";
 import { Member } from "../../members/types";
 import { DashboardPayment } from "../components/RecentPayments";
+import { getActiveTerm } from "@/firebase/term";
+import { set } from "zod";
 
 
 export interface DashboardStats {
@@ -48,6 +50,8 @@ export function useDashboard() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [AY, setAY] = useState("");
+  const [sem, setSem] = useState("");
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
@@ -65,6 +69,7 @@ export function useDashboard() {
         feesCollectedData,
         unpaidFinesAmountData,
         clearanceRateData,
+        term,
       ] = await Promise.all([
         getDashboardStats(),
         getDashboardUpcomingEvents(5),
@@ -75,6 +80,7 @@ export function useDashboard() {
         getDashboardFeesCollected(),
         getDashboardUnpaidFinesAmount(),
         getDashboardClearanceRate(),
+        getActiveTerm(),
       ]);
 
       // Update state with fetched data
@@ -87,6 +93,8 @@ export function useDashboard() {
       setFeesCollected(feesCollectedData);
       setUnpaidFinesAmount(unpaidFinesAmountData);
       setClearanceRate(clearanceRateData);
+      setAY(term!.AY);
+      setSem(term!.semester);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
       setError(
@@ -109,6 +117,8 @@ export function useDashboard() {
 
   return {
     stats,
+    AY,
+    sem,
     upcomingEvents,
     ongoingEvents,
     allEvents,
