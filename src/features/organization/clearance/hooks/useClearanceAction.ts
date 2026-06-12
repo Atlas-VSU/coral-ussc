@@ -74,11 +74,11 @@ export function useClearanceActions(
       if (newStatus === "paid" && !options?.addPaymentLog) {
         const result = await approvePaymentClearanceUpdate(
           clearanceId, 
-          itemsToUpdate, 
-          currentUser.uid, 
-          `${currentUser.firstName} ${currentUser.lastName}`, 
+          // itemsToUpdate, 
+          // currentUser.uid, 
+          // `${currentUser.firstName} ${currentUser.lastName}`, 
           studentData,
-          receiptCode
+          // receiptCode
         )
         setReceiptData(result?.receipt!);
         setReceiptOpen(true);
@@ -88,9 +88,9 @@ export function useClearanceActions(
 
         await rejectPaymentClearanceUpdate(
           clearanceId, 
-          itemsToUpdate, 
-          currentUser.uid, 
-          `${currentUser.firstName} ${currentUser.lastName}`, 
+          // itemsToUpdate, 
+          // currentUser.uid, 
+          // `${currentUser.firstName} ${currentUser.lastName}`, 
           options.rejectionReason, 
           studentData
         )

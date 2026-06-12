@@ -1,6 +1,6 @@
 import { db } from "@/firebase/firebase.config";
 import { getCurrentUserCount } from "@/firebase/users";
-import { collection, doc, getCountFromServer, query, setDoc, where } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 
 export type StatsData = {
     id: string;
