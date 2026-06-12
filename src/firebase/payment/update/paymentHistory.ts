@@ -37,7 +37,11 @@ export const verifyPaymentHistory = async (
                 const fineSnap = await getDoc(fineRef);
                 if (fineSnap.exists()) {
                     const fineData = fineSnap.data();
-                    const clearanceRef = doc(db, 'clearanceStatus', fineData.userId);
+                    let id = fineData.userId;
+                    if (verifier.accessLevel !== 3) { 
+                        id = fineData.userId+verifier.orgId;
+                    }
+                    const clearanceRef = doc(db, 'clearanceStatus', id);
                     for (const itemId of itemIds ?? []) {
                         await updateDoc(clearanceRef, {
                             [`blockingItems.${itemId}.balance`]: fineData.balance,
@@ -51,7 +55,11 @@ export const verifyPaymentHistory = async (
             if(type === "fees"){
                 const result = await recalculateFees(refId, amount);
                 if (result.success && result.userId) {
-                    const clearanceRef = doc(db, 'clearanceStatus', result.userId);
+                    let id = result.userId;
+                    if (verifier.accessLevel !== 3) { 
+                        id = result.userId+verifier.orgId;
+                    }
+                    const clearanceRef = doc(db, 'clearanceStatus', id);
                     await updateDoc(clearanceRef, {
                         [`blockingItems.${refId}.balance`]: result.balance,
                         [`blockingItems.${refId}.status`]: result.status === "paid" ? "paid" : "unpaid",
@@ -99,8 +107,12 @@ export const rejectPaymentHistory = async (
                         await updateDoc(fineRef, {status: "partial"});
                     } else {
                         await updateDoc(fineRef, {status: "unpaid"});
-                     }
-                    const clearanceRef = doc(db, 'clearanceStatus', fineData.userId);
+                    }
+                    let id = fineData.userId;
+                    if (verifier.accessLevel !== 3) {
+                        id = fineData.userId+verifier.orgId;
+                    }
+                    const clearanceRef = doc(db, 'clearanceStatus', id);
                     for (const itemId of itemRefId ?? []) {
                         await updateDoc(clearanceRef, {
                         [`blockingItems.${itemId}.pendingReview`]: false,
@@ -115,7 +127,11 @@ export const rejectPaymentHistory = async (
                 if (feeSnap.exists()) {
                     await updateDoc(feeRef, {status: "unpaid"});
                     const feeData = feeSnap.data();
-                    const clearanceRef = doc(db, 'clearanceStatus', feeData.userId);
+                    let id = feeData.userId;
+                    if (verifier.accessLevel !== 3) {
+                        id = feeData.userId+verifier.orgId;
+                    }
+                    const clearanceRef = doc(db, 'clearanceStatus', id);
                     await updateDoc(clearanceRef, {
                         [`blockingItems.${refId}.pendingReview`]: false,
                     });

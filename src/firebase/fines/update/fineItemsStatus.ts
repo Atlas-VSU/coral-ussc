@@ -15,8 +15,8 @@ export const markFineItemsAsPaid = async (fineId: string, fineItemId?: string) =
                 isPaid: true,
                 isPending: false,
             });
-            const currUser = await getCurrentUserData() as unknown as Member;
-            const orgId = currUser.id || '';
+            // const currUser = await getCurrentUserData() as unknown as Member;
+            // const orgId = currUser.orgId || '';
             // cacheService.invalidate(CACHE_KEYS.fineDoc(fineId));
             // cacheService.invalidate(CACHE_KEYS.fineItems(fineId));
         }
@@ -40,8 +40,8 @@ export const markFineItemsAsPaid = async (fineId: string, fineItemId?: string) =
             });
 
             await batch.commit();
-            const currUser = await getCurrentUserData() as unknown as Member;
-            const orgId = currUser.id || '';
+            // const currUser = await getCurrentUserData() as unknown as Member;
+            // const orgId = currUser.orgId || '';
             // cacheService.invalidate(CACHE_KEYS.fineDoc(fineId));
             // cacheService.invalidate(CACHE_KEYS.fineItems(fineId));
         }
@@ -64,8 +64,8 @@ export const markFineItemsAsNotPending = async (fineId: string, fineItemIds: str
         }
 
             await batch.commit();
-            const currUser = await getCurrentUserData() as unknown as Member;
-            const orgId = currUser.id || '';
+            // const currUser = await getCurrentUserData() as unknown as Member;
+            // const orgId = currUser.orgId || '';
             // cacheService.invalidate(CACHE_KEYS.fineDoc(fineId));
             // cacheService.invalidate(CACHE_KEYS.fineItems(fineId));
     } catch (error) {
@@ -95,7 +95,11 @@ export const markFineItemAsWaived = async (fineId: string, fineItem: FineItem, w
         const fineSnap = await getDoc(fineRef);
         if (fineSnap.exists()) {
             const fineData = fineSnap.data();
-            const clearanceRef = doc(db, 'clearanceStatus', fineData.userId);
+            let id = fineData.userId;
+            if (currUser.accessLevel !== 3) {
+                id = fineData.userId+currUser.orgId;
+             }
+            const clearanceRef = doc(db, 'clearanceStatus', id);
             //Clearance blocking items are updated also and both waived and paid items are treated the same here since they both should not hinder clearance
             //this can be changed, if we separate treatment of waived and paid on clearance, we need also to refactor all other dependencies on these status labels (such as basis for clearance as cleared or not)
             await updateDoc(clearanceRef, {
