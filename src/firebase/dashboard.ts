@@ -34,18 +34,18 @@ const transformEventData = (doc: any): Event => {
  * Gets a count of total attendees across all events for the current user's context
  * Uses an efficient single aggregation query instead of fetching all events
  */
-export const getDashboardAttendeeCount = async (): Promise<number> => {
+export const getDashboardAttendeeCount = async (selectedTerm?: { AY: string, semester: string } | null): Promise<number> => {
   try {
+    const term = selectedTerm || await getActiveTerm();
     // Use cache with a specific key for this dashboard metric
-    const cacheKey = `dashboard:total-attendees-count`;
+    const cacheKey = `dashboard:total-attendees-count:${term?.AY}-${term?.semester}`;
 
     return await cacheService.getOrFetch<number>(
       cacheKey,
       async () => {
         const currentUser = (await getCurrentUserData()) as unknown as Member;
         const org = await getOrgById(currentUser.orgId!);
-        const term = await getActiveTerm();
-        if (!currentUser || !org) return 0;
+        if (!currentUser || !org || !term) return 0;
 
         const accessLevel = currentUser.accessLevel;
         let eventsQuery = query(
@@ -214,19 +214,20 @@ export const getDashboardOngoingEvents = async (
  * Optimized to fetch only what's needed for the dashboard
  */
 export const getDashboardEvents = async (
-  count = 5
+  count = 5,
+  selectedTerm?: { AY: string, semester: string } | null
 ): Promise<Event[]> => {
   try {
+    const term = selectedTerm || await getActiveTerm();
     // Use cache with a specific key for this dashboard section
-    const cacheKey = `dashboard:events:${count}`;
+    const cacheKey = `dashboard:events:${count}:${term?.AY}-${term?.semester}`;
 
     return await cacheService.getOrFetch<Event[]>(
       cacheKey,
       async () => {
         const currentUser = (await getCurrentUserData()) as unknown as Member;
         const org = await getOrgById(currentUser.orgId!);
-        const term = await getActiveTerm();
-        if (!currentUser || !org) return [];
+        if (!currentUser || !org || !term) return [];
 
         const accessLevel = currentUser.accessLevel;
 
@@ -328,7 +329,7 @@ export const getDashboardRecentMembers = async (
 /**
  * Gets event and member count statistics for the dashboard
  */
-export const getDashboardStats = async (): Promise<{
+export const getDashboardStats = async (selectedTerm?: { AY: string, semester: string } | null): Promise<{
   totalStudents: number;
   totalEvents: number;
   totalAttendances: number;
@@ -338,8 +339,9 @@ export const getDashboardStats = async (): Promise<{
   totalAbsences: number;
 }> => {
   try {
+    const term = selectedTerm || await getActiveTerm();
     // Use cache with a specific key for dashboard stats
-    const cacheKey = `dashboard:stats`;
+    const cacheKey = `dashboard:stats:${term?.AY}-${term?.semester}`;
 
     return await cacheService.getOrFetch<{
       totalStudents: number;
@@ -354,8 +356,7 @@ export const getDashboardStats = async (): Promise<{
       async () => {
         const currentUser = (await getCurrentUserData()) as unknown as Member;
         const org = await getOrgById(currentUser.orgId!);
-        const term = await getActiveTerm();
-        if (!currentUser || !org) {
+        if (!currentUser || !org || !term) {
           return {
             totalStudents: 0,
             totalEvents: 0,
@@ -402,7 +403,7 @@ export const getDashboardStats = async (): Promise<{
             // Get events with attendee counts
             getDocs(eventsBaseQuery),
             // Get total attendances count (reuse the dedicated function)
-            getDashboardAttendeeCount(),
+            getDashboardAttendeeCount(term),
           ]);
         const totalStudents = studentsCount.data().count;
         const totalEvents = eventsSnapshot.size;
@@ -471,13 +472,14 @@ export const getDashboardStats = async (): Promise<{
 };
 
 // Recent Payments
-export const getDashboardRecentPayments = async (count = 5) => {
+export const getDashboardRecentPayments = async (count = 5, selectedTerm?: { AY: string, semester: string } | null) => {
   try {
     const currentUser = (await getCurrentUserData()) as unknown as Member;
     if (!currentUser) return [];
 
     const orgId = (currentUser as any).orgId ?? "";
-    const term = await getActiveTerm();
+    const term = selectedTerm || await getActiveTerm();
+    if (!term) return [];
 
     const paymentsQuery = query(
       collection(db, "proofOfPayments"),
@@ -520,9 +522,10 @@ export const getDashboardRecentPayments = async (count = 5) => {
 
 // Fees Collected
 // Scoped to current org, excludes archived, sums paidAmount
-export const getDashboardFeesCollected = async () => {
+export const getDashboardFeesCollected = async (selectedTerm?: { AY: string, semester: string } | null) => {
   try {
-    const term = await getActiveTerm();
+    const term = selectedTerm || await getActiveTerm();
+    if (!term) return 0;
     const currentUser = (await getCurrentUserData()) as unknown as Member;
     if (!currentUser) return 0;
     // const orgId = (currentUser as any).id ?? "";
@@ -536,9 +539,10 @@ export const getDashboardFeesCollected = async () => {
 
 // Unpaid Fines Amount
 // Scoped to current org, excludes archived, sums balance of fines per student incl partial payments
-export const getDashboardUnpaidFinesAmount = async () => {
+export const getDashboardUnpaidFinesAmount = async (selectedTerm?: { AY: string, semester: string } | null) => {
   try {
-    const term = await getActiveTerm();
+    const term = selectedTerm || await getActiveTerm();
+    if (!term) return 0;
     const currentUser = (await getCurrentUserData()) as unknown as Member;
     if (!currentUser) return 0;
   //   const orgId = (currentUser as any).id ?? "";

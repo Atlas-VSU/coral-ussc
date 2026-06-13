@@ -15,8 +15,8 @@ import {
 import { Event } from "../types";
 import { Member } from "../../members/types";
 import { DashboardPayment } from "../components/RecentPayments";
-import { getActiveTerm } from "@/firebase/term";
 import { set } from "zod";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 
 export interface DashboardStats {
@@ -39,6 +39,8 @@ export function useDashboard() {
   const [unpaidFinesAmount, setUnpaidFinesAmount] = useState(0);
   const [clearanceRate, setClearanceRate] = useState(0);
 
+  const { selected } = useTermPeriod()
+
   const [stats, setStats] = useState<DashboardStats>({
     totalStudents: 0,
     totalEvents: 0,
@@ -50,8 +52,6 @@ export function useDashboard() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [AY, setAY] = useState("");
-  const [sem, setSem] = useState("");
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
@@ -69,18 +69,16 @@ export function useDashboard() {
         feesCollectedData,
         unpaidFinesAmountData,
         clearanceRateData,
-        term,
       ] = await Promise.all([
-        getDashboardStats(),
+        getDashboardStats(selected),
         getDashboardUpcomingEvents(5),
         getDashboardOngoingEvents(5),
-        getDashboardEvents(5),
+        getDashboardEvents(5, selected),
         getDashboardRecentMembers(5),
-        getDashboardRecentPayments(5),
-        getDashboardFeesCollected(),
-        getDashboardUnpaidFinesAmount(),
+        getDashboardRecentPayments(5, selected),
+        getDashboardFeesCollected(selected),
+        getDashboardUnpaidFinesAmount(selected),
         getDashboardClearanceRate(),
-        getActiveTerm(),
       ]);
 
       // Update state with fetched data
@@ -93,8 +91,6 @@ export function useDashboard() {
       setFeesCollected(feesCollectedData);
       setUnpaidFinesAmount(unpaidFinesAmountData);
       setClearanceRate(clearanceRateData);
-      setAY(term!.AY);
-      setSem(term!.semester);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
       setError(
@@ -108,7 +104,7 @@ export function useDashboard() {
   // Fetch data on initial load
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [selected]);
 
   // Function to manually refresh dashboard data
   const refreshDashboard = () => {
@@ -117,8 +113,7 @@ export function useDashboard() {
 
   return {
     stats,
-    AY,
-    sem,
+    selected,
     upcomingEvents,
     ongoingEvents,
     allEvents,
