@@ -4,6 +4,7 @@ import { getPaginatedEvents, getEvents } from "@/firebase";
 import { EventStatus } from "../types";
 import { cacheService, CACHE_DURATIONS } from "@/services/cacheService";
 import { getActiveTerm } from "@/firebase/term";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 interface SortOptions {
   field: string;
@@ -22,8 +23,8 @@ export function useEventsData(currentTab: EventStatus) {
     field: "date",
     direction: "desc",
   });
-  const [AY, setAY] = useState<string>("");
-  const [sem, setSem] = useState<string>("");
+
+  const { selected } = useTermPeriod()
 
   const searchCacheLoadedRef = useRef(false);
   // Keep a ref copy so fetchEvents can always read the latest value
@@ -50,7 +51,7 @@ export function useEventsData(currentTab: EventStatus) {
       return cachedAllEventsRef.current;
     }
 
-    const cacheKey = "events:client-cache:all";
+    const cacheKey = `events:client-cache:all:${selected?.AY}-${selected?.semester}`;
     const cachedEvents = cacheService.get<Event[]>(cacheKey);
 
     let allEvents: Event[];
@@ -58,7 +59,7 @@ export function useEventsData(currentTab: EventStatus) {
       allEvents = cachedEvents.data;
     } else {
       try {
-        allEvents = await getEvents();
+        allEvents = await getEvents(undefined, selected);
         cacheService.set(cacheKey, allEvents, CACHE_DURATIONS.EVENTS);
       } catch (error) {
         console.error("Error fetching events for search:", error);
@@ -81,8 +82,8 @@ export function useEventsData(currentTab: EventStatus) {
       : "no-search";
     return `ui:events:view:${currentTab}:${sortOptions.field}-${
       sortOptions.direction
-    }:page${currentPage}:date${dateStr}:${searchKey}`;
-  }, [currentTab, sortOptions, currentPage, filterDate, searchQuery]);
+    }:page${currentPage}:date${dateStr}:${searchKey}:term${selected?.AY}-${selected?.semester}`;
+  }, [currentTab, sortOptions, currentPage, filterDate, searchQuery, selected]);
 
   const fetchEvents = useCallback(async () => {
     setLoading(true);
@@ -150,7 +151,8 @@ export function useEventsData(currentTab: EventStatus) {
               null,
               undefined,
               skip,
-              filterDate
+              filterDate,
+              selected
             );
             return {
               events: result.events,
@@ -160,9 +162,6 @@ export function useEventsData(currentTab: EventStatus) {
         },
         CACHE_DURATIONS.UI_STATE
       );
-      const term = await getActiveTerm();
-      setAY(term!.AY);
-      setSem(term!.semester);
       setEvents(cachedViewData.events);
       setTotalEvents(cachedViewData.totalCount);
     } catch (error) {
@@ -179,6 +178,7 @@ export function useEventsData(currentTab: EventStatus) {
     itemsPerPage,
     currentPage,
     filterDate,
+    selected,
     createViewCacheKey,
     ensureSearchCache,
   ]);
@@ -216,6 +216,7 @@ export function useEventsData(currentTab: EventStatus) {
     sortOptions.direction,
     searchQuery,
     filterDate,
+    selected
   ]);
 
   useEffect(() => {
@@ -228,8 +229,8 @@ export function useEventsData(currentTab: EventStatus) {
     loading,
     currentPage,
     totalPages: Math.ceil(totalEvents / itemsPerPage),
-    AY,
-    sem,
+    AY: selected?.AY!,
+    sem: selected?.semester!,
     handlePageChange,
     handleSearch,
     handleSort,

@@ -73,15 +73,17 @@ export const getPaginatedEvents = async (
   startAfterDoc?: QueryDocumentSnapshot<DocumentData> | null,
   searchQuery?: string,
   skip: number = 0,
-  filterDate?: Date
+  filterDate?: Date,
+  selectedTerm?: { AY: string; semester: string } | null
 ): Promise<PaginatedEvents> => {
   try {
+    const term = selectedTerm || await getActiveTerm();
     // Create a cache key based on the query parameters
     const datePart = filterDate
       ? filterDate.toISOString().split("T")[0]
       : "no-date";
 
-    const cacheKey = `events:paginated:${status}:${sortField}-${sortDirection}:${pageSize}:${skip}:${datePart}`;
+    const cacheKey = `events:paginated:${status}:${sortField}-${sortDirection}:${pageSize}:${skip}:${datePart}:${term?.AY}-${term?.semester}`;
 
     return await cacheService.getOrFetch<PaginatedEvents>(
       cacheKey,
@@ -89,8 +91,7 @@ export const getPaginatedEvents = async (
         // Get the current user's level access
         const currentUser = (await getCurrentUserData()) as unknown as Member;
         const org = await getOrgById(currentUser.orgId!);
-        const term = await getActiveTerm();
-        if (!currentUser || !org) {
+        if (!currentUser || !org || !term) {
           return {
             events: [],
             totalCount: 0,
@@ -201,7 +202,8 @@ export const getPaginatedEvents = async (
               startAfterDoc,
               searchQuery,
               skip,
-              filterDate
+              filterDate,
+              selectedTerm
             );
           }
         }
@@ -472,11 +474,13 @@ export const updateEventStatuses = async (
  * Get all events with caching, optionally filtered by status
  */
 export const getEvents = async (
-  status?: "ongoing" | "upcoming" | "completed"
+  status?: "ongoing" | "upcoming" | "completed",
+  selectedTerm?: { AY: string; semester: string } | null
 ): Promise<Event[]> => {
   try {
+    const term = selectedTerm || await getActiveTerm();
     // Create cache key based on status
-    const cacheKey = `events:all:${status || "all"}`;
+    const cacheKey = `events:all:${status || "all"}:${term?.AY}-${term?.semester}`;
 
     return await cacheService.getOrFetch<Event[]>(
       cacheKey,
@@ -484,8 +488,7 @@ export const getEvents = async (
         // Get the current user's faculty ID
         const currentUser = (await getCurrentUserData()) as unknown as Member;
         const org = await getOrgById(currentUser.orgId!);
-        const term = await getActiveTerm();
-        if (!currentUser || !org) return [];
+        if (!currentUser || !org || !term) return [];
 
         const levelAccess = currentUser.accessLevel;
 
@@ -521,8 +524,7 @@ export const getEvents = async (
             // Invalidate cache
             cacheService.invalidate(cacheKey);
 
-            // Recursive call to get fresh data
-            return getEvents(status);
+            return getEvents(status, selectedTerm);
           }
         }
 
@@ -536,10 +538,11 @@ export const getEvents = async (
   }
 };
 
-export const getEventsByStatus = async (status: string) => {
+export const getEventsByStatus = async (status: string, selectedTerm?: { AY: string; semester: string } | null) => {
   try {
+    const term = selectedTerm || await getActiveTerm();
     // Create cache key based on status
-    const cacheKey = `events:status:${status}`;
+    const cacheKey = `events:status:${status}:${term?.AY}-${term?.semester}`;
 
     return await cacheService.getOrFetch<Event[]>(
       cacheKey,
@@ -547,8 +550,7 @@ export const getEventsByStatus = async (status: string) => {
         // Get the current user's faculty ID
         const currentUser = (await getCurrentUserData()) as unknown as Member;
         const org = await getOrgById(currentUser.orgId!);
-        const term = await getActiveTerm();
-        if (!currentUser || !org) return [];
+        if (!currentUser || !org || !term) return [];
 
         const levelAccess = currentUser.accessLevel;
 
