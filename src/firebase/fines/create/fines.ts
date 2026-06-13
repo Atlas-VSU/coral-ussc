@@ -2,7 +2,7 @@ import { db } from "@/firebase/firebase.config";
 import { getAllUsers, getCurrentUserData } from "@/firebase/users";
 import { collection, addDoc, writeBatch, doc, CollectionReference, DocumentData, Timestamp, getCountFromServer, setDoc, query, where, getDocs, increment, runTransaction, and, or, limit } from "firebase/firestore";
 import { getFineTypeById } from "../read/fineType";
-import { Member } from "@/features/organization/members/types";
+import { Member, MemberData } from "@/features/organization/members/types";
 import { getNonAttendeesForEvent, getPartialAttendeesForEvent } from "@/firebase/attendance";
 import { disableFineGeneration, getEventById } from "@/firebase/events";
 import { getFinesByStudents } from "../read/fines";
@@ -238,6 +238,66 @@ const prepareFineItem = async (fine: StudentFines, currentUser: Member) => {
   return { fine, itemNumber, fineItemRef, clearanceRef };
 };
 
+/**
+ * Gets or creates a parent `fines` document for each student.
+ * If no doc exists yet for the active term, one is created on-the-fly
+ * so that `generateFinesOnEvent` can still write fine items.
+ */
+const getOrCreateFinesForStudents = async (
+  students: MemberData[],
+  term: { AY: string; semester: string },
+  currentUser: Member
+): Promise<StudentFines[]> => {
+  if (students.length === 0) return [];
+
+  // 1. Fetch any already-existing docs for this term
+  const existing = await getFinesByStudents(students);
+  const existingMap = new Map(existing.map(f => [f.studentId, f]));
+
+  // 2. For students without an existing doc, create one now
+  const missing = students.filter(s => !existingMap.has(s.member.studentId));
+
+  if (missing.length > 0) {
+    const batch = writeBatch(db);
+    const now = Timestamp.now();
+    const newDocs: StudentFines[] = [];
+
+    for (const student of missing) {
+      const fineDocRef = doc(finesCollection);
+      const fineData: StudentFines = {
+        id: fineDocRef.id,
+        orgId: currentUser.orgId!,
+        userId: student.id!,
+        studentId: student.member.studentId,
+        userName: `${student.member.firstName} ${student.member.lastName}`,
+        academicYear: term.AY,
+        semester: term.semester,
+        accumulatedAmount: 0,
+        paidAmount: 0,
+        balance: 0,
+        status: FineStatus.UNPAID,
+        fineItemsCount: 0,
+        firstFineIssuedAt: null,
+        lastFineIssuedAt: null,
+        dueDate: null,
+        waivedAmount: null,
+        waivedBy: null,
+        waivedReason: null,
+        waivedAt: null,
+        remarks: null,
+        reason: '',
+      };
+      batch.set(fineDocRef, fineData);
+      newDocs.push(fineData);
+    }
+
+    await batch.commit();
+    for (const d of newDocs) existingMap.set(d.studentId, d);
+  }
+
+  return students.map(s => existingMap.get(s.member.studentId)!).filter(Boolean);
+};
+
 // ── Post-commit updates WITHOUT clearance recalculation ───────────────────
 // Clearance is now handled separately as its own phase
 const postCommitUpdates = async (
@@ -301,17 +361,21 @@ export const generateFinesOnEvent = async (
     return;
   }
 
-  report("preflight", "Fetching fine records…");
+  report("preflight", "Fetching fine records and loading issuer profile…");
+
+  const issuer = await getCurrentUserData() as unknown as Member;
 
   const [absentUsersFines, partialUsers] = await Promise.all([
-    absentUsers?.length ? getFinesByStudents(absentUsers) : Promise.resolve([]),
+    absentUsers?.length ? getOrCreateFinesForStudents(absentUsers, term!, issuer) : Promise.resolve([]),
     type.requiresTimeOut ? getPartialAttendeesForEvent(event.id) : Promise.resolve([]),
   ]);
+
+  console.log(absentUsersFines)
 
   let partialUsersFines: typeof absentUsersFines = [];
   if (type.requiresTimeOut && partialUsers?.length) {
     report("preflight", "Fetching fine records for partial users…");
-    partialUsersFines = await getFinesByStudents(partialUsers);
+    partialUsersFines = await getOrCreateFinesForStudents(partialUsers, term!, issuer);
   }
 
   if (!absentUsersFines.length && !partialUsersFines.length) {
@@ -321,7 +385,7 @@ export const generateFinesOnEvent = async (
   }
 
   report("preflight", "Loading issuer profile…");
-  const issuer = await getCurrentUserData() as unknown as Member;
+  // issuer already loaded above
 
   counts.absentTotal = absentUsersFines.length;
   counts.partialTotal = partialUsersFines.length;
@@ -374,6 +438,7 @@ export const generateFinesOnEvent = async (
         metadata: {
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now(),
+          isArchived: false,
         },
         isPaid: false,
         isArchived: false,
@@ -395,6 +460,8 @@ export const generateFinesOnEvent = async (
               status: "unpaid",
               pendingReview: false,
               isRequiredForClearance: true,
+              academicYear: fine.academicYear,
+              semester: fine.semester,
             },
           },
           updatedAt: Timestamp.now(),
@@ -668,6 +735,7 @@ export const assignExistingFinesToStudent = async (
                 metadata: {
                     createdAt: now,
                     updatedAt: now,
+                    isArchived: false,
                 },
                 isPaid: false,
                 isArchived: false,

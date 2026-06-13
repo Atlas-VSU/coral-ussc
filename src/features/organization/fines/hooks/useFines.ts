@@ -6,6 +6,7 @@ import { Member } from "../../members/types";
 import { CACHE_KEYS, cacheService } from "@/services/cacheService";
 import { getStats } from "@/firebase/stats/read/getStats";
 import { getActiveTerm } from "@/firebase/term";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 
 interface UseFinesProps {
@@ -22,8 +23,7 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
   const [totalCount, setTotalCount] = useState(0);
   const cursorsRef = useRef<Record<number, any>>({});
   const [refreshKey, setRefreshKey] = useState(false);
-  const [AY, setAY] = useState<string>("");
-  const [sem, setSem] = useState<string>("");
+  const { selected } = useTermPeriod();
 
   // Stats
   const [totalStudentsWithFines, setTotalStudentsWithFines] = useState(0);
@@ -41,16 +41,16 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
       setIsLoading(true);
       try {
         // Fetch total count for the current filter
-        const count = await getFinesCount(currUser.orgId!, filterStatus, search);
+        const count = await getFinesCount(currUser.orgId!, filterStatus, search, selected);
         if (isMounted) setTotalCount(count);
 
         //Fetch current term
-        const term = await getActiveTerm();
+        const term = selected || await getActiveTerm();
 
         //  Fetch stats and term (these could be optimized with a single server-side call)
         const [studentsCount, unsettledCount,stats,] = await Promise.all([
-          countStudentsWithFines(),
-          countUnsettleFinesOfStudents(),
+          countStudentsWithFines(selected),
+          countUnsettleFinesOfStudents(selected),
           getStats(`${term!.AY}-${term!.semester}-${currUser.orgId}`),
         ]);
         if (isMounted) {
@@ -58,8 +58,6 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
           setTotalUnsettled(unsettledCount);
           setTotalUnpaidFines(stats?.totalUnpaidFines || 0);
           setTotalCollectedFines(stats?.totalCollectedFines || 0);
-          setAY(term!.AY);
-          setSem(term!.semester);
         }
 
         // Fetch paginated data
@@ -70,7 +68,8 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
           itemsPerPage,
           cursor,
           search,
-          filterStatus
+          filterStatus,
+          selected
         );
 
         if (isMounted) {
@@ -91,7 +90,7 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
     return () => {
       isMounted = false;
     };
-  }, [filterStatus, search, currentPage, itemsPerPage, refreshKey]);
+  }, [filterStatus, search, currentPage, itemsPerPage, refreshKey, selected]);
 
   const handleStatusFilterChange = (v: string) => {
     setFilterStatus(v);
@@ -131,7 +130,7 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
     filteredCount: totalCount,
     isLoading,
     currentPage,
-    AY, sem,
+    AY: selected?.AY || "", sem: selected?.semester || "",
     setCurrentPage,
     totalPages: Math.ceil(totalCount / itemsPerPage),
     search,

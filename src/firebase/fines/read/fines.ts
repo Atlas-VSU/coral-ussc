@@ -125,11 +125,11 @@ export const getFineById = async (fineId: string) => {
   );
 }
 
-export const countFinesOfStudents = async (status: string) => { 
+export const countFinesOfStudents = async (status: string, selectedTerm?: { AY: string; semester: string } | null) => { 
   const currUser = await getCurrentUserData() as unknown as Member;
-  const term = await getActiveTerm();
+  const term = selectedTerm || await getActiveTerm();
   return cacheService.getOrFetch(
-    `fines:count:${currUser.id}:${status}`,
+    `fines:count:${currUser.id}:${status}:${term?.AY}-${term?.semester}`,
     async () => {
       const coll = collection(db, "fines");
       let q = null;
@@ -169,11 +169,11 @@ export const countFinesOfStudents = async (status: string) => {
 }
 
 
-export const countUnsettleFinesOfStudents = async () => { 
+export const countUnsettleFinesOfStudents = async (selectedTerm?: { AY: string; semester: string } | null) => { 
   const currUser = await getCurrentUserData() as unknown as Member;
-  const term = await getActiveTerm();
+  const term = selectedTerm || await getActiveTerm();
   return cacheService.getOrFetch(
-    `fines:countUnsettled:${currUser.id}`,
+    `fines:countUnsettled:${currUser.id}:${term?.AY}-${term?.semester}`,
     async () => {
       const coll = collection(db, "fines");
       let q = query(coll,
@@ -227,11 +227,11 @@ export const countUnsettleFinesOfStudents = async () => {
   );
 }
 
-export const countStudentsWithFines = async () => { 
+export const countStudentsWithFines = async (selectedTerm?: { AY: string; semester: string } | null) => { 
   const currUser = await getCurrentUserData() as unknown as Member;
-  const term = await getActiveTerm();
+  const term = selectedTerm || await getActiveTerm();
   return cacheService.getOrFetch(
-    `fines:countWithFines:${currUser.id}`,
+    `fines:countWithFines:${currUser.id}:${term?.AY}-${term?.semester}`,
     async () => {
       const coll = collection(db, "fines");
       const q = query(coll,
@@ -274,9 +274,10 @@ export const fetchFinesPaginated = async (
   pageSize: number = 9,
   lastVisibleDoc: any = null,
   searchTerm: string = "",
-  statusFilter: string = "all"
+  statusFilter: string = "all",
+  selectedTerm?: { AY: string; semester: string } | null
 ) => {
-  const term = await getActiveTerm();
+  const term = selectedTerm || await getActiveTerm();
   let constraints1: any[] = [
     where("orgId", "==", orgId),
     where("metadata.isArchived", "==", false),
@@ -342,10 +343,10 @@ export const fetchFinesPaginated = async (
 /**
  * Gets the total count of fine documents for an organization with optional search.
  */
-export const getFinesCount = async (orgId: string, statusFilter: string = "all", searchTerm: string = "") => {
-  const term = await getActiveTerm();
+export const getFinesCount = async (orgId: string, statusFilter: string = "all", searchTerm: string = "", selectedTerm?: { AY: string; semester: string } | null) => {
+  const term = selectedTerm || await getActiveTerm();
   return cacheService.getOrFetch(
-    CACHE_KEYS.clearanceCount(orgId, statusFilter, searchTerm).replace('clearance:count', 'fines:count'),
+    CACHE_KEYS.clearanceCount(orgId, statusFilter, searchTerm).replace('clearance:count', `fines:count:${term?.AY}-${term?.semester}`),
     async () => {
       const constraints: any[] = [
         where("orgId", "==", orgId),
