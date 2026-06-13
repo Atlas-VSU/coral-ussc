@@ -11,7 +11,8 @@ import { PaymentFormData } from "@/lib/validators";
 import { createOfflineFinesProofOfPayment } from "./proofOfPayment";
 import { PaymentStatus } from "@/constants/status";
 import { PaymentType } from "@/constants/types";
-import { recalculateClearanceStatus } from "@/firebase/clearance";
+import { buildClearanceId, recalculateClearanceStatus } from "@/firebase/clearance";
+import { getActiveTerm } from "@/firebase/term";
 import { recalculateFees } from "@/firebase/fees/update/recalculate";
 import { getFineItemsByFineId} from "@/firebase/fines/read/fines";
 import { BlockingItem } from "@/features/organization/clearance/types";
@@ -60,10 +61,8 @@ export const addOfflineFinesPayment = async (fines: StudentFines, type:string, m
         if (type === PaymentType.FINES) {
             await recalculateFines(fines.id!, null, fines.balance);
             await markFineItemsAsPaid(fines.id!);
-            let id = fines.userId;
-            if (currentUser.accessLevel !== 3) {
-                id = fines.userId+currentUser.orgId;
-             }
+            const term = await getActiveTerm();
+            const id = buildClearanceId(fines.userId, currentUser.orgId, currentUser.accessLevel as number, term!);
             const clearanceRef = doc(db, 'clearanceStatus', id);
             for (const item of fineItems) {
                 await updateDoc(clearanceRef, {
@@ -141,10 +140,8 @@ export const createFinesPaymentHistory = async (
             }
         }
         try {
-            let id = userId;
-            if (current.accessLevel !== 3) {
-                id = userId+current.orgId;
-             }
+            const term = await getActiveTerm();
+            const id = buildClearanceId(userId, current.orgId, current.accessLevel as number, term!);
             const clearanceRef = doc(db, 'clearanceStatus', id);
             await updateDoc(clearanceRef, {
                 [`blockingItems.${reference}.balance`]: 0,

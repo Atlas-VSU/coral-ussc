@@ -5,6 +5,8 @@ import { getCurrentUserData } from "@/firebase/users";
 import { Member } from "@/features/organization/members/types";
 import { FineItem } from "@/features/organization/fines/types";
 import { recalculateFines } from "./recalculate";
+import { buildClearanceId } from "@/firebase/clearance";
+import { getActiveTerm } from "@/firebase/term";
 
 
 export const markFineItemsAsPaid = async (fineId: string, fineItemId?: string) => {
@@ -74,7 +76,7 @@ export const markFineItemsAsNotPending = async (fineId: string, fineItemIds: str
     }
 }
 
-export const markFineItemAsWaived = async (fineId: string, fineItem: FineItem, waiveReason?: string) => {
+export const markFineItemAsWaived = async (fineId: string, fineItem: FineItem, waiveReason?: string, term?: any) => {
      try {
         const fineItemsRef = doc(db, "fines", fineId, "fineItems", fineItem.id);
         const waivedReason = waiveReason ? waiveReason : ""; 
@@ -95,10 +97,8 @@ export const markFineItemAsWaived = async (fineId: string, fineItem: FineItem, w
         const fineSnap = await getDoc(fineRef);
         if (fineSnap.exists()) {
             const fineData = fineSnap.data();
-            let id = fineData.userId;
-            if (currUser.accessLevel !== 3) {
-                id = fineData.userId+currUser.orgId;
-             }
+            const activeTerm = term || await getActiveTerm();
+            const id = buildClearanceId(fineData.userId, currUser.orgId, currUser.accessLevel as number, activeTerm!);
             const clearanceRef = doc(db, 'clearanceStatus', id);
             //Clearance blocking items are updated also and both waived and paid items are treated the same here since they both should not hinder clearance
             //this can be changed, if we separate treatment of waived and paid on clearance, we need also to refactor all other dependencies on these status labels (such as basis for clearance as cleared or not)

@@ -8,7 +8,7 @@ import { getAllMembersOfAnOrg} from "./members";
 import { getCurrentUserCount, getCurrentUserData } from "./users";
 import { PaymentStatus } from "@/constants/status";
 import { PaymentType, Term } from "@/constants/types";
-import { recalculateClearanceStatus } from "./clearance";
+import { buildClearanceId, recalculateClearanceStatus } from "./clearance";
 import { recalculateFines } from "./fines/update/recalculate";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 import { FeeItem } from "@/app/(public)/payment/page";
@@ -212,12 +212,19 @@ export const generateFeesForAllStudentsInAnOrg = async (
 
                     // Write 2: Clearance document
                     if (studentId) {
-                        let id = studentId;
-                        if (currentUserData.accessLevel !== 3) { 
-                            id = studentId + currentUserData.orgId;
-                        }
+                        const id = buildClearanceId(studentId, currentUserData.orgId, currentUserData.accessLevel as number, term!);
                         const clearanceDocRef = doc(clearanceCollection, id);
                         batch.set(clearanceDocRef, {
+                            id: id,
+                            userId: studentId,
+                            orgId: currentUserData.orgId,
+                            studentId: student.member.studentId || "N/A",
+                            userName: `${student.member.firstName} ${student.member.lastName}`,
+                            status: "not_cleared",
+                            academicYear: term?.AY || "",
+                            semester: term?.semester || "",
+                            isArchived: false,
+                            createdAt: now,
                             blockingItems: {
                                 [feeDocRef.id]: {
                                     type: PaymentType.FEES,
@@ -228,6 +235,8 @@ export const generateFeesForAllStudentsInAnOrg = async (
                                     paymentHistory: [],
                                     pendingReview: false,
                                     isRequiredForClearance: feeData.isRequiredForClearance,
+                                    academicYear: term?.AY || "",
+                                    semester: term?.semester || ""
                                 },
                             },
                             updatedAt: now,
@@ -299,10 +308,7 @@ export const assignExistingFeesToStudent = async (
     const feeItemsSnap = await getDocs(feeItemsQuery);
  
     if (feeItemsSnap.empty) return;
-    let id = userId;
-    if (currentUser.accessLevel !== 3) {
-        id = userId + orgId;
-    }
+    const id = buildClearanceId(userId, currentUser.orgId, currentUser.accessLevel as number, term!);
     const feesCollection = collection(db, "fees");
     const clearanceRef = doc(db, "clearanceStatus", id);
     const now = Timestamp.now();
@@ -360,6 +366,8 @@ export const assignExistingFeesToStudent = async (
                     paymentHistory: [],
                     pendingReview: false,
                     isRequiredForClearance: feeItem.isRequiredForClearance,
+                    academicYear: feeItem.academicYear ?? term?.AY,
+                    semester: feeItem.semester ?? term?.semester,
                 };
             }
             totalAmount += feeItem.amount;
@@ -918,10 +926,7 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
         
         // Note: Since this covers multiple fees/fines, creating a root-level payment history 
         // makes more sense than putting it inside a single fee's subcollection.
-        let id = studentId;
-        if (currentUser.accessLevel !== 3) {
-            id = studentId + currentUser.orgId;
-         }
+        const id = buildClearanceId(studentId, currentUser.orgId, currentUser.accessLevel as number, term!);
         const clearanceRef = doc(db, 'clearanceStatus', id);
 
         await runTransaction(db, async (transaction) => {
@@ -1141,7 +1146,8 @@ export const recordManualPaymentAndUpdateClearance = async (
     adminName: string,
     ref?: string,
     receipt?: string,
-    senderNumber?: string
+    senderNumber?: string,
+    termPeriod?: any
 ) => {
     try {
         const paymentAmount = parseFloat(amount);
@@ -1149,15 +1155,12 @@ export const recordManualPaymentAndUpdateClearance = async (
             throw new Error("Invalid payment amount");
         }
         const currentUser = await getCurrentUserData() as unknown as Member;
-        const term = await getActiveTerm();
+        const term = termPeriod || await getActiveTerm();
         const feeRef = doc(db, "fees", feeId);
         const paymentProofRef = doc(collection(db, "proofOfPayments"));
         const subCollectionRef = collection(feeRef, "paymentHistory");
         const newLogRef = doc(subCollectionRef);
-        let id = studentId;
-        if (currentUser.accessLevel !== 3) {
-            id = studentId + currentUser.orgId;
-         }
+        const id = buildClearanceId(studentId, currentUser.orgId, currentUser.accessLevel as number, term!);
         const clearanceRef = doc(db, 'clearanceStatus', id);
 
         const studentData = await getDoc(doc(db, "users", studentId));
@@ -1264,13 +1267,6 @@ export const recordManualPaymentAndUpdateClearance = async (
         cacheService.invalidate(CACHE_KEYS.feeStatusForClearance(studentId, orgId));
         cacheService.invalidate(CACHE_KEYS.proofOfPayments(orgId));
 
-        // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-        // cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
-        // cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
-
-        // fetchFeesForOrg(orgId).catch(console.error);
-        // fetchUnpaidFeesForOrg().catch(console.error);
-        // fetchClearanceDocuments(orgId).catch(console.error);
         return newLogRef.id;
     } catch (error) {
         console.error("Error processing manual payment and clearance:", error);
@@ -1349,10 +1345,8 @@ export const approvePaymentTransaction = async (feeId: string, paymentLogId: str
             });
 
             // Update Student's Clearance Document
-            let id = feeData.userId;
-            if (currentUser.accessLevel !== 3) { 
-                id = feeData.userId + currentUser.orgId;
-            }
+            const term = await getActiveTerm();
+            const id = buildClearanceId(feeData.userId, currentUser.orgId, currentUser.accessLevel as number, term!);
             const clearanceRef = doc(db, 'clearanceStatus', id);
             transaction.update(clearanceRef, {
                 [`blockingItems.${feeId}.balance`]: newBalance,
@@ -1364,10 +1358,8 @@ export const approvePaymentTransaction = async (feeId: string, paymentLogId: str
 
         await recalculateClearanceStatus(userId);
         const orgId = currentUser.orgId || '';
-        let id = userId;
-        if (currentUser.accessLevel !== 3) { 
-            id = userId + currentUser.orgId;
-        }
+        const term = await getActiveTerm();
+        const id = buildClearanceId(userId, currentUser.orgId, currentUser.accessLevel as number, term!);
 
         cacheService.invalidate(CACHE_KEYS.feeDoc(feeId));
         cacheService.invalidate(CACHE_KEYS.feeLogs(feeId));
@@ -1448,10 +1440,8 @@ export const rejectPaymentTransaction = async (feeId: string, paymentLogId: stri
             });
 
             // Update Student's Clearance Document
-            let id = feeData.userId;
-            if (currentUser.accessLevel !== 3) {
-                id = feeData.userId + currentUser.orgId;
-             }
+            const term = await getActiveTerm();
+            const id = buildClearanceId(feeData.userId, currentUser.orgId, currentUser.accessLevel as number, term!);
             const clearanceRef = doc(db, 'clearanceStatus', id);
             transaction.update(clearanceRef, {
                 [`blockingItems.${feeId}.pendingReview`]: false,
@@ -1461,10 +1451,8 @@ export const rejectPaymentTransaction = async (feeId: string, paymentLogId: stri
 
         await recalculateClearanceStatus(userId);
         const orgId = currentUser.orgId || '';
-        let id = userId;
-        if (currentUser.accessLevel !== 3) {
-            id = userId + currentUser.orgId;
-         }
+        const term = await getActiveTerm();
+        const id = buildClearanceId(userId, currentUser.orgId, currentUser.accessLevel as number, term!);
 
         cacheService.invalidate(CACHE_KEYS.feeDoc(feeId));
         cacheService.invalidate(CACHE_KEYS.feeLogs(feeId));

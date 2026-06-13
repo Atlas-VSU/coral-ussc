@@ -27,10 +27,11 @@ export const getProofOfPaymentsPaginated = async (
   lastVisibleDoc: any = null,
   searchTerm: string = "",
   statusFilter: string = "all",
-  needCount: boolean = false
+  needCount: boolean = false,
+  selectedTerm?: { AY: string; semester: string } | null
 ) => {
     const proofOfPaymentsRef = collection(db, "proofOfPayments");
-    const term = await getActiveTerm();
+    const term = selectedTerm || await getActiveTerm();
     let constraints: QueryConstraint[] = [
       where("orgId", "==", orgId),
       where("isArchived", "==", false),
@@ -160,11 +161,15 @@ export const getPendingProofOfPaymentsByUserId = async (userId: string, orgId?:s
     );
 }
 
-export const getProofOfPaymentsCount = async (orgId: string, statusFilter: string = "all") => {
+export const getProofOfPaymentsCount = async (
+  orgId: string,
+  statusFilter: string = "all",
+  selectedTerm?: { AY: string; semester: string } | null
+) => {
+  const term = selectedTerm || await getActiveTerm();
   return cacheService.getOrFetch(
-    CACHE_KEYS.paymentsCount(orgId, statusFilter),
+    `payments:count:${orgId}:${statusFilter}:${term?.AY}-${term?.semester}`,
     async () => {
-      const term = await getActiveTerm();
       const proofOfPaymentsRef = collection(db, "proofOfPayments");
       const constraints: QueryConstraint[] = [
         where("orgId", "==", orgId),

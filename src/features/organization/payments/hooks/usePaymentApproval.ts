@@ -15,12 +15,14 @@ import { recalculateFees } from "@/firebase/fees/update/recalculate"
 import { cacheService, CACHE_KEYS } from "@/services/cacheService"
 import { updateFeeStats, updateFineStats } from "@/firebase/stats/update/updateStats"
 import { getActiveTerm } from "@/firebase/term"
+import { useTermPeriod } from "../../term/hooks/useTermPeriod"
 
 
 export const usePaymentApproval = () => {
+    const { selected } = useTermPeriod();
     const _approvePayment = async (payment: ProofOfPayment) => {
         try {
-            const term = await getActiveTerm();
+            const term = selected || await getActiveTerm();
             const verifier = await getCurrentUserData() as unknown as Member;
             const paymentOwner = await searchUserByStudentId(payment.studentId);
             if (paymentOwner === null) {
@@ -38,7 +40,7 @@ export const usePaymentApproval = () => {
 
                 for (const item of items) {
                     if (item.paymentType === "fees") {
-                        await verifyPaymentHistory(item.historyId!, verifier, "fees", item.refId, item.amount);
+                        await verifyPaymentHistory(item.historyId!, verifier, "fees", item.refId, item.amount, null, undefined, term);
                         await updateFeeStats(`${term!.AY}-${term!.semester}-${verifier.orgId}`, 0, item.amount);
                     }
                     if (item.paymentType === "fines") {
@@ -50,10 +52,10 @@ export const usePaymentApproval = () => {
                 }
                 if (parentFine !== "") {
                     const paymentHistory = await getPendingPaymentHistory(parentFine, "fines", payment.id!);
-                    await verifyPaymentHistory(paymentHistory!.id, verifier, "fines", parentFine, totalFine, null, fineItemIds);
+                    await verifyPaymentHistory(paymentHistory!.id, verifier, "fines", parentFine, totalFine, null, fineItemIds, term);
                     await updateFineStats(`${term!.AY}-${term!.semester}-${verifier.orgId}`, 0, totalFine);
                 }
-                await recalculateClearanceStatus(paymentOwner.id!);
+                await recalculateClearanceStatus(paymentOwner.id!, term);
                 
                 // Invalidate proof-of-payment cache for the owner
                 cacheService.invalidate(CACHE_KEYS.proofOfPaymentByUser(paymentOwner.id!, payment.orgId));
@@ -86,6 +88,7 @@ export const usePaymentApproval = () => {
 
     const _rejectPayment = async (payment: ProofOfPayment, reason: string) => {
         try {
+            const term = selected || await getActiveTerm();
             const verifier = await getCurrentUserData() as unknown as Member;
             const paymentOwner = await searchUserByStudentId(payment.studentId);
             if (paymentOwner === null) {
@@ -101,7 +104,7 @@ export const usePaymentApproval = () => {
 
                 for (const item of items) {
                     if (item.paymentType === "fees") {
-                        await rejectPaymentHistory(item.historyId!, verifier, "fees", item.refId, [], reason);
+                        await rejectPaymentHistory(item.historyId!, verifier, "fees", item.refId, [], reason, term);
                         await recalculateFees(item.refId,0);
                     }
 
@@ -112,11 +115,11 @@ export const usePaymentApproval = () => {
                 }
                 if (parentFine !== "") {
                     const paymentHistory = await getPendingPaymentHistory(parentFine, "fines",payment.id!);
-                    await rejectPaymentHistory(paymentHistory!.id, verifier, "fines", parentFine, fineItemIds, reason);
+                    await rejectPaymentHistory(paymentHistory!.id, verifier, "fines", parentFine, fineItemIds, reason, term);
                     await markFineItemsAsNotPending(parentFine, fineItemIds);
                     await recalculateFines(parentFine,0);
                 }
-                await recalculateClearanceStatus(paymentOwner.id!);
+                await recalculateClearanceStatus(paymentOwner.id!, term);
                 
                 // Invalidate proof-of-payment cache for the owner
                 cacheService.invalidate(CACHE_KEYS.proofOfPaymentByUser(paymentOwner.id!, payment.orgId));
@@ -138,7 +141,7 @@ export const usePaymentApproval = () => {
 
     const _waiveFinePayment = async (fines: StudentFines, item: FineItem) => {
         try {
-            const term = await getActiveTerm();
+            const term = selected || await getActiveTerm();
             const paymentOwner = await searchUserByStudentId(fines.studentId);
             if (paymentOwner === null) {
                 toast.error("Payment owner not found, cannot verify payment.")
@@ -146,8 +149,8 @@ export const usePaymentApproval = () => {
             };
 
             //recalculation of clearance is still necessary I think because waiving a fine might change the clearance status of the student, especially if the waived fine was the only remaining blocking item. 
-            await markFineItemAsWaived(fines.id!, item);
-            await recalculateClearanceStatus(paymentOwner.id!);
+            await markFineItemAsWaived(fines.id!, item, undefined, term);
+            await recalculateClearanceStatus(paymentOwner.id!, term);
             await updateFineStats(`${term!.AY}-${term!.semester}-${fines.orgId}`, 0, 0, item.amount);
                 
         } catch (error) {

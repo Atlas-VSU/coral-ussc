@@ -31,5 +31,7 @@ export interface BlockingItem {
   status: "unpaid" | "paid";
   paymentHistory: PaymentLog[];
   pendingReview: boolean;
-  isRequiredForClearance: boolean; 
+  isRequiredForClearance: boolean;
+  academicYear?: string;
+  semester?: string;
 }

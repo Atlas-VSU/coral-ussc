@@ -8,14 +8,15 @@ import { Member } from "../../members/types";
 import { ClearanceStatus } from "../../clearance/types";
 import { ITEMS_PER_PAGE } from "../config";
 import { getActiveTerm } from "@/firebase/term";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 export function usePayments() {
   const [payments, setPayments] = useState<ProofOfPayment[]>([])
   const [unpaidPayments, setUnpaidPayments] = useState<ClearanceStatus[]>([])
   const [loadingSubmissions, setLoadingSubmissions] = useState(true)
   const [loadingUnpaid, setLoadingUnpaid] = useState(true)
-  const [AY, setAY] = useState<string>("");
-  const [sem, setSem] = useState<string>("");
+
+  const { selected } = useTermPeriod();
   
   const [totalUnpaidCount, setTotalUnpaidCount] = useState(0)
   const [totalSubmissionCount, setTotalSubmissionCount] = useState(0)
@@ -100,20 +101,18 @@ export function usePayments() {
         cursor,
         search,
         filterStatus, 
-        !!search
+        !!search,
+        selected
       );
 
       if (requestId !== fetchRequestIdRef.current) return;
       
-      const term = await getActiveTerm();
-      const actualCount = search ? count : await getProofOfPaymentsCount(currentUser.orgId!, filterStatus);
+      const actualCount = search ? count : await getProofOfPaymentsCount(currentUser.orgId!, filterStatus, selected);
       if (requestId !== fetchRequestIdRef.current) return;
 
       setTotalSubmissionCount(actualCount);
       setPayments(docs);
       setSearchCount(count);
-      setAY(term!.AY);
-      setSem(term!.semester);
 
       // Persist cursor
       if (lastVisible) {
@@ -130,7 +129,7 @@ export function usePayments() {
         setLoadingSubmissions(false);
       }
     }
-  }, [submissionPage, search, filterStatus, fetchStats]);
+  }, [submissionPage, search, filterStatus, fetchStats, selected]);
 
   useEffect(() => { 
     fetchPayments();
@@ -160,12 +159,13 @@ export function usePayments() {
         unpaidSearch,
         "not_cleared",
         !!unpaidSearch,
-        true
+        true,
+        selected
       );
       
       if (requestId !== unpaidRequestIdRef.current) return;
 
-      const actualUnpaidCount = unpaidSearch ? count : await getCountOfUnclearedDocuments(currentUser.orgId!);
+      const actualUnpaidCount = unpaidSearch ? count : await getCountOfUnclearedDocuments(currentUser.orgId!, selected);
       if (requestId !== unpaidRequestIdRef.current) return;
 
       setTotalUnpaidCount(actualUnpaidCount);
@@ -191,7 +191,7 @@ export function usePayments() {
         setLoadingUnpaid(false);
       }
     }
-  }, [unpaidPage, unpaidSearch]);
+  }, [unpaidPage, unpaidSearch, selected]);
 
   useEffect(() => { 
     fetchUnpaid();
@@ -274,6 +274,7 @@ export function usePayments() {
     setFilterStatus,
     stats, 
     setStats,
-    AY, sem,
+    AY: selected?.AY || "",
+    sem: selected?.semester || "",
   }
 }

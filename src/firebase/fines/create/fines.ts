@@ -13,11 +13,10 @@ import { BulkFinesProgress, BulkFinesResult, FineGenerationPhase, FineGeneration
 import { Event } from "@/features/organization/events/types";
 import { updateFirstFineIssuedAt, updateLastFineIssuedAt } from "../update/fines";
 import { PaymentType } from "@/constants/types";
-import { recalculateClearanceStatus } from "@/firebase/clearance";
+import { recalculateClearanceStatus, buildClearanceId } from "@/firebase/clearance";
+import { getActiveTerm } from "@/firebase/term";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { updateFineStats } from "@/firebase/stats/update/updateStats";
-import { getActiveTerm } from "@/firebase/term";
-
 
 const finesCollection: CollectionReference<DocumentData> = collection(
     db,
@@ -230,11 +229,9 @@ const prepareFineItem = async (fine: StudentFines, currentUser: Member) => {
   const countSnapshot = await getCountFromServer(subColRef);
   const itemNumber = (countSnapshot.data().count ?? 0) + 1;
   const fineItemRef = doc(subColRef);
-  let id = fine.userId;
-  if (currentUser.accessLevel !== 3) {
-    id = fine.userId + fine.orgId;
-   }
-  const clearanceRef = doc(db, "clearanceStatus", id);
+  const term = await getActiveTerm();
+  const clearanceId = buildClearanceId(fine.userId, currentUser.orgId, currentUser.accessLevel as number, term!);
+  const clearanceRef = doc(db, "clearanceStatus", clearanceId);
   return { fine, itemNumber, fineItemRef, clearanceRef };
 };
 
@@ -450,6 +447,16 @@ export const generateFinesOnEvent = async (
       batch.set(
         clearanceRef,
         {
+          id: clearanceRef.id,
+          userId: fine.userId,
+          orgId: fine.orgId,
+          studentId: fine.studentId,
+          userName: fine.userName,
+          status: "not_cleared",
+          academicYear: fine.academicYear,
+          semester: fine.semester,
+          isArchived: false,
+          createdAt: Timestamp.now(),
           blockingItems: {
             [fineItemRef.id]: {
               type: PaymentType.FINES,
@@ -626,7 +633,7 @@ export const assignExistingFinesToStudent = async (
 ): Promise<void> => {
     const orgId = orgContext.uid;
     const userName = `${studentData.firstName} ${studentData.lastName}`;
-    const term = await getActiveTerm();
+    const termData = await getActiveTerm();
  
   const issuer = currentUser;
     const issuerName = issuer
@@ -639,8 +646,8 @@ export const assignExistingFinesToStudent = async (
       where("finesGenerated", "==", true), 
       where("isDeleted", "==", false),
       where("orgId", "==", orgId),
-      where("academicYear", "==", term!.AY),
-      where("semester", "==", term!.semester),
+      where("academicYear", "==", termData!.AY),
+      where("semester", "==", termData!.semester),
     );
     const eventsSnap = await getDocs(eventsQuery);
  
@@ -652,10 +659,10 @@ export const assignExistingFinesToStudent = async (
       and(
           where("userId", "==", userId),
           where("orgId", "==", orgId),
-          where("academicYear", "==", term!.AY),
+          where("academicYear", "==", termData!.AY),
         or(
-          where("semester", "==", term!.semester),
-          where("semester", "==", `${term!.semester} Semester`)
+          where("semester", "==", termData!.semester),
+          where("semester", "==", `${termData!.semester} Semester`)
           )
         )
     );
@@ -669,11 +676,9 @@ export const assignExistingFinesToStudent = async (
     const fineDoc = fineSnap.docs[0]; 
     const fineDocRef = fineDoc.ref;
     const parentFineId = fineDoc.id;
-    let id = userId;
-    if(issuer.accessLevel !== 3){
-      id = userId + orgId;
-    }
-    const clearanceRef = doc(db, "clearanceStatus", id);
+    const term = await getActiveTerm();
+    const clearanceId = buildClearanceId(userId, orgId, issuer.accessLevel as number, term!);
+    const clearanceRef = doc(db, "clearanceStatus", clearanceId);
     const fineItemsCollection = collection(db, "fines", parentFineId, "fineItems")
     const now = Timestamp.now();
  

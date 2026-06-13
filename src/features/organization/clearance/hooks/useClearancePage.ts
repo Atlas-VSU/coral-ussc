@@ -10,7 +10,7 @@ import { useClearanceActions } from "./useClearanceAction"
 import { useManualPaymentSelection } from "./useManualPaymentSelection"
 import { fetchStats, getClearanceStats, getCurrentUserData } from "@/firebase"
 import { Member } from "../../members/types"
-import { PaymentType } from "@/constants/types"
+import { PaymentType, Term } from "@/constants/types"
 import type { ViewMode } from "@/components/organization/general/ViewToggle"
 import type { ClearanceStatus } from "../types"
 import type { ReceiptData } from "@/components/organization/receipt/PaymentReceiptDialog"
@@ -20,6 +20,8 @@ import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval"
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { ITEMS_PER_PAGE } from "../config";
 import { getActiveTerm } from "@/firebase/term"
+import { seedClearanceDocuments } from "@/firebase/clearance"
+import { useTermPeriod } from "../../term/hooks/useTermPeriod"
 
 export function useClearancePage(orgId: string | undefined) {
   const { user: currentUser } = useAuth()
@@ -29,6 +31,10 @@ export function useClearancePage(orgId: string | undefined) {
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [viewMode, setViewMode] = useState<ViewMode>("table")
   const [currentPage, setCurrentPage] = useState(1)
+  const [needsSeed, setNeedsSeed] = useState(false)
+  const [isSeeding, setIsSeeding] = useState(false)
+
+  const { selected } = useTermPeriod()
 
   const { clearances, loading, totalCount, setClearances, hardRefresh: baseHardRefresh, hasNextPage, stats, fetchStatsData, AY, sem } = useClearances(
     orgId,
@@ -37,6 +43,22 @@ export function useClearancePage(orgId: string | undefined) {
     filterStatus,
     currentPage
   )
+
+  // After loading completes: if nothing is found for this term, prompt seeding
+  useEffect(() => {
+    if (!loading && totalCount === 0 && !search && filterStatus === "all") {
+      setNeedsSeed(true)
+    } else {
+      setNeedsSeed(false)
+    }
+  }, [loading, totalCount, search, filterStatus])
+
+  // Reset page when term changes
+  useEffect(() => {
+    setCurrentPage(1)
+    setSearch("")
+    setFilterStatus("all")
+  }, [selected])
 
   // Payment Review state
   const [paymentReviewOpen, setPaymentReviewOpen] = useState(false)
@@ -263,6 +285,21 @@ export function useClearancePage(orgId: string | undefined) {
     await baseHardRefresh()
   }
 
+  const handleSeedClearance = async () => {
+    if (!currentUser || isSeeding) return;
+    setIsSeeding(true);
+    try {
+      await seedClearanceDocuments(currentUser, selected as Term);
+      toast.success("Clearance records generated successfully!");
+      setNeedsSeed(false);
+      await baseHardRefresh();
+    } catch (err) {
+      console.error("Seeding clearance failed:", err);
+      toast.error("Failed to generate clearance records. Please try again.");
+    } finally {
+      setIsSeeding(false);
+    }
+  }
 
 
   return {
@@ -278,6 +315,8 @@ export function useClearancePage(orgId: string | undefined) {
     hasNextPage,
     AY,
     sem,
+    needsSeed,
+    isSeeding,
     
     // UI State
     search,
@@ -309,6 +348,7 @@ export function useClearancePage(orgId: string | undefined) {
     handleRejectPayment,
     openLogPayment,
     handleLogPayment,
-    hardRefresh: handleHardRefresh
+    hardRefresh: handleHardRefresh,
+    handleSeedClearance,
   }
 }
