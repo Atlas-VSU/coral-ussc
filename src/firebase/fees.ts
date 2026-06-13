@@ -7,7 +7,7 @@ import { Fee, FeeWithPaymentHistory, PaymentLog } from "@/features/organization/
 import { getAllMembersOfAnOrg} from "./members";
 import { getCurrentUserCount, getCurrentUserData } from "./users";
 import { PaymentStatus } from "@/constants/status";
-import { PaymentType } from "@/constants/types";
+import { PaymentType, Term } from "@/constants/types";
 import { recalculateClearanceStatus } from "./clearance";
 import { recalculateFines } from "./fines/update/recalculate";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
@@ -74,11 +74,14 @@ export const checkFeeStatusForClearance = async (userId: string, orgId: string) 
     );
 }
 
-export const getTotalCollectedAmount = async (orgId: string) => {
+export const getTotalCollectedAmount = async (
+  orgId: string,
+  selectedTerm?: { AY: string; semester: string } | null
+) => {
+    const term = selectedTerm || await getActiveTerm();
     return cacheService.getOrFetch(
-        CACHE_KEYS.totalCollectedAmount(orgId),
+        `fees:totalCollectedAmount:${orgId}:${term?.AY}-${term?.semester}`,
         async () => {
-            const term = await getActiveTerm();
             const feeRef = collection(db, "feeItems");
             const q = query(
                 feeRef, 
@@ -111,7 +114,8 @@ export interface GenerationProgress {
 // OPTIMIZED: createFee — fetch student count in parallel with fee doc prep
 export const createFee = async (
     feeData: z.infer<typeof FeeGenerationSchema>,
-    currentUserData: any
+    currentUserData: any,
+    selected: Term
 ) => {
     const feeRef = collection(db, "feeItems");
     const feeDocRef = doc(feeRef);
@@ -129,6 +133,8 @@ export const createFee = async (
         totalStudents,
         id: feeDocRef.id,
         isArchived: false,
+        academicYear: selected.AY,
+        semester: selected.semester,
     });
 
     return feeDocRef.id;
@@ -147,7 +153,7 @@ export const generateFeesForAllStudentsInAnOrg = async (
     if (totalCount === 0) throw new Error("No students provided");
 
     // Create fee item ONCE — but run student count fetch in parallel
-    const feeItem = await createFee(feeData, currentUserData);
+    const feeItem = await createFee(feeData, currentUserData, term!);
 
     const feesCollection = collection(db, "fees");
     const clearanceCollection = collection(db, "clearanceStatus");
@@ -192,8 +198,8 @@ export const generateFeesForAllStudentsInAnOrg = async (
                         paidAmount: 0,
                         balance: feeData.amount,
                         status: "unpaid",
-                        academicYear: feeData.academicYear,
-                        semester: feeData.semester,
+                        academicYear: term?.AY || "",
+                        semester: term?.semester || "",
                         description: feeData.description,
                         eventId: eventId || null,
                         dueDate: feeData.dueDate,
@@ -387,11 +393,14 @@ export const fetchFeeItem = async(orgId: string, feeItemId: string): Promise<Fee
     return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as unknown as FeeItem;
 }
 
-export const fetchFeesForOrg = async(orgId: string): Promise<FeeItem[]> => {
+export const fetchFeesForOrg = async(
+  orgId: string,
+  selectedTerm?: { AY: string; semester: string } | null
+): Promise<FeeItem[]> => {
+    const term = selectedTerm || await getActiveTerm();
     return cacheService.getOrFetch(
-        CACHE_KEYS.feesForOrg(orgId),
+        `fees:org:${orgId}:${term?.AY}-${term?.semester}`,
         async () => {
-            const term = await getActiveTerm();
             const feesRef = collection(db, "feeItems");
             const q = query(
                 feesRef,

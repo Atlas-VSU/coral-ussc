@@ -11,6 +11,7 @@ import { checkFeeTitleExist, generateFeesForAllStudentsInAnOrg } from "@/firebas
 import { Member } from "@/features/organization/members/types";
 import { useAuth } from "@/hooks/useAuth";
 import { getCurrentUserData } from "@/firebase";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 export type FeeGenerationFormData = z.infer<typeof FeeGenerationSchema>;
 
@@ -21,6 +22,7 @@ interface UseFeeGenerationProps {
 }
 
 export function useFeeGeneration({ studentsCount, onSuccess, onOpenChange }: UseFeeGenerationProps) {
+  const { active } = useTermPeriod()
   const [isGenerating, setIsGenerating] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingFormData, setPendingFormData] = useState<FeeGenerationFormData | null>(null);
@@ -37,8 +39,6 @@ export function useFeeGeneration({ studentsCount, onSuccess, onOpenChange }: Use
       title: "",
       amount: 0,
       feeType: "semester-membership",
-      academicYear: "",
-      semester: "",
       description: "",
       dueDate: undefined,
       isRequiredForClearance: false,
@@ -65,7 +65,7 @@ export function useFeeGeneration({ studentsCount, onSuccess, onOpenChange }: Use
       if(!currentUser) {
         throw new Error("No user!")
       }
-      if(await checkFeeTitleExist(pendingFormData.title, pendingFormData.academicYear, pendingFormData.semester)) {
+      if(await checkFeeTitleExist(pendingFormData.title, active?.AY!, active?.semester!)) {
         toast.error("Fee title already exists for that academic year and semester!");
         return;
       }
@@ -111,7 +111,7 @@ export function useFeeGeneration({ studentsCount, onSuccess, onOpenChange }: Use
     : "";
 
   const confirmationNotice = pendingFormData
-    ? `Fee Type: ${pendingFormData.feeType} | Academic Year: ${pendingFormData.academicYear} | Semester: ${pendingFormData.semester} | Due: ${format(pendingFormData.dueDate, "PPP")} | Required for clearance: ${pendingFormData.isRequiredForClearance ? "Yes" : "No"}`
+    ? `Fee Type: ${pendingFormData.feeType} | Academic Year: ${active?.AY} | Semester: ${active?.semester} | Due: ${format(pendingFormData.dueDate, "PPP")} | Required for clearance: ${pendingFormData.isRequiredForClearance ? "Yes" : "No"}`
     : "";
 
   return {

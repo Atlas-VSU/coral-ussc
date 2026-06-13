@@ -42,6 +42,7 @@ import { useFeeGeneration } from "../hooks/useFeeGeneration";
 import { Member } from "@/features/organization/members/types";
 import { FeeGenerationProgress } from "./FeeGenerationProgress";
 import { ConfirmationDialog } from "./ConfirmationDialog";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 interface FeeGenerationDialogProps {
   open: boolean;
@@ -56,6 +57,7 @@ export function FeeGenerationDialog({
   studentsCount,
   onClose,
 }: FeeGenerationDialogProps) {
+  const { selected } = useTermPeriod();
   const {
     form,
     isGenerating,
@@ -86,7 +88,7 @@ export function FeeGenerationDialog({
             <DialogDescription>
               {isGenerating 
                 ? "Processing fee generation in batches. Please wait..."
-                : "Create a new fee entry that will be applied to all students. Fill in the details below."}
+                : `Create a new fee entry that will be applied to all students under your org. This fee will be saved under the current term (${selected?.AY} - ${selected?.semester} Sem). Fill in the details below.`}
             </DialogDescription>
           </DialogHeader>
 
@@ -165,51 +167,6 @@ export function FeeGenerationDialog({
                           <SelectItem value="event-fee">Event</SelectItem>
                           <SelectItem value="charity-fee">Charity</SelectItem>
                           <SelectItem value="organization-dues">Organization Dues</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Academic Year */}
-                <FormField
-                  control={form.control}
-                  name="academicYear"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Academic Year</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., 2024-2025"
-                          {...field}
-                          disabled={isGenerating}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="semester"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Semester</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        disabled={isGenerating}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select semester" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="1st">1st Semester</SelectItem>
-                          <SelectItem value="2nd">2nd Semester</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
