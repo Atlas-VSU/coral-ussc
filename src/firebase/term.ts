@@ -30,7 +30,8 @@ export const createTerm = async (AY: string, sem: string) => {
             metadata: {
                 createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now(),
-            }
+            },
+            isDeleted: false,
         });
         if (term) {
             await updateDoc(doc(termsCollection, term!.id), {
@@ -47,7 +48,9 @@ export const createTerm = async (AY: string, sem: string) => {
   
 export const getActiveTerm = async () => {
     try {
-        const q = query(termsCollection, where("isActive", "==", true));
+        const q = query(termsCollection,
+            where("isActive", "==", true),
+            where("isDeleted", "==", false));
         const snapshot = await getDocs(q);
         if (!snapshot.empty) {
             const termDoc = snapshot.docs[0];
@@ -60,9 +63,28 @@ export const getActiveTerm = async () => {
     }
 }
 
+export const getAllTerms = async () => {
+    try {
+        const snapshot = await getDocs(termsCollection);
+        return snapshot.docs.map((doc) => ({
+            id: doc.id,
+            AY: doc.data().AY,
+            semester: doc.data().semester,
+            isActive: doc.data().isActive,
+            metadata: doc.data().metadata,
+            isDeleted: doc.data().isDeleted,
+        })) as Term[];
+    } catch (error) {
+        handleFirestoreError(error, `fetching all Terms`);
+        return [];
+    }
+}
+
 export const checkForDuplicateTerms = async (AY: string, sem: string) => {
     try {
-        const q = query(termsCollection, where("AY", "==", AY), where("semester", "==", sem));
+        const q = query(termsCollection,
+            where("AY", "==", AY),
+            where("semester", "==", sem));
         const snapshot = await getDocs(q);
         if (snapshot.empty) {
             return false;

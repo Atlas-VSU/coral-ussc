@@ -1,6 +1,7 @@
 "use client";
 import { AdminSidebar } from "@/components/organization/nav-bar/AdminSidebar";
 import { MobileBottomNav } from "@/components/organization/nav-bar/mobile-bottom-nav";
+import { PeriodSelector } from "@/features/organization/term/components/TermSelector";
 import {
   LayoutDashboard,
   Calendar,
@@ -196,8 +197,15 @@ export default function OrganizationLayout({
         className="z-50"
       />
       <div className="flex-1 flex flex-col min-w-0">
+        <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b px-5 sm:px-6 xl:px-8 py-3 flex items-center justify-end shadow-sm">
+          <div className="flex items-center gap-3 w-full">
+            <div className="w-[250px] md:w-full">
+              <PeriodSelector />
+            </div>
+          </div>
+        </div>
         <main className="flex-1">
-          <div className="mx-auto max-w-7xl pb-20 xl:pb-10 pt-18 px-5 sm:px-6 xl:px-8 xl:pt-10">
+          <div className="mx-auto max-w-7xl pb-20 xl:pb-10 pt-8 px-5 sm:px-6 xl:px-8 xl:pt-10">
             {children}
           </div>
         </main>
