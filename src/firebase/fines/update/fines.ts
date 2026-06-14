@@ -1,5 +1,5 @@
 import { db } from "@/firebase/firebase.config";
-import { updateDoc, doc, Timestamp } from "firebase/firestore";
+import { updateDoc, doc, Timestamp, getDocs, writeBatch, collection } from "firebase/firestore";
 
 
 export const updateLastFineIssuedAt = async (fineId: string) => { 
@@ -24,5 +24,27 @@ export const updateFirstFineIssuedAt = async (fineId: string) => {
     } catch (error) {
         console.error(`Error updating first fine issued at for fine ID ${fineId}:`, error);
         throw new Error(`Failed to update first fine issued at for fine ID ${fineId}.`);
+    }
+}
+
+export const updateAllFineMetadata = async () => {
+    try {
+        const fines = await getDocs(collection(db, "fines"));
+        const docs = fines.docs;
+        const BATCH_SIZE = 500;
+
+        for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+            const chunk = docs.slice(i, i + BATCH_SIZE);
+            const batch = writeBatch(db);
+            chunk.forEach((fine) => {
+                batch.update(fine.ref, {
+                    "metadata.isArchived": false,
+                });
+            });
+            await batch.commit();
+        }
+    } catch (error) {
+        console.error(`Error updating all fine metadata:`, error);
+        throw new Error(`Failed to update all fine metadata.`);
     }
 }

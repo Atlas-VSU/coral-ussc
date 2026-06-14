@@ -29,7 +29,7 @@ export const buildClearanceId = (
   term: { AY: string; semester: string }
 ): string => {
   const termSuffix = `:${term.AY}-${term.semester}`.replace(/\s/g, '_');
-  if (accessLevel !== 3 && orgId) {
+  if (orgId) {
     return `${userId}${orgId}${termSuffix}`;
   }
   return `${userId}${termSuffix}`;
@@ -219,10 +219,10 @@ export const getCountOfUnclearedDocuments = async (
 }
 
 
-export const fetchClearanceStatus = async (userId: string) => {
+export const fetchClearanceStatus = async (userId: string, term?: { AY: string; semester: string } | null) => {
     const currentUser = await getCurrentUserData() as unknown as Member;
-    const term = await getActiveTerm();
-    const id = buildClearanceId(userId, currentUser.orgId, currentUser.accessLevel!, term!);
+    const activeTerm = term || await getActiveTerm();
+    const id = buildClearanceId(userId, currentUser.orgId, currentUser.accessLevel!, activeTerm!);
     return cacheService.getOrFetch(
         CACHE_KEYS.clearanceDoc(id),
         async () => {
@@ -279,61 +279,61 @@ export const recalculateClearanceStatus = async (userId: string, term?: any) => 
     }
 }
 
-export const updateClearanceDocument = async (userId: string, orgId: string) => {
-    let blockingItems: Record<string, BlockingItem> = {};
-    const currentUser = await getCurrentUserData() as unknown as Member;
+// export const updateClearanceDocument = async (userId: string, orgId: string) => {
+//     let blockingItems: Record<string, BlockingItem> = {};
+//     const currentUser = await getCurrentUserData() as unknown as Member;
     
-    const fees = await checkFeeStatusForClearance(userId, orgId) as FeeWithPaymentHistory[];
+//     const fees = await checkFeeStatusForClearance(userId, orgId) as FeeWithPaymentHistory[];
     
-    fees.forEach((fee: FeeWithPaymentHistory) => {
-        blockingItems[fee.id] = {
-            type: fee.feeType as PaymentType,
-            referenceId: fee.id,
-            title: fee.title,
-            balance: fee.balance,
-            status: fee.status as "unpaid" | "paid",
-            paymentHistory: fee.paymentHistory,
-            pendingReview: fee.paymentHistory.some(payment => payment.status === "pending"),
-            isRequiredForClearance: fee.isRequiredForClearance,
-            academicYear: (fee as any).academicYear,
-            semester: (fee as any).semester,
-        };
-    });
+//     fees.forEach((fee: FeeWithPaymentHistory) => {
+//         blockingItems[fee.id] = {
+//             type: fee.feeType as PaymentType,
+//             referenceId: fee.id,
+//             title: fee.title,
+//             balance: fee.balance,
+//             status: fee.status as "unpaid" | "paid",
+//             paymentHistory: fee.paymentHistory,
+//             pendingReview: fee.paymentHistory.some(payment => payment.status === "pending"),
+//             isRequiredForClearance: fee.isRequiredForClearance,
+//             academicYear: (fee as any).academicYear,
+//             semester: (fee as any).semester,
+//         };
+//     });
 
-    // logic here for fines generating blocking items
-    const fine = await getFineByStudentId(userId);
-    if (fine && fine.balance > 0) {
-        blockingItems[fine.id!] = {
-            type: PaymentType.FINES,
-            referenceId: fine.id!,
-            title: "Fines",
-            balance: fine.balance,
-            status: fine.status as "unpaid" | "paid",
-            paymentHistory: [],
-            pendingReview: fine.status === "pending",
-            isRequiredForClearance: true,
-            academicYear: fine.academicYear,
-            semester: fine.semester,
-        };
-    }
-    let id = userId;
-    if (currentUser.accessLevel !== 3) {
-      id = userId+currentUser.orgId
-    }
-    const term = await getActiveTerm();
-    const clearanceId = buildClearanceId(userId, currentUser.orgId, currentUser.accessLevel!, term!);
-    const clearanceRef = doc(db, 'clearanceStatus', clearanceId);
-    await updateDoc(clearanceRef, {
-        blockingItems: blockingItems, 
-        updatedAt: serverTimestamp(),
-    });
+//     // logic here for fines generating blocking items
+//     const fine = await getFineByStudentId(userId);
+//     if (fine && fine.balance > 0) {
+//         blockingItems[fine.id!] = {
+//             type: PaymentType.FINES,
+//             referenceId: fine.id!,
+//             title: "Fines",
+//             balance: fine.balance,
+//             status: fine.status as "unpaid" | "paid",
+//             paymentHistory: [],
+//             pendingReview: fine.status === "pending",
+//             isRequiredForClearance: true,
+//             academicYear: fine.academicYear,
+//             semester: fine.semester,
+//         };
+//     }
+//     let id = userId;
+//     if (currentUser.accessLevel !== 3) {
+//       id = userId+currentUser.orgId
+//     }
+//     const term = await getActiveTerm();
+//     const clearanceId = buildClearanceId(userId, currentUser.orgId, currentUser.accessLevel!, term!);
+//     const clearanceRef = doc(db, 'clearanceStatus', clearanceId);
+//     await updateDoc(clearanceRef, {
+//         blockingItems: blockingItems, 
+//         updatedAt: serverTimestamp(),
+//     });
 
-    await recalculateClearanceStatus(userId);
-    cacheService.invalidateByPrefix('clearance:doc:');
-    // Count/stats are invalidated inside recalculateClearanceStatus; but invalidate broadly for safety
-    cacheService.invalidateByPrefix(`clearance:stats:`);
-    cacheService.invalidateByPrefix(`clearance:count:`);
-}
+//     await recalculateClearanceStatus(userId);
+//     cacheService.invalidateByPrefix('clearance:doc:');
+//     // Count/stats are invalidated inside recalculateClearanceStatus; but invalidate broadly for safety
+//     cacheService.invalidateByPrefix(`clearance:stats:`);
+//     cacheService.invalidateByPrefix(`clearance:count:`);
+// }
 
 
 export const addStudentWithClearance = async (studentId: string,studentData: any, orgId: string) => {
@@ -605,6 +605,7 @@ export const rejectPaymentClearanceUpdate = async (
    adminName: string,
    overallPaymentType?: string | PaymentType,
   receiptCode?: string,
+  term?: Term
  ) => {
   if(!overallPaymentType) {
     throw new Error("Overall payment type is required");
@@ -620,7 +621,8 @@ export const rejectPaymentClearanceUpdate = async (
       adminName,
       overallPaymentType as PaymentType,
       undefined,
-      receiptCode
+      receiptCode,
+      term
     );
   
   // else if(overallPaymentType === PaymentType.FINES) {

@@ -283,6 +283,11 @@ const getOrCreateFinesForStudents = async (
         waivedAt: null,
         remarks: null,
         reason: '',
+        metadata: {
+          createdAt: now,
+          updatedAt: now,
+          isArchived: false,
+        },
       };
       batch.set(fineDocRef, fineData);
       newDocs.push(fineData);

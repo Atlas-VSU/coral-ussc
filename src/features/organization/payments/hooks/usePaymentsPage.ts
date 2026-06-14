@@ -19,6 +19,7 @@ import { useDebounce } from "@/hooks/useDebounce"
 import { Timestamp } from "firebase/firestore"
 import { BlockingItem, ClearanceStatus } from "../../clearance/types"
 import { getActiveTerm } from "@/firebase/term"
+import { useTermPeriod } from "../../term/hooks/useTermPeriod"
 
 export function usePaymentsPage() {
   const {
@@ -85,6 +86,8 @@ export function usePaymentsPage() {
   const [submissionSearchInput, setSubmissionSearchInput] = useState("")
   const debouncedUnpaidSearch = useDebounce(unpaidSearchInput, 400)
   const debouncedPaymentSearch = useDebounce(submissionSearchInput, 400)
+
+  const { selected: term } = useTermPeriod()
 
   useEffect(() => {
     // Reset to page 1 and fetch with new search term
@@ -238,7 +241,6 @@ export function usePaymentsPage() {
     if (!liveSelectedUnpaid || selectedDues.length === 0) return
     setLoading(true)
 
-    const term = await getActiveTerm();
     const receiptId = generateReceiptId()
     const studentName = liveSelectedUnpaid.userName;
     let isFine = false, isFee = false, totalAmount = 0
@@ -272,7 +274,7 @@ export function usePaymentsPage() {
     }
 
     try {
-      await createBulkOfflineProofOfPayment(lineItems, receiptId, selectedDues, liveSelectedUnpaid.userId!, paymentDate, feeItemKeys)
+      await createBulkOfflineProofOfPayment(lineItems, receiptId, selectedDues, liveSelectedUnpaid.userId!, paymentDate, feeItemKeys, term!)
     } catch (error) {
       toast.error("Failed to log payment. Please try again.")
       setLoading(false)

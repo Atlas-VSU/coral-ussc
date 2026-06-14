@@ -80,6 +80,11 @@ export type StudentFines = {
     waivedReason:string | null,
     waivedAt: Timestamp | null,
     remarks: string | null,
+    metadata?: {
+        createdAt: Timestamp;
+        updatedAt: Timestamp;
+        isArchived: boolean;
+    };
 }
 
 export type FineItem = {

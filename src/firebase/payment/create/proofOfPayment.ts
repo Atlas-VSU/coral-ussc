@@ -15,6 +15,8 @@ import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { BlockingItem } from "@/features/organization/clearance/types";
 import { updateFeeStats, updateFineStats } from "@/firebase/stats/update/updateStats";
 import { getActiveTerm } from "@/firebase/term";
+import { Term } from "@/constants/types";
+import { recalculateClearanceStatus } from "@/firebase/clearance";
 
 export const createOnlineProofOfPayment = async (
     payment: PaymentFormData, type: string ) => {
@@ -238,9 +240,9 @@ export const createBulkOfflineProofOfPayment = async (
   userId: string,
   date?: Timestamp,
   feeItemKeys?: string[],
+  term?: Term
 ) => {
   const currentUser = await getCurrentUserData() as unknown as Member;
-  const term = await getActiveTerm();
   const verifierName = `${currentUser.firstName} ${currentUser.lastName}`;
   const paymentData = {
     ...payment,
@@ -263,7 +265,7 @@ export const createBulkOfflineProofOfPayment = async (
   const docRef = await addDoc(ref, paymentData);
   const items = [];
   for (const due of dues.filter(d => d.status === "unpaid")) {
-    await createFinesPaymentHistory(payment, due.parentFineId?due.parentFineId:due.referenceId, docRef.id, userId, due);
+    await createFinesPaymentHistory(payment, due.parentFineId?due.parentFineId:due.referenceId, docRef.id, userId, due, term);
     items.push({
       refId: due.referenceId,
       title: due.title,
@@ -292,6 +294,9 @@ export const createBulkOfflineProofOfPayment = async (
         await updateFeeStats(`${term!.AY}-${term!.semester}-${currentUser.orgId}`, 0, due.balance);
     }
   }
+
+  await recalculateClearanceStatus(userId, term);
+
   await updateDoc(doc(db, "proofOfPayments", docRef.id), {
       metadata: {
         items: items,

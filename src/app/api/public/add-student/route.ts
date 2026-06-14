@@ -20,8 +20,8 @@ const registerMemberSchema = z.object({
  * Recalculates and updates the overall clearance status based on blockingItems.
  * Call this at the end of the POST handler after all fees/fines are assigned.
  */
-async function recalculateClearanceStatus(userId: string): Promise<void> {
-    const clearanceRef = adminDb.collection("clearanceStatus").doc(userId);
+async function recalculateClearanceStatus(clearanceId: string): Promise<void> {
+    const clearanceRef = adminDb.collection("clearanceStatus").doc(clearanceId);
     const snapshot = await clearanceRef.get();
 
     if (!snapshot.exists) return;
@@ -165,8 +165,10 @@ export async function POST(request: NextRequest) {
         });
         const parentFineId = fineDocRef.id;
 
-        const clearanceRef = adminDb.collection("clearanceStatus").doc(userId);
+        const clearanceId = `${userId}${ORG_ID}:2025-2026-2nd`;
+        const clearanceRef = adminDb.collection("clearanceStatus").doc(clearanceId);
         await clearanceRef.set({
+            id: clearanceId,
             userId,
             studentId,
             userName,
@@ -410,7 +412,7 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        await recalculateClearanceStatus(userId)
+        await recalculateClearanceStatus(clearanceId)
 
         return NextResponse.json(
             { success: true, userId, message: "Member added successfully." },

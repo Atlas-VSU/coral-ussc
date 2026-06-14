@@ -11,6 +11,7 @@ import { useOnlinePaymentReview } from "../hooks/useOnlinePaymentReview"
 import { ProofOfPayment } from "../../fines/types"
 import { fetchClearanceStatus } from "@/firebase/clearance"
 import { useEffect } from "react"
+import { useTermPeriod } from "../../term/hooks/useTermPeriod"
 
 interface RequirementsBreakdownProps {
   clearance: ClearanceStatus
@@ -23,12 +24,13 @@ export function RequirementsBreakdown({
   onReviewPayment,
   onLogPayment,
 }: RequirementsBreakdownProps) {
+  const { selected: term } = useTermPeriod()
   useEffect(() => {
     // Trigger a cached fetch for the individual document to show cache hit/miss in console as requested.
     if (clearance.id) {
-       fetchClearanceStatus(clearance.id).catch(console.error);
+       fetchClearanceStatus(clearance.id, term!).catch(console.error);
     }
-  }, [clearance.id]);
+  }, [clearance.id, term]);
 
   const groups = buildRequirementGroups(clearance.blockingItems)
   const pendingReviews = Object.entries(clearance.blockingItems)

@@ -538,3 +538,23 @@ export const countUsers = async () => {
     return 0;
   }
 }
+export const deleteAllNonAdminMembers = async () => {
+  try {
+    const querySnapshot = await getDocs(
+      query(usersCollection, where("role", "==", "user"))
+    );
+
+    const docs = querySnapshot.docs;
+    const BATCH_SIZE = 500;
+
+    for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+      const chunk = docs.slice(i, i + BATCH_SIZE);
+      const batch = writeBatch(db);
+      chunk.forEach((doc) => batch.delete(doc.ref));
+      await batch.commit();
+      console.log(`Deleted ${Math.min(i + BATCH_SIZE, docs.length)}/${docs.length}`);
+    }
+  } catch (error) {
+    handleFirestoreError(error, "delete all non-admin members");
+  }
+};

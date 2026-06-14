@@ -24,6 +24,7 @@ import {
 import type { Event } from "../types"
 import { formatDate } from "@/utils/useGeneralUtils"
 import { cn } from "@/lib/utils"
+import { useTermPeriod } from "../../term/hooks/useTermPeriod"
 
 interface EventListItemProps {
   event: Event
@@ -101,6 +102,8 @@ export function EventListItem({
   const [opLoading, setOpLoading] = useState(false)
   const [viewAttendeesLoading, setViewAttendeesLoading] = useState(false)
   const [logAttendanceLoading, setLogAttendanceLoading] = useState(false)
+
+  const { selected } = useTermPeriod()
 
   const { timeInStart, timeInEnd, timeOutStart, timeOutEnd } = event
   const hasTimeIn = timeInStart && timeInEnd
@@ -267,7 +270,7 @@ export function EventListItem({
                         event.status === "completed" && (
                           <DropdownMenuItem
                             onClick={() => onIssueFine(event)}
-                            disabled={opLoading}
+                            disabled={opLoading || !selected?.isActive}
                           >
                             Issue Fines
                           </DropdownMenuItem>

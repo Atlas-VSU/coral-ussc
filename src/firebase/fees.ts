@@ -909,7 +909,8 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
     adminName: string,
     overallPaymentType: PaymentType, // "fee", "fin", or "bulk payment"
     ref?: string,
-    receipt?: string
+    receipt?: string,
+    term?: Term
 ) => {
     try {
         if (isNaN(totalAmount) || totalAmount <= 0) {
@@ -919,7 +920,6 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
         const studentDataDoc = await getDoc(doc(db, "users", studentId));
         const studentData = studentDataDoc.data();
         const currentUser = await getCurrentUserData() as unknown as Member; // Assuming this is available in your scope
-        const term = await getActiveTerm();
 
         // Create references for the single unified logs
         const paymentProofRef = doc(collection(db, "proofOfPayments"));
@@ -1070,6 +1070,8 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
 
             const clearanceUpdates: Record<string, any> = {};
 
+            let balanceOverall = 0;
+
             for (const { ref: itemRef, data, paymentAmount, refId } of itemDocsToUpdate) {
                 const currentPaidAmount = data.paidAmount || 0;
                 const totalRequiredAmount = data.amount || 0;
@@ -1095,7 +1097,10 @@ export const recordBulkManualPaymentAndUpdateClearance = async (
                 clearanceUpdates[`blockingItems.${refId}.balance`] = newBalance;
                 clearanceUpdates[`blockingItems.${refId}.status`] = newBalance <= 0 ? "paid" : "unpaid";
                 clearanceUpdates[`blockingItems.${refId}.pendingReview`] = false;
+                
+                balanceOverall += newBalance;
             }
+            clearanceUpdates[`status`] = balanceOverall == 0 ? "cleared" : "not_cleared" ;
             if (fineParentId !== "" && totalFinesPaid > 0) {
                 await recalculateFines(fineParentId, null, totalFinesPaid, null, null);
             }
@@ -1164,6 +1169,8 @@ export const recordManualPaymentAndUpdateClearance = async (
         const clearanceRef = doc(db, 'clearanceStatus', id);
 
         const studentData = await getDoc(doc(db, "users", studentId));
+
+        let overallBalance = 0;
 
         await runTransaction(db, async (transaction) => {
             const feeDoc = await transaction.get(feeRef);
@@ -1249,12 +1256,26 @@ export const recordManualPaymentAndUpdateClearance = async (
                 status: newStatus,
             });
 
+
             transaction.update(clearanceRef, {
                 [`blockingItems.${feeId}.balance`]: newBalance,
                 [`blockingItems.${feeId}.status`]: newBalance <= 0 ? "paid" : "unpaid", 
                 [`blockingItems.${feeId}.pendingReview`]: false,
             });
         });
+
+        const clearance = await getDoc(clearanceRef);
+        if (clearance.exists()) {
+            const data = clearance.data();
+
+            const blockingItems = data.blockingItems || {};
+            const allCleared = Object.values(blockingItems).every(
+                (item: any) => item.status === "paid" || item.balance <= 0
+            );
+
+            data.status = allCleared ? "cleared" : "not_cleared";
+            await setDoc(clearanceRef, data);
+        }
         
         const orgId = currentUser.orgId || '';
 
@@ -1288,7 +1309,7 @@ export const getFee = async (feeId: string) => {
     }
 }
 
-export const approvePaymentTransaction = async (feeId: string, paymentLogId: string, userId: string) => {
+export const approvePaymentTransaction = async (feeId: string, paymentLogId: string, userId: string, term?: Term) => {
     try {
         const feeRef = doc(db, "fees", feeId);
         const paymentLogRef = doc(feeRef, "paymentHistory", paymentLogId);
@@ -1345,7 +1366,6 @@ export const approvePaymentTransaction = async (feeId: string, paymentLogId: str
             });
 
             // Update Student's Clearance Document
-            const term = await getActiveTerm();
             const id = buildClearanceId(feeData.userId, currentUser.orgId, currentUser.accessLevel as number, term!);
             const clearanceRef = doc(db, 'clearanceStatus', id);
             transaction.update(clearanceRef, {

@@ -13,6 +13,7 @@ import { generateReceiptId } from "../../payments/utils"
 import { ReceiptData } from "@/components/organization/receipt/PaymentReceiptDialog"
 import { set } from "zod"
 import { cacheService, CACHE_KEYS } from "@/services/cacheService"
+import { useTermPeriod } from "../../term/hooks/useTermPeriod"
 
 
 export function useClearanceActions(
@@ -22,6 +23,7 @@ export function useClearanceActions(
   const { user: currentUser } = useAuth();
   const [receiptOpen, setReceiptOpen] = useState(false)
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
+  const { selected: term } = useTermPeriod()
   
   // Use a ref to store the latest clearances to avoid dependency churn in callbacks
   const clearancesRef = useRef(clearances)
@@ -108,7 +110,8 @@ export function useClearanceActions(
           currentUser.uid,
           `${currentUser.firstName} ${currentUser.lastName}`,
           options.addPaymentLog.overallPaymentType,  
-          receiptCode 
+          receiptCode,
+          term! 
         )
         // Invalidate proof-of-payment cache for the student
         cacheService.invalidate(CACHE_KEYS.proofOfPaymentByUser(studentId, clearance.orgId));

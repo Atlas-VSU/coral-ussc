@@ -10,7 +10,7 @@ import { StudentFines } from "@/features/organization/fines/types";
 import { PaymentFormData } from "@/lib/validators";
 import { createOfflineFinesProofOfPayment } from "./proofOfPayment";
 import { PaymentStatus } from "@/constants/status";
-import { PaymentType } from "@/constants/types";
+import { PaymentType, Term } from "@/constants/types";
 import { buildClearanceId, recalculateClearanceStatus } from "@/firebase/clearance";
 import { getActiveTerm } from "@/firebase/term";
 import { recalculateFees } from "@/firebase/fees/update/recalculate";
@@ -18,7 +18,7 @@ import { getFineItemsByFineId} from "@/firebase/fines/read/fines";
 import { BlockingItem } from "@/features/organization/clearance/types";
 
 
-export const addOfflineFinesPayment = async (fines: StudentFines, type:string, method: PaymentMethod, payRef?: string, senderNumber?:string) => {
+export const addOfflineFinesPayment = async (fines: StudentFines, type:string, method: PaymentMethod, payRef?: string, senderNumber?:string, term?: Term) => {
     const currentUser = await getCurrentUserData() as unknown as Member;
     try {
         const subColRef = collection(db, type, fines.id!, "paymentHistory");
@@ -61,7 +61,6 @@ export const addOfflineFinesPayment = async (fines: StudentFines, type:string, m
         if (type === PaymentType.FINES) {
             await recalculateFines(fines.id!, null, fines.balance);
             await markFineItemsAsPaid(fines.id!);
-            const term = await getActiveTerm();
             const id = buildClearanceId(fines.userId, currentUser.orgId, currentUser.accessLevel as number, term!);
             const clearanceRef = doc(db, 'clearanceStatus', id);
             for (const item of fineItems) {
@@ -92,7 +91,8 @@ export const createFinesPaymentHistory = async (
     referenceId: string,
     proofId: string, 
     userId: string,
-    paid?: BlockingItem) => {
+    paid?: BlockingItem,
+    term?: Term) => {
     try {
         const current = await getCurrentUserData() as unknown as Member;
         const subColRef = collection(db, paid?.type? paid.type : proof.type! , referenceId , "paymentHistory");
@@ -140,7 +140,6 @@ export const createFinesPaymentHistory = async (
             }
         }
         try {
-            const term = await getActiveTerm();
             const id = buildClearanceId(userId, current.orgId, current.accessLevel as number, term!);
             const clearanceRef = doc(db, 'clearanceStatus', id);
             await updateDoc(clearanceRef, {
@@ -149,7 +148,6 @@ export const createFinesPaymentHistory = async (
                 [`blockingItems.${reference}.pendingReview`]: false,
             });
 
-            await recalculateClearanceStatus(userId)
         }catch(error){
             console.error("Error updating clearance status after payment:", error);
             throw new Error("Payment recorded, but failed to update clearance status. Please check the clearance record.");

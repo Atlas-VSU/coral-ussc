@@ -18,6 +18,7 @@ import PaymentReceiptDialog, { ReceiptData, ReceiptItem } from "@/components/org
 import { getProofOfPaymentById } from "@/firebase/payment/read/proofOfPayment";
 import { string } from "zod";
 import { getActiveTerm } from "@/firebase/term";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 
 interface ManualPaymentDialogProps { 
@@ -38,6 +39,7 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
     const [receiptOpen, setReceiptOpen] = useState(false);
     const [receiptData, setReceiptData] = useState<ReceiptData>();
     
+    const{ selected: term } = useTermPeriod()
     const form = useProofOfPaymentForm(
         {
             defaultValues: {
@@ -52,8 +54,7 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
     const handleManualPayment = async (data: PaymentFormData) => {
         setIsSubmitting(true);
         try {
-            const proofId = await addOfflineFinesPayment(fines, PaymentType.FINES, manualPayMethod as any, data.referenceNumber, data.senderNumber);
-            const term = await getActiveTerm();
+            const proofId = await addOfflineFinesPayment(fines, PaymentType.FINES, manualPayMethod as any, data.referenceNumber, data.senderNumber, term!);
             const proofData = await getProofOfPaymentById(proofId!);
             setReceiptData({
                 receiptId: proofData?.receiptCode!,
