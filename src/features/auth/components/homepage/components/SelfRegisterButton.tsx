@@ -26,8 +26,15 @@ export function SelfRegisterButton() {
   const [token, setToken] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
 
+  // When reCAPTCHA isn't configured, don't block navigation on a token that can
+  // never arrive — the gate just becomes a confirmation step.
+  const recaptchaConfigured = Boolean(
+    process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY
+  );
+  const canContinue = recaptchaConfigured ? Boolean(token) : true;
+
   const handleContinue = () => {
-    if (!token || isNavigating) return;
+    if (!canContinue || isNavigating) return;
     setIsNavigating(true);
     router.push("/self-register");
   };
@@ -100,7 +107,7 @@ export function SelfRegisterButton() {
               variant="success"
               type="button"
               onClick={handleContinue}
-              disabled={!token || isNavigating}
+              disabled={!canContinue || isNavigating}
             >
               {isNavigating ? (
                 <>
