@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   ArrowLeft,
   CheckCircle2,
-  GraduationCap,
   Loader2,
   Lock,
   UploadCloud,
@@ -34,8 +34,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
-// ── Mock program options (frontend-only; mirrors the live program list) ──────
-const PROGRAM_OPTIONS = [
+interface ProgramOption {
+  value: string;
+  label: string;
+}
+
+// Fallback used only when the live programs can't be fetched, so the form
+// still works during local testing / API downtime.
+const FALLBACK_PROGRAM_OPTIONS: ProgramOption[] = [
   { value: "bscs", label: "BS in Computer Science" },
   { value: "bsit", label: "BS in Information Technology" },
   { value: "bsce", label: "BS in Civil Engineering" },
@@ -44,7 +50,7 @@ const PROGRAM_OPTIONS = [
   { value: "bsa", label: "BS in Agriculture" },
   { value: "bsbio", label: "BS in Biology" },
   { value: "bses", label: "BS in Environmental Science" },
-] as const;
+];
 
 const selfRegisterSchema = z.object({
   studentId: z
@@ -77,6 +83,73 @@ const lightSelectItemClass = "text-black focus:bg-[#8BC34A]/10 focus:text-black"
 export function SelfRegisterForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [programOptions, setProgramOptions] = useState<ProgramOption[]>(
+    FALLBACK_PROGRAM_OPTIONS
+  );
+  const [isLoadingPrograms, setIsLoadingPrograms] = useState(true);
+  const [programLoadError, setProgramLoadError] = useState<string | null>(null);
+
+  // Fetch the live program list from the database (same endpoint the payment
+  // flow uses). Falls back to the static list if the request fails.
+  useEffect(() => {
+    let active = true;
+
+    const loadPrograms = async () => {
+      setIsLoadingPrograms(true);
+      setProgramLoadError(null);
+
+      try {
+        const response = await fetch("/api/public/programs");
+        const result = await response.json();
+
+        if (!response.ok || !result.success || !Array.isArray(result.programs)) {
+          throw new Error(result.error || "Failed to fetch programs.");
+        }
+
+        const mapped: ProgramOption[] = result.programs
+          .map(
+            (program: {
+              id: string;
+              name?: string;
+              acronym?: string;
+              shortName?: string;
+              code?: string;
+            }) => ({
+              value: program.id,
+              label:
+                program.name ||
+                program.shortName ||
+                program.acronym ||
+                program.code ||
+                program.id,
+            })
+          )
+          .sort((a: ProgramOption, b: ProgramOption) =>
+            a.label.localeCompare(b.label)
+          );
+
+        if (active && mapped.length > 0) {
+          setProgramOptions(mapped);
+        }
+      } catch (error) {
+        console.error("Error loading programs:", error);
+        if (active) {
+          setProgramLoadError(
+            "Unable to load programs right now. Showing fallback options."
+          );
+          setProgramOptions(FALLBACK_PROGRAM_OPTIONS);
+        }
+      } finally {
+        if (active) setIsLoadingPrograms(false);
+      }
+    };
+
+    void loadPrograms();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const form = useForm<SelfRegisterFormData>({
     resolver: zodResolver(selfRegisterSchema),
@@ -133,14 +206,19 @@ export function SelfRegisterForm() {
     <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background flex flex-col items-center justify-center p-4 py-10">
       {/* Brand header */}
       <div className="mb-6 flex flex-col items-center gap-2 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#8BC34A] to-[#1B5E20] text-white shadow-md">
-          <GraduationCap className="h-6 w-6" />
-        </div>
+        <Image
+          src="/images/ussc-logo-1.webp"
+          alt="USSC logo"
+          width={64}
+          height={64}
+          className="h-16 w-16 object-contain"
+          priority
+        />
         <h1 className="text-2xl font-bold bg-gradient-to-r from-[#8BC34A] via-[#2E7D32] to-[#1B5E20] bg-clip-text text-transparent">
           Freshman Self-Registration
         </h1>
         <p className="max-w-md text-sm text-muted-foreground">
-          New to the organization? Fill out the form below to register. Your
+          Fill out the form below to register. Your
           details will be reviewed and verified before your membership is
           activated.
         </p>
@@ -234,14 +312,21 @@ export function SelfRegisterForm() {
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
+                        disabled={isLoadingPrograms}
                       >
                         <FormControl>
                           <SelectTrigger className={lightSelectTriggerClass}>
-                            <SelectValue placeholder="Select a program" />
+                            <SelectValue
+                              placeholder={
+                                isLoadingPrograms
+                                  ? "Loading programs…"
+                                  : "Select a program"
+                              }
+                            />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className={lightSelectContentClass}>
-                          {PROGRAM_OPTIONS.map((program) => (
+                          {programOptions.map((program) => (
                             <SelectItem
                               key={program.value}
                               value={program.value}
@@ -252,6 +337,11 @@ export function SelfRegisterForm() {
                           ))}
                         </SelectContent>
                       </Select>
+                      {programLoadError && (
+                        <p className="text-xs text-amber-600">
+                          {programLoadError}
+                        </p>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
