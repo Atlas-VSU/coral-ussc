@@ -1,0 +1,173 @@
+
+
+// This file contains mock data for self-registrations awaiting verification. It is used in the absence of a real backend, and is meant to be deleted once real data fetching is implemented. The records are generated with randomized timestamps within the past week to simulate a realistic registration flow.
+export type SelfRegistration = {
+  id: string;
+  studentId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  programName: string;
+  yearLevel: number;
+  /** ISO date string of when the student submitted their registration. */
+  submittedAt: string;
+  /** COR attachment status — upload feature is "coming soon". */
+  corStatus: "coming-soon";
+};
+
+export const MOCK_SELF_REGISTRATIONS: SelfRegistration[] = [
+  {
+    id: "sr-001",
+    studentId: "25-1-04821",
+    firstName: "Andrea",
+    lastName: "Villanueva",
+    email: "andrea.villanueva@vsu.edu.ph",
+    programName: "BS in Computer Science",
+    yearLevel: 1,
+    submittedAt: "2026-06-14T08:32:00.000Z",
+    corStatus: "coming-soon",
+  },
+  {
+    id: "sr-002",
+    studentId: "25-1-04977",
+    firstName: "Marco",
+    lastName: "Dela Cruz",
+    email: "marco.delacruz@vsu.edu.ph",
+    programName: "BS in Information Technology",
+    yearLevel: 1,
+    submittedAt: "2026-06-14T13:05:00.000Z",
+    corStatus: "coming-soon",
+  },
+  {
+    id: "sr-003",
+    studentId: "25-1-05130",
+    firstName: "Bea",
+    lastName: "Lagman",
+    email: "bea.lagman@vsu.edu.ph",
+    programName: "BS in Civil Engineering",
+    yearLevel: 1,
+    submittedAt: "2026-06-15T09:48:00.000Z",
+    corStatus: "coming-soon",
+  },
+  {
+    id: "sr-004",
+    studentId: "25-1-05288",
+    firstName: "Joshua",
+    lastName: "Ramos",
+    email: "joshua.ramos@vsu.edu.ph",
+    programName: "BS in Environmental Science",
+    yearLevel: 1,
+    submittedAt: "2026-06-15T16:21:00.000Z",
+    corStatus: "coming-soon",
+  },
+  {
+    id: "sr-005",
+    studentId: "25-1-05402",
+    firstName: "Kyla",
+    lastName: "Mendoza",
+    email: "kyla.mendoza@vsu.edu.ph",
+    programName: "BS in Biology",
+    yearLevel: 1,
+    submittedAt: "2026-06-16T07:10:00.000Z",
+    corStatus: "coming-soon",
+  },
+  {
+    id: "sr-006",
+    studentId: "25-1-05519",
+    firstName: "Liam",
+    lastName: "Aquino",
+    email: "liam.aquino@vsu.edu.ph",
+    programName: "BS in Agriculture",
+    yearLevel: 1,
+    submittedAt: "2026-06-16T08:02:00.000Z",
+    corStatus: "coming-soon",
+  },
+  {
+    id: "sr-007",
+    studentId: "25-1-05634",
+    firstName: "Sofia",
+    lastName: "Reyes",
+    email: "sofia.reyes@vsu.edu.ph",
+    programName: "BS in Computer Science",
+    yearLevel: 1,
+    submittedAt: "2026-06-16T08:25:00.000Z",
+    corStatus: "coming-soon",
+  },
+  {
+    id: "sr-008",
+    studentId: "25-1-05741",
+    firstName: "Gabriel",
+    lastName: "Santos",
+    email: "gabriel.santos@vsu.edu.ph",
+    programName: "BS in Electrical Engineering",
+    yearLevel: 1,
+    submittedAt: "2026-06-16T09:11:00.000Z",
+    corStatus: "coming-soon",
+  },
+  {
+    id: "sr-009",
+    studentId: "25-1-05888",
+    firstName: "Patricia",
+    lastName: "Flores",
+    email: "patricia.flores@vsu.edu.ph",
+    programName: "BS in Information Technology",
+    yearLevel: 1,
+    submittedAt: "2026-06-16T09:47:00.000Z",
+    corStatus: "coming-soon",
+  },
+  {
+    id: "sr-010",
+    studentId: "25-1-05902",
+    firstName: "Nathan",
+    lastName: "Gonzales",
+    email: "nathan.gonzales@vsu.edu.ph",
+    programName: "BS in Agricultural & Biosystems Engineering",
+    yearLevel: 1,
+    submittedAt: "2026-06-16T10:15:00.000Z",
+    corStatus: "coming-soon",
+  },
+  {
+    id: "sr-011",
+    studentId: "25-1-06014",
+    firstName: "Isabel",
+    lastName: "Castro",
+    email: "isabel.castro@vsu.edu.ph",
+    programName: "BS in Civil Engineering",
+    yearLevel: 1,
+    submittedAt: "2026-06-16T10:53:00.000Z",
+    corStatus: "coming-soon",
+  },
+  {
+    id: "sr-012",
+    studentId: "25-1-06127",
+    firstName: "Diego",
+    lastName: "Torres",
+    email: "diego.torres@vsu.edu.ph",
+    programName: "BS in Computer Science",
+    yearLevel: 1,
+    submittedAt: "2026-06-16T11:30:00.000Z",
+    corStatus: "coming-soon",
+  },
+  {
+    id: "sr-013",
+    studentId: "25-1-06233",
+    firstName: "Camille",
+    lastName: "Navarro",
+    email: "camille.navarro@vsu.edu.ph",
+    programName: "BS in Environmental Science",
+    yearLevel: 1,
+    submittedAt: "2026-06-16T12:08:00.000Z",
+    corStatus: "coming-soon",
+  },
+  {
+    id: "sr-014",
+    studentId: "25-1-06340",
+    firstName: "Elijah",
+    lastName: "Bautista",
+    email: "elijah.bautista@vsu.edu.ph",
+    programName: "BS in Information Technology",
+    yearLevel: 1,
+    submittedAt: "2026-06-16T12:45:00.000Z",
+    corStatus: "coming-soon",
+  },
+];
