@@ -58,10 +58,13 @@ const selfRegisterSchema = z.object({
   firstName: z.string().min(2, "First name is required"),
   lastName: z.string().min(2, "Last name is required"),
   programId: z.string().min(1, "Program is required"),
-  yearLevel: z.number().min(1).max(6),
 });
 
 type SelfRegisterFormData = z.infer<typeof selfRegisterSchema>;
+
+// Self-registration is exclusively for incoming freshmen, so the year level is
+// fixed rather than chosen.
+const FRESHMAN_YEAR_LEVEL = 1;
 
 // Shared light/green field styling to stay consistent with the Add Member form.
 const lightInputClass =
@@ -83,7 +86,6 @@ export function SelfRegisterForm() {
       firstName: "",
       lastName: "",
       programId: "",
-      yearLevel: 1, // Freshmen default to 1st year
     },
   });
 
@@ -91,7 +93,10 @@ export function SelfRegisterForm() {
     setIsSubmitting(true);
     // Frontend-only mock submission — simulate a short request.
     await new Promise((resolve) => setTimeout(resolve, 900));
-    console.log("Self-registration submitted (mock):", data);
+    console.log("Self-registration submitted (mock):", {
+      ...data,
+      yearLevel: FRESHMAN_YEAR_LEVEL,
+    });
     setIsSubmitting(false);
     setSubmitted(true);
     toast.success("Registration submitted! Your application is pending review.");
@@ -251,47 +256,16 @@ export function SelfRegisterForm() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="yearLevel"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-[#1B5E20] font-semibold">
-                        Year Level
-                      </FormLabel>
-                      <Select
-                        onValueChange={(value) =>
-                          field.onChange(parseInt(value))
-                        }
-                        value={field.value?.toString()}
-                      >
-                        <FormControl>
-                          <SelectTrigger className={lightSelectTriggerClass}>
-                            <SelectValue placeholder="Select year level" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className={lightSelectContentClass}>
-                          <SelectItem value="1" className={lightSelectItemClass}>
-                            1st Year
-                          </SelectItem>
-                          <SelectItem value="2" className={lightSelectItemClass}>
-                            2nd Year
-                          </SelectItem>
-                          <SelectItem value="3" className={lightSelectItemClass}>
-                            3rd Year
-                          </SelectItem>
-                          <SelectItem value="4" className={lightSelectItemClass}>
-                            4th Year
-                          </SelectItem>
-                          <SelectItem value="5" className={lightSelectItemClass}>
-                            5th Year
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Year level is fixed — self-registration is for freshmen only */}
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-[#1B5E20]">
+                    Year Level
+                  </p>
+                  <div className="flex h-9 items-center rounded-md border !border-[#2E7D32]/30 bg-[#8BC34A]/5 px-3 text-sm text-black">
+                    1st Year{" "}
+                    <span className="ml-1 text-[#2E7D32]/70">(Freshman)</span>
+                  </div>
+                </div>
               </div>
 
               {/* Certificate of Registration upload — Coming Soon */}
