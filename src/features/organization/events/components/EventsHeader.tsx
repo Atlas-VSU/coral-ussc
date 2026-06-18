@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
 import { AddEventDialog } from "./AddEventDialog";
 import { useEventFineTypes } from "../hooks/useEventFineTypes";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 interface EventsHeaderProps {
   onSearch: (query: string) => void;
@@ -11,8 +12,9 @@ interface EventsHeaderProps {
 
 export function EventsHeader({ onSearch, onEventAdded }: EventsHeaderProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const { selected } = useTermPeriod();
   const { fineTypes, fetchFineTypes } = useEventFineTypes();
-
+  console.log(selected)
   const handleAddEventClick = async () => {
     setIsAddDialogOpen(true);
     if (fineTypes.length === 0) await fetchFineTypes();
@@ -44,6 +46,7 @@ export function EventsHeader({ onSearch, onEventAdded }: EventsHeaderProps) {
         {/* Action Button */}
         <Button
           onClick={handleAddEventClick}
+          disabled={!selected?.isActive}
           className="bg-gradient-to-br from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg transition-all duration-200 hover:scale-[1.02] border-0 self-start lg:self-auto"
         >
           <PlusIcon className="h-4 w-4 mr-2" />

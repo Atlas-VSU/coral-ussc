@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Event } from "../../events/types";
 import { UserPlus, Upload, Loader2, Zap } from "lucide-react";
 import Link from "next/link";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 interface AttendeesHeaderProps {
   event: Event;
@@ -18,6 +19,9 @@ export function AttendeesHeader({
   onGenerateFines,
   isGenerating = false,
 }: AttendeesHeaderProps) {
+
+  const { selected } = useTermPeriod()
+  
   return (
     <div
       className="rounded-xl px-4 sm:px-6 py-4 sm:py-6"
@@ -74,7 +78,7 @@ export function AttendeesHeader({
             <Button
               variant="outline"
               onClick={onGenerateFines}
-              disabled={isGenerating}
+              disabled={isGenerating || !selected?.isActive}
               style={{
                 borderColor: "#97C459",
                 color: "#27500A",

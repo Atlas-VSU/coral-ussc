@@ -17,6 +17,8 @@ import { addOfflineFinesPayment } from "@/firebase/payment/create/paymentHistory
 import PaymentReceiptDialog, { ReceiptData, ReceiptItem } from "@/components/organization/receipt/PaymentReceiptDialog";
 import { getProofOfPaymentById } from "@/firebase/payment/read/proofOfPayment";
 import { string } from "zod";
+import { getActiveTerm } from "@/firebase/term";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 
 interface ManualPaymentDialogProps { 
@@ -37,6 +39,7 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
     const [receiptOpen, setReceiptOpen] = useState(false);
     const [receiptData, setReceiptData] = useState<ReceiptData>();
     
+    const{ selected: term } = useTermPeriod()
     const form = useProofOfPaymentForm(
         {
             defaultValues: {
@@ -51,8 +54,7 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
     const handleManualPayment = async (data: PaymentFormData) => {
         setIsSubmitting(true);
         try {
-            const proofId = await addOfflineFinesPayment(fines, PaymentType.FINES, manualPayMethod as any, data.referenceNumber, data.senderNumber);
-            
+            const proofId = await addOfflineFinesPayment(fines, PaymentType.FINES, manualPayMethod as any, data.referenceNumber, data.senderNumber, term!);
             const proofData = await getProofOfPaymentById(proofId!);
             setReceiptData({
                 receiptId: proofData?.receiptCode!,
@@ -65,14 +67,16 @@ export function ManualPaymentDialog({ open, onOpenChange, fines, fineItems, onSu
                         amount: item.amount,
                         type: item.paymentType as "fees" | "fines",
                         parentFineId: item.parentFineId,
-                        academicYear: "2025-2026",
-                        semester: "2nd",
+                        academicYear: term!.AY,
+                        semester: term!.semester,
                     };
                 })!,
                 total: proofData?.amount!,
                 date: proofData?.submittedAt?.toDate().toLocaleString() || "",
                 verifiedByName: proofData?.verifiedByName!,
                 paymentMethod: proofData?.paymentMethod!,
+                AY: term!.AY,
+                semester: term!.semester,
             });
             setReceiptOpen(true);
             toast.success("A payment was logged successfully.");

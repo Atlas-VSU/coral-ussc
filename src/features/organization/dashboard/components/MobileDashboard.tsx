@@ -30,6 +30,8 @@ interface MobileDashboardProps {
   feesCollected: number;
   unpaidFinesAmount: number;
   clearanceRate: number;
+  AY: string;
+  sem: string;
 }
 
 export function MobileDashboard({
@@ -43,13 +45,15 @@ export function MobileDashboard({
   feesCollected,
   unpaidFinesAmount,
   clearanceRate,
+  AY,
+  sem,
 }: MobileDashboardProps) {
   return (
     <div className="flex flex-col gap-6 max-w-2xl mx-auto w-full">
       <PageHeader
         variant="admin"
         title="Dashboard"
-        context="2nd Semester · A.Y. 2025–2026"
+        context={`${sem} Semester · A.Y. ${AY}`}
         description="Overview of your organization's attendance and activity."
       />
 

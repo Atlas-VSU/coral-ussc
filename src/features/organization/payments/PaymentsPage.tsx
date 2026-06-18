@@ -13,6 +13,7 @@ import { LogPaymentDialog } from "./components/LogPaymentDialog"
 import { usePaymentsPage } from "./hooks/usePaymentsPage"
 import PaymentReceiptDialog, { ReceiptData } from "@/components/organization/receipt/PaymentReceiptDialog"
 import { Timestamp } from "firebase/firestore"
+import { getActiveTerm } from "@/firebase/term"
 
 export default function PaymentsPage() {
   const {
@@ -41,7 +42,7 @@ export default function PaymentsPage() {
     student, studentProgram,
     // receipt
     receiptOpen, setReceiptOpen, receiptData, setReceiptData,
-    stats, totalUnpaidCount
+    stats, totalUnpaidCount, AY, sem,
   } = usePaymentsPage()
 
   // Local search states for filters
@@ -92,7 +93,8 @@ export default function PaymentsPage() {
     refetchUnpaids()
   }
 
-  const handleViewReceipt = () => {
+  const handleViewReceipt = async () => {
+    const term = await getActiveTerm();
     setReceiptData({
       receiptId: selectedPayment?.receiptCode || "N/A",
       studentName: selectedPayment?.userName || "N/A",
@@ -102,6 +104,8 @@ export default function PaymentsPage() {
       date: selectedPayment?.verifiedAt!.toDate().toLocaleString() || "N/A",
       verifiedByName: selectedPayment?.verifiedByName || "N/A",
       paymentMethod: selectedPayment?.paymentMethod || "Cash",
+      AY: term!.AY,
+      semester:term!.semester,
     });
     setReceiptOpen(true)
   }
@@ -122,7 +126,7 @@ export default function PaymentsPage() {
       <PageHeader
         variant="admin"
         title="Payment Submissions"
-        context="2nd Semester · A.Y. 2025–2026"
+        context={`${sem} Semester · A.Y. ${AY}`}
         description="Review and manage student payment submissions"
       />
 

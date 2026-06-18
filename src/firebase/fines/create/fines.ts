@@ -1,8 +1,8 @@
 import { db } from "@/firebase/firebase.config";
 import { getAllUsers, getCurrentUserData } from "@/firebase/users";
-import { collection, addDoc, writeBatch, doc, CollectionReference, DocumentData, Timestamp, getCountFromServer, setDoc, query, where, getDocs, increment, runTransaction } from "firebase/firestore";
+import { collection, addDoc, writeBatch, doc, CollectionReference, DocumentData, Timestamp, getCountFromServer, setDoc, query, where, getDocs, increment, runTransaction, and, or, limit } from "firebase/firestore";
 import { getFineTypeById } from "../read/fineType";
-import { Member } from "@/features/organization/members/types";
+import { Member, MemberData } from "@/features/organization/members/types";
 import { getNonAttendeesForEvent, getPartialAttendeesForEvent } from "@/firebase/attendance";
 import { disableFineGeneration, getEventById } from "@/firebase/events";
 import { getFinesByStudents } from "../read/fines";
@@ -13,10 +13,10 @@ import { BulkFinesProgress, BulkFinesResult, FineGenerationPhase, FineGeneration
 import { Event } from "@/features/organization/events/types";
 import { updateFirstFineIssuedAt, updateLastFineIssuedAt } from "../update/fines";
 import { PaymentType } from "@/constants/types";
-import { recalculateClearanceStatus } from "@/firebase/clearance";
+import { recalculateClearanceStatus, buildClearanceId } from "@/firebase/clearance";
+import { getActiveTerm } from "@/firebase/term";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { updateFineStats } from "@/firebase/stats/update/updateStats";
-
 
 const finesCollection: CollectionReference<DocumentData> = collection(
     db,
@@ -30,7 +30,7 @@ const handleFirestoreError = (error: any, context: string) => {
     throw new Error(`Failed to ${context}.`);
 };
 
-  export const createFinePerStudent = async (userId: string, user: Member, AY?: string, sem?:string) => {
+  export const createFinePerStudent = async (userId: string, user: Member) => {
     try {
         const currentUser = await getCurrentUserData();
         if (!currentUser) {
@@ -41,13 +41,14 @@ const handleFirestoreError = (error: any, context: string) => {
     // if (!user) {
     //     return null;
     // }
+        const term = await getActiveTerm();
       const fineData = {
-        orgId: currentUser.uid,
+        orgId: currentUser.orgId,
         userId: userId,
         studentId: user.studentId,
         userName: `${user?user.firstName:"Unknown"} ${user?user.lastName : ""}`,
-        academicYear: AY? AY : "2025-2026",
-        semester: sem? sem : "2nd Semester", //AY and SEM should have dedicated way of being determined in the future, for now it's hardcoded
+        academicYear: term!.AY,
+        semester: term!.semester, 
         accumulatedAmount: 0,
         paidAmount: 0,
         balance: 0,
@@ -93,11 +94,23 @@ export const createBulkFines = async (
     onProgress?.({ phase, message, committed: result.committed, totalUsers: result.totalUsers, ...extra });
 
   try {
-    const currentUser = await getCurrentUserData();
+    const currentUser = await getCurrentUserData() as unknown as Member;
+    const term = await getActiveTerm();
     if (!currentUser) {
       report("error", "No authenticated user found.");
       return result;
     }
+
+    const doneSeeding = await getDocs(query(collection(db, "fines",),
+      where("orgId", "==", currentUser.orgId),
+      where("academicYear", "==", term!.AY),
+      where("semester", "==", term!.semester),
+      limit(1)));
+    if (doneSeeding.size > 0) {
+      report("done", "Fines Container already created for this term. No action taken.");
+      result.success = true;
+      return result;
+     }
 
     report("preflight", "Fetching all users…");
     const users = await getAllUsers();
@@ -125,12 +138,12 @@ export const createBulkFines = async (
         }
 
         const fineData = {
-          orgId:      currentUser.uid,
+          orgId:      currentUser.orgId,
           userId:     user.id,
           userName:   `${user.member.firstName} ${user.member.lastName}`,
           studentId:  user.member.studentId,
-          academicYear: "2025-2026", 
-          semester:     "2nd Semester",
+          academicYear: term!.AY, 
+          semester:     term!.semester,
           accumulatedAmount: 0,
           paidAmount:        0,
           balance:           0,
@@ -172,7 +185,7 @@ export const createBulkFines = async (
       await Promise.all(batchSlice.map(user => recalculateClearanceStatus(user.id!)));
     }
 
-    const orgId = currentUser.uid || '';
+    const orgId = currentUser.orgId || '';
     // cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
     
 
@@ -211,13 +224,80 @@ function makeSnapshot(
   };
 }
 
-const prepareFineItem = async (fine: StudentFines) => {
+const prepareFineItem = async (fine: StudentFines, currentUser: Member) => {
   const subColRef = collection(db, "fines", fine.id!, "fineItems");
   const countSnapshot = await getCountFromServer(subColRef);
   const itemNumber = (countSnapshot.data().count ?? 0) + 1;
   const fineItemRef = doc(subColRef);
-  const clearanceRef = doc(db, "clearanceStatus", fine.userId);
+  const term = await getActiveTerm();
+  const clearanceId = buildClearanceId(fine.userId, currentUser.orgId, currentUser.accessLevel as number, term!);
+  const clearanceRef = doc(db, "clearanceStatus", clearanceId);
   return { fine, itemNumber, fineItemRef, clearanceRef };
+};
+
+/**
+ * Gets or creates a parent `fines` document for each student.
+ * If no doc exists yet for the active term, one is created on-the-fly
+ * so that `generateFinesOnEvent` can still write fine items.
+ */
+const getOrCreateFinesForStudents = async (
+  students: MemberData[],
+  term: { AY: string; semester: string },
+  currentUser: Member
+): Promise<StudentFines[]> => {
+  if (students.length === 0) return [];
+
+  // 1. Fetch any already-existing docs for this term
+  const existing = await getFinesByStudents(students);
+  const existingMap = new Map(existing.map(f => [f.studentId, f]));
+
+  // 2. For students without an existing doc, create one now
+  const missing = students.filter(s => !existingMap.has(s.member.studentId));
+
+  if (missing.length > 0) {
+    const batch = writeBatch(db);
+    const now = Timestamp.now();
+    const newDocs: StudentFines[] = [];
+
+    for (const student of missing) {
+      const fineDocRef = doc(finesCollection);
+      const fineData: StudentFines = {
+        id: fineDocRef.id,
+        orgId: currentUser.orgId!,
+        userId: student.id!,
+        studentId: student.member.studentId,
+        userName: `${student.member.firstName} ${student.member.lastName}`,
+        academicYear: term.AY,
+        semester: term.semester,
+        accumulatedAmount: 0,
+        paidAmount: 0,
+        balance: 0,
+        status: FineStatus.UNPAID,
+        fineItemsCount: 0,
+        firstFineIssuedAt: null,
+        lastFineIssuedAt: null,
+        dueDate: null,
+        waivedAmount: null,
+        waivedBy: null,
+        waivedReason: null,
+        waivedAt: null,
+        remarks: null,
+        reason: '',
+        metadata: {
+          createdAt: now,
+          updatedAt: now,
+          isArchived: false,
+        },
+      };
+      batch.set(fineDocRef, fineData);
+      newDocs.push(fineData);
+    }
+
+    await batch.commit();
+    for (const d of newDocs) existingMap.set(d.studentId, d);
+  }
+
+  return students.map(s => existingMap.get(s.member.studentId)!).filter(Boolean);
 };
 
 // ── Post-commit updates WITHOUT clearance recalculation ───────────────────
@@ -261,6 +341,8 @@ export const generateFinesOnEvent = async (
     partialDone: 0,
   };
 
+  const term = await getActiveTerm();
+
   const report = (
     phase: FineGenerationPhase,
     message: string,
@@ -281,17 +363,21 @@ export const generateFinesOnEvent = async (
     return;
   }
 
-  report("preflight", "Fetching fine records…");
+  report("preflight", "Fetching fine records and loading issuer profile…");
+
+  const issuer = await getCurrentUserData() as unknown as Member;
 
   const [absentUsersFines, partialUsers] = await Promise.all([
-    absentUsers?.length ? getFinesByStudents(absentUsers) : Promise.resolve([]),
+    absentUsers?.length ? getOrCreateFinesForStudents(absentUsers, term!, issuer) : Promise.resolve([]),
     type.requiresTimeOut ? getPartialAttendeesForEvent(event.id) : Promise.resolve([]),
   ]);
+
+  console.log(absentUsersFines)
 
   let partialUsersFines: typeof absentUsersFines = [];
   if (type.requiresTimeOut && partialUsers?.length) {
     report("preflight", "Fetching fine records for partial users…");
-    partialUsersFines = await getFinesByStudents(partialUsers);
+    partialUsersFines = await getOrCreateFinesForStudents(partialUsers, term!, issuer);
   }
 
   if (!absentUsersFines.length && !partialUsersFines.length) {
@@ -301,7 +387,7 @@ export const generateFinesOnEvent = async (
   }
 
   report("preflight", "Loading issuer profile…");
-  const issuer = await getCurrentUserData() as unknown as Member;
+  // issuer already loaded above
 
   counts.absentTotal = absentUsersFines.length;
   counts.partialTotal = partialUsersFines.length;
@@ -325,7 +411,7 @@ export const generateFinesOnEvent = async (
     reason: string,
   ) => {
     const preparedItems = await Promise.all(
-      batchSlice.map(fine => prepareFineItem(fine))
+      batchSlice.map(fine => prepareFineItem(fine, issuer))
     );
 
     const batch = writeBatch(db);
@@ -354,15 +440,28 @@ export const generateFinesOnEvent = async (
         metadata: {
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now(),
+          isArchived: false,
         },
         isPaid: false,
         isArchived: false,
         isPending: false,
+        academicYear: fine.academicYear,
+        semester: fine.semester, 
       });
 
       batch.set(
         clearanceRef,
         {
+          id: clearanceRef.id,
+          userId: fine.userId,
+          orgId: fine.orgId,
+          studentId: fine.studentId,
+          userName: fine.userName,
+          status: "not_cleared",
+          academicYear: fine.academicYear,
+          semester: fine.semester,
+          isArchived: false,
+          createdAt: Timestamp.now(),
           blockingItems: {
             [fineItemRef.id]: {
               type: PaymentType.FINES,
@@ -373,6 +472,8 @@ export const generateFinesOnEvent = async (
               status: "unpaid",
               pendingReview: false,
               isRequiredForClearance: true,
+              academicYear: fine.academicYear,
+              semester: fine.semester,
             },
           },
           updatedAt: Timestamp.now(),
@@ -456,7 +557,7 @@ export const generateFinesOnEvent = async (
   await disableFineGeneration(event.id);
 
   const toAdd = counts.absentTotal * (type.requiresTimeOut ? type.defaultAmount * 2 : type.defaultAmount) + counts.partialTotal * type.defaultAmount;
-  await updateFineStats("2ndSem-2025-2026", toAdd, 0);
+  await updateFineStats(`${term!.AY}-${term!.semester}-${allProcessedFines[0].orgId}`, toAdd, 0);
 
   // ── CLEARANCE PHASE — runs only after ALL writes are done ─────────────────
   const clearanceTotal = allProcessedFines.length;
@@ -532,12 +633,14 @@ export const assignExistingFinesToStudent = async (
         lastName: string;
         studentId: string;
     },
-    currentUserData: { uid: string }
+    orgContext: { uid: string },
+    currentUser: Member
 ): Promise<void> => {
-    const orgId = currentUserData.uid;
+    const orgId = orgContext.uid;
     const userName = `${studentData.firstName} ${studentData.lastName}`;
+    const termData = await getActiveTerm();
  
-    const issuer = (await getCurrentUserData()) as unknown as Member;
+  const issuer = currentUser;
     const issuerName = issuer
         ? `${issuer.firstName} ${issuer.lastName}`
         : "Unknown Issuer";
@@ -545,8 +648,11 @@ export const assignExistingFinesToStudent = async (
     const eventsRef = collection(db, "events");
     const eventsQuery = query(
         eventsRef,
-        where("finesGenerated", "==", true), 
-        where("isDeleted", "==", false)
+      where("finesGenerated", "==", true), 
+      where("isDeleted", "==", false),
+      where("orgId", "==", orgId),
+      where("academicYear", "==", termData!.AY),
+      where("semester", "==", termData!.semester),
     );
     const eventsSnap = await getDocs(eventsQuery);
  
@@ -555,8 +661,15 @@ export const assignExistingFinesToStudent = async (
     const finesRef = collection(db, "fines");
     const fineQuery = query(
         finesRef,
-        where("userId", "==", userId),
-        where("orgId", "==", orgId),
+      and(
+          where("userId", "==", userId),
+          where("orgId", "==", orgId),
+          where("academicYear", "==", termData!.AY),
+        or(
+          where("semester", "==", termData!.semester),
+          where("semester", "==", `${termData!.semester} Semester`)
+          )
+        )
     );
     const fineSnap = await getDocs(fineQuery);
  
@@ -568,8 +681,9 @@ export const assignExistingFinesToStudent = async (
     const fineDoc = fineSnap.docs[0]; 
     const fineDocRef = fineDoc.ref;
     const parentFineId = fineDoc.id;
- 
-    const clearanceRef = doc(db, "clearanceStatus", userId);
+    const term = await getActiveTerm();
+    const clearanceId = buildClearanceId(userId, orgId, issuer.accessLevel as number, term!);
+    const clearanceRef = doc(db, "clearanceStatus", clearanceId);
     const fineItemsCollection = collection(db, "fines", parentFineId, "fineItems")
     const now = Timestamp.now();
  
@@ -631,11 +745,13 @@ export const assignExistingFinesToStudent = async (
                 metadata: {
                     createdAt: now,
                     updatedAt: now,
+                    isArchived: false,
                 },
                 isPaid: false,
                 isArchived: false,
                 isPending: false,
-
+                academicYear: term!.AY,
+                semester: term!.semester,
                 parentFineId,
                 userId,
                 studentId: studentData.studentId,
@@ -699,7 +815,7 @@ export const assignExistingFinesToStudent = async (
     }
  
     if (totalFineAmount > 0) {
-        await updateFineStats("2ndSem-2025-2026", totalFineAmount, 0);
+        await updateFineStats(`${term!.AY}-${term!.semester}-${orgId}`, totalFineAmount, 0);
         await recalculateClearanceStatus(userId);
     }
 };

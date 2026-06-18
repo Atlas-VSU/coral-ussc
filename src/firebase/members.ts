@@ -17,6 +17,8 @@ import {
 import { db } from "./firebase.config";
 import { getCurrentUserData } from "./users";
 import { Member, MemberData } from "@/features/organization/members/types";
+import { getOrgById } from "./organization";
+import { Organization } from "@/constants/types";
 
 const usersCollection: CollectionReference<DocumentData> = collection(
   db,
@@ -34,18 +36,19 @@ const handleFirestoreError = (error: any, context: string) => {
  */
 const buildBaseConstraints = (
   currentUserData: Member,
+  org: Organization,
   programId?: string
 ): QueryConstraint[] => {
   const constraints: QueryConstraint[] = [
     where("isDeleted", "==", false),
     where("role", "==", "user"),
   ];
-
+  
   // Scope to org level — prevents fetching all 9000+ students for scoped roles
-  if (currentUserData.accessLevel === 1) {
-    constraints.push(where("programId", "==", currentUserData.programId ?? ""));
-  } else if (currentUserData.accessLevel === 2) {
-    constraints.push(where("facultyId", "==", currentUserData.facultyId ?? ""));
+  if (currentUserData.accessLevel === 1 && org.programId) {
+    constraints.push(where("programId", "==", org.programId ?? ""));
+  } else if (currentUserData.accessLevel === 2 && org.facultyId) {
+    constraints.push(where("facultyId", "==", org.facultyId ?? ""));
   }
 
   // Additional program filter (only for accessLevel 3+, since 1 already pins programId)
@@ -114,7 +117,8 @@ export const getPaginatedUsers = async (options: {
     } = options;
 
     const currentUserData = (await getCurrentUserData()) as unknown as Member;
-    const baseConstraints = buildBaseConstraints(currentUserData, programId);
+    const org = await getOrgById(currentUserData.orgId!);
+    const baseConstraints = buildBaseConstraints(currentUserData, org!,programId);
     const { sortField, sortDirection } = resolveSortParams(sortBy);
 
     // Normalize search term
@@ -194,7 +198,8 @@ export const getMembersOfAnOrg = async (
   needCount: boolean = false
 ) => {
   try {
-    const baseConstraints = buildBaseConstraints(currentUserData);
+    const org = await getOrgById(currentUserData.orgId!);
+    const baseConstraints = buildBaseConstraints(currentUserData, org!);
     const constraints: QueryConstraint[] = [
       ...baseConstraints,
       orderBy("firstName", "asc"),
@@ -237,10 +242,10 @@ export const getAllMembersOfAnOrg = async (
   currentUserData: Member,
 ) => {
   try {
-    const baseConstraints = buildBaseConstraints(currentUserData);
+    const org = await getOrgById(currentUserData.orgId!);
+    const baseConstraints = buildBaseConstraints(currentUserData, org!);
     const constraints: QueryConstraint[] = [
-      where("isDeleted", "==", false),
-      where("role", "==", "user"),
+     ...baseConstraints,
       orderBy("firstName", "asc"),
     ];
 

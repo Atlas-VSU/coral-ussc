@@ -18,6 +18,8 @@ import { usePaymentApproval } from "./usePaymentApproval"
 import { useDebounce } from "@/hooks/useDebounce"
 import { Timestamp } from "firebase/firestore"
 import { BlockingItem, ClearanceStatus } from "../../clearance/types"
+import { getActiveTerm } from "@/firebase/term"
+import { useTermPeriod } from "../../term/hooks/useTermPeriod"
 
 export function usePaymentsPage() {
   const {
@@ -43,7 +45,7 @@ export function usePaymentsPage() {
     currentOrgIdRef,
     filterStatus,
     setFilterStatus,
-    stats,
+    stats, AY,sem,
   } = usePayments()
 
   // ── Tab ───────────────────────────────────────────────────────────────────
@@ -84,6 +86,8 @@ export function usePaymentsPage() {
   const [submissionSearchInput, setSubmissionSearchInput] = useState("")
   const debouncedUnpaidSearch = useDebounce(unpaidSearchInput, 400)
   const debouncedPaymentSearch = useDebounce(submissionSearchInput, 400)
+
+  const { selected: term } = useTermPeriod()
 
   useEffect(() => {
     // Reset to page 1 and fetch with new search term
@@ -270,7 +274,7 @@ export function usePaymentsPage() {
     }
 
     try {
-      await createBulkOfflineProofOfPayment(lineItems, receiptId, selectedDues, liveSelectedUnpaid.userId!, paymentDate, feeItemKeys)
+      await createBulkOfflineProofOfPayment(lineItems, receiptId, selectedDues, liveSelectedUnpaid.userId!, paymentDate, feeItemKeys, term!)
     } catch (error) {
       toast.error("Failed to log payment. Please try again.")
       setLoading(false)
@@ -307,6 +311,8 @@ export function usePaymentsPage() {
       date: paymentDate.toDate().toLocaleString(),
       verifiedByName: `${currentUser.firstName} ${currentUser.lastName}`,
       paymentMethod: "Cash",
+      AY: term!.AY,
+      semester: term!.semester
     })
 
     setReceiptOpen(true)
@@ -356,6 +362,7 @@ export function usePaymentsPage() {
     receiptOpen, setReceiptOpen, receiptData, setReceiptData,
     stats,
     refetchPayments,refetchUnpaids, refreshAll, totalUnpaidCount, totalSubmissionCount,
-    submissionPage, setSubmissionPage, searchCount
+    submissionPage, setSubmissionPage, searchCount,
+    AY, sem,
   }
 }

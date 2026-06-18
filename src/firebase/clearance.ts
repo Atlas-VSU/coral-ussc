@@ -4,23 +4,53 @@ import { BlockingItem, ClearanceStatus } from "@/features/organization/clearance
 import { approvePaymentTransaction, checkFeeStatusForClearance, fetchFee, recordBulkManualPaymentAndUpdateClearance, recordManualPaymentAndUpdateClearance, rejectPaymentTransaction } from "./fees";
 import { Fee, FeeWithPaymentHistory, PaymentMethod } from "@/features/organization/fees/types";
 import {  getFineByStudentId } from "./fines/read/fines";
-import { PaymentType } from "@/constants/types";
+import { PaymentType, Term } from "@/constants/types";
 import { toast } from "sonner";
 import { getProofOfPaymentByUserId } from "./payment/read/proofOfPayment";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 import { usePaymentApproval } from "@/features/organization/payments/hooks/usePaymentApproval";
 import { updateStudentStats } from "./stats/update/updateStats";
+import { getActiveTerm } from "./term";
+import { getCurrentUserData } from "./users";
+import { Member } from "@/features/organization/members/types";
+import { UserData } from "@/hooks/useAuth";
+import { getOrgById } from "./organization";
 
+/**
+ * Builds a stable, per-term clearance document ID.
+ * Format: `<userId>[<orgId>]:<AY>-<semester>`
+ * Including the term ensures each semester has its own clearance document
+ * instead of overwriting the previous one.
+ */
+export const buildClearanceId = (
+  userId: string,
+  orgId: string | undefined | null,
+  accessLevel: number,
+  term: { AY: string; semester: string }
+): string => {
+  const termSuffix = `:${term.AY}-${term.semester}`.replace(/\s/g, '_');
+  if (orgId) {
+    return `${userId}${orgId}${termSuffix}`;
+  }
+  return `${userId}${termSuffix}`;
+};
 
-export const getClearanceStats = async (orgId: string, statusFilter: string = "all") => {
+export const getClearanceStats = async (
+  orgId: string,
+  statusFilter: string = "all",
+  selectedTerm?: { AY: string; semester: string } | null
+) => {
+  const term = selectedTerm || await getActiveTerm();
   return cacheService.getOrFetch(
-    CACHE_KEYS.clearanceStats(orgId, statusFilter),
+    `clearance:stats:${orgId}:${statusFilter}:${term?.AY}-${term?.semester}`,
     async () => {
       const snapshot = await getCountFromServer(query(
         collection(db, 'clearanceStatus'),
         where('orgId', '==', orgId),
         where('isArchived', '==', false),
-        where('status', '==', statusFilter)
+        where('status', '==', statusFilter),
+        where("academicYear", "==", term!.AY),
+        where("semester", "==", term!.semester)
       ));
       return snapshot.data().count;
     },
@@ -38,12 +68,16 @@ export const fetchClearanceDocumentsPaginated = async (
   searchTerm: string = "",
   statusFilter: string = "all",
   needCount: boolean = false,
-  forManualPayment: boolean = false
+  forManualPayment: boolean = false,
+  selectedTerm?: { AY: string; semester: string } | null
 ) => {
   const clearanceRef = collection(db, "clearanceStatus");
+  const term = selectedTerm || await getActiveTerm();
   let constraints: QueryConstraint[] = [
     where("orgId", "==", orgId),
     where("isArchived", "==", false),
+    where("academicYear", "==", term!.AY),
+    where("semester", "==", term!.semester)
   ];
 
   if (statusFilter !== "all") {
@@ -120,14 +154,22 @@ export const fetchClearanceDocumentsPaginated = async (
 /**
  * Gets the total count of clearance documents for an organization with optional search.
  */
-export const getClearanceCount = async (orgId: string, statusFilter: string = "all", searchTerm: string = "") => {
+export const getClearanceCount = async (
+  orgId: string,
+  statusFilter: string = "all",
+  searchTerm: string = "",
+  selectedTerm?: { AY: string; semester: string } | null
+) => {
+  const term = selectedTerm || await getActiveTerm();
   return cacheService.getOrFetch(
-    CACHE_KEYS.clearanceCount(orgId, statusFilter, searchTerm),
+    `clearance:count:${orgId}:${statusFilter}:${searchTerm}:${term?.AY}-${term?.semester}`,
     async () => {
       const clearanceRef = collection(db, "clearanceStatus");
       const constraints: any[] = [
         where("orgId", "==", orgId),
         where("isArchived", "==", false),
+        where("academicYear", "==", term!.AY),
+        where("semester", "==", term!.semester)
       ];
 
       if (statusFilter !== "all") {
@@ -160,22 +202,31 @@ export const fetchClearanceDocuments = async (orgId: string) => {
     return docs;
 }
 
-export const getCountOfUnclearedDocuments = async (orgId: string) => {
+export const getCountOfUnclearedDocuments = async (
+  orgId: string,
+  selectedTerm?: { AY: string; semester: string } | null
+) => {
+  const term = selectedTerm || await getActiveTerm();
   const snapshot = await getCountFromServer(query(
     collection(db, 'clearanceStatus'),
     where('orgId', '==', orgId),
     where('isArchived', '==', false),
-    where('status', '==', 'not_cleared')
+    where('status', '==', 'not_cleared'),
+    where("academicYear", "==", term!.AY),
+    where("semester", "==", term!.semester)
   ));
   return snapshot.data().count;
- }
+}
 
 
-export const fetchClearanceStatus = async (userId: string) => {
+export const fetchClearanceStatus = async (userId: string, term?: { AY: string; semester: string } | null) => {
+    const currentUser = await getCurrentUserData() as unknown as Member;
+    const activeTerm = term || await getActiveTerm();
+    const id = buildClearanceId(userId, currentUser.orgId, currentUser.accessLevel!, activeTerm!);
     return cacheService.getOrFetch(
-        CACHE_KEYS.clearanceDoc(userId),
+        CACHE_KEYS.clearanceDoc(id),
         async () => {
-            const docRef = doc(db, 'clearanceStatus', userId);
+          const docRef = doc(db, 'clearanceStatus', id);
           const snapshot = await getDoc(docRef);
             if (snapshot.exists()) {
                 return { id: snapshot.id, ...snapshot.data() } as ClearanceStatus;
@@ -189,8 +240,11 @@ export const fetchClearanceStatus = async (userId: string) => {
 /**
  * Recalculates and updates the overall status of a clearance document based on its blocking items.
  */
-export const recalculateClearanceStatus = async (clearanceId: string) => {
-    const clearanceRef = doc(db, 'clearanceStatus', clearanceId);
+export const recalculateClearanceStatus = async (userId: string, term?: any) => {
+  const currentUser = await getCurrentUserData() as unknown as Member;
+  const activeTerm = term || await getActiveTerm();
+  const id = buildClearanceId(userId, currentUser.orgId, currentUser.accessLevel!, activeTerm!);
+    const clearanceRef = doc(db, 'clearanceStatus', id);
     const snapshot = await getDoc(clearanceRef);
     const clearance = snapshot.data() as ClearanceStatus;
 
@@ -217,7 +271,7 @@ export const recalculateClearanceStatus = async (clearanceId: string) => {
         clearanceDate: status === 'cleared' ? now : null
     });
 
-    cacheService.invalidate(CACHE_KEYS.clearanceDoc(clearanceId));
+    cacheService.invalidate(CACHE_KEYS.clearanceDoc(id));
     // Invalidate aggregate counts/stats so they reflect the new status
     if (clearance.orgId) {
         cacheService.invalidateByPrefix(`clearance:stats:${clearance.orgId}`);
@@ -225,77 +279,84 @@ export const recalculateClearanceStatus = async (clearanceId: string) => {
     }
 }
 
-export const updateClearanceDocument = async (userId: string, orgId: string) => {
-    let blockingItems: Record<string, BlockingItem> = {};
+// export const updateClearanceDocument = async (userId: string, orgId: string) => {
+//     let blockingItems: Record<string, BlockingItem> = {};
+//     const currentUser = await getCurrentUserData() as unknown as Member;
     
-    const fees = await checkFeeStatusForClearance(userId, orgId) as FeeWithPaymentHistory[];
+//     const fees = await checkFeeStatusForClearance(userId, orgId) as FeeWithPaymentHistory[];
     
-    fees.forEach((fee: FeeWithPaymentHistory) => {
-        blockingItems[fee.id] = {
-            type: fee.feeType as PaymentType,
-            referenceId: fee.id,
-            title: fee.title,
-            balance: fee.balance,
-            status: fee.status as "unpaid" | "paid",
-            paymentHistory: fee.paymentHistory,
-            pendingReview: fee.paymentHistory.some(payment => payment.status === "pending"),
-            isRequiredForClearance: fee.isRequiredForClearance,
-        };
-    });
+//     fees.forEach((fee: FeeWithPaymentHistory) => {
+//         blockingItems[fee.id] = {
+//             type: fee.feeType as PaymentType,
+//             referenceId: fee.id,
+//             title: fee.title,
+//             balance: fee.balance,
+//             status: fee.status as "unpaid" | "paid",
+//             paymentHistory: fee.paymentHistory,
+//             pendingReview: fee.paymentHistory.some(payment => payment.status === "pending"),
+//             isRequiredForClearance: fee.isRequiredForClearance,
+//             academicYear: (fee as any).academicYear,
+//             semester: (fee as any).semester,
+//         };
+//     });
 
-    // logic here for fines generating blocking items
-    const fine = await getFineByStudentId(userId);
-    if (fine && fine.balance > 0) {
-        blockingItems[fine.id!] = {
-            type: PaymentType.FINES,
-            referenceId: fine.id!,
-            title: "Fines",
-            balance: fine.balance,
-            status: fine.status as "unpaid" | "paid",
-            paymentHistory: [], // Payment history for fines is stored in a subcollection, not aggregated here for now
-            pendingReview: fine.status === "pending" || fine.status === "pending",
-            isRequiredForClearance: true, // Fines are usually required for clearance
-        };
-    }
+//     // logic here for fines generating blocking items
+//     const fine = await getFineByStudentId(userId);
+//     if (fine && fine.balance > 0) {
+//         blockingItems[fine.id!] = {
+//             type: PaymentType.FINES,
+//             referenceId: fine.id!,
+//             title: "Fines",
+//             balance: fine.balance,
+//             status: fine.status as "unpaid" | "paid",
+//             paymentHistory: [],
+//             pendingReview: fine.status === "pending",
+//             isRequiredForClearance: true,
+//             academicYear: fine.academicYear,
+//             semester: fine.semester,
+//         };
+//     }
+//     let id = userId;
+//     if (currentUser.accessLevel !== 3) {
+//       id = userId+currentUser.orgId
+//     }
+//     const term = await getActiveTerm();
+//     const clearanceId = buildClearanceId(userId, currentUser.orgId, currentUser.accessLevel!, term!);
+//     const clearanceRef = doc(db, 'clearanceStatus', clearanceId);
+//     await updateDoc(clearanceRef, {
+//         blockingItems: blockingItems, 
+//         updatedAt: serverTimestamp(),
+//     });
 
-    const clearanceRef = doc(db, 'clearanceStatus', userId);
-    await updateDoc(clearanceRef, {
-        blockingItems: blockingItems, 
-        updatedAt: serverTimestamp(),
-    });
-
-    await recalculateClearanceStatus(userId);
-    cacheService.invalidateByPrefix('clearance:doc:');
-    // Count/stats are invalidated inside recalculateClearanceStatus; but invalidate broadly for safety
-    cacheService.invalidateByPrefix(`clearance:stats:`);
-    cacheService.invalidateByPrefix(`clearance:count:`);
-}
+//     await recalculateClearanceStatus(userId);
+//     cacheService.invalidateByPrefix('clearance:doc:');
+//     // Count/stats are invalidated inside recalculateClearanceStatus; but invalidate broadly for safety
+//     cacheService.invalidateByPrefix(`clearance:stats:`);
+//     cacheService.invalidateByPrefix(`clearance:count:`);
+// }
 
 
 export const addStudentWithClearance = async (studentId: string,studentData: any, orgId: string) => {
-    try {
+  try {
+    const term = await getActiveTerm();
+    const currentUser = await getCurrentUserData() as unknown as Member;
         const batch = writeBatch(db);
-        // 1. Generate references
-        // If you auto-generate IDs: const studentRef = doc(collection(db, 'users'));
-        // If you use an auth UID: const studentRef = doc(db, 'users', studentAuthId);
         const studentRef = doc(db, 'users', studentId); 
-        const clearanceRef = doc(db, 'clearanceStatus', studentRef.id);
+        const id = buildClearanceId(studentRef.id, orgId, currentUser.accessLevel!, term!);
+        const clearanceRef = doc(db, 'clearanceStatus', id);
 
         const now = Timestamp.now();
         const defaultDueDate = Timestamp.fromDate(new Date('2026-05-30'));
 
-        // Get all payables for blocking clearance
-        
-
         // 2. Prepare Clearance Data
         const clearanceData: ClearanceStatus = {
-            id: studentRef.id,
+            id: id,
             orgId: orgId,
             userId: studentRef.id,
             userName: `${studentData.firstName} ${studentData.lastName}`,
             studentId: studentData.studentId,
-            academicYear: '2025-2026',
-            semester: '2nd',
+            academicYear: term!.AY,
+            semester: term!.semester,
             status: 'not_cleared',
             visibility: 'public',
             blockingItems: {},
@@ -318,7 +379,7 @@ export const addStudentWithClearance = async (studentId: string,studentData: any
         
         cacheService.invalidate(CACHE_KEYS.clearanceDoc(studentRef.id));
         
-      await updateStudentStats("2ndSem-2025-2026", 1);
+      await updateStudentStats(`${term!.AY}-${term!.semester}-${orgId}`, 1);
 
         return studentRef.id;
     } catch (error) {
@@ -328,16 +389,16 @@ export const addStudentWithClearance = async (studentId: string,studentData: any
 };
 
 export const approvePaymentClearanceUpdate = async (
-  clearanceId: string, 
-  itemsToUpdate: { refId: string, type: PaymentType | string }[], 
-  adminId: string,
-  adminName: string,
+  userId: string, 
+  // itemsToUpdate: { refId: string, type: PaymentType | string }[], 
+  // adminId: string,
+  // adminName: string,
   studentData?: { firstName: string; lastName: string; studentId: string; orgId: string },
-  receiptCode?: string
+  // receiptCode?: string
 ) => {
   const { _approvePayment} = usePaymentApproval();
 
-  const proof = await getProofOfPaymentByUserId(clearanceId, studentData?.orgId);
+  const proof = await getProofOfPaymentByUserId(userId, studentData?.orgId);
   if(!proof) {
     toast.error("No pending payment found for this clearance. Please refresh and try again.");
     return;
@@ -421,17 +482,17 @@ export const approvePaymentClearanceUpdate = async (
 };
 
 export const rejectPaymentClearanceUpdate = async (
- clearanceId: string, 
-   itemsToUpdate: { refId: string, type: PaymentType | string }[], 
-   adminId: string,
-   adminName: string,
+ userId: string, 
+  //  itemsToUpdate: { refId: string, type: PaymentType | string }[], 
+  //  adminId: string,
+  //  adminName: string,
    reason: string,
    studentData?: { firstName: string; lastName: string; studentId: string; orgId: string }
 ) => {
 
   const { _rejectPayment} = usePaymentApproval();
 
-  const proof = await getProofOfPaymentByUserId(clearanceId, studentData?.orgId);
+  const proof = await getProofOfPaymentByUserId(userId, studentData?.orgId);
   if(!proof) {
     toast.error("No pending payment found for this clearance. Please refresh and try again.");
     return;
@@ -514,19 +575,25 @@ export const rejectPaymentClearanceUpdate = async (
   // }
  };
 
- export const fetchStats = async (orgId: string) => {
-  return cacheService.getOrFetch(`clearance:stats:${orgId}`, async () => {
-     if (!orgId) return;
-     const [cleared, not_cleared, pending] = await Promise.all([
-       getClearanceStats(orgId, "cleared"),
-       getClearanceStats(orgId, "not_cleared"),
-       getClearanceStats(orgId, "pending"),
-     ])
-     const stats = {cleared, not_cleared, pending}
-     return stats;
-   }
-   , CACHE_DURATIONS.COUNTS);
-   }
+ export const fetchStats = async (
+  orgId: string,
+  selectedTerm?: { AY: string; semester: string } | null
+) => {
+  const term = selectedTerm || await getActiveTerm();
+  return cacheService.getOrFetch(
+    `clearance:stats:${orgId}:${term?.AY}-${term?.semester}`,
+    async () => {
+      if (!orgId) return;
+      const [cleared, not_cleared, pending] = await Promise.all([
+        getClearanceStats(orgId, "cleared", term),
+        getClearanceStats(orgId, "not_cleared", term),
+        getClearanceStats(orgId, "pending", term),
+      ])
+      const stats = {cleared, not_cleared, pending}
+      return stats;
+    }
+    , CACHE_DURATIONS.COUNTS);
+}
 
  
  export const logManualPaymentClearanceUpdate = async (
@@ -538,6 +605,7 @@ export const rejectPaymentClearanceUpdate = async (
    adminName: string,
    overallPaymentType?: string | PaymentType,
   receiptCode?: string,
+  term?: Term
  ) => {
   if(!overallPaymentType) {
     throw new Error("Overall payment type is required");
@@ -553,7 +621,8 @@ export const rejectPaymentClearanceUpdate = async (
       adminName,
       overallPaymentType as PaymentType,
       undefined,
-      receiptCode
+      receiptCode,
+      term
     );
   
   // else if(overallPaymentType === PaymentType.FINES) {
@@ -589,11 +658,19 @@ export const rejectPaymentClearanceUpdate = async (
  };
  
 
-export const seedClearanceDocuments = async (orgId: string) => {
+export const seedClearanceDocuments = async (user: UserData, term: Term) => {
   try {
+    const accessLevel = user.accessLevel || 3;
+    const org = await getOrgById(user.orgId!);
+
     // IMPROVEMENT 1: Only fetch students to save read costs and skip manual filtering
     const usersRef = collection(db, 'users');
-    const studentQuery = query(usersRef, where('role', '==', 'user'), where('isDeleted', '==', false));
+    let studentQuery = query(usersRef, where('role', '==', 'user'), where('isDeleted', '==', false));
+    if (accessLevel === 1 && org) {
+      studentQuery = query(studentQuery, where("programId", "==", org.programId ?? ""));
+    } else if (accessLevel === 2 && org) {
+      studentQuery = query(studentQuery, where("facultyId", "==", org.facultyId ?? ""));
+    }
     const usersSnapshot = await getDocs(studentQuery);
 
     if (usersSnapshot.empty) {
@@ -601,15 +678,12 @@ export const seedClearanceDocuments = async (orgId: string) => {
     }
 
     // IMPROVEMENT 2: Fetch existing clearances to safely skip students who already have one
-    const existingClearancesSnap = await getDocs(collection(db, 'clearanceStatus'));
+    const existingClearancesSnap = await getDocs(query(collection(db, 'clearanceStatus'), where("academicYear", "==", term.AY), where("semester", "==", term.semester)));
     const existingClearanceIds = new Set(existingClearancesSnap.docs.map(doc => doc.id));
 
     let batch = writeBatch(db);
     let batchOperationCount = 0;
     let totalAddedCount = 0;
-
-    const currentYear = '2025-2026';
-    const currentSemester = '2nd';
     
     // IMPROVEMENT 3: Use Timestamp.now() instead of serverTimestamp() to strictly match your TypeScript interface
     const now = Timestamp.now(); 
@@ -617,23 +691,24 @@ export const seedClearanceDocuments = async (orgId: string) => {
 
     for (const userDoc of usersSnapshot.docs) {
       const userId = userDoc.id;
-
+      const clearanceId = buildClearanceId(userId, user.orgId, accessLevel, term);
+      const clearanceRef = doc(db, 'clearanceStatus', clearanceId);
+      
       // Skip if this student already has a clearance document
-      if (existingClearanceIds.has(userId)) {
+      if (existingClearanceIds.has(clearanceId)) {
         continue;
       }
 
       const userData = userDoc.data();
-      const clearanceRef = doc(db, 'clearanceStatus', userId);
 
       const clearanceData: ClearanceStatus = {
-        id: userId,
-        orgId: orgId, 
+        id: clearanceId,
+        orgId: user.orgId!, 
         userId: userId,
         userName: `${userData.firstName} ${userData.lastName}`,
         studentId: userData.studentId || "N/A", // Fallback just in case
-        academicYear: currentYear,
-        semester: currentSemester,
+        academicYear: term!.AY,
+        semester: term!.semester,
         status: 'cleared', 
         visibility: 'public', 
         blockingItems: {}, 

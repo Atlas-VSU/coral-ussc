@@ -68,9 +68,9 @@ export function useFeesRoster(
         setError(null);
 
         try {
-            const user = await getCurrentUserData() as any;
-            if (!user?.uid) return;
-            const orgId = user.uid;
+            const user = await getCurrentUserData() as any as Member;
+            if (!user?.orgId) return;
+            const orgId = user.orgId;
 
             // Fetch the reference fee document once
             if (!feeRef.current) {
@@ -181,9 +181,9 @@ export function useFeesRoster(
 
     const fetchTotalCount = useCallback(async () => {
         try {
-            const user = await getCurrentUserData() as any;
-            if (!user?.uid) return;
-            const orgId = user.uid;
+            const user = await getCurrentUserData() as any as Member;
+            if (!user?.orgId) return;
+            const orgId = user.orgId;
 
             if (dataView === "all-students") {
                 const count = await getFeesCount(orgId, feeItemId, filterStatus, search);
@@ -263,9 +263,9 @@ export function useFeesRoster(
         if (cached) { setStats(cached as any); return; }
 
         try {
-            const user = await getCurrentUserData() as any;
-            if (!user?.uid) return;
-            const orgId = user.uid;
+            const user = await getCurrentUserData() as any as Member;
+            if (!user?.orgId) return;
+            const orgId = user.orgId;
 
             const [pending, verified, rejected, unpaid] = await Promise.all([
                 getFeesCount(orgId, feeItemId, "pending", ""),

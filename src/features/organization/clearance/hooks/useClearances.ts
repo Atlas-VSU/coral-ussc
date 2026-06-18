@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { fetchClearanceDocumentsPaginated, fetchStats, getClearanceCount } from "@/firebase/clearance"
 import { cacheService } from "@/services/cacheService"
 import type { ClearanceStatus } from "../types"
+import { getActiveTerm } from "@/firebase/term"
+import { useTermPeriod } from "../../term/hooks/useTermPeriod"
 
 export function useClearances(
   orgId: string | undefined,
@@ -24,6 +26,8 @@ export function useClearances(
   const [hasNextPage, setHasNextPage] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false) // Lock to prevent spam
 
+  const { selected } = useTermPeriod()
+
   // Store cursors in a ref — NOT state — so updating them never triggers a re-render
   const cursorsRef = useRef<Record<number, any>>({})
 
@@ -32,12 +36,12 @@ export function useClearances(
     if (!orgId) return
 
     try {
-      const count = await getClearanceCount(orgId, statusFilter, searchTerm)
+      const count = await getClearanceCount(orgId, statusFilter, searchTerm, selected)
       setTotalCount(count)
     } catch (err) {
       console.error("Error fetching clearance count:", err)
     }
-  }, [orgId, statusFilter, searchTerm])
+  }, [orgId, statusFilter, searchTerm, selected])
 
   
 
@@ -45,14 +49,14 @@ export function useClearances(
     if (!orgId) return
 
     try {
-      const data = await fetchStats(orgId)
+      const data = await fetchStats(orgId, selected)
       if (data) {
         setStats(data)
       }
     } catch (err) {
       console.error("Error fetching clearance stats:", err)
     }
-  }, [orgId])
+  }, [orgId, selected])
 
   const fetchData = useCallback(async () => {
     if (!orgId) return
@@ -70,7 +74,10 @@ export function useClearances(
         pageSize,
         cursor,
         searchTerm,
-        statusFilter
+        statusFilter,
+        false,
+        false,
+        selected
       )
 
       setClearances(docs as ClearanceStatus[])
@@ -86,7 +93,7 @@ export function useClearances(
     } finally {
       setLoading(false)
     }
-  }, [orgId, pageSize, searchTerm, statusFilter, currentPage])
+  }, [orgId, pageSize, searchTerm, statusFilter, currentPage, selected])
 
   useEffect(() => {
     const init = async () => {
@@ -127,8 +134,10 @@ export function useClearances(
     totalCount, 
     hasNextPage,
     setClearances, 
-    hardRefresh ,
+    hardRefresh,
     stats,
-    fetchStatsData
+    fetchStatsData,
+    AY: selected?.AY || "",
+    sem: selected?.semester || "",
   }
 }

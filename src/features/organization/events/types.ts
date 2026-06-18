@@ -20,4 +20,6 @@ export type Event = {
   programId?: string; // Program ID to associate event with a specific program
   finesGenerated?: boolean;
   manuallyCompleted?: boolean;
+  academicYear?: string;
+  semester?: string;
 };

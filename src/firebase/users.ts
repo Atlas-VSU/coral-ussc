@@ -27,6 +27,8 @@ import {
   getMembersCacheEntry,
   updateMembersCache,
 } from "@/features/organization/members/services/membersCache";
+import { getOrgById } from "./organization";
+import { getActiveTerm } from "./term";
 
 // Define the collection reference once at the top level for reuse.
 const usersCollection: CollectionReference<DocumentData> = collection(
@@ -94,18 +96,19 @@ const waitForAuth = (): Promise<User | null> => {
 export const getCurrentUserCount = async () => {
   try {
     const currentUser = await getCurrentUserData() as unknown as Member;
-    if (currentUser.accessLevel === 1){
+    const org = await getOrgById(currentUser.orgId!);
+    if (currentUser.accessLevel === 1 && org?.programId){
       const querySnapshot = query(
           usersCollection,
-          where("programId", "==", currentUser.programId ?? ""),
+          where("programId", "==", org.programId ?? ""),
           where("isDeleted", "==", false),
           where("role", "==", "user")
         );
       return (await getCountFromServer(querySnapshot)).data().count;
-    } else if (currentUser.accessLevel === 2){
+    } else if (currentUser.accessLevel === 2 && org?.facultyId) {
       const querySnapshot = query(
           usersCollection,
-          where("facultyId", "==", currentUser.facultyId ?? ""),
+          where("facultyId", "==", org.facultyId ?? ""),
           where("isDeleted", "==", false),
           where("role", "==", "user")
       );
@@ -146,9 +149,10 @@ export const getCurrentUserData = async () => {
       console.error("Authenticated user's document not found in Firestore.");
       return null;
     }
-
-    return { uid: userDocSnap.data().id, ...userDocSnap.data() };
+    const data = { uid: userDocSnap.data().id, ...userDocSnap.data() } as any;
+    return data;
     
+
   } catch (error) {
     console.error("Error fetching current user:", error);
     return null;
@@ -181,6 +185,7 @@ export const getUsers = async () => {
     if (!currentUser) return [];
 
     const accessLevel = currentUser.accessLevel;
+    const org = await getOrgById(currentUser.orgId!);
 
     let usersQuery = query(
       usersCollection,
@@ -188,10 +193,10 @@ export const getUsers = async () => {
       where("role", "==", "user")
     );
 
-    if (accessLevel === 1) {
-      usersQuery = query(usersQuery, where("programId", "==", currentUser.programId ?? ""));
-    } else if (accessLevel === 2) {
-      usersQuery = query(usersQuery, where("facultyId", "==", currentUser.facultyId ?? ""));
+    if (accessLevel === 1 && org) {
+      usersQuery = query(usersQuery, where("programId", "==", org.programId ?? ""));
+    } else if (accessLevel === 2 && org) {
+      usersQuery = query(usersQuery, where("facultyId", "==", org.facultyId ?? ""));
     }
 
     const querySnapshot = await getDocs(usersQuery);
@@ -206,15 +211,25 @@ export const getUsers = async () => {
 };
 
 /**
- * Fetches all users despite the current user's context (faculty or program).
+ * Fetches all users 
  */
 export const getAllUsers = async () => {
   try {
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    const org = await getOrgById(currentUser.orgId!);
+
     let usersQuery = query(
       usersCollection,
       where("isDeleted", "==", false),
       where("role", "==", "user")
     );
+
+
+    if (currentUser.accessLevel === 1 && org) {
+      usersQuery = query(usersQuery, where("programId", "==", org.programId ?? ""));
+    } else if (currentUser.accessLevel === 2 && org) {
+      usersQuery = query(usersQuery, where("facultyId", "==", org.facultyId ?? ""));
+    }
 
     const querySnapshot = await getDocs(usersQuery);
     return querySnapshot.docs.map((doc) => ({
@@ -233,6 +248,7 @@ export const getRecentUsers = async () => {
     if (!currentUser) return [];
 
     const accessLevel = currentUser.accessLevel;
+    const org = await getOrgById(currentUser.orgId!);
 
     let recentUsersQuery = query(
       usersCollection,
@@ -240,10 +256,10 @@ export const getRecentUsers = async () => {
       where("isDeleted", "==", false)
     );
 
-    if (accessLevel === 1) {
-      recentUsersQuery = query(recentUsersQuery, where("programId", "==", currentUser.programId ?? ""));
-    } else if (accessLevel === 2) {
-      recentUsersQuery = query(recentUsersQuery, where("facultyId", "==", currentUser.facultyId ?? ""));
+    if (accessLevel === 1 && org) {
+      recentUsersQuery = query(recentUsersQuery, where("programId", "==", org.programId ?? ""));
+    } else if (accessLevel === 2 && org) {
+      recentUsersQuery = query(recentUsersQuery, where("facultyId", "==", org.facultyId ?? ""));
     }
 
     recentUsersQuery = query(recentUsersQuery, orderBy("createdAt", "desc"), limit(5));
@@ -338,12 +354,19 @@ export const searchUserByStudentId = async (
     if (!currentUser) return null;
 
     const accessLevel = currentUser.accessLevel;
+    const org = await getOrgById(currentUser.orgId!);
 
     let searchQuery = query(
       usersCollection,
       where("studentId", "==", studentId),
       where("isDeleted", "==", false)
     );
+
+    if (accessLevel === 1 && org) {
+      searchQuery = query(searchQuery, where("programId", "==", org.programId ?? ""));
+    } else if (accessLevel === 2 && org) {
+      searchQuery = query(searchQuery, where("facultyId", "==", org.facultyId ?? ""));
+    }
 
     const querySnapshot = await getDocs(searchQuery);
 
@@ -409,6 +432,8 @@ export const searchUserByName = async (
     if (!currentUserData) return [];
 
     const accessLevel = currentUserData.accessLevel;
+    const org = await getOrgById(currentUserData.orgId!);
+    const term = await getActiveTerm();
 
     // This query now performs the search directly in the database
     let searchQuery = query(
@@ -416,10 +441,10 @@ export const searchUserByName = async (
       where("isDeleted", "==", false)
     );
 
-    if (accessLevel === 1) {
-      searchQuery = query(searchQuery, where("programId", "==", currentUserData.programId ?? ""));
-    } else if (accessLevel === 2) {
-      searchQuery = query(searchQuery, where("facultyId", "==", currentUserData.facultyId ?? ""));
+    if (accessLevel === 1 && org) {
+      searchQuery = query(searchQuery, where("programId", "==", org.programId ?? ""));
+    } else if (accessLevel === 2 && org) {
+      searchQuery = query(searchQuery, where("facultyId", "==", org.facultyId ?? ""));
     }
 
     searchQuery = query(searchQuery, limit(50));
@@ -447,7 +472,7 @@ export const searchUserByName = async (
       id: member.studentId,
       member,
     }));
-    updateMembersCache(cacheKey, membersToCache, membersToCache.length);
+    updateMembersCache(cacheKey, membersToCache, membersToCache.length, term!);
 
     return matchingMembers;
   } catch (error) {
@@ -499,3 +524,37 @@ export const hardDeleteUsers = async (number: number) => {
     handleFirestoreError(error, "hard delete users");
   }
 }
+
+
+export const countUsers = async () => {
+  try {
+    const querySnapshot = query(
+      usersCollection,
+      where("role", "==", "user")
+    );
+    return (await getCountFromServer(querySnapshot)).data().count;
+  } catch (error) {
+    handleFirestoreError(error, "count users");
+    return 0;
+  }
+}
+export const deleteAllNonAdminMembers = async () => {
+  try {
+    const querySnapshot = await getDocs(
+      query(usersCollection, where("role", "==", "user"))
+    );
+
+    const docs = querySnapshot.docs;
+    const BATCH_SIZE = 500;
+
+    for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+      const chunk = docs.slice(i, i + BATCH_SIZE);
+      const batch = writeBatch(db);
+      chunk.forEach((doc) => batch.delete(doc.ref));
+      await batch.commit();
+      console.log(`Deleted ${Math.min(i + BATCH_SIZE, docs.length)}/${docs.length}`);
+    }
+  } catch (error) {
+    handleFirestoreError(error, "delete all non-admin members");
+  }
+};

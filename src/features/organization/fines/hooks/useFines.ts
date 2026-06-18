@@ -5,6 +5,8 @@ import { getCurrentUserData } from "@/firebase";
 import { Member } from "../../members/types";
 import { CACHE_KEYS, cacheService } from "@/services/cacheService";
 import { getStats } from "@/firebase/stats/read/getStats";
+import { getActiveTerm } from "@/firebase/term";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 
 interface UseFinesProps {
@@ -21,6 +23,7 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
   const [totalCount, setTotalCount] = useState(0);
   const cursorsRef = useRef<Record<number, any>>({});
   const [refreshKey, setRefreshKey] = useState(false);
+  const { selected } = useTermPeriod();
 
   // Stats
   const [totalStudentsWithFines, setTotalStudentsWithFines] = useState(0);
@@ -37,15 +40,18 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
 
       setIsLoading(true);
       try {
-        // 1. Fetch total count for the current filter
-        const count = await getFinesCount(currUser.id, filterStatus, search);
+        // Fetch total count for the current filter
+        const count = await getFinesCount(currUser.orgId!, filterStatus, search, selected);
         if (isMounted) setTotalCount(count);
 
-        // 2. Fetch stats (these could be optimized with a single server-side call)
-        const [studentsCount, unsettledCount, stats] = await Promise.all([
-          countStudentsWithFines(),
-          countUnsettleFinesOfStudents(),
-          getStats("2ndSem-2025-2026")
+        //Fetch current term
+        const term = selected || await getActiveTerm();
+
+        //  Fetch stats and term (these could be optimized with a single server-side call)
+        const [studentsCount, unsettledCount,stats,] = await Promise.all([
+          countStudentsWithFines(selected),
+          countUnsettleFinesOfStudents(selected),
+          getStats(`${term!.AY}-${term!.semester}-${currUser.orgId}`),
         ]);
         if (isMounted) {
           setTotalStudentsWithFines(studentsCount);
@@ -54,15 +60,16 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
           setTotalCollectedFines(stats?.totalCollectedFines || 0);
         }
 
-        // 3. Fetch paginated data
+        // Fetch paginated data
         const cursor = currentPage > 1 ? (cursorsRef.current[currentPage - 2] ?? null) : null;
 
         const { docs: fetchedDocs, lastVisible } = await fetchFinesPaginated(
-          currUser.id,
+          currUser.orgId!,
           itemsPerPage,
           cursor,
           search,
-          filterStatus
+          filterStatus,
+          selected
         );
 
         if (isMounted) {
@@ -83,7 +90,7 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
     return () => {
       isMounted = false;
     };
-  }, [filterStatus, search, currentPage, itemsPerPage, refreshKey]);
+  }, [filterStatus, search, currentPage, itemsPerPage, refreshKey, selected]);
 
   const handleStatusFilterChange = (v: string) => {
     setFilterStatus(v);
@@ -123,6 +130,7 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
     filteredCount: totalCount,
     isLoading,
     currentPage,
+    AY: selected?.AY || "", sem: selected?.semester || "",
     setCurrentPage,
     totalPages: Math.ceil(totalCount / itemsPerPage),
     search,

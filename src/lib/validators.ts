@@ -98,3 +98,30 @@ export const paymentSchema = z.object({
   });
 
 export type PaymentFormData = z.infer<typeof paymentSchema>; 
+
+
+export const orgSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  shortName: z.string().min(1, "Short name is required"),
+  subscribed: z.boolean(),
+  facultyId: z.string().optional().or(z.literal("")),
+  programId: z.string().optional().or(z.literal("")),
+  // users: z.string().array().optional()
+});
+
+export type OrgFormData = z.infer<typeof orgSchema>;
+
+export const termSchema = z.object({
+  AY: z.string().min(9, "Academic Year is required")
+    .regex(
+      /^\d{4}-\d{4}$/,
+      "Academic Year must follow format XXXX-XXXX (e.g., 2025-2026)"
+    ),
+  semester: z.string().min(3, "Semester is required")
+    .regex(
+      /^(1st|2nd)$/,
+      "Semester must either be 1st or 2nd"
+    ),
+});
+
+export type TermFormData = z.infer<typeof termSchema>;

@@ -2,6 +2,7 @@ import { ProofOfPayment } from "@/features/organization/fines/types";
 import { db } from "@/firebase/firebase.config";
 import { collection, doc, getCountFromServer, getDoc, getDocs, limit, orderBy, query, QueryConstraint, startAfter, where } from "firebase/firestore";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
+import { getActiveTerm } from "@/firebase/term";
 
 
 export const getProofOfPaymentById = async (proofOfPaymentId: string) => {
@@ -26,12 +27,16 @@ export const getProofOfPaymentsPaginated = async (
   lastVisibleDoc: any = null,
   searchTerm: string = "",
   statusFilter: string = "all",
-  needCount: boolean = false
+  needCount: boolean = false,
+  selectedTerm?: { AY: string; semester: string } | null
 ) => {
     const proofOfPaymentsRef = collection(db, "proofOfPayments");
+    const term = selectedTerm || await getActiveTerm();
     let constraints: QueryConstraint[] = [
       where("orgId", "==", orgId),
       where("isArchived", "==", false),
+      where("academicYear", "==", term!.AY),
+      where("semester", "==", term!.semester)
   ];
 
   if (statusFilter !== "all") {
@@ -132,8 +137,10 @@ export const getPendingProofOfPaymentsByUserId = async (userId: string, orgId?:s
     return cacheService.getOrFetch(
         CACHE_KEYS.proofOfPaymentByUser(userId, orgId || 'unknown'),
         async () => {
+          const term = await getActiveTerm();
             try {
-                const constraints = [where("isArchived", "==", false), where("userId", "==", userId), where("status", "==", "pending")];
+              const constraints = [where("isArchived", "==", false), where("userId", "==", userId),
+              where("status", "==", "pending"), where("academicYear", "==", term!.AY), where("semester", "==", term!.semester)];
                 if (orgId) {
                     constraints.push(where("orgId", "==", orgId));
                 }
@@ -154,14 +161,21 @@ export const getPendingProofOfPaymentsByUserId = async (userId: string, orgId?:s
     );
 }
 
-export const getProofOfPaymentsCount = async (orgId: string, statusFilter: string = "all") => {
+export const getProofOfPaymentsCount = async (
+  orgId: string,
+  statusFilter: string = "all",
+  selectedTerm?: { AY: string; semester: string } | null
+) => {
+  const term = selectedTerm || await getActiveTerm();
   return cacheService.getOrFetch(
-    CACHE_KEYS.paymentsCount(orgId, statusFilter),
+    `payments:count:${orgId}:${statusFilter}:${term?.AY}-${term?.semester}`,
     async () => {
       const proofOfPaymentsRef = collection(db, "proofOfPayments");
       const constraints: QueryConstraint[] = [
         where("orgId", "==", orgId),
         where("isArchived", "==", false),
+        where("academicYear", "==", term!.AY),
+        where("semester", "==", term!.semester)
       ];
       if (statusFilter !== "all") {
         constraints.push(where("status", "==", statusFilter));

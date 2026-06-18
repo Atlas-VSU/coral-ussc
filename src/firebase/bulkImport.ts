@@ -17,6 +17,7 @@ import {
   RawMemberData,
   BulkImportResult,
   ValidatedMemberData,
+  Member,
 } from "@/features/organization/members/types";
 import { getFaculties } from "./faculties";
 import { getPrograms } from "./programs";
@@ -436,12 +437,12 @@ export const bulkImportUsers = async (
     });
 
     await batch.commit();
-    const user = await getCurrentUserData();
+    const user = await getCurrentUserData() as unknown as Member;
     for (const member of membersToImport) {
       try {
         const docRef = query(collection(db, "users"), where("studentId", "==", member.studentId));
         const snapshot = await getDocs(docRef);
-        await addStudentWithClearance(snapshot.docs[0].id, member, user?.uid || "");
+        await addStudentWithClearance(snapshot.docs[0].id, member, user?.orgId || "");
       }
       catch (error) {
         result.errors.push({

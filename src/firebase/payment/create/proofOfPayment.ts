@@ -14,12 +14,16 @@ import { FineItem, StudentFines } from "@/features/organization/fines/types";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { BlockingItem } from "@/features/organization/clearance/types";
 import { updateFeeStats, updateFineStats } from "@/firebase/stats/update/updateStats";
+import { getActiveTerm } from "@/firebase/term";
+import { Term } from "@/constants/types";
+import { recalculateClearanceStatus } from "@/firebase/clearance";
 
 export const createOnlineProofOfPayment = async (
     payment: PaymentFormData, type: string ) => {
 
     let transaction: any;
     const currentUser = await getCurrentUserData() as unknown as Member;
+    const term = await getActiveTerm();
     try{
          if (type === "fines") {
             transaction = await getFineByStudentId(payment.studentId);
@@ -34,6 +38,8 @@ export const createOnlineProofOfPayment = async (
                 userId: transaction.userId,
                 referenceId: transaction.id,
                 paymentType:payment.type,
+                academicYear: term!.AY,
+                semester: term!.semester,
                 status: PaymentStatus.PENDING,
                 submittedAt: Timestamp.now(),
                 metadata: {
@@ -43,8 +49,8 @@ export const createOnlineProofOfPayment = async (
                         amount: payment.amount,
                         paymentType: type,
                         parentFineId: type === "fines" ? (transaction.id || "") : "",
-                        academicYear: type === "fees" ? transaction.academicYear : "2025-2026",
-                        semester: type === "fees" ? transaction.semester : "2nd",
+                        academicYear: type === "fees" ? transaction.academicYear : term!.AY,
+                        semester: type === "fees" ? transaction.semester : term!.semester,
                     }]
                 },
                 itemKeys: [
@@ -77,88 +83,88 @@ export const createOnlineProofOfPayment = async (
 }
 
 
-export const createBulkOnlineProofOfPayment = async (
-  payment: PaymentFormData,
-  dues: {refId: string, title: string, amount: number, paymentType: string, parentFineId: string}[],
-  userId: string,
-) => {
-
-  const tempOrgIdForStudents = "5nii7NKwaiTM0ZigxVBcUzQTyTu2"; //hardcoded for now since wala paman sila portal, necessary man ang ordId sa queries
+// export const createBulkOnlineProofOfPayment = async (
+//   payment: PaymentFormData,
+//   dues: {refId: string, title: string, amount: number, paymentType: string, parentFineId: string}[],
+//   userId: string,
+// ) => {
+//   const currentUser = await getCurrentUserData() as unknown as Member;
+//   // const tempOrgIdForStudents = "5nii7NKwaiTM0ZigxVBcUzQTyTu2"; //hardcoded for now since wala paman sila portal, necessary man ang ordId sa queries
   
-  try {
-      const paymentData = {
-        ...payment,
-        orgId: tempOrgIdForStudents,
-        userId: userId,
-        paymentType: payment.type,
-        status: PaymentStatus.PENDING,
-        submittedAt: Timestamp.now(),
-        metadata: {},
-        verifiedBy:"",
-        verifiedByName: "",
-        verifiedAt: null,
-        isArchived: false,
-        updatedAt: Timestamp.now(),
-      }
-      const ref = collection(db, "proofOfPayments");
-      const docRef = await addDoc(ref, paymentData);
-      const items = [];
+//   try {
+//       const paymentData = {
+//         ...payment,
+//         orgId: currentUser.orgId!,
+//         userId: userId,
+//         paymentType: payment.type,
+//         status: PaymentStatus.PENDING,
+//         submittedAt: Timestamp.now(),
+//         metadata: {},
+//         verifiedBy:"",
+//         verifiedByName: "",
+//         verifiedAt: null,
+//         isArchived: false,
+//         updatedAt: Timestamp.now(),
+//       }
+//       const ref = collection(db, "proofOfPayments");
+//       const docRef = await addDoc(ref, paymentData);
+//       const items = [];
       
-    for (const due of dues) {
-      let referenceId = "";
-      if (due.paymentType === "fines") {
-        referenceId = due.parentFineId;
-      }
-      else if (due.paymentType === "fees") {
-        referenceId = due.refId;
-       }
-        await createOnlinePaymentHistory(payment, referenceId, docRef.id, userId, due);
-        const clearanceRef = doc(db, 'clearanceStatus', userId);
-        await updateDoc(clearanceRef, {
-          [`blockingItems.${due.refId}.pendingReview`]: true,
-        })
-        let academicYear = "2025-2026";
-        let semester = "2nd";
+//     for (const due of dues) {
+//       let referenceId = "";
+//       if (due.paymentType === "fines") {
+//         referenceId = due.parentFineId;
+//       }
+//       else if (due.paymentType === "fees") {
+//         referenceId = due.refId;
+//        }
+//         await createOnlinePaymentHistory(payment, referenceId, docRef.id, userId, due);
+//         const clearanceRef = doc(db, 'clearanceStatus', userId);
+//         await updateDoc(clearanceRef, {
+//           [`blockingItems.${due.refId}.pendingReview`]: true,
+//         })
+//         let academicYear = "2025-2026";
+//         let semester = "2nd";
         
-        if (due.paymentType === "fees") {
-          const feeDoc = await getDoc(doc(db, "fees", due.refId));
-          if (feeDoc.exists()) {
-            const feeData = feeDoc.data();
-            academicYear = feeData.academicYear;
-            semester = feeData.semester;
-          }
-        }
+//         if (due.paymentType === "fees") {
+//           const feeDoc = await getDoc(doc(db, "fees", due.refId));
+//           if (feeDoc.exists()) {
+//             const feeData = feeDoc.data();
+//             academicYear = feeData.academicYear;
+//             semester = feeData.semester;
+//           }
+//         }
 
-        items.push({
-          refId: due.refId || null,
-          title: due.title || null,
-          amount: due.amount || null,
-          paymentType: due.paymentType || null,
-          parentFineId: due.paymentType === "fines" ? due.parentFineId : "",
-          academicYear,
-          semester,
-        })
-    }
-        await updateDoc(doc(db, "clearanceStatus", userId), { status: "pending" });
+//         items.push({
+//           refId: due.refId || null,
+//           title: due.title || null,
+//           amount: due.amount || null,
+//           paymentType: due.paymentType || null,
+//           parentFineId: due.paymentType === "fines" ? due.parentFineId : "",
+//           academicYear,
+//           semester,
+//         })
+//     }
+//         await updateDoc(doc(db, "clearanceStatus", userId), { status: "pending" });
     
-        await updateDoc(doc(db, "proofOfPayments", docRef.id), {
-          metadata: {
-            items: items,
-          }
-        })
+//         await updateDoc(doc(db, "proofOfPayments", docRef.id), {
+//           metadata: {
+//             items: items,
+//           }
+//         })
 
-        const orgId = tempOrgIdForStudents;
-        // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
-        // cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
-        // cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
+//         const orgId = currentUser.orgId || '';
+//         // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+//         // cacheService.invalidate(CACHE_KEYS.feesUnpaid(orgId));
+//         // cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
         
 
-    return [{ success: true, message: "Proof of payment submitted successfully." }];
-  }catch(error) {
-    console.error("Error creating bulk online proof of payment:", error);
-    return [{ success: false, message: "Failed to submit proof of payment. Please try again." }, {status: 500}];
-  }
-}
+//     return [{ success: true, message: "Proof of payment submitted successfully." }];
+//   }catch(error) {
+//     console.error("Error creating bulk online proof of payment:", error);
+//     return [{ success: false, message: "Failed to submit proof of payment. Please try again." }, {status: 500}];
+//   }
+// }
 
 
 export const createOfflineFinesProofOfPayment = async (
@@ -167,6 +173,7 @@ export const createOfflineFinesProofOfPayment = async (
     const currentUser = await getCurrentUserData() as unknown as Member;
     try {
       const transaction = await getFineByStudentId(payment.studentId);
+      const term = await getActiveTerm();
       
       for (const item of fineItems?.filter(f => !f.isPaid) ?? []) { 
         items.push({
@@ -175,14 +182,14 @@ export const createOfflineFinesProofOfPayment = async (
           amount: item.amount,
           paymentType: type,
           parentFineId: fine.id!,
-          academicYear: "2025-2026",
-          semester: "2nd",
+          academicYear: term!.AY,
+          semester: term!.semester,
         })
         if (type === "fines") { 
-          await updateFineStats("2ndSem-2025-2026", 0, item.amount);
+          await updateFineStats(`${term!.AY}-${term!.semester}-${currentUser.orgId}`, 0, item.amount);
         }
         if (type === "fees") {
-          await updateFeeStats("2ndSem-2025-2026", 0, item.amount);
+          await updateFeeStats(`${term!.AY}-${term!.semester}-${currentUser.orgId}`, 0, item.amount);
         }
       }
         if (transaction)
@@ -195,6 +202,8 @@ export const createOfflineFinesProofOfPayment = async (
                 paymentType:type,
                 status: PaymentStatus.VERIFIED,
                 submittedAt: Timestamp.now(),
+                academicYear: term!.AY,
+                semester: term!.semester,
                 metadata: {
                   items: items,
                 },
@@ -231,16 +240,19 @@ export const createBulkOfflineProofOfPayment = async (
   userId: string,
   date?: Timestamp,
   feeItemKeys?: string[],
+  term?: Term
 ) => {
   const currentUser = await getCurrentUserData() as unknown as Member;
   const verifierName = `${currentUser.firstName} ${currentUser.lastName}`;
   const paymentData = {
     ...payment,
-    orgId: currentUser.id!,
+    orgId: currentUser.orgId!,
     userId: userId,
     paymentType: payment.type,
     status: PaymentStatus.VERIFIED,
     submittedAt: Timestamp.now(),
+    academicYear: term!.AY,
+    semester: term!.semester,
     metadata: {},
     verifiedBy: currentUser.id!,
     verifiedByName: verifierName,
@@ -253,15 +265,15 @@ export const createBulkOfflineProofOfPayment = async (
   const docRef = await addDoc(ref, paymentData);
   const items = [];
   for (const due of dues.filter(d => d.status === "unpaid")) {
-    await createFinesPaymentHistory(payment, due.parentFineId?due.parentFineId:due.referenceId, docRef.id, userId, due);
+    await createFinesPaymentHistory(payment, due.parentFineId?due.parentFineId:due.referenceId, docRef.id, userId, due, term);
     items.push({
       refId: due.referenceId,
       title: due.title,
       amount: due.balance,
       paymentType: due.type,
       parentFineId: due.type === "fines" ? due.parentFineId : "",
-      academicYear: "2025-2026",
-      semester: "2nd",
+      academicYear: term!.AY,
+      semester: term!.semester,
     })
     
     // If it's a fee, we should try to get the actual academic year and semester if possible
@@ -276,12 +288,15 @@ export const createBulkOfflineProofOfPayment = async (
     }
 
     if (due.type === "fines") { 
-        await updateFineStats("2ndSem-2025-2026", 0, due.balance);
+        await updateFineStats(`${term!.AY}-${term!.semester}-${currentUser.orgId}`, 0, due.balance);
     }
     if (due.type === "fees") {
-        await updateFeeStats("2ndSem-2025-2026", 0, due.balance);
+        await updateFeeStats(`${term!.AY}-${term!.semester}-${currentUser.orgId}`, 0, due.balance);
     }
   }
+
+  await recalculateClearanceStatus(userId, term);
+
   await updateDoc(doc(db, "proofOfPayments", docRef.id), {
       metadata: {
         items: items,

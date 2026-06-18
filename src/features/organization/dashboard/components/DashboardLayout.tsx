@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/organization/general/PageHeader";
 export function DashboardLayout() {
   const {
     stats,
+    selected,
     upcomingEvents,
     ongoingEvents,
     allEvents,
@@ -44,6 +45,8 @@ export function DashboardLayout() {
         feesCollected={feesCollected}
         unpaidFinesAmount={unpaidFinesAmount}
         clearanceRate={clearanceRate}
+        AY={selected?.AY!}
+        sem={selected?.semester!}
       />
     );
   }
@@ -53,7 +56,7 @@ export function DashboardLayout() {
       <PageHeader
         variant="admin"
         title="Dashboard"
-        context="2nd Semester · A.Y. 2025–2026"
+        context={`${selected?.semester} Semester · A.Y. ${selected?.AY}`}
         description="Overview of your organization's attendance and activity."
       />
 

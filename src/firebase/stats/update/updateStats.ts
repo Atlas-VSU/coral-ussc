@@ -1,3 +1,4 @@
+import { Member } from "@/features/organization/members/types";
 import { createStats, StatsData } from "../create/addStats";
 import { getStats } from "../read/getStats";
 import { getCurrentUserData } from "@/firebase/users";
@@ -21,10 +22,10 @@ export const updateFineStats = async (customId: string, toAdd?: number, toDeduct
                 statsData.totalFines -= toWaive;
             }
         } else {
-            const currUser = await getCurrentUserData();
+            const currUser = await getCurrentUserData() as unknown as Member;
             statsData = {
                 id: customId,
-                orgId: currUser?.uid,
+                orgId: currUser?.orgId,
                 totalStudents: 0,
                 totalFines: toAdd ? toAdd : 0,
                 totalFees: 0,
@@ -55,10 +56,10 @@ export const updateFeeStats = async (customId: string, toAdd?: number, toDeduct?
                 statsData.totalCollectedFees += toDeduct;
             }
         } else {
-            const currUser = await getCurrentUserData();
+            const currUser = await getCurrentUserData() as unknown as Member;
             statsData = {
                 id: customId,
-                orgId: currUser?.uid ,
+                orgId: currUser?.orgId ,
                 totalStudents: 0,
                 totalFines: 0,
                 totalFees: toAdd ? toAdd : 0,
@@ -87,10 +88,10 @@ export const updateStudentStats = async (customId: string, toAdd?: number, toDed
                 statsData.totalUnpaidFees -= toDeduct;
             }
         } else {
-            const currUser = await getCurrentUserData();
+            const currUser = await getCurrentUserData() as unknown as Member;
             statsData = {
                 id: customId,
-                orgId: currUser?.uid ,
+                orgId: currUser?.orgId ,
                 totalStudents: toAdd ? toAdd : toDeduct? toDeduct : 0,
                 totalFines: 0,
                 totalFees: 0,

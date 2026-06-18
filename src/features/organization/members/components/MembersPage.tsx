@@ -73,6 +73,7 @@ export function MembersPage() {
     totalPages,
     hasNextPage,
     hasPrevPage,
+    term,
     goToNextPage,
     goToPrevPage,
     programFilter,
@@ -158,13 +159,13 @@ export function MembersPage() {
         if (data.role === "user" && userId) {
           await Promise.all([
             createFinePerStudent(userId, data),
-            addStudentWithClearance(userId, data, currentUser.id!),
+            addStudentWithClearance(userId, data, currentUser.orgId!),
           ]);
-          const orgContext = { uid: currentUser.id! };
+          const orgContext = { uid: currentUser.orgId! };
  
           await Promise.all([
-            assignExistingFeesToStudent(userId, data, orgContext),
-            assignExistingFinesToStudent(userId, data, orgContext),
+            assignExistingFeesToStudent(userId, data, orgContext, currentUser),
+            assignExistingFinesToStudent(userId, data, orgContext, currentUser),
           ]);
         }
         toast.success("Member added successfully");
@@ -216,7 +217,7 @@ export function MembersPage() {
       <PageHeader
         variant="admin"
         title="Members"
-        context="2nd Semester · A.Y. 2025–2026"
+        context={`${term.semester} Semester · A.Y. ${term.AY}`}
         description={`${totalMembers} total member${totalMembers !== 1 ? "s" : ""} in your organization`}
         action={
           <div className="hidden lg:flex items-center gap-2">

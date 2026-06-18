@@ -7,12 +7,16 @@ import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { Member } from "../../members/types";
 import { ClearanceStatus } from "../../clearance/types";
 import { ITEMS_PER_PAGE } from "../config";
+import { getActiveTerm } from "@/firebase/term";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 export function usePayments() {
   const [payments, setPayments] = useState<ProofOfPayment[]>([])
   const [unpaidPayments, setUnpaidPayments] = useState<ClearanceStatus[]>([])
   const [loadingSubmissions, setLoadingSubmissions] = useState(true)
   const [loadingUnpaid, setLoadingUnpaid] = useState(true)
+
+  const { selected } = useTermPeriod();
   
   const [totalUnpaidCount, setTotalUnpaidCount] = useState(0)
   const [totalSubmissionCount, setTotalSubmissionCount] = useState(0)
@@ -83,8 +87,8 @@ export function usePayments() {
       if (requestId !== fetchRequestIdRef.current) return;
       if (!currentUser?.id) return;
       
-      currentOrgIdRef.current = currentUser.id;
-      fetchStats(currentUser.id); // Trigger stats fetch safely
+      currentOrgIdRef.current = currentUser.orgId!;
+      fetchStats(currentUser.orgId!); // Trigger stats fetch safely
 
       // Retrieve the cursor for the current page
       const cursor = submissionPage > 1 
@@ -92,17 +96,18 @@ export function usePayments() {
         : null;
 
       const { docs, count, lastVisible } = await getProofOfPaymentsPaginated(
-        currentUser.id,
+        currentUser.orgId!,
         ITEMS_PER_PAGE,
         cursor,
         search,
         filterStatus, 
-        !!search
+        !!search,
+        selected
       );
 
       if (requestId !== fetchRequestIdRef.current) return;
       
-      const actualCount = search ? count : await getProofOfPaymentsCount(currentUser.id, filterStatus);
+      const actualCount = search ? count : await getProofOfPaymentsCount(currentUser.orgId!, filterStatus, selected);
       if (requestId !== fetchRequestIdRef.current) return;
 
       setTotalSubmissionCount(actualCount);
@@ -124,7 +129,7 @@ export function usePayments() {
         setLoadingSubmissions(false);
       }
     }
-  }, [submissionPage, search, filterStatus, fetchStats]);
+  }, [submissionPage, search, filterStatus, fetchStats, selected]);
 
   useEffect(() => { 
     fetchPayments();
@@ -140,7 +145,7 @@ export function usePayments() {
       if (requestId !== unpaidRequestIdRef.current) return;
       if (!currentUser?.id) return;
       
-      currentOrgIdRef.current = currentUser.id;
+      currentOrgIdRef.current = currentUser.orgId!;
 
       // Retrieve cursor for unpaid
       const cursor = unpaidPage > 1 
@@ -148,18 +153,19 @@ export function usePayments() {
         : null;
       
       const { docs, count, lastVisible } = await fetchClearanceDocumentsPaginated(
-        currentUser.id,
+        currentUser.orgId!,
         ITEMS_PER_PAGE,
         cursor,
         unpaidSearch,
         "not_cleared",
         !!unpaidSearch,
-        true
+        true,
+        selected
       );
       
       if (requestId !== unpaidRequestIdRef.current) return;
 
-      const actualUnpaidCount = unpaidSearch ? count : await getCountOfUnclearedDocuments(currentUser.id);
+      const actualUnpaidCount = unpaidSearch ? count : await getCountOfUnclearedDocuments(currentUser.orgId!, selected);
       if (requestId !== unpaidRequestIdRef.current) return;
 
       setTotalUnpaidCount(actualUnpaidCount);
@@ -185,7 +191,7 @@ export function usePayments() {
         setLoadingUnpaid(false);
       }
     }
-  }, [unpaidPage, unpaidSearch]);
+  }, [unpaidPage, unpaidSearch, selected]);
 
   useEffect(() => { 
     fetchUnpaid();
@@ -198,10 +204,10 @@ export function usePayments() {
     setIsRefreshingSubmissions(true);
 
     try {
-      const currentUser = await getCurrentUserData();
+      const currentUser = await getCurrentUserData() as unknown as Member;
       if (currentUser) {
-        cacheService.invalidate(CACHE_KEYS.proofOfPayments(currentUser.uid));
-        cacheService.invalidate(`payments:stats:${currentUser.uid}`);
+        cacheService.invalidate(CACHE_KEYS.proofOfPayments(currentUser.orgId!));
+        cacheService.invalidate(`payments:stats:${currentUser.orgId}`);
         cacheService.invalidateByPrefix('payments:proof:')
       }
       
@@ -219,11 +225,11 @@ export function usePayments() {
     setIsRefreshingUnpaid(true);
 
     try {
-      const currentUser = await getCurrentUserData();
+      const currentUser = await getCurrentUserData() as unknown as Member;
       if (currentUser) {
-        cacheService.invalidate(CACHE_KEYS.finesUnpaid(currentUser.uid));
-        cacheService.invalidate(CACHE_KEYS.feesUnpaid(currentUser.uid));
-        cacheService.invalidate(CACHE_KEYS.clearanceAll(currentUser.uid));
+        cacheService.invalidate(CACHE_KEYS.finesUnpaid(currentUser.orgId!));
+        cacheService.invalidate(CACHE_KEYS.feesUnpaid(currentUser.orgId!));
+        cacheService.invalidate(CACHE_KEYS.clearanceAll(currentUser.orgId!));
       }
       
       unpaidCursorsRef.current[unpaidPage - 1] = undefined;
@@ -268,5 +274,7 @@ export function usePayments() {
     setFilterStatus,
     stats, 
     setStats,
+    AY: selected?.AY || "",
+    sem: selected?.semester || "",
   }
 }

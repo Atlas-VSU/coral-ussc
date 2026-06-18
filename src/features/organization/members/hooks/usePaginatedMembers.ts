@@ -13,6 +13,8 @@ import {
   updateMembersCache,
   clearMembersCache,
 } from "../services/membersCache";
+import { getActiveTerm } from "@/firebase/term";
+import { Term } from "@/constants/types";
 
 const ITEMS_PER_PAGE_CARD = 12;
 const ITEMS_PER_PAGE_TABLE = 10;
@@ -37,6 +39,7 @@ export function usePaginatedMembers() {
   const [programFilter, setProgramFilter] = useState("all");
   const [sortBy, setSortBy] = useState("name-asc");
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  const [term, setTerm] = useState<Term>({AY:"", semester:"", isActive: true});
 
   // ─── Pagination (cursor-based, forward/backward only) ─────────────────────
   // cursorStack[0] = null (page 1 has no cursor)
@@ -127,6 +130,8 @@ export function usePaginatedMembers() {
         needCount = false,
       } = params;
 
+      const _term = await getActiveTerm();
+
       // Cursor for this page: stack index = page - 1
       const lastDoc = cursorStack.current[page - 1] ?? null;
 
@@ -138,6 +143,7 @@ export function usePaginatedMembers() {
         if (cached) {
           setMembers(cached.members);
           setTotalMembers(cached.totalMembers);
+          setTerm(cached.term);
           setDataSource("cache");
           setIsLoading(false);
           setIsRefreshing(false);
@@ -183,9 +189,9 @@ export function usePaginatedMembers() {
         if (needCount) {
           setTotalMembers(result.total);
         }
-
+        setTerm(_term!);
         setMembers(transformedMembers);
-        updateMembersCache(cacheKey, transformedMembers, result.total);
+        updateMembersCache(cacheKey, transformedMembers, result.total, _term!);
       } catch (error) {
         console.error("Failed to fetch members", error);
         toast.error("Failed to load member data. Please try again.");
@@ -396,6 +402,7 @@ export function usePaginatedMembers() {
     totalMembers,
     totalPages,
     currentPage,
+    term,
 
     // Pagination
     hasNextPage,
