@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
 import { getCurrentUserData } from "@/firebase"
+import { getOrgById } from "@/firebase/organization"
 import Image from "next/image"
+import { useEffect, useState } from "react"
+import { Organization } from "@/constants/types"
 
 export interface ReceiptItem {
   name: string
@@ -32,6 +35,23 @@ type Props = {
 }
 
 export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props) {
+  const [orgData, setOrgData] = useState<Organization | null>(null)
+
+  useEffect(() => {
+    if (open) {
+      const fetchOrgData = async () => {
+        const user = await getCurrentUserData();
+        if (user && user.orgId) {
+          const org = await getOrgById(user.orgId);
+          if (org) {
+            setOrgData(org);
+          }
+        }
+      }
+      fetchOrgData();
+    }
+  }, [open])
+
   function handlePrint() {
     if (!data) return
 
@@ -94,9 +114,9 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
         <body>
           <div class="receipt">
             <div class="header">
-              <img src="${baseUrl}/images/ussc-logo-1.webp" alt="Org Logo" />
-              <p class="org-name">University Supreme Student Council</p>
-              <p class="university">Visayas State University Main Campus</p>
+              <img src="${orgData?.orgLogoUrl || `${baseUrl}/images/ussc-logo-1.webp`}" alt="Org Logo" style="object-fit: contain; object-position: center;" />
+              <p class="org-name">${orgData?.name || 'University Supreme Student Council'}</p>
+              <p class="university">Visayas State University - Baybay Main Campus</p>
               <p class="subtitle">Official Payment Receipt</p>
             </div>
 
@@ -159,14 +179,14 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
         <div className="border rounded-lg p-6 bg-white text-black text-sm max-w-sm mx-auto">
           {/* Header */}
           <div className="text-center mb-4">
-            <Image
-              src="/images/ussc-logo-1.webp"
-              alt="Org Logo"
-              width={40}
-              height={40}
-              className="mx-auto mb-2"
-            />
-            <p className="font-bold text-lg">University Supreme Student Council</p>
+            <div className="w-10 h-10 mx-auto mb-2 relative">
+              <img
+                src={orgData?.orgLogoUrl || "/images/ussc-logo-1.webp"}
+                alt="Org Logo"
+                className="object-contain"
+              />
+            </div>
+            <p className="font-bold text-lg leading-tight mb-1">{orgData?.name || 'University Supreme Student Council'}</p>
             <p className="text-xs">Visayas State University - Baybay Main Campus</p>
             <p className="text-xs text-muted-foreground">Official Payment Receipt</p>
           </div>

@@ -17,6 +17,7 @@ import { updateFeeStats, updateFineStats } from "@/firebase/stats/update/updateS
 import { getActiveTerm } from "@/firebase/term";
 import { Term } from "@/constants/types";
 import { recalculateClearanceStatus } from "@/firebase/clearance";
+import { getOrgById } from "@/firebase/organization";
 
 export const createOnlineProofOfPayment = async (
     payment: PaymentFormData, type: string ) => {
@@ -211,7 +212,7 @@ export const createOfflineFinesProofOfPayment = async (
                 verifiedBy: currentUser.id!,
                 verifiedByName: currentUser.firstName + " " + currentUser.lastName,
                 verifiedAt: Timestamp.now(),
-                receiptCode: generateReceiptId(),
+                receiptCode: generateReceiptId((await getOrgById(transaction.orgId || currentUser.orgId!))?.shortName || "USSC"),
                 isArchived: false,
                 updatedAt: Timestamp.now(),
             }

@@ -16,6 +16,7 @@ import { se } from "date-fns/locale";
 import { getProofOfPaymentById } from "@/firebase/payment/read/proofOfPayment";
 import { getActiveTerm } from "@/firebase/term";
 import { useTermPeriod } from "../../term/hooks/useTermPeriod";
+import { getOrgById } from "@/firebase/organization";
 
 export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,7 +42,11 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
         }
 
         try {
-            const receipt = generateReceiptId();
+            const org = await getOrgById(user?.orgId!)
+            if (!org) {
+                throw new Error("Organization not found");
+            }
+            const receipt = generateReceiptId(org.shortName);
             await recordManualPaymentAndUpdateClearance(feeId, amount, method, userId || "", feeData.userId, user?.firstName + " " + user?.lastName || "",ref, receipt, senderNumber, selected);
             setSuccess(true);
             toast.success("Payment recorded successfully!");

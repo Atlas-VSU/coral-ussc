@@ -26,6 +26,7 @@ export type Organization = {
   subscribed: boolean,
   users?: string[],
   facultyId?: string,
-  programId?: string
-  accessLevel: number
+  programId?: string,
+  accessLevel: number,
+  orgLogoUrl?: string
 }

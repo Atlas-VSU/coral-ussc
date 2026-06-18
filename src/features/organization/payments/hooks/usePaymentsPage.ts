@@ -20,8 +20,11 @@ import { Timestamp } from "firebase/firestore"
 import { BlockingItem, ClearanceStatus } from "../../clearance/types"
 import { getActiveTerm } from "@/firebase/term"
 import { useTermPeriod } from "../../term/hooks/useTermPeriod"
+import { useAuth } from "@/hooks/useAuth"
+import { getOrgById } from "@/firebase/organization"
 
 export function usePaymentsPage() {
+  const { user } = useAuth()
   const {
     payments,
     unpaidPayments,
@@ -241,7 +244,14 @@ export function usePaymentsPage() {
     if (!liveSelectedUnpaid || selectedDues.length === 0) return
     setLoading(true)
 
-    const receiptId = generateReceiptId()
+    const org = await getOrgById(user?.orgId || "")
+    if (!org) {
+      toast.error("Organization not found")
+      setLoading(false)
+      return
+    }
+
+    const receiptId = generateReceiptId(org.shortName)
     const studentName = liveSelectedUnpaid.userName;
     let isFine = false, isFee = false, totalAmount = 0
 
