@@ -291,7 +291,7 @@ export const assignExistingFeesToStudent = async (
         lastName: string;
         studentId: string;
     },
-    orgContext: { uid: string },
+    orgContext: { uid: string, accessLevel: number },
     currentUser: Member
 ): Promise<void> => {
     const orgId = orgContext.uid;
@@ -308,7 +308,7 @@ export const assignExistingFeesToStudent = async (
     const feeItemsSnap = await getDocs(feeItemsQuery);
  
     if (feeItemsSnap.empty) return;
-    const id = buildClearanceId(userId, currentUser.orgId, currentUser.accessLevel as number, term!);
+    const id = buildClearanceId(userId, orgId, orgContext.accessLevel, term!);
     const feesCollection = collection(db, "fees");
     const clearanceRef = doc(db, "clearanceStatus", id);
     const now = Timestamp.now();

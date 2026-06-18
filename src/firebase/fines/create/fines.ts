@@ -1,5 +1,5 @@
 import { db } from "@/firebase/firebase.config";
-import { getAllUsers, getCurrentUserData } from "@/firebase/users";
+import { getAllUsers, getCurrentUserData, getUserById } from "@/firebase/users";
 import { collection, addDoc, writeBatch, doc, CollectionReference, DocumentData, Timestamp, getCountFromServer, setDoc, query, where, getDocs, increment, runTransaction, and, or, limit } from "firebase/firestore";
 import { getFineTypeById } from "../read/fineType";
 import { Member, MemberData } from "@/features/organization/members/types";
@@ -243,7 +243,8 @@ const prepareFineItem = async (fine: StudentFines, currentUser: Member) => {
 const getOrCreateFinesForStudents = async (
   students: MemberData[],
   term: { AY: string; semester: string },
-  currentUser: Member
+  currentUser: Member,
+  orgId: string
 ): Promise<StudentFines[]> => {
   if (students.length === 0) return [];
 
@@ -263,7 +264,7 @@ const getOrCreateFinesForStudents = async (
       const fineDocRef = doc(finesCollection);
       const fineData: StudentFines = {
         id: fineDocRef.id,
-        orgId: currentUser.orgId!,
+        orgId: orgId,
         userId: student.id!,
         studentId: student.member.studentId,
         userName: `${student.member.firstName} ${student.member.lastName}`,
@@ -368,7 +369,7 @@ export const generateFinesOnEvent = async (
   const issuer = await getCurrentUserData() as unknown as Member;
 
   const [absentUsersFines, partialUsers] = await Promise.all([
-    absentUsers?.length ? getOrCreateFinesForStudents(absentUsers, term!, issuer) : Promise.resolve([]),
+    absentUsers?.length ? getOrCreateFinesForStudents(absentUsers, term!, issuer, event.orgId!) : Promise.resolve([]),
     type.requiresTimeOut ? getPartialAttendeesForEvent(event.id) : Promise.resolve([]),
   ]);
 
@@ -377,7 +378,7 @@ export const generateFinesOnEvent = async (
   let partialUsersFines: typeof absentUsersFines = [];
   if (type.requiresTimeOut && partialUsers?.length) {
     report("preflight", "Fetching fine records for partial users…");
-    partialUsersFines = await getOrCreateFinesForStudents(partialUsers, term!, issuer);
+    partialUsersFines = await getOrCreateFinesForStudents(partialUsers, term!, issuer, event.orgId);
   }
 
   if (!absentUsersFines.length && !partialUsersFines.length) {
@@ -633,7 +634,7 @@ export const assignExistingFinesToStudent = async (
         lastName: string;
         studentId: string;
     },
-    orgContext: { uid: string },
+    orgContext: { uid: string, accessLevel: number },
     currentUser: Member
 ): Promise<void> => {
     const orgId = orgContext.uid;
@@ -671,18 +672,28 @@ export const assignExistingFinesToStudent = async (
           )
         )
     );
-    const fineSnap = await getDocs(fineQuery);
+    let fineSnap = await getDocs(fineQuery);
  
     if (fineSnap.empty) {
-        console.error(`No fine document found for userId ${userId}. Did createFinePerStudent run first?`);
-        return;
+        // create fines here
+        const student = await getUserById(userId);
+        if (student) {
+            const studentData = {
+                id: student?.id!,
+                member: student!
+            }
+            await getOrCreateFinesForStudents([studentData], {AY: termData!.AY, semester: termData!.semester }, currentUser, orgId)
+        }
+
+        fineSnap = await getDocs(fineQuery);
+
     }
  
     const fineDoc = fineSnap.docs[0]; 
     const fineDocRef = fineDoc.ref;
     const parentFineId = fineDoc.id;
     const term = await getActiveTerm();
-    const clearanceId = buildClearanceId(userId, orgId, issuer.accessLevel as number, term!);
+    const clearanceId = buildClearanceId(userId, orgId, orgContext.accessLevel, term!);
     const clearanceRef = doc(db, "clearanceStatus", clearanceId);
     const fineItemsCollection = collection(db, "fines", parentFineId, "fineItems")
     const now = Timestamp.now();
@@ -816,6 +827,6 @@ export const assignExistingFinesToStudent = async (
  
     if (totalFineAmount > 0) {
         await updateFineStats(`${term!.AY}-${term!.semester}-${orgId}`, totalFineAmount, 0);
-        await recalculateClearanceStatus(userId);
+        await recalculateClearanceStatus(userId, term);
     }
 };

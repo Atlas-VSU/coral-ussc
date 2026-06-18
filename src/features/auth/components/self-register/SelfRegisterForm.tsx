@@ -74,11 +74,11 @@ const FRESHMAN_YEAR_LEVEL = 1;
 
 // Shared light/green field styling to stay consistent with the Add Member form.
 const lightInputClass =
-  "!bg-white !text-black placeholder:!text-gray-500 !border-[#2E7D32]/30 focus-visible:!ring-green-100";
+  "!bg-white !text-black placeholder:!text-gray-500 !border-[#2E7D32]/30 focus-visible:!ring-green-100 ";
 const lightSelectTriggerClass =
-  "!bg-white !text-black !border-[#2E7D32]/30 hover:bg-green-50 focus-visible:!ring-green-100";
+  "!bg-white !text-black !border-[#2E7D32]/30 hover:bg-green-50 focus-visible:!ring-green-100 truncate max-w-[290px]";
 const lightSelectContentClass = "bg-white text-black !border-[#2E7D32]/30";
-const lightSelectItemClass = "text-black focus:bg-[#8BC34A]/10 focus:text-black";
+const lightSelectItemClass = "text-black focus:bg-[#8BC34A]/10 focus:text-black ";
 
 export function SelfRegisterForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -163,16 +163,32 @@ export function SelfRegisterForm() {
   });
 
   const onSubmit = async (data: SelfRegisterFormData) => {
-    setIsSubmitting(true);
-    // Frontend-only mock submission — simulate a short request.
-    await new Promise((resolve) => setTimeout(resolve, 900));
-    console.log("Self-registration submitted (mock):", {
-      ...data,
-      yearLevel: FRESHMAN_YEAR_LEVEL,
-    });
-    setIsSubmitting(false);
-    setSubmitted(true);
-    toast.success("Registration submitted! Your application is pending review.");
+    try{
+      setIsSubmitting(true);
+      const response = await fetch("/api/public/add-student", {
+          method: "POST",
+          headers: {
+              "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+              ...data,
+              yearLevel: FRESHMAN_YEAR_LEVEL,
+              role: "user",
+          }),
+      })
+      
+      if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Registration failed");
+      }
+      setIsSubmitting(false);
+      setSubmitted(true);
+      toast.success("Registration submitted! Your application is pending review.");
+    } catch(e: any) {
+      console.error("Registration error:", e);
+      toast.error(e.message || "Registration failed");
+      setIsSubmitting(false);
+    }
   };
 
   // ── Success state ──────────────────────────────────────────────────────────

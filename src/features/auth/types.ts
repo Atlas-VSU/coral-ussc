@@ -14,3 +14,13 @@ export interface LoginState {
   password: string;
   error: string | null;
 }
+
+export interface SelfRegisterFormData {
+    studentId: string
+    email: string;
+    firstName: string;
+    lastName: string;
+    programId: string;
+    yearLevel: number;
+}
+

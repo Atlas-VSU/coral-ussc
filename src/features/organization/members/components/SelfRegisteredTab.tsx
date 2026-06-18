@@ -68,7 +68,7 @@ export function SelfRegisteredTab({
   const [page, setPage] = useState(1);
 
   const isAccepting = (id: string) =>
-    processing?.id === id && processing.action === "accept";
+    processing?.id === id && processing.action === "approved";
   const isRejecting = (id: string) =>
     processing?.id === id && processing.action === "reject";
   const isRowBusy = (id: string) => processing?.id === id;
