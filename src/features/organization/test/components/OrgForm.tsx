@@ -61,6 +61,7 @@ const handleFormSubmit = async (data: OrgFormData) => {
     if (isSubmitting) return;
     const orgToSubmit: Organization = {
       ...data,
+      accessLevel: data.accessLevel!,
       isArchived: false,
     };
 
@@ -202,6 +203,38 @@ const parseCSVTo1DArray = (file: File): Promise<string[]> => {
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="accessLevel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Access Level</FormLabel>
+                    <Select 
+                      onValueChange={(val) => field.onChange(val)} 
+                      value={field?.value?.toString() || "3"}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select an associated course program" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        {[1,2,3].map((p) => (
+                          <SelectItem key={p} value={p.toString()}>
+                            {p}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+
+
               
             {/* <FormField
                 control={form.control}

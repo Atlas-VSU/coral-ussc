@@ -106,6 +106,7 @@ export const orgSchema = z.object({
   subscribed: z.boolean(),
   facultyId: z.string().optional().or(z.literal("")),
   programId: z.string().optional().or(z.literal("")),
+  accessLevel: z.number().default(1).optional()
   // users: z.string().array().optional()
 });
 

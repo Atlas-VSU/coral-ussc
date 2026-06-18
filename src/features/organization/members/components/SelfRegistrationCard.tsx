@@ -41,7 +41,7 @@ export function SelfRegistrationCard({
   onReject,
 }: SelfRegistrationCardProps) {
   const isAccepting =
-    processing?.id === registration.id && processing.action === "accept";
+    processing?.id === registration.id && processing.action === "approved";
   const isRejecting =
     processing?.id === registration.id && processing.action === "reject";
   const isBusy = processing?.id === registration.id;
