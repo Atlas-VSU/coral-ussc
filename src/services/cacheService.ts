@@ -373,6 +373,7 @@ export const CACHE_DURATIONS = {
   EVENTS: 15 * 60 * 1000, // 15 minutes
   ATTENDANCE: 5 * 60 * 1000, // 5 minutes
   SEARCH_RESULTS: 2 * 60 * 1000, // 2 minutes
+  TERMS: 5 * 60 * 1000, // 5 minutes — active term changes rarely
   DASHBOARD: {
     STATS: 5 * 60 * 1000, // 5 minutes
     ONGOING_EVENTS: 60 * 1000, // 1 minute (since status changes frequently)
@@ -390,6 +391,10 @@ export const CACHE_DURATIONS = {
 
 // Structured cache key helpers — use these everywhere instead of raw strings
 export const CACHE_KEYS = {
+  // Term
+  activeTerm: () => "term:active",
+  allTerms:   () => "terms:all",
+
   // Fees
   feesForOrg:   (orgId: string) => `fees:org:${orgId}`,
   feesUnpaid:   (orgId: string) => `fees:unpaid:${orgId}`,
