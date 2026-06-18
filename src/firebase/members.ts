@@ -17,6 +17,7 @@ import {
   writeBatch,
   doc,
   updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { getCurrentUserData } from "./users";
@@ -349,10 +350,14 @@ export const getPendingMembersOfAnOrg = async (
 export const updateMemberStatus = async (memberId: string, status: string) => {
   try {
     const userRef = doc(usersCollection, memberId);
-    await updateDoc(userRef, {
-      status,
-    });
-    console.log(`Updated status of member ${memberId} to ${status}`);
+    if(status == "approved") {
+      await updateDoc(userRef, {
+        status,
+      });
+    }
+    else {
+      await deleteDoc(userRef);
+    }
   } catch (error) {
     handleFirestoreError(error, "update status");
   }
