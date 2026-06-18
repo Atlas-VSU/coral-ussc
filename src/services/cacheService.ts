@@ -23,7 +23,8 @@ class CacheService {
   };
 
   private constructor() {
-    // Initialize from localStorage if available
+    // Initialize from localStorage if available (browser only — not on SSR/server)
+    if (typeof window === "undefined") return;
     try {
       const savedCache = localStorage.getItem("app-data-cache");
       if (savedCache) {
@@ -89,8 +90,9 @@ class CacheService {
     return CacheService.instance;
   }
 
-  // Save cache to localStorage with size management
+  // Save cache to localStorage with size management (browser only)
   private saveToStorage(): void {
+    if (typeof window === "undefined") return; // no-op on SSR
     try {
       // 1. Prepare data for persistence
       const persistableCache: Record<string, CacheEntry<any>> = {};

@@ -7,8 +7,6 @@ import {
   ChevronRight,
   Eye,
   Inbox,
-  LayoutGrid,
-  List,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,6 +24,9 @@ import { SelfRegistration } from "../data/mockSelfRegistrations";
 import { SelfRegDecision } from "../hooks/useSelfRegistrations";
 import { SelfRegistrationDetailsModal } from "./SelfRegistrationDetailsModal";
 import { SelfRegistrationCard } from "./SelfRegistrationCard";
+import { MembersFilters } from "./MembersFilters";
+import { useSelfRegFilters } from "../hooks/useSelfRegFilters";
+import { Program } from "../types";
 
 export type SelfRegProcessing = {
   id: string;
@@ -67,26 +68,54 @@ export function SelfRegisteredTab({
   const [viewMode, setViewMode] = useState<SelfRegView>("grid");
   const [page, setPage] = useState(1);
 
+  // ─── Filters (client-side — list is live via onSnapshot, no server trips) ──
+  const {
+    filtered,
+    searchTerm,
+    programFilter,
+    onSearchChange,
+    onSearchCommit,
+    onSearchClear,
+    onProgramFilter,
+    onSortBy,
+  } = useSelfRegFilters(registrations);
+
+  // Derive unique program options from the live list so the dropdown always
+  // reflects what's actually pending — no separate Firestore fetch needed.
+  const programOptions = useMemo<Program[]>(() => {
+    const seen = new Set<string>();
+    const out: Program[] = [];
+    for (const r of registrations) {
+      if (!seen.has(r.programName)) {
+        seen.add(r.programName);
+        // Self-reg records don't have a programId FK; we use programName as both
+        // id and name so MembersFilters can filter against it.
+        out.push({ id: r.programName, name: r.programName, code: "", acronym: "", shortName: "" });
+      }
+    }
+    return out.sort((a, b) => a.name.localeCompare(b.name));
+  }, [registrations]);
+
+  // Reset to page 1 whenever the filter changes
+  useEffect(() => { setPage(1); }, [filtered.length, programFilter, searchTerm]);
+
   const isAccepting = (id: string) =>
     processing?.id === id && processing.action === "approved";
   const isRejecting = (id: string) =>
     processing?.id === id && processing.action === "reject";
   const isRowBusy = (id: string) => processing?.id === id;
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(registrations.length / ITEMS_PER_PAGE)
-  );
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
 
-  // Keep the current page in range as the list shrinks (accept/reject).
+  // Keep current page in range as the list shrinks (accept/reject)
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
   const pageItems = useMemo(() => {
     const start = (page - 1) * ITEMS_PER_PAGE;
-    return registrations.slice(start, start + ITEMS_PER_PAGE);
-  }, [registrations, page]);
+    return filtered.slice(start, start + ITEMS_PER_PAGE);
+  }, [filtered, page]);
 
   const handleView = (registration: SelfRegistration) => {
     setSelected(registration);
@@ -113,58 +142,47 @@ export function SelfRegisteredTab({
   }
 
   const rangeStart = (page - 1) * ITEMS_PER_PAGE + 1;
-  const rangeEnd = Math.min(page * ITEMS_PER_PAGE, registrations.length);
+  const rangeEnd = Math.min(page * ITEMS_PER_PAGE, filtered.length);
 
   return (
     <>
-      {/* Info banner + view toggle */}
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
-          <Badge
-            variant="secondary"
-            className="mt-0.5 bg-amber-100 text-amber-700"
-          >
-            {registrations.length} pending
-          </Badge>
-          <p className="text-sm text-amber-800">
-            These freshmen self-registered and are awaiting verification. Review
-            each application, then accept to add them as members or reject to
-            dismiss.
-          </p>
-        </div>
-
-        <div className="flex shrink-0 items-center self-start rounded-lg bg-gray-100 p-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setViewMode("grid")}
-            className={`h-8 px-3 transition-all ${
-              viewMode === "grid"
-                ? "bg-gray-200 shadow-sm text-black"
-                : "text-black hover:bg-green-100 hover:text-black"
-            }`}
-          >
-            <LayoutGrid className="h-4 w-4 mr-2" />
-            Grid
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setViewMode("table")}
-            className={`h-8 px-3 transition-all ${
-              viewMode === "table"
-                ? "bg-gray-200 shadow-sm text-black"
-                : "text-black hover:bg-green-100 hover:text-black"
-            }`}
-          >
-            <List className="h-4 w-4 mr-2" />
-            Table
-          </Button>
-        </div>
+      {/* Info banner */}
+      <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+        <Badge variant="secondary" className="mt-0.5 bg-amber-100 text-amber-700">
+          {registrations.length} pending
+        </Badge>
+        <p className="text-sm text-amber-800">
+          These freshmen self-registered and are awaiting verification. Review
+          each application, then accept to add them as members or reject to
+          dismiss.
+        </p>
       </div>
 
+      {/* Filters — same component as the All Members tab */}
+      <div className="mb-4">
+        <MembersFilters
+          programs={programOptions}
+          searchTerm={searchTerm}
+          onSearchChange={onSearchChange}
+          onSearchCommit={onSearchCommit}
+          onSearchClear={onSearchClear}
+          onProgramFilter={onProgramFilter}
+          onSortBy={onSortBy}
+          programFilter={programFilter}
+          viewMode={viewMode === "grid" ? "card" : "table"}
+          onViewChange={(mode) => setViewMode(mode === "card" ? "grid" : "table")}
+        />
+      </div>
+
+      {/* Empty-state for filtered results */}
+      {filtered.length === 0 && (
+        <div className="bg-white rounded-lg border shadow-sm p-10 text-center text-gray-500">
+          No registrations match your current filters.
+        </div>
+      )}
+
       {/* Grid view */}
-      {viewMode === "grid" ? (
+      {filtered.length > 0 && viewMode === "grid" && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {pageItems.map((reg) => (
             <SelfRegistrationCard
@@ -177,8 +195,10 @@ export function SelfRegisteredTab({
             />
           ))}
         </div>
-      ) : (
-        /* Table view */
+      )}
+
+      {/* Table view */}
+      {filtered.length > 0 && viewMode === "table" && (
         <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
           {/* Mobile card layout */}
           <div className="block sm:hidden divide-y divide-gray-200">
@@ -193,10 +213,7 @@ export function SelfRegisteredTab({
                       ID: {reg.studentId}
                     </p>
                   </div>
-                  <Badge
-                    variant="secondary"
-                    className="bg-amber-100 text-amber-700"
-                  >
+                  <Badge variant="secondary" className="bg-amber-100 text-amber-700">
                     Pending
                   </Badge>
                 </div>
@@ -209,133 +226,65 @@ export function SelfRegisteredTab({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Submitted:</span>
-                    <span className="text-gray-700">
-                      {formatSubmittedAt(reg.submittedAt)}
-                    </span>
+                    <span className="text-gray-700">{formatSubmittedAt(reg.submittedAt)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 pt-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => handleView(reg)}
-                    disabled={isRowBusy(reg.id)}
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                    View
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => handleView(reg)} disabled={isRowBusy(reg.id)}>
+                    <Eye className="h-3.5 w-3.5" /> View
                   </Button>
-                  <LoadingButton
-                    variant="success"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => onAccept(reg.id)}
-                    isLoading={isAccepting(reg.id)}
-                    loadingText="Accepting…"
-                    disabled={isRowBusy(reg.id)}
-                  >
-                    <Check className="h-3.5 w-3.5" />
-                    Accept
+                  <LoadingButton variant="success" size="sm" className="flex-1" onClick={() => onAccept(reg.id)} isLoading={isAccepting(reg.id)} loadingText="Accepting…" disabled={isRowBusy(reg.id)}>
+                    <Check className="h-3.5 w-3.5" /> Accept
                   </LoadingButton>
-                  <LoadingButton
-                    variant="destructive"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => onReject(reg.id)}
-                    isLoading={isRejecting(reg.id)}
-                    loadingText="Rejecting…"
-                    disabled={isRowBusy(reg.id)}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                    Reject
+                  <LoadingButton variant="destructive" size="sm" className="flex-1" onClick={() => onReject(reg.id)} isLoading={isRejecting(reg.id)} loadingText="Rejecting…" disabled={isRowBusy(reg.id)}>
+                    <X className="h-3.5 w-3.5" /> Reject
                   </LoadingButton>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Desktop / tablet table layout */}
+          {/* Desktop table */}
           <div className="hidden sm:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-gray-200 bg-gray-50">
-                  <TableHead className="font-semibold text-gray-900 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-sm">
-                    Name
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-900 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-sm">
-                    Student ID
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-900 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-sm hidden md:table-cell">
-                    Program
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-900 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-sm hidden lg:table-cell">
-                    Year
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-900 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-sm hidden lg:table-cell">
-                    Submitted
-                  </TableHead>
-                  <TableHead className="text-right font-semibold text-gray-900 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-sm">
-                    Actions
-                  </TableHead>
+                  <TableHead className="font-semibold text-gray-900 px-4 lg:px-6 py-4 text-sm">Name</TableHead>
+                  <TableHead className="font-semibold text-gray-900 px-4 lg:px-6 py-4 text-sm">Student ID</TableHead>
+                  <TableHead className="font-semibold text-gray-900 px-4 lg:px-6 py-4 text-sm hidden md:table-cell">Program</TableHead>
+                  <TableHead className="font-semibold text-gray-900 px-4 lg:px-6 py-4 text-sm hidden lg:table-cell">Year</TableHead>
+                  <TableHead className="font-semibold text-gray-900 px-4 lg:px-6 py-4 text-sm hidden lg:table-cell">Submitted</TableHead>
+                  <TableHead className="text-right font-semibold text-gray-900 px-4 lg:px-6 py-4 text-sm">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {pageItems.map((reg) => (
-                  <TableRow
-                    key={reg.id}
-                    className="border-gray-200 hover:bg-gray-50 transition-colors"
-                  >
-                    <TableCell className="font-medium text-gray-900 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-sm">
+                  <TableRow key={reg.id} className="border-gray-200 hover:bg-gray-50 transition-colors">
+                    <TableCell className="font-medium text-gray-900 px-4 lg:px-6 py-4 text-sm">
                       {reg.firstName} {reg.lastName}
                     </TableCell>
-                    <TableCell className="text-gray-700 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-sm">
-                      <span className="font-mono text-xs sm:text-sm">
-                        {reg.studentId}
-                      </span>
+                    <TableCell className="text-gray-700 px-4 lg:px-6 py-4 text-sm">
+                      <span className="font-mono text-xs sm:text-sm">{reg.studentId}</span>
                     </TableCell>
-                    <TableCell className="text-gray-700 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-sm hidden md:table-cell">
-                      <span className="truncate max-w-[180px] lg:max-w-none block">
-                        {reg.programName}
-                      </span>
+                    <TableCell className="text-gray-700 px-4 lg:px-6 py-4 text-sm hidden md:table-cell">
+                      <span className="truncate max-w-[180px] lg:max-w-none block">{reg.programName}</span>
                     </TableCell>
-                    <TableCell className="text-gray-700 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-sm hidden lg:table-cell">
+                    <TableCell className="text-gray-700 px-4 lg:px-6 py-4 text-sm hidden lg:table-cell">
                       {formatYearLevel(reg.yearLevel)}
                     </TableCell>
-                    <TableCell className="text-gray-700 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-sm hidden lg:table-cell">
+                    <TableCell className="text-gray-700 px-4 lg:px-6 py-4 text-sm hidden lg:table-cell">
                       {formatSubmittedAt(reg.submittedAt)}
                     </TableCell>
-                    <TableCell className="text-right px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+                    <TableCell className="text-right px-4 lg:px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleView(reg)}
-                          disabled={isRowBusy(reg.id)}
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          View
+                        <Button variant="outline" size="sm" onClick={() => handleView(reg)} disabled={isRowBusy(reg.id)}>
+                          <Eye className="h-3.5 w-3.5" /> View
                         </Button>
-                        <LoadingButton
-                          variant="success"
-                          size="sm"
-                          onClick={() => onAccept(reg.id)}
-                          isLoading={isAccepting(reg.id)}
-                          loadingText="Accepting…"
-                          disabled={isRowBusy(reg.id)}
-                        >
-                          <Check className="h-3.5 w-3.5" />
-                          Accept
+                        <LoadingButton variant="success" size="sm" onClick={() => onAccept(reg.id)} isLoading={isAccepting(reg.id)} loadingText="Accepting…" disabled={isRowBusy(reg.id)}>
+                          <Check className="h-3.5 w-3.5" /> Accept
                         </LoadingButton>
-                        <LoadingButton
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => onReject(reg.id)}
-                          isLoading={isRejecting(reg.id)}
-                          loadingText="Rejecting…"
-                          disabled={isRowBusy(reg.id)}
-                        >
-                          <X className="h-3.5 w-3.5" />
-                          Reject
+                        <LoadingButton variant="destructive" size="sm" onClick={() => onReject(reg.id)} isLoading={isRejecting(reg.id)} loadingText="Rejecting…" disabled={isRowBusy(reg.id)}>
+                          <X className="h-3.5 w-3.5" /> Reject
                         </LoadingButton>
                       </div>
                     </TableCell>
@@ -347,31 +296,18 @@ export function SelfRegisteredTab({
         </div>
       )}
 
-      {/* Pagination — only when more than one page of registrations */}
-      {registrations.length > ITEMS_PER_PAGE && (
+      {/* Pagination */}
+      {filtered.length > ITEMS_PER_PAGE && (
         <div className="mt-4 flex items-center justify-between px-1">
           <p className="text-sm text-muted-foreground">
-            Showing {rangeStart}–{rangeEnd} of {registrations.length} · Page{" "}
-            {page} of {totalPages}
+            Showing {rangeStart}–{rangeEnd} of {filtered.length} · Page {page} of {totalPages}
           </p>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+              <ChevronLeft className="h-4 w-4 mr-1" /> Previous
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-            >
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+              Next <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
         </div>
