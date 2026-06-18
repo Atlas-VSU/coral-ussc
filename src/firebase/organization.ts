@@ -29,6 +29,7 @@ export const createOrg = async (org: Organization) => {
             programId: org.programId || null,
             isArchived: false,
             subscribed: org.subscribed,
+            accessLevel: org.accessLevel,
             metadata: {
                 createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now(),
@@ -56,7 +57,8 @@ export const getOrgByName = async (name: string) => {
                 subscribed: orgDoc.data().subscribed,
                 users: orgDoc.data().users,
                 programId: orgDoc.data().programId,
-                facultyId: orgDoc.data().facultyId
+                facultyId: orgDoc.data().facultyId,
+                accessLevel: orgDoc.data().accessLevel
             } as Organization;
         }
             return null
@@ -78,7 +80,8 @@ export const getOrgById = async (id: string) => {
                 subscribed: orgDoc.data().subscribed,
                 users: orgDoc.data().users,
                 programId: orgDoc.data().programId,
-                facultyId: orgDoc.data().facultyId
+                facultyId: orgDoc.data().facultyId,
+                accessLevel: orgDoc.data().accessLevel
             } as Organization;
         }
             return null
@@ -99,5 +102,29 @@ export const checkForDuplicateOrgs = async (name: string) => {
     } catch (error) {
         handleFirestoreError(error, `checking duplicates`);
         return null;
+    }
+}
+
+export const getAllOrgs = async () => {
+    try {
+        const q = query(orgCollection, where("isArchived", "==", false));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+            return snapshot.docs.map((doc) => ({
+                id: doc.id,
+                name: doc.data().name,
+                shortName: doc.data().shortName,
+                isArchived: doc.data().isArchived,
+                subscribed: doc.data().subscribed,
+                users: doc.data().users,
+                programId: doc.data().programId,
+                facultyId: doc.data().facultyId,
+                accessLevel: doc.data().accessLevel
+            })) as Organization[];
+        }
+            return [];
+    } catch (error) {
+        handleFirestoreError(error, `fetching organizations`);
+        return [];
     }
 }

@@ -12,7 +12,7 @@ export type SelfRegistration = {
   /** ISO date string of when the student submitted their registration. */
   submittedAt: string;
   /** COR attachment status — upload feature is "coming soon". */
-  corStatus: "coming-soon";
+  corStatus: string;
 };
 
 export const MOCK_SELF_REGISTRATIONS: SelfRegistration[] = [

@@ -161,7 +161,7 @@ export function MembersPage() {
             createFinePerStudent(userId, data),
             addStudentWithClearance(userId, data, currentUser.orgId!),
           ]);
-          const orgContext = { uid: currentUser.orgId! };
+          const orgContext = { uid: currentUser.orgId!, accessLevel: currentUser.accessLevel! };
  
           await Promise.all([
             assignExistingFeesToStudent(userId, data, orgContext, currentUser),

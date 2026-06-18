@@ -27,4 +27,5 @@ export type Organization = {
   users?: string[],
   facultyId?: string,
   programId?: string
+  accessLevel: number
 }
