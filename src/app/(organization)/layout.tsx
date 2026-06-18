@@ -19,6 +19,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { cacheUtils } from "@/utils/cacheUtils";
+import { Organization } from "@/constants/types";
+import { getOrgById } from "@/firebase/organization";
 
 // Define icon map for the sidebar
 const iconMap = {
@@ -141,6 +143,7 @@ export default function OrganizationLayout({
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [org, setOrg] = useState<Organization>()
 
   // Check for signing out state on mount and when auth changes
   useEffect(() => {
@@ -156,6 +159,17 @@ export default function OrganizationLayout({
     const interval = setInterval(checkSigningOutState, 200);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const fetchOrg = async () => {
+      if (!user) return;
+      const org = await getOrgById(user.orgId!);
+      if (org) {
+        setOrg(org);
+      }
+    }
+    fetchOrg();
+  }, [user])
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -194,6 +208,7 @@ export default function OrganizationLayout({
     <div className="flex min-h-screen w-full organization-bg">
       <AdminSidebar
         user={userData}
+        org={org}
         className="z-50"
       />
       <div className="flex-1 flex flex-col min-w-0">
