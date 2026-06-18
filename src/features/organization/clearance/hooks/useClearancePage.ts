@@ -281,7 +281,10 @@ export function useClearancePage(orgId: string | undefined) {
 
   const handleHardRefresh = async () => {
     if (!orgId) return;
-    cacheService.invalidate(`clearance:stats:${orgId}`)
+    // Invalidate all stat slices for this org (any term) — key format is
+    // "clearance:stats:{orgId}:{statusFilter}:{AY}-{semester}" so prefixing on
+    // orgId wipes everything without needing to know the current term here.
+    cacheService.invalidateByPrefix(`clearance:stats:${orgId}`)
     await baseHardRefresh()
   }
 
