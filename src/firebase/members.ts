@@ -13,12 +13,19 @@ import {
   getCountFromServer,
   QueryConstraint,
   QueryDocumentSnapshot,
+  or,
+  writeBatch,
+  doc,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { getCurrentUserData } from "./users";
 import { Member, MemberData } from "@/features/organization/members/types";
 import { getOrgById } from "./organization";
 import { Organization } from "@/constants/types";
+import { SelfRegistration } from "@/features/organization/members/data/mockSelfRegistrations";
+import { getProgramById } from "./programs";
 
 const usersCollection: CollectionReference<DocumentData> = collection(
   db,
@@ -133,7 +140,7 @@ export const getPaginatedUsers = async (options: {
             .join(" ")
       : "";
 
-    const constraints: QueryConstraint[] = [...baseConstraints];
+    const constraints: QueryConstraint[] = [...baseConstraints, where("status", "==", "approved")];
 
     if (normalizedSearch) {
       // Server-side prefix search — only touches matching docs, not all 9000+
@@ -202,6 +209,7 @@ export const getMembersOfAnOrg = async (
     const baseConstraints = buildBaseConstraints(currentUserData, org!);
     const constraints: QueryConstraint[] = [
       ...baseConstraints,
+      where("status", "==", "approved"),
       orderBy("firstName", "asc"),
     ];
 
@@ -246,6 +254,7 @@ export const getAllMembersOfAnOrg = async (
     const baseConstraints = buildBaseConstraints(currentUserData, org!);
     const constraints: QueryConstraint[] = [
      ...baseConstraints,
+     where("status", "==", "approved"),
       orderBy("firstName", "asc"),
     ];
 
@@ -276,6 +285,7 @@ export const getAllStudents = async () => {
       usersCollection,
       where("isDeleted", "==", false),
       where("role", "==", "user"),
+      where("status", "==", "approved"),
       orderBy("studentId", "asc")
     );
 
@@ -293,6 +303,94 @@ export const getAllStudents = async () => {
     return [];
   }
 };
+
+export const getPendingMembersOfAnOrg = async (
+  currentUserData: Member
+): Promise<SelfRegistration[]> => {
+  try {
+    const org = await getOrgById(currentUserData.orgId!);
+    const baseConstraints = buildBaseConstraints(currentUserData, org!);
+
+    const constraints: QueryConstraint[] = [
+      ...baseConstraints,
+      where("status", "==", "pending"),
+      orderBy("registrationAt", "desc"),
+    ];
+
+    const q = query(usersCollection, ...constraints);
+    const snapshot = await getDocs(q);
+
+    const members = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const program = await getProgramById(doc.data().programId);
+
+        return {
+          id: doc.id,
+          studentId: doc.data().studentId,
+          submittedAt: doc.data().registrationAt.toDate().toISOString(),
+          email: doc.data().email,
+          firstName: doc.data().firstName,
+          lastName: doc.data().lastName,
+          role: doc.data().role,
+          status: doc.data().status,
+          yearLevel: doc.data().yearLevel,
+          programName: program?.name ?? "",
+          corStatus: "coming-soon"
+        };
+      })
+    );
+
+    return members;
+  } catch (error) {
+    handleFirestoreError(error, "fetch pending members");
+    return [];
+  }
+};
+
+export const updateMemberStatus = async (memberId: string, status: string) => {
+  try {
+    const userRef = doc(usersCollection, memberId);
+    if(status == "approved") {
+      await updateDoc(userRef, {
+        status,
+      });
+    }
+    else {
+      await deleteDoc(userRef);
+    }
+  } catch (error) {
+    handleFirestoreError(error, "update status");
+  }
+}
+
+export const addApprovedStatusAllMembers = async() => {
+  try {
+    const q = query(
+      usersCollection,
+      where("isDeleted", "==", false),
+      where("role", "==", "user"),
+    );
+    const snapshot = await getDocs(q);
+    const docs = snapshot.docs;
+    const BATCH_LIMIT = 500;
+
+    for (let i = 0; i < docs.length; i += BATCH_LIMIT) {
+      const chunk = docs.slice(i, i + BATCH_LIMIT);
+      const batch = writeBatch(db);
+      
+      chunk.forEach((doc) => {
+        batch.update(doc.ref, {
+          status: "approved",
+        });
+      });
+
+      await batch.commit();
+    }
+    console.log("Added approved status to all members");
+  } catch (error) {
+    handleFirestoreError(error, "add approved status all members");
+  }
+}
 // /* eslint-disable @typescript-eslint/no-explicit-any */
 // import { getAuth } from "firebase/auth";
 // import {

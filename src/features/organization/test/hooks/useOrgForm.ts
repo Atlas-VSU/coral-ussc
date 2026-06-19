@@ -11,6 +11,7 @@ export const useOrgForm = () => {
         subscribed: false,
         facultyId: "",
         programId: "",
+        accessLevel: 1,
         // users: []
     },
   });
