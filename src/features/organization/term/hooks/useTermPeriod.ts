@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useTermStore } from "../store";
 import { getAllTerms } from "@/firebase/term";
 import { Term } from "../types";
+import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 
 /**
  * Single hook for academic periods.
@@ -12,6 +13,11 @@ import { Term } from "../types";
  * - `current`     — the one marked is_current in the DB (read-only reference)
  * - `selected`    — what the user has picked (defaults to current on first load)
  * - `setSelected` — lets any component switch the active selection
+ *
+ * CACHING: `getAllTerms` results are cached for TERMS TTL (5 min) via
+ * cacheService. Within a single session the Zustand store guard
+ * (`all.length > 0`) prevents redundant fetches entirely; the cache
+ * additionally covers page reloads within the TTL window.
  */
 export function useTermPeriod() {
     const {
@@ -30,8 +36,13 @@ export function useTermPeriod() {
     const refresh = async () => {
         setLoading(true);
         try {
-            
-            const terms = await getAllTerms() as Term[];
+            // Serve from cache when available — only hits Firestore on a cache miss
+            // or after the 5-minute TTL expires.
+            const terms = await cacheService.getOrFetch(
+                CACHE_KEYS.allTerms(),
+                () => getAllTerms() as Promise<Term[]>,
+                CACHE_DURATIONS.TERMS
+            );
 
             if (!terms) {
                 setError("Failed to load periods");
@@ -64,7 +75,7 @@ export function useTermPeriod() {
     };
 
     useEffect(() => {
-        if (all.length > 0) return; // already loaded — skip refetch
+        if (all.length > 0) return; // already loaded in Zustand — skip refetch
         refresh();
     }, []);
 
