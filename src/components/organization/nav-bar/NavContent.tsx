@@ -21,6 +21,7 @@ import { auth } from "@/firebase/firebase.config";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { cacheUtils } from "@/utils/cacheUtils";
 import { User } from "./AdminSidebar";
+import { Organization } from "@/constants/types";
 
 
 interface NavContentProps {
@@ -30,6 +31,7 @@ interface NavContentProps {
   user?: User;
   isAuthenticated?: boolean;
   navItems?: NavItem[];
+  organization?: Organization
 }
 
 export interface NavItem {
@@ -44,7 +46,8 @@ export function NavContent({
   onNavigate,
   user,
   isAuthenticated,
-  navItems
+  navItems,
+  organization
 }: NavContentProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -116,9 +119,9 @@ export function NavContent({
           )}
         >
           <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[#1B5E20]/10 p-1">
-            <Image
-              src="/images/ussc-logo-1.webp"
-              alt="USSC Logo"
+            <img
+              src={organization?.orgLogoUrl || "/images/ussc-logo-1.webp"}
+              alt={organization?.shortName?.toUpperCase() || "USSC Logo"}
               width={32}
               height={32}
               className="h-7 w-7 object-contain"
@@ -203,9 +206,13 @@ export function NavContent({
               )}
             >
               <Avatar className="size-7 shrink-0 border border-[#1B5E20]/20">
+              {organization?.orgLogoUrl ? (
+                <img src={organization?.orgLogoUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
                 <AvatarFallback className="bg-[#1B5E20] text-xs font-semibold text-white">
-                  {initials}
+                  {organization?.shortName?.toUpperCase() || initials}
                 </AvatarFallback>
+              )}
               </Avatar>
               {!collapsed && (
                 <div className="min-w-0 flex-1">

@@ -21,6 +21,7 @@ import { Button } from "../../ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "../../ui/sheet"
 import { useState, useEffect } from "react"
 import { NavContent, NavItem } from "./NavContent"
+import { Organization } from "@/constants/types"
 
 export interface User {
   name?: string;
@@ -33,7 +34,7 @@ export interface User {
 
 
 
-export function AdminSidebar({ user, className }: { user?: User; className?: string }) {
+export function AdminSidebar({ user, className, org }: { user?: User; className?: string, org?: Organization }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
@@ -77,7 +78,7 @@ export function AdminSidebar({ user, className }: { user?: User; className?: str
           user={user} 
           isAuthenticated={!!user}
           navItems={navItems}
-
+          organization={org}
         />
 
 

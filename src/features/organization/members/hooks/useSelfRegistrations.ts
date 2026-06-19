@@ -2,16 +2,18 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { SelfRegistration } from "../data/mockSelfRegistrations";
 import {
-  MOCK_SELF_REGISTRATIONS,
-  SelfRegistration,
-} from "../data/mockSelfRegistrations";
-import { assignExistingFeesToStudent, buildClearanceId, getCurrentUser, getCurrentUserData, getPendingMembersOfAnOrg, getUserById, updateMemberStatus } from "@/firebase";
-import { useAuth } from "@/hooks/useAuth";
-import { useTermPeriod } from "../../term/hooks/useTermPeriod";
+  assignExistingFeesToStudent,
+  buildClearanceId,
+  getCurrentUserData,
+  getUserById,
+  updateMemberStatus,
+} from "@/firebase";
+import { subscribeToPendingMembers } from "@/firebase/members";
 import { Term } from "@/constants/types";
 import { Member } from "../types";
-import { getAllOrgs, getOrgById } from "@/firebase/organization";
+import { getAllOrgs } from "@/firebase/organization";
 import { doc, setDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/firebase/firebase.config";
 import { ClearanceStatus } from "../../clearance/types";
@@ -22,6 +24,10 @@ export type SelfRegDecision = "approved" | "reject";
 
 /**
  * Manages the list of self-registered students awaiting verification.
+ *
+ * Uses a Firestore real-time listener (onSnapshot) instead of a one-shot
+ * getDocs fetch so that all admins on all devices see live updates instantly.
+ * Cache is intentionally bypassed for this hook.
  */
 export function useSelfRegistrations() {
   const [registrations, setRegistrations] = useState<SelfRegistration[]>([]);
@@ -32,15 +38,28 @@ export function useSelfRegistrations() {
   const [userData, setUserData] = useState<Member | null>(null);
 
   useEffect(() => {
-    const fetchPendingMembers = async () => {
-      const currentUserData = await getCurrentUserData()
-      const pendingMembers = await getPendingMembersOfAnOrg(currentUserData!);
-      setRegistrations(pendingMembers);
-      setUserData(currentUserData);
+    let unsubscribe: (() => void) | null = null;
+
+    const start = async () => {
+      const currentUserData = await getCurrentUserData();
+      if (!currentUserData) return;
+
+      setUserData(currentUserData as unknown as Member);
+
+      // subscribeToPendingMembers returns the Firestore unsubscribe fn.
+      // The callback fires immediately (current snapshot) then on every change.
+      unsubscribe = await subscribeToPendingMembers(
+        currentUserData as unknown as Member,
+        (members) => setRegistrations(members)
+      );
     };
-    fetchPendingMembers();
-    
-    console.log(registrations)
+
+    start();
+
+    // Cleanup: detach the Firestore listener when the component unmounts.
+    return () => {
+      unsubscribe?.();
+    };
   }, []);
 
   // Mirror the latest list / in-flight flag in refs so the callbacks can read

@@ -22,6 +22,7 @@ import { ITEMS_PER_PAGE } from "../config";
 import { getActiveTerm } from "@/firebase/term"
 import { seedClearanceDocuments } from "@/firebase/clearance"
 import { useTermPeriod } from "../../term/hooks/useTermPeriod"
+import { getOrgById } from "@/firebase/organization"
 
 export function useClearancePage(orgId: string | undefined) {
   const { user: currentUser } = useAuth()
@@ -35,6 +36,7 @@ export function useClearancePage(orgId: string | undefined) {
   const [isSeeding, setIsSeeding] = useState(false)
 
   const { selected } = useTermPeriod()
+  const user = useAuth();
 
   const { clearances, loading, totalCount, setClearances, hardRefresh: baseHardRefresh, hasNextPage, stats, fetchStatsData, AY, sem } = useClearances(
     orgId,
@@ -211,10 +213,11 @@ export function useClearancePage(orgId: string | undefined) {
   }
 
   const handleLogPayment = async () => {
-    if (!logPaymentTarget || selection.selectedRefIds.size === 0) return
+    const org = await getOrgById(user.user?.orgId!)
+    if (!logPaymentTarget || selection.selectedRefIds.size === 0 || !org) return
 
     setIsProcessing(true)
-    const receipt = generateReceiptId();
+    const receipt = generateReceiptId(org.shortName);
     try {
       await logManualPayment(
         logPaymentTarget.id,
@@ -281,7 +284,10 @@ export function useClearancePage(orgId: string | undefined) {
 
   const handleHardRefresh = async () => {
     if (!orgId) return;
-    cacheService.invalidate(`clearance:stats:${orgId}`)
+    // Invalidate all stat slices for this org (any term) — key format is
+    // "clearance:stats:{orgId}:{statusFilter}:{AY}-{semester}" so prefixing on
+    // orgId wipes everything without needing to know the current term here.
+    cacheService.invalidateByPrefix(`clearance:stats:${orgId}`)
     await baseHardRefresh()
   }
 

@@ -6,6 +6,7 @@ import {
   where,
   orderBy,
   getDocs,
+  onSnapshot,
   CollectionReference,
   DocumentData,
   limit,
@@ -362,6 +363,67 @@ export const updateMemberStatus = async (memberId: string, status: string) => {
     handleFirestoreError(error, "update status");
   }
 }
+
+/**
+ * Subscribes to real-time updates of pending self-registrations for the current
+ * user's org. Fires `callback` immediately with the current list, then again
+ * whenever a document is added, updated, or removed.
+ *
+ * Returns an unsubscribe function — call it in a useEffect cleanup to avoid
+ * memory leaks.
+ *
+ * NOTE: Cache is intentionally bypassed here. Multi-device consistency requires
+ * all admins to see live Firestore data, not a local snapshot.
+ */
+export const subscribeToPendingMembers = async (
+  currentUserData: Member,
+  callback: (members: import("@/features/organization/members/data/mockSelfRegistrations").SelfRegistration[]) => void
+): Promise<() => void> => {
+  const org = await getOrgById(currentUserData.orgId!);
+  const baseConstraints = buildBaseConstraints(currentUserData, org!);
+
+  const constraints: QueryConstraint[] = [
+    ...baseConstraints,
+    where("status", "==", "pending"),
+    orderBy("registrationAt", "desc"),
+  ];
+
+  const q = query(usersCollection, ...constraints);
+
+  const unsubscribe = onSnapshot(
+    q,
+    async (snapshot) => {
+      try {
+        const members = await Promise.all(
+          snapshot.docs.map(async (docSnap) => {
+            const program = await getProgramById(docSnap.data().programId);
+            return {
+              id: docSnap.id,
+              studentId: docSnap.data().studentId,
+              submittedAt: docSnap.data().registrationAt?.toDate().toISOString() ?? new Date().toISOString(),
+              email: docSnap.data().email,
+              firstName: docSnap.data().firstName,
+              lastName: docSnap.data().lastName,
+              role: docSnap.data().role,
+              status: docSnap.data().status,
+              yearLevel: docSnap.data().yearLevel,
+              programName: program?.name ?? "",
+              corStatus: "coming-soon" as const,
+            };
+          })
+        );
+        callback(members);
+      } catch (err) {
+        console.error("[subscribeToPendingMembers] Error mapping snapshot:", err);
+      }
+    },
+    (error) => {
+      console.error("[subscribeToPendingMembers] Firestore listener error:", error);
+    }
+  );
+
+  return unsubscribe;
+};
 
 export const addApprovedStatusAllMembers = async() => {
   try {

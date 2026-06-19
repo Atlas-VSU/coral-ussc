@@ -58,7 +58,8 @@ export const getOrgByName = async (name: string) => {
                 users: orgDoc.data().users,
                 programId: orgDoc.data().programId,
                 facultyId: orgDoc.data().facultyId,
-                accessLevel: orgDoc.data().accessLevel
+                accessLevel: orgDoc.data().accessLevel,
+                orgLogoUrl: orgDoc.data().orgLogoUrl || null,
             } as Organization;
         }
             return null
@@ -81,7 +82,8 @@ export const getOrgById = async (id: string) => {
                 users: orgDoc.data().users,
                 programId: orgDoc.data().programId,
                 facultyId: orgDoc.data().facultyId,
-                accessLevel: orgDoc.data().accessLevel
+                accessLevel: orgDoc.data().accessLevel,
+                orgLogoUrl: orgDoc.data().orgLogoUrl || null,
             } as Organization;
         }
             return null
@@ -119,7 +121,8 @@ export const getAllOrgs = async () => {
                 users: doc.data().users,
                 programId: doc.data().programId,
                 facultyId: doc.data().facultyId,
-                accessLevel: doc.data().accessLevel
+                accessLevel: doc.data().accessLevel,
+                orgLogoUrl: doc.data().orgLogoUrl || null,
             })) as Organization[];
         }
             return [];

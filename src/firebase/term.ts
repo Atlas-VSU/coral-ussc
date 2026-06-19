@@ -1,6 +1,7 @@
 import { Term } from "@/constants/types";
 import { db } from "@/firebase/firebase.config";
 import { collection, addDoc, Timestamp, updateDoc, doc, getDocs, CollectionReference, DocumentData, query, where } from "firebase/firestore";
+import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 
 
 const termsCollection: CollectionReference<DocumentData> = collection(
@@ -39,6 +40,9 @@ export const createTerm = async (AY: string, sem: string) => {
             "metadata.updatedAt": Timestamp.now(),
         });
         }
+        // Invalidate both term caches so the next calls get fresh data
+        cacheService.invalidate(CACHE_KEYS.activeTerm());
+        cacheService.invalidate(CACHE_KEYS.allTerms());
 
     } catch (error) {
         handleFirestoreError(error, `creating term`);
@@ -47,20 +51,21 @@ export const createTerm = async (AY: string, sem: string) => {
 }
   
 export const getActiveTerm = async () => {
-    try {
-        const q = query(termsCollection,
-            where("isActive", "==", true),
-            where("isDeleted", "==", false));
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-            const termDoc = snapshot.docs[0];
-            return { id: termDoc.id, AY:termDoc.data().AY, semester: termDoc.data().semester, isActive: termDoc.data().isActive } as Term;
-        }
-            return null
-    } catch (error) {
-        handleFirestoreError(error, `fetching current Term`);
-        return null;
-    }
+    return cacheService.getOrFetch(
+        CACHE_KEYS.activeTerm(),
+        async () => {
+            const q = query(termsCollection,
+                where("isActive", "==", true),
+                where("isDeleted", "==", false));
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                const termDoc = snapshot.docs[0];
+                return { id: termDoc.id, AY: termDoc.data().AY, semester: termDoc.data().semester, isActive: termDoc.data().isActive } as Term;
+            }
+            return null;
+        },
+        CACHE_DURATIONS.TERMS
+    );
 }
 
 export const getAllTerms = async () => {

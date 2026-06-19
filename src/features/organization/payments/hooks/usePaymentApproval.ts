@@ -16,10 +16,13 @@ import { cacheService, CACHE_KEYS } from "@/services/cacheService"
 import { updateFeeStats, updateFineStats } from "@/firebase/stats/update/updateStats"
 import { getActiveTerm } from "@/firebase/term"
 import { useTermPeriod } from "../../term/hooks/useTermPeriod"
+import { getOrgById } from "@/firebase/organization"
+import { useAuth } from "@/hooks/useAuth"
 
 
 export const usePaymentApproval = () => {
     const { selected } = useTermPeriod();
+    const user = useAuth();
     const _approvePayment = async (payment: ProofOfPayment) => {
         try {
             const term = selected || await getActiveTerm();
@@ -29,7 +32,11 @@ export const usePaymentApproval = () => {
                 toast.error("Payment owner not found, cannot verify payment.")
                 return;
             };
-            const receipt = generateReceiptId();
+            const org = await getOrgById(user?.user?.orgId!)
+            if (!org) {
+                throw new Error("Organization not found");
+            }
+            const receipt = generateReceiptId(org.shortName);
             verifyPaymentProof(payment, verifier, receipt);
             if (payment.metadata.items?.length) {
 

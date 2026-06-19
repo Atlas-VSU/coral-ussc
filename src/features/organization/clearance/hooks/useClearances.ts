@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { fetchClearanceDocumentsPaginated, fetchStats, getClearanceCount } from "@/firebase/clearance"
-import { cacheService } from "@/services/cacheService"
+import { cacheService, CACHE_KEYS } from "@/services/cacheService"
 import type { ClearanceStatus } from "../types"
 import { getActiveTerm } from "@/firebase/term"
 import { useTermPeriod } from "../../term/hooks/useTermPeriod"
@@ -109,11 +109,13 @@ export function useClearances(
     setIsRefreshing(true)
 
     try {
+      // Invalidate all clearance-related cache slices.
+      // Keys written by clearance.ts include the term already (via buildClearanceId or
+      // query-level term scoping), so prefix invalidation covers all terms at once.
       cacheService.invalidateByPrefix('clearance:doc:')
-      cacheService.invalidateByPrefix('clearance:all:')
       cacheService.invalidateByPrefix('clearance:count:')
       cacheService.invalidateByPrefix('clearance:stats:')
-      cacheService.invalidateByPrefix(`clearance_stats_${orgId}:`)
+      // 'clearance:all:' and 'clearance_stats_*' are legacy/unused prefixes — removed.
 
       cursorsRef.current[currentPage - 1] = undefined
 
@@ -125,7 +127,7 @@ export function useClearances(
     } finally {
       setIsRefreshing(false)
     }
-  }, [orgId, isRefreshing, currentPage, fetchData, fetchCount])
+  }, [orgId, isRefreshing, currentPage, fetchData, fetchCount, fetchStatsData])
 
   return { 
     clearances, 

@@ -33,10 +33,12 @@ export const checkFeeTitleExist = async (title: string, academicYear: string, se
 }
 
 export const checkFeeStatusForClearance = async (userId: string, orgId: string) => {
+    // Hoist term so it can be embedded in the cache key.
+    // getActiveTerm() is itself cached (5 min TTL), so this adds no extra DB read.
+    const term = await getActiveTerm();
     return cacheService.getOrFetch(
-        CACHE_KEYS.feeStatusForClearance(userId, orgId),
+        `${CACHE_KEYS.feeStatusForClearance(userId, orgId)}:${term?.AY}-${term?.semester}`,
         async () => {
-            const term = await getActiveTerm();
             const feeRef = collection(db, "fees");
             const q = query(
                 feeRef, 
@@ -757,11 +759,12 @@ export async function fetchPaymentLogs(feeId: string) {
 }
 
 export const getFeeByStudentId = async (studentId: string) => {
+    // Hoist term for key correctness — getActiveTerm() is cached (no extra DB read).
+    const term = await getActiveTerm();
     return cacheService.getOrFetch(
-        `fees:student:${studentId}`,
+        `fees:student:${studentId}:${term?.AY}-${term?.semester}`,
         async () => {
             const feeRef = collection(db, "fees");
-            const term = await getActiveTerm();
             const q = query(
                 feeRef,
                 where("studentId", "==", studentId),
