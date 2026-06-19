@@ -1,6 +1,7 @@
 "use client";
 import { AdminSidebar } from "@/components/organization/nav-bar/AdminSidebar";
 import { MobileBottomNav } from "@/components/organization/nav-bar/mobile-bottom-nav";
+import { PeriodSelector } from "@/features/organization/term/components/TermSelector";
 import {
   LayoutDashboard,
   Calendar,
@@ -18,6 +19,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { cacheUtils } from "@/utils/cacheUtils";
+import { Organization } from "@/constants/types";
+import { getOrgById } from "@/firebase/organization";
 
 // Define icon map for the sidebar
 const iconMap = {
@@ -140,6 +143,7 @@ export default function OrganizationLayout({
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [org, setOrg] = useState<Organization>()
 
   // Check for signing out state on mount and when auth changes
   useEffect(() => {
@@ -155,6 +159,17 @@ export default function OrganizationLayout({
     const interval = setInterval(checkSigningOutState, 200);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const fetchOrg = async () => {
+      if (!user) return;
+      const org = await getOrgById(user.orgId!);
+      if (org) {
+        setOrg(org);
+      }
+    }
+    fetchOrg();
+  }, [user])
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -193,11 +208,19 @@ export default function OrganizationLayout({
     <div className="flex min-h-screen w-full organization-bg">
       <AdminSidebar
         user={userData}
+        org={org}
         className="z-50"
       />
       <div className="flex-1 flex flex-col min-w-0">
+        <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b px-5 sm:px-6 xl:px-8 py-3 flex items-center justify-end shadow-sm">
+          <div className="flex items-center gap-3 w-full">
+            <div className="w-[250px] md:w-full">
+              <PeriodSelector />
+            </div>
+          </div>
+        </div>
         <main className="flex-1">
-          <div className="mx-auto max-w-7xl pb-20 xl:pb-10 pt-18 px-5 sm:px-6 xl:px-8 xl:pt-10">
+          <div className="mx-auto max-w-7xl pb-20 xl:pb-10 pt-8 px-5 sm:px-6 xl:px-8 xl:pt-10">
             {children}
           </div>
         </main>

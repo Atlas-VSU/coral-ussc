@@ -17,6 +17,8 @@ import { cacheService, CACHE_DURATIONS } from "@/services/cacheService";
 import { determineEventStatus } from "@/utils/eventStatusUtils";
 import { getStats } from "./stats/read/getStats";
 import { fetchStats } from "./clearance";
+import { getOrgById } from "./organization";
+import { getActiveTerm } from "./term";
 
 // Helper to transform event data from Firestore to our Event type
 const transformEventData = (doc: any): Event => {
@@ -32,29 +34,33 @@ const transformEventData = (doc: any): Event => {
  * Gets a count of total attendees across all events for the current user's context
  * Uses an efficient single aggregation query instead of fetching all events
  */
-export const getDashboardAttendeeCount = async (): Promise<number> => {
+export const getDashboardAttendeeCount = async (selectedTerm?: { AY: string, semester: string } | null): Promise<number> => {
   try {
+    const term = selectedTerm || await getActiveTerm();
     // Use cache with a specific key for this dashboard metric
-    const cacheKey = `dashboard:total-attendees-count`;
+    const cacheKey = `dashboard:total-attendees-count:${term?.AY}-${term?.semester}`;
 
     return await cacheService.getOrFetch<number>(
       cacheKey,
       async () => {
         const currentUser = (await getCurrentUserData()) as unknown as Member;
-        if (!currentUser) return 0;
+        const org = await getOrgById(currentUser.orgId!);
+        if (!currentUser || !org || !term) return 0;
 
         const accessLevel = currentUser.accessLevel;
         let eventsQuery = query(
           collection(db, "events"),
-          where("isDeleted", "==", false)
+          where("isDeleted", "==", false),
+          where("academicYear", "==", term!.AY),
+          where("semester", "==", term!.semester)
         );
 
-        if (accessLevel === 1) {
-          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1), where("programId", "==", currentUser.programId));
-        } else if (accessLevel === 2) {
-          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2), where("facultyId", "==", currentUser.facultyId));
+        if (accessLevel === 1 && org.programId) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1), where("orgId", "==", currentUser.orgId), where("programId", "==", org.programId));
+        } else if (accessLevel === 2 && org.facultyId) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2), where("orgId", "==", currentUser.orgId), where("facultyId", "==", org.facultyId));
         } else if (accessLevel === 3) {
-          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 3));
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 3), where("orgId", "==", currentUser.orgId));
         }
 
         // Use getCountFromServer to avoid fetching document data
@@ -99,7 +105,8 @@ export const getDashboardUpcomingEvents = async (
       cacheKey,
       async () => {
         const currentUser = (await getCurrentUserData()) as unknown as Member;
-        if (!currentUser) return [];
+        const org = await getOrgById(currentUser.orgId!);
+        if (!currentUser || !org) return [];
 
         const accessLevel = currentUser.accessLevel;
 
@@ -113,12 +120,12 @@ export const getDashboardUpcomingEvents = async (
           where("date", ">=", Timestamp.fromDate(today))
         );
 
-        if (accessLevel === 1) {
-          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1), where("programId", "==", currentUser.programId));
-        } else if (accessLevel === 2) {
-          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2), where("facultyId", "==", currentUser.facultyId));
+        if (accessLevel === 1 && org.programId) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1), where("orgId", "==", currentUser.orgId), where("programId", "==", org.programId));
+        } else if (accessLevel === 2 && org.facultyId) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2), where("orgId", "==", currentUser.orgId), where("facultyId", "==", org.facultyId));
         } else if (accessLevel === 3) {
-          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 3));
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 3), where("orgId", "==", currentUser.orgId));
         }
 
         eventsQuery = query(
@@ -154,7 +161,8 @@ export const getDashboardOngoingEvents = async (
       cacheKey,
       async () => {
         const currentUser = (await getCurrentUserData()) as unknown as Member;
-        if (!currentUser) return [];
+        const org = await getOrgById(currentUser.orgId!);
+        if (!currentUser || !org) return [];
 
         const accessLevel = currentUser.accessLevel;
 
@@ -173,13 +181,13 @@ export const getDashboardOngoingEvents = async (
           where("date", "<=", Timestamp.fromDate(endOfDay))
         );
 
-        if (accessLevel === 1) {
-          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1), where("programId", "==", currentUser.programId));
-        } else if (accessLevel === 2) {
-          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2), where("facultyId", "==", currentUser.facultyId));
+        if (accessLevel === 1 && org.programId) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1), where("orgId", "==", currentUser.orgId), where("programId", "==", org.programId));
+        } else if (accessLevel === 2 && org.facultyId) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2), where("orgId", "==", currentUser.orgId), where("facultyId", "==", org.facultyId));
 
         } else if (accessLevel === 3) {
-          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 3));
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 3), where("orgId", "==", currentUser.orgId));
         }
 
         eventsQuery = query(eventsQuery, limit(count));
@@ -206,30 +214,36 @@ export const getDashboardOngoingEvents = async (
  * Optimized to fetch only what's needed for the dashboard
  */
 export const getDashboardEvents = async (
-  count = 5
+  count = 5,
+  selectedTerm?: { AY: string, semester: string } | null
 ): Promise<Event[]> => {
   try {
+    const term = selectedTerm || await getActiveTerm();
     // Use cache with a specific key for this dashboard section
-    const cacheKey = `dashboard:events:${count}`;
+    const cacheKey = `dashboard:events:${count}:${term?.AY}-${term?.semester}`;
 
     return await cacheService.getOrFetch<Event[]>(
       cacheKey,
       async () => {
         const currentUser = (await getCurrentUserData()) as unknown as Member;
-        if (!currentUser) return [];
+        const org = await getOrgById(currentUser.orgId!);
+        if (!currentUser || !org || !term) return [];
 
         const accessLevel = currentUser.accessLevel;
 
         // Query for events
         let eventsQuery = query(
           collection(db, "events"),
-          where("isDeleted", "==", false)
+          where("isDeleted", "==", false),
+          where("orgId", "==", currentUser.orgId),
+          where("academicYear", "==", term!.AY),
+          where("semester", "==", term!.semester)
         );
 
-        if (accessLevel === 1) {
-          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1), where("programId", "==", currentUser.programId));
-        } else if (accessLevel === 2) {
-          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2), where("facultyId", "==", currentUser.facultyId));
+        if (accessLevel === 1 && org.programId) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 1), where("programId", "==", org.programId));
+        } else if (accessLevel === 2 && org.facultyId) {
+          eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 2), where("facultyId", "==", org.facultyId));
         } else if (accessLevel === 3) {
           eventsQuery = query(eventsQuery, where("accessLevelEvent", "==", 3));
         }
@@ -265,7 +279,8 @@ export const getDashboardRecentMembers = async (
       cacheKey,
       async () => {
         const currentUser = (await getCurrentUserData()) as unknown as Member;
-        if (!currentUser) return [];
+        const org = await getOrgById(currentUser.orgId!);
+        if (!currentUser || !org) return [];
 
         const accessLevel = currentUser.accessLevel;
 
@@ -276,10 +291,10 @@ export const getDashboardRecentMembers = async (
           where("role", "==", "user")
         );
 
-        if (accessLevel === 1) {
-          membersQuery = query(membersQuery, where("programId", "==", currentUser.programId ?? ""));
-        } else if (accessLevel === 2) {
-          membersQuery = query(membersQuery, where("facultyId", "==", currentUser.facultyId ?? ""));
+        if (accessLevel === 1 && org.programId) {
+          membersQuery = query(membersQuery, where("programId", "==", org.programId ?? ""));
+        } else if (accessLevel === 2 && org.facultyId) {
+          membersQuery = query(membersQuery, where("facultyId", "==", org.facultyId ?? ""));
         }
 
         membersQuery = query(
@@ -314,7 +329,7 @@ export const getDashboardRecentMembers = async (
 /**
  * Gets event and member count statistics for the dashboard
  */
-export const getDashboardStats = async (): Promise<{
+export const getDashboardStats = async (selectedTerm?: { AY: string, semester: string } | null): Promise<{
   totalStudents: number;
   totalEvents: number;
   totalAttendances: number;
@@ -324,8 +339,9 @@ export const getDashboardStats = async (): Promise<{
   totalAbsences: number;
 }> => {
   try {
+    const term = selectedTerm || await getActiveTerm();
     // Use cache with a specific key for dashboard stats
-    const cacheKey = `dashboard:stats`;
+    const cacheKey = `dashboard:stats:${term?.AY}-${term?.semester}`;
 
     return await cacheService.getOrFetch<{
       totalStudents: number;
@@ -339,7 +355,8 @@ export const getDashboardStats = async (): Promise<{
       cacheKey,
       async () => {
         const currentUser = (await getCurrentUserData()) as unknown as Member;
-        if (!currentUser) {
+        const org = await getOrgById(currentUser.orgId!);
+        if (!currentUser || !org || !term) {
           return {
             totalStudents: 0,
             totalEvents: 0,
@@ -359,19 +376,23 @@ export const getDashboardStats = async (): Promise<{
           where("isDeleted", "==", false),
           where("role", "==", "user")
         );
+
         let eventsBaseQuery = query(
           collection(db, "events"),
-          where("isDeleted", "==", false)
+          where("isDeleted", "==", false),
+          where("academicYear", "==", term!.AY),
+          where("semester", "==", term!.semester)
         );
 
-        if (accessLevel === 1) {
-          studentsBaseQuery = query(studentsBaseQuery, where("programId", "==", currentUser.programId ?? ""));
-          eventsBaseQuery = query(eventsBaseQuery, where("accessLevelEvent", "==", 1), where("programId", "==", currentUser.programId ?? ""));
-        } else if (accessLevel === 2) {
-          studentsBaseQuery = query(studentsBaseQuery, where("facultyId", "==", currentUser.facultyId ?? ""));
-          eventsBaseQuery = query(eventsBaseQuery, where("accessLevelEvent", "==", 2), where("facultyId", "==", currentUser.facultyId ?? ""));
+
+        if (accessLevel === 1 && org.programId) {
+          studentsBaseQuery = query(studentsBaseQuery, where("programId", "==", org.programId ?? ""));
+          eventsBaseQuery = query(eventsBaseQuery, where("accessLevelEvent", "==", 1), where("orgId", "==", currentUser.orgId), where("programId", "==", org.programId ?? ""));
+        } else if (accessLevel === 2 && org.facultyId) {
+          studentsBaseQuery = query(studentsBaseQuery, where("facultyId", "==", org.facultyId ?? ""));
+          eventsBaseQuery = query(eventsBaseQuery, where("accessLevelEvent", "==", 2), where("orgId", "==", currentUser.orgId), where("facultyId", "==", org.facultyId ?? ""));
         } else if (accessLevel === 3) {
-          eventsBaseQuery = query(eventsBaseQuery, where("accessLevelEvent", "==", 3));
+          eventsBaseQuery = query(eventsBaseQuery, where("accessLevelEvent", "==", 3), where("orgId", "==", currentUser.orgId),);
         }
 
         // Execute all count queries in parallel for efficiency
@@ -382,7 +403,7 @@ export const getDashboardStats = async (): Promise<{
             // Get events with attendee counts
             getDocs(eventsBaseQuery),
             // Get total attendances count (reuse the dedicated function)
-            getDashboardAttendeeCount(),
+            getDashboardAttendeeCount(term),
           ]);
         const totalStudents = studentsCount.data().count;
         const totalEvents = eventsSnapshot.size;
@@ -451,17 +472,21 @@ export const getDashboardStats = async (): Promise<{
 };
 
 // Recent Payments
-export const getDashboardRecentPayments = async (count = 5) => {
+export const getDashboardRecentPayments = async (count = 5, selectedTerm?: { AY: string, semester: string } | null) => {
   try {
     const currentUser = (await getCurrentUserData()) as unknown as Member;
     if (!currentUser) return [];
 
-    const orgId = (currentUser as any).id ?? "";
+    const orgId = (currentUser as any).orgId ?? "";
+    const term = selectedTerm || await getActiveTerm();
+    if (!term) return [];
 
     const paymentsQuery = query(
       collection(db, "proofOfPayments"),
       where("orgId", "==", orgId),
       where("isArchived", "==", false),
+      where("academicYear", "==", term!.AY),
+      where("semester", "==", term!.semester),
       orderBy("submittedAt", "desc"),
       limit(count)
     );
@@ -497,12 +522,14 @@ export const getDashboardRecentPayments = async (count = 5) => {
 
 // Fees Collected
 // Scoped to current org, excludes archived, sums paidAmount
-export const getDashboardFeesCollected = async () => {
+export const getDashboardFeesCollected = async (selectedTerm?: { AY: string, semester: string } | null) => {
   try {
-    // const currentUser = (await getCurrentUserData()) as unknown as Member;
-    // if (!currentUser) return 0;
+    const term = selectedTerm || await getActiveTerm();
+    if (!term) return 0;
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return 0;
     // const orgId = (currentUser as any).id ?? "";
-    const stats = await getStats("2ndSem-2025-2026"); 
+    const stats = await getStats(`${term!.AY}-${term!.semester}-${currentUser.orgId}`); 
     return stats?.totalCollectedFees ?? 0;
   } catch (error) {
     console.error("Error getting fees collected:", error);
@@ -512,12 +539,14 @@ export const getDashboardFeesCollected = async () => {
 
 // Unpaid Fines Amount
 // Scoped to current org, excludes archived, sums balance of fines per student incl partial payments
-export const getDashboardUnpaidFinesAmount = async () => {
+export const getDashboardUnpaidFinesAmount = async (selectedTerm?: { AY: string, semester: string } | null) => {
   try {
-  //   const currentUser = (await getCurrentUserData()) as unknown as Member;
-  //   if (!currentUser) return 0;
+    const term = selectedTerm || await getActiveTerm();
+    if (!term) return 0;
+    const currentUser = (await getCurrentUserData()) as unknown as Member;
+    if (!currentUser) return 0;
   //   const orgId = (currentUser as any).id ?? "";
-    const stats = await getStats("2ndSem-2025-2026");
+    const stats = await getStats(`${term!.AY}-${term!.semester}-${currentUser.orgId}`);
     return stats?.totalUnpaidFines ?? 0;
   } catch (error) {
     console.error("Error getting unpaid fines amount:", error);
@@ -529,7 +558,7 @@ export const getDashboardUnpaidFinesAmount = async () => {
 export const getDashboardClearanceRate = async () => {
   try {
     const currentUser = (await getCurrentUserData()) as unknown as Member;
-    const clearanceStat = await fetchStats(currentUser.id!)
+    const clearanceStat = await fetchStats(currentUser.orgId!)
     const total = (clearanceStat?.cleared || 0) + (clearanceStat?.not_cleared || 0) + (clearanceStat?.pending || 0);
     return total > 0 ? ((clearanceStat?.cleared || 0) / total) * 100 : 0;
     

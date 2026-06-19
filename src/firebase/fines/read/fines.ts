@@ -1,11 +1,11 @@
 
 import { FineItem, StudentFines } from "@/features/organization/fines/types";
 import { Member, MemberData } from "@/features/organization/members/types";
-import { StudentFineItem } from "@/features/organization/payments/types";
 import { db } from "@/firebase/firebase.config";
 import { getCurrentUserData } from "@/firebase/users";
-import { collection, query, where, getDocs, CollectionReference, DocumentData, DocumentSnapshot, orderBy, limit, startAfter, getCountFromServer, getDoc, doc, onSnapshot, connectFirestoreEmulator } from "firebase/firestore";
+import { collection, query, where, getDocs, CollectionReference, DocumentData, DocumentSnapshot, orderBy, limit, startAfter, getCountFromServer, getDoc, doc, onSnapshot, connectFirestoreEmulator, or, and } from "firebase/firestore";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
+import { getActiveTerm } from "@/firebase/term";
 
 const finesCollection: CollectionReference<DocumentData> = collection(
     db,
@@ -21,7 +21,11 @@ const handleFirestoreError = (error: any, context: string) => {
 
 export const getFinesByStudents = async (students: MemberData[]) => {
   const studentIds = students.map(s => s.member.studentId).sort();
+
   if (studentIds.length === 0) return [];
+
+  const term = await getActiveTerm();
+  const currUser = await getCurrentUserData() as unknown as Member;
 
   // Simple hash for the student IDs to use as a cache key
   const hash = studentIds.join(',').length + studentIds.reduce((acc, id) => acc + id.split('').reduce((a, c) => a + c.charCodeAt(0), 0), 0);
@@ -32,7 +36,7 @@ export const getFinesByStudents = async (students: MemberData[]) => {
     async () => {
       try {
         // ── Chunk into groups of 30 (Firebase "in" limit) ──────────────────────
-        const CHUNK_SIZE    = 30;
+        const CHUNK_SIZE    = 15;
         const PARALLEL_LIMIT = 20; // max concurrent Firestore requests at a time
 
         const chunks: string[][] = [];
@@ -47,8 +51,16 @@ export const getFinesByStudents = async (students: MemberData[]) => {
             group.map(chunk =>
               getDocs(query(
                 finesCollection,
-                where("studentId", "in", chunk),
-                where("metadata.isArchived", "==", false),
+                and(
+                  where("studentId", "in", chunk),
+                  where("metadata.isArchived", "==", false),
+                  where("academicYear", "==", term!.AY),
+                  where("orgId", "==", currUser.orgId),
+                  or(
+                    where("semester", "==", term!.semester),
+                    where("semester", "==", `${term!.semester} Semester`) //THIS IS TEMPORARY SINCE SOME DOCUMENTS HAVE SEMESTER FORMATTED AS "2ND Semester" INSTEAD OF "2ND" (CAN BE SOLVED WHEN WE UPDATE THE SEMESTER FIELD OF ALL DOCUMENTS TO BE CONSISTENT SORRY FOR THIS)
+                  )
+                )
               ))
             )
           );
@@ -59,6 +71,7 @@ export const getFinesByStudents = async (students: MemberData[]) => {
               fineDocs.push({ id: doc.id, ...doc.data() } as StudentFines);
             });
         }
+
         return fineDocs;
       } catch (error) {
         handleFirestoreError(error, `fetching fine documents for student IDs`);
@@ -70,14 +83,21 @@ export const getFinesByStudents = async (students: MemberData[]) => {
 };
 
 export const getFineByStudentId = async (studentId: string) => {
+    const term = await getActiveTerm();
     return cacheService.getOrFetch(
         CACHE_KEYS.fineByStudent(studentId),
         async () => {
             const fineQuery = query(
                 finesCollection,
-                where("studentId", "==", studentId),
-                where("metadata.isArchived", "==", false),
-                limit(1)
+              and(
+                  where("studentId", "==", studentId),
+                  where("metadata.isArchived", "==", false),
+                  where("academicYear", "==", term!.AY),
+                or(
+                  where("semester", "==", term!.semester),
+                  where("semester", "==", `${term!.semester} Semester`)
+                  )
+                )
             );
             const querySnapshot = await getDocs(fineQuery);
             if (!querySnapshot.empty) {
@@ -105,17 +125,40 @@ export const getFineById = async (fineId: string) => {
   );
 }
 
-export const countFinesOfStudents = async (status: string) => { 
+export const countFinesOfStudents = async (status: string, selectedTerm?: { AY: string; semester: string } | null) => { 
   const currUser = await getCurrentUserData() as unknown as Member;
+  const term = selectedTerm || await getActiveTerm();
   return cacheService.getOrFetch(
-    `fines:count:${currUser.id}:${status}`,
+    `fines:count:${currUser.id}:${status}:${term?.AY}-${term?.semester}`,
     async () => {
       const coll = collection(db, "fines");
       let q = null;
       if (status === "all") {
-        q = query(coll, where("metadata.isArchived", "==", false), where("orgId", "==", currUser.id));
+        q = query(
+          coll,
+          and(
+            where("metadata.isArchived", "==", false),
+            where("orgId", "==", currUser.orgId),
+            where("academicYear", "==", term!.AY),
+          or(
+            where("semester", "==", term!.semester),
+            where("semester", "==", `${term!.semester} Semester`)
+          )
+          )
+        );
       } else {
-        q =  query(coll, where("metadata.isArchived", "==", false),where("orgId", "==", currUser.id), where("status", "==", status));
+        q = query(coll,
+          and(
+            where("metadata.isArchived", "==", false),
+            where("orgId", "==", currUser.orgId),
+            where("status", "==", status),
+            where("academicYear", "==", term!.AY),
+            or(
+              where("semester", "==", term!.semester),
+              where("semester", "==", `${term!.semester} Semester`)
+            )
+          )  
+        );
       }
 
       const snapshot = await getCountFromServer(q);
@@ -126,21 +169,56 @@ export const countFinesOfStudents = async (status: string) => {
 }
 
 
-export const countUnsettleFinesOfStudents = async () => { 
+export const countUnsettleFinesOfStudents = async (selectedTerm?: { AY: string; semester: string } | null) => { 
   const currUser = await getCurrentUserData() as unknown as Member;
+  const term = selectedTerm || await getActiveTerm();
   return cacheService.getOrFetch(
-    `fines:countUnsettled:${currUser.id}`,
+    `fines:countUnsettled:${currUser.id}:${term?.AY}-${term?.semester}`,
     async () => {
       const coll = collection(db, "fines");
-      let q = query(coll, where("metadata.isArchived", "==", false), where("orgId", "==", currUser.id), where("status", "==", "unpaid"), where("accumulatedAmount", ">", 0));
+      let q = query(coll,
+        and(
+          where("metadata.isArchived", "==", false),
+          where("orgId", "==", currUser.orgId),
+          where("status", "==", "unpaid"),
+          where("accumulatedAmount", ">", 0),
+          where("academicYear", "==", term!.AY),
+          or(
+            where("semester", "==", term!.semester),
+            where("semester", "==", `${term!.semester} Semester`)
+          )
+        )
+      );
       let snapshot = await getCountFromServer(q);
       let total = snapshot.data().count;
 
-      q = query(coll, where("metadata.isArchived", "==", false), where("orgId", "==", currUser.id), where("status", "==", "partial"));
+      q = query(coll,
+        and(
+          where("metadata.isArchived", "==", false),
+          where("orgId", "==", currUser.orgId),
+          where("status", "==", "partial"),
+          where("academicYear", "==", term!.AY),
+          or(
+            where("semester", "==", term!.semester),
+            where("semester", "==", `${term!.semester} Semester`)
+          )
+        )
+      );
       snapshot = await getCountFromServer(q);
       total += snapshot.data().count;
 
-      q = query(coll, where("metadata.isArchived", "==", false), where("orgId", "==", currUser.id), where("status", "==", "pending"));
+      q = query(coll,
+        and(
+          where("metadata.isArchived", "==", false),
+          where("orgId", "==", currUser.orgId),
+          where("status", "==", "pending"),
+          where("academicYear", "==", term!.AY),
+          or(
+            where("semester", "==", term!.semester),
+            where("semester", "==", `${term!.semester} Semester`)
+          )
+        )
+      );
       snapshot = await getCountFromServer(q);
       total += snapshot.data().count;
       return total;
@@ -149,13 +227,25 @@ export const countUnsettleFinesOfStudents = async () => {
   );
 }
 
-export const countStudentsWithFines = async () => { 
+export const countStudentsWithFines = async (selectedTerm?: { AY: string; semester: string } | null) => { 
   const currUser = await getCurrentUserData() as unknown as Member;
+  const term = selectedTerm || await getActiveTerm();
   return cacheService.getOrFetch(
-    `fines:countWithFines:${currUser.id}`,
+    `fines:countWithFines:${currUser.id}:${term?.AY}-${term?.semester}`,
     async () => {
       const coll = collection(db, "fines");
-      const q = query(coll, where("metadata.isArchived", "==", false), where("orgId", "==", currUser.id), where("accumulatedAmount", ">", 0));
+      const q = query(coll,
+        and(
+          where("metadata.isArchived", "==", false),
+          where("orgId", "==", currUser.orgId),
+          where("accumulatedAmount", ">", 0),
+          where("academicYear", "==", term!.AY),
+          or(
+            where("semester", "==", term!.semester),
+            where("semester", "==", `${term!.semester} Semester`)
+          )
+        )
+      );
       const snapshot = await getCountFromServer(q);
       return snapshot.data().count;
     },
@@ -174,16 +264,6 @@ export const getFineItemsByFineId = async (fineId: string) => {
   );
 }
 
-export const getUnpaidFineItemsByFineId = async (fine: StudentFines) => {
-  return cacheService.getOrFetch(
-    CACHE_KEYS.fineUnpaidItems(fine.id!),
-    async () => {
-      const fineDoc = await getDocs(query(collection(db, "fines", fine.id!, "fineItems"), where("isArchived", "==", false), where("isPaid", "==", false)));
-      return fineDoc.docs.map(doc => ({ refId: doc.id, userId: fine.userId, fine: fine, parentFineId: fine.id!, title: doc.data().eventName, amount: doc.data().amount })) as StudentFineItem[];
-    },
-    CACHE_DURATIONS.PAYMENTS
-  );
-}
 
 
 /**
@@ -194,16 +274,21 @@ export const fetchFinesPaginated = async (
   pageSize: number = 9,
   lastVisibleDoc: any = null,
   searchTerm: string = "",
-  statusFilter: string = "all"
+  statusFilter: string = "all",
+  selectedTerm?: { AY: string; semester: string } | null
 ) => {
-  let constraints: any[] = [
+  const term = selectedTerm || await getActiveTerm();
+  let constraints1: any[] = [
     where("orgId", "==", orgId),
     where("metadata.isArchived", "==", false),
     where("accumulatedAmount", ">", 0),
+    where("academicYear", "==", term!.AY),
   ];
 
+  let constraints2: any[] = [];
+
   if (statusFilter !== "all") {
-    constraints.push(where("status", "==", statusFilter));
+    constraints1.push(where("status", "==", statusFilter));
   }
 
   // Normalize search term
@@ -214,20 +299,30 @@ export const fetchFinesPaginated = async (
 
   if (normalizedSearch) {
     const searchField = isIdSearch ? "studentId" : "userName";
-    constraints.push(where(searchField, ">=", normalizedSearch));
-    constraints.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
-    constraints.push(orderBy(searchField));
+    constraints1.push(where(searchField, ">=", normalizedSearch));
+    constraints1.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
+    constraints2.push(orderBy(searchField));
   } else {
-    constraints.push(orderBy("metadata.updatedAt", "desc"));
+    constraints2.push(orderBy("metadata.updatedAt", "desc"));
   }
 
   // Apply pagination
-  constraints.push(limit(pageSize));
+  constraints2.push(limit(pageSize));
   if (lastVisibleDoc) {
-    constraints.push(startAfter(lastVisibleDoc));
+    constraints2.push(startAfter(lastVisibleDoc));
   }
 
-  const q = query(finesCollection, ...constraints, limit(9));
+  const q = query(finesCollection,
+    and(
+      ...constraints1,
+      or(
+        where("semester", "==", term!.semester),
+        where("semester", "==", `${term!.semester} Semester`)
+      )
+    ),
+    ...constraints2,
+    limit(9)
+  );
   const snapshot = await getDocs(q);
 
   const docs = snapshot.docs.map((doc) => {
@@ -248,14 +343,16 @@ export const fetchFinesPaginated = async (
 /**
  * Gets the total count of fine documents for an organization with optional search.
  */
-export const getFinesCount = async (orgId: string, statusFilter: string = "all", searchTerm: string = "") => {
+export const getFinesCount = async (orgId: string, statusFilter: string = "all", searchTerm: string = "", selectedTerm?: { AY: string; semester: string } | null) => {
+  const term = selectedTerm || await getActiveTerm();
   return cacheService.getOrFetch(
-    CACHE_KEYS.clearanceCount(orgId, statusFilter, searchTerm).replace('clearance:count', 'fines:count'),
+    CACHE_KEYS.clearanceCount(orgId, statusFilter, searchTerm).replace('clearance:count', `fines:count:${term?.AY}-${term?.semester}`),
     async () => {
       const constraints: any[] = [
         where("orgId", "==", orgId),
         where("metadata.isArchived", "==", false),
         where("accumulatedAmount", ">", 0),
+        where("academicYear", "==", term!.AY),
       ];
 
       if (statusFilter !== "all") {
@@ -273,7 +370,15 @@ export const getFinesCount = async (orgId: string, statusFilter: string = "all",
         constraints.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
       }
 
-      const q = query(finesCollection, ...constraints);
+      const q = query(finesCollection,
+        and(
+          ...constraints,
+          or(
+            where("semester", "==", term!.semester),
+            where("semester", "==", `${term!.semester} Semester`)
+          )
+        )
+      );
       const snapshot = await getCountFromServer(q);
       return snapshot.data().count;
     },
@@ -282,16 +387,15 @@ export const getFinesCount = async (orgId: string, statusFilter: string = "all",
 };
 
 export const subscribeFines = (
-  userId: string,
+  orgId: string,
   onUpdate: (fines: StudentFines[]) => void,
   onError?: (error: Error) => void
 ) => {
   // Deprecated for the main roster due to performance with labels like 9,000 students
   console.warn("subscribeFines is deprecated for large datasets. Use fetchFinesPaginated instead.");
-  
   const constraints = [
     where("metadata.isArchived", "==", false),
-    where("orgId", "==", userId),
+    where("orgId", "==", orgId),
     where("accumulatedAmount", ">", 0),
     orderBy("metadata.updatedAt", "desc"),
     limit(100), // Safety limit
@@ -328,4 +432,10 @@ export const getFineItemsByIds = async (fineId:string, fineItemIds: string[]) =>
     },
     CACHE_DURATIONS.FINES
   );
+}
+
+export const countFines = async () => {
+  const finesCollection = collection(db, "fines");
+  const snapshot = await getCountFromServer(finesCollection);
+  return snapshot.data().count;
 }

@@ -1,3 +1,4 @@
+import { Timestamp } from "firebase/firestore";
 import { Fee } from "../fees/types";
 import { ProofOfPayment, StudentFines } from "../fines/types";
 import { Member } from "../members/types";

@@ -51,7 +51,9 @@ export interface FineItem {
   parentFineId: string,
   isPaid: boolean,
   isPending: boolean,
-  date: Timestamp
+  date: Timestamp,
+  academicYear?: string,
+  semester?: string,
 }
 
 export interface Fine {

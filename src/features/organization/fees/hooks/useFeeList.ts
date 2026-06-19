@@ -8,6 +8,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { getCurrentUserData } from "@/firebase";
 import { cacheService } from "@/services/cacheService";
 import { FeeItem } from "../types";
+import { Member } from "../../members/types";
+import { getActiveTerm } from "@/firebase/term";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 export function useFeeList() {
     const [rawFees, setRawFees] = useState<FeeItem[]>([]);
@@ -15,18 +18,21 @@ export function useFeeList() {
     const [totalCollected, setTotalCollected] = useState<number>(0);
     const [totalFees, setTotalFees] = useState<number>(0);
     const [totalStudents, setTotalStudents] = useState<number>(0);
-    
     const [aggregatedFees, setAggregatedFees] = useState<AggregatedFee[]>([]);
+    
+    const { selected } = useTermPeriod();
 
     useEffect(() => {
         const loadFees = async() => {
             setIsLoading(true)
             try {
-                const user = await getCurrentUserData();
+                const user = await getCurrentUserData() as unknown as Member;
                 if(!user) 
                     throw new Error("Not Authenticated!");
+                if(!user.orgId) 
+                    throw new Error("No Organization!");
                 
-                const data = await fetchFeesForOrg(user.uid) as unknown as FeeItem[];
+                const data = await fetchFeesForOrg(user.orgId, selected) as unknown as FeeItem[];
                 setTotalFees(data.length);
                 setRawFees(data);
             }
@@ -39,7 +45,7 @@ export function useFeeList() {
             }
         };
         loadFees();
-    }, [])
+    }, [selected])
 
     const groupedFees = useMemo(() => {
         return rawFees.reduce((accumulator, currentFee) => {
@@ -59,15 +65,15 @@ export function useFeeList() {
         const loadFees = async() => {
             setIsLoading(true)
             try {
-                const user =  await getCurrentUserData();
+                const user =  await getCurrentUserData() as unknown as Member;
                 if(!user) 
                     throw new Error("Not Authenticated!");
                 
                 // Invalidate cache for hard refresh
-                const cacheKey = `fees:org:${user.uid}`;
+                const cacheKey = `fees:org:${user.orgId}:${selected?.AY}-${selected?.semester}`;
                 cacheService.invalidate(cacheKey);
 
-                const data = await fetchFeesForOrg(user.uid) as unknown as FeeItem[];
+                const data = await fetchFeesForOrg(user.orgId!, selected) as unknown as FeeItem[];
                 setRawFees(data);
             }
             catch (error) {
@@ -79,20 +85,20 @@ export function useFeeList() {
             }
         };
         loadFees();
-    }, [])
+    }, [selected])
 
 
     useEffect(() => {
         const fetchTotalCollected = async () => {
-            const user = await getCurrentUserData();
+            const user = await getCurrentUserData() as unknown as Member;
             if(!user) 
                 throw new Error("Not Authenticated!");
             
-            const data = await getTotalCollectedAmount(user.uid);
+            const data = await getTotalCollectedAmount(user.orgId!, selected);
             setTotalCollected(data);
         }
         fetchTotalCollected();
-    }, [])
+    }, [selected])
 
     useEffect(() => {
         const fetchAggregatedData = async () => {
@@ -147,6 +153,8 @@ export function useFeeList() {
         totalCollected,
         totalFees,
         totalStudents,
+        AY: selected?.AY || "",
+        sem: selected?.semester || "",
         refetchFees
     }
 }

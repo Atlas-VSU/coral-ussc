@@ -7,12 +7,12 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function OrgClearancePage() {
     const { user } = useAuth();
-    const handleSeeding = async () => {
-        await seedClearanceDocuments(user?.uid || "");
-    }
+    // const handleSeeding = async () => {
+    //     await seedClearanceDocuments(user! || "");
+    // }
     return (
         <div>
-            <ClearancePage orgId={user?.uid} />
+            <ClearancePage orgId={user?.orgId} />
             {/* <Button onClick={handleSeeding}>Seed Clearance Documents</Button> */}
         </div>
     );

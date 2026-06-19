@@ -1,8 +1,9 @@
-
 import { db } from "@/firebase/firebase.config";
 import { doc, getDoc, Timestamp, updateDoc } from "firebase/firestore";
 import { recalculateFines } from "@/firebase/fines/update/recalculate";
 import { recalculateFees } from "@/firebase/fees/update/recalculate";
+import { buildClearanceId } from "@/firebase/clearance";
+import { getActiveTerm } from "@/firebase/term";
 import { Member } from "@/features/organization/members/types";
 import { PaymentStatus } from "@/constants/status";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
@@ -18,6 +19,7 @@ export const verifyPaymentHistory = async (
     amount: number,
     note?: string | null,
     itemIds?: string[],
+    term?: any
 ) => {
     const docRef = doc(db, type, refId, "paymentHistory", paymentHistoryId);
         try { 
@@ -37,7 +39,9 @@ export const verifyPaymentHistory = async (
                 const fineSnap = await getDoc(fineRef);
                 if (fineSnap.exists()) {
                     const fineData = fineSnap.data();
-                    const clearanceRef = doc(db, 'clearanceStatus', fineData.userId);
+                    const activeTerm = term || await getActiveTerm();
+                    const id = buildClearanceId(fineData.userId, verifier.orgId, verifier.accessLevel!, activeTerm!);
+                    const clearanceRef = doc(db, 'clearanceStatus', id);
                     for (const itemId of itemIds ?? []) {
                         await updateDoc(clearanceRef, {
                             [`blockingItems.${itemId}.balance`]: fineData.balance,
@@ -51,7 +55,9 @@ export const verifyPaymentHistory = async (
             if(type === "fees"){
                 const result = await recalculateFees(refId, amount);
                 if (result.success && result.userId) {
-                    const clearanceRef = doc(db, 'clearanceStatus', result.userId);
+                    const activeTerm = term || await getActiveTerm();
+                    const id = buildClearanceId(result.userId, verifier.orgId, verifier.accessLevel!, activeTerm!);
+                    const clearanceRef = doc(db, 'clearanceStatus', id);
                     await updateDoc(clearanceRef, {
                         [`blockingItems.${refId}.balance`]: result.balance,
                         [`blockingItems.${refId}.status`]: result.status === "paid" ? "paid" : "unpaid",
@@ -59,6 +65,8 @@ export const verifyPaymentHistory = async (
                     });
                 }
             }
+
+            
 
         }catch(error){
             console.error("Error verifying payment history:", error);
@@ -78,6 +86,7 @@ export const rejectPaymentHistory = async (
     refId: string,
     itemRefId?: string[],
     reason?: string,
+    term?: any
 ) => {
     const docRef = doc(db, type, refId, "paymentHistory", paymentHistoryId);
         try { 
@@ -99,8 +108,10 @@ export const rejectPaymentHistory = async (
                         await updateDoc(fineRef, {status: "partial"});
                     } else {
                         await updateDoc(fineRef, {status: "unpaid"});
-                     }
-                    const clearanceRef = doc(db, 'clearanceStatus', fineData.userId);
+                    }
+                    const activeTerm = term || await getActiveTerm();
+                    const id = buildClearanceId(fineData.userId, verifier.orgId, verifier.accessLevel!, activeTerm!);
+                    const clearanceRef = doc(db, 'clearanceStatus', id);
                     for (const itemId of itemRefId ?? []) {
                         await updateDoc(clearanceRef, {
                         [`blockingItems.${itemId}.pendingReview`]: false,
@@ -115,7 +126,9 @@ export const rejectPaymentHistory = async (
                 if (feeSnap.exists()) {
                     await updateDoc(feeRef, {status: "unpaid"});
                     const feeData = feeSnap.data();
-                    const clearanceRef = doc(db, 'clearanceStatus', feeData.userId);
+                    const activeTerm = term || await getActiveTerm();
+                    const id = buildClearanceId(feeData.userId, verifier.orgId, verifier.accessLevel!, activeTerm!);
+                    const clearanceRef = doc(db, 'clearanceStatus', id);
                     await updateDoc(clearanceRef, {
                         [`blockingItems.${refId}.pendingReview`]: false,
                     });

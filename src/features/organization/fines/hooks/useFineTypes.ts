@@ -5,6 +5,7 @@ import { createFineType, updateFineType, deleteFineType } from "@/firebase/fines
 import { toast } from "sonner";
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { getCurrentUserData } from "@/firebase/users";
+import { Member } from "../../members/types";
 
 export function useFineTypes() {
   const [fineTypes, setFineTypes] = useState<FineType[]>([]);
@@ -50,9 +51,9 @@ export function useFineTypes() {
     try {
       await updateFineType(fineTypeId, data);
       // invalidate cache to force fresh fetch
-      const currentUser = await getCurrentUserData();
-      if (currentUser?.uid) {
-        cacheService.invalidate(CACHE_KEYS.fineTypesAll(currentUser.uid));
+      const currentUser = await getCurrentUserData() as unknown as Member;
+      if (currentUser?.orgId) {
+        cacheService.invalidate(CACHE_KEYS.fineTypesAll(currentUser.orgId));
       }
       await fetchFineTypes();
       toast.success(`${data.name} was updated successfully`);
@@ -72,9 +73,9 @@ export function useFineTypes() {
     try {
       await deleteFineType(fineTypeId);
       // invalidate cache to force fresh fetch
-      const currentUser = await getCurrentUserData();
-      if (currentUser?.uid) {
-        cacheService.invalidate(CACHE_KEYS.fineTypesAll(currentUser.uid));
+      const currentUser = await getCurrentUserData() as unknown as Member;
+      if (currentUser?.orgId) {
+        cacheService.invalidate(CACHE_KEYS.fineTypesAll(currentUser.orgId));
       }
       await fetchFineTypes();
       toast.success(`Fine type was deleted successfully`);

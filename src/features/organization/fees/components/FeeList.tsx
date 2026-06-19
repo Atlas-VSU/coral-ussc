@@ -22,11 +22,13 @@ import { CardGridSkeleton } from "@/components/organization/skeleton/CardGridSke
 import { TableSkeleton } from "@/components/organization/skeleton/TableSkeleton"
 import { Progress } from "@/components/ui/progress"
 import { DataPagination } from "@/components/organization/general/DataPagination"
+import { useTermPeriod } from "../../term/hooks/useTermPeriod"
 
 const ITEMS_PER_PAGE = 9
 
 export default function FeeListPage() {
   const router = useRouter()
+  const { selected } = useTermPeriod()
   const [navigatingId, setNavigatingId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const { aggregatedFees, isLoading: feesLoading, refetchFees } = useFeeList()
@@ -112,6 +114,7 @@ export default function FeeListPage() {
             <Button 
               variant="default"
               onClick={() => setGenerateOpen(true)}
+              disabled={!selected?.isActive}
             >
               <Zap className="size-4" /> Generate Fee
             </Button>

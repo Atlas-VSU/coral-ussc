@@ -5,6 +5,7 @@ import { query, collection, where, getDocs, doc, getDoc, writeBatch, orderBy, li
 
 
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
+import { Member } from "@/features/organization/members/types";
 
   // Centralized error handler
 const handleFirestoreError = (error: any, context: string) => {
@@ -44,12 +45,12 @@ export const getFineTypeById = async (fineTypeId : string) => {
   
 
 export const getAllFineTypes = async () => { 
-  const currentUser = await getCurrentUserData();
-  const orgId = currentUser?.uid || null;
+  const currentUser = await getCurrentUserData() as unknown as Member;
+  const orgId = currentUser?.orgId || null;
 
-  return cacheService.getOrFetch(
-    CACHE_KEYS.fineTypesAll(orgId || ''),
-    async () => {
+  // return cacheService.getOrFetch(
+    // CACHE_KEYS.fineTypesAll(orgId || ''),
+    // async () => {
       let fineTypeQuery = query(
         collection(db, "fineTypes"),
         where("isActive", "==", true),
@@ -67,8 +68,8 @@ export const getAllFineTypes = async () => {
         majorEventsOnly: doc.data().majorEventsOnly,
         isActive: doc.data().isActive,
       })) as FineType[];
-    },
-    CACHE_DURATIONS.FINES
-  );
+  //   },
+  //   CACHE_DURATIONS.FINES
+  // );
 }
 

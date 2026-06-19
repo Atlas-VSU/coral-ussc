@@ -11,6 +11,9 @@ import { isValidStudentId } from "../utils";
 import { toast } from "sonner";
 import { User } from "firebase/auth";
 import { useDebounce } from "@/hooks/useDebounce";
+import { getOrgById } from "@/firebase/organization";
+import { Organization } from "@/constants/types";
+import { set } from "zod";
 
 interface SearchResult {
   status:
@@ -32,7 +35,8 @@ export function useStudentSearch(
   const [studentId, setStudentId] = useState<string>("");
   const [searchName, setSearchName] = useState<string>("");
   const [isSearching, setIsSearching] = useState(false);
-  const [currentUserData, setCurrentUserData] = useState<Member>()
+  const [currentUserData, setCurrentUserData] = useState<Member>();
+  const [org, setOrg] = useState<Organization>();
   const [hasPerformedNameSearch, setHasPerformedNameSearch] = useState(false);
   const [searchResult, setSearchResult] = useState<SearchResult>({
     status: "idle",
@@ -50,7 +54,9 @@ export function useStudentSearch(
   useEffect(() => {
     const fetchCurrentUser = async () => {
       const currentUser = await getCurrentUserData() as unknown as Member;
+      const currentOrg = await getOrgById(currentUser.orgId!);
       setCurrentUserData(currentUser);
+      setOrg(currentOrg!);
     }
     fetchCurrentUser()
   }, [])
@@ -84,13 +90,13 @@ export function useStudentSearch(
         }
 
         // Logic A: Check Organization Mismatch
-        if (currentUserData && currentUserData.accessLevel == 1 && currentUserData.programId != student.programId) {
+        if (currentUserData && currentUserData.accessLevel == 1 && org!.programId != student.programId) {
           if (showToasts) toast.success("Student found however belongs to different organization");
           return { status: "success-different-organization" as const, student };
         }
 
         // Logic B: Check Faculty Mismatch
-        if (currentUserData && currentUserData.accessLevel == 2 && currentUserData.facultyId != student.facultyId) {
+        if (currentUserData && currentUserData.accessLevel == 2 && org!.facultyId != student.facultyId) {
           if (showToasts) toast.success("Student found however belongs to different faculty");
           return { status: "success-different-faculty" as const, student };
         }

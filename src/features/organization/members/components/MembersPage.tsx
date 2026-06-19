@@ -45,8 +45,25 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { SelfRegisteredTab } from "@/features/organization/members/components/SelfRegisteredTab";
+import { useSelfRegistrations } from "@/features/organization/members/hooks/useSelfRegistrations";
 
 export function MembersPage() {
+  const {
+    registrations: selfRegistrations,
+    pendingCount: selfRegPendingCount,
+    processing: selfRegProcessing,
+    accept: acceptSelfRegistration,
+    reject: rejectSelfRegistration,
+  } = useSelfRegistrations();
+
   const {
     members,
     faculties,
@@ -56,6 +73,7 @@ export function MembersPage() {
     totalPages,
     hasNextPage,
     hasPrevPage,
+    term,
     goToNextPage,
     goToPrevPage,
     programFilter,
@@ -141,13 +159,13 @@ export function MembersPage() {
         if (data.role === "user" && userId) {
           await Promise.all([
             createFinePerStudent(userId, data),
-            addStudentWithClearance(userId, data, currentUser.id!),
+            addStudentWithClearance(userId, data, currentUser.orgId!),
           ]);
-          const orgContext = { uid: currentUser.id! };
+          const orgContext = { uid: currentUser.orgId!, accessLevel: currentUser.accessLevel! };
  
           await Promise.all([
-            assignExistingFeesToStudent(userId, data, orgContext),
-            assignExistingFinesToStudent(userId, data, orgContext),
+            assignExistingFeesToStudent(userId, data, orgContext, currentUser),
+            assignExistingFinesToStudent(userId, data, orgContext, currentUser),
           ]);
         }
         toast.success("Member added successfully");
@@ -199,7 +217,7 @@ export function MembersPage() {
       <PageHeader
         variant="admin"
         title="Members"
-        context="2nd Semester · A.Y. 2025–2026"
+        context={`${term.semester} Semester · A.Y. ${term.AY}`}
         description={`${totalMembers} total member${totalMembers !== 1 ? "s" : ""} in your organization`}
         action={
           <div className="hidden lg:flex items-center gap-2">
@@ -277,75 +295,104 @@ export function MembersPage() {
         </SelectContent>
       </Select>
 
-      {/* Filters — search wired to Enter-only commit */}
-      <MembersFilters
-        programs={programs}
-        searchTerm={searchInput}
-        onSearchChange={handleSearchInputChange}
-        onSearchCommit={handleSearchCommit}
-        onSearchClear={clearSearch}
-        onProgramFilter={handleProgramFilter}
-        onSortBy={handleSortBy}
-        programFilter={programFilter}
-        disabled={isBusy}
-        viewMode={viewMode}
-        onViewChange={handleViewModeChange}
-      />
-
-      {/* Member list */}
-      {isLoading ? (
-        <MembersSkeleton viewMode={viewMode} />
-      ) : viewMode === "card" ? (
-        <MembersList
-          members={members}
-          programs={programs}
-          faculties={faculties}
-          onEdit={handleEditMember}
-          onDelete={handleDeleteMember}
-        />
-      ) : (
-        <MembersTable
-          members={members}
-          programs={programs}
-          faculties={faculties}
-          onEdit={handleEditMember}
-          onDelete={handleDeleteMember}
-        />
-      )}
-
-      {/* Prev / Next pagination — no page jumping */}
-      {!isBusy && members.length > 0 && (
-        <div className="flex items-center justify-between px-1 mb-4">
-          <p className="text-sm text-muted-foreground">
-            Page {currentPage} of {totalPages}
-            {isSearchActive && (
-              <span className="ml-2 text-xs text-muted-foreground">
-                · searching "{searchInput}"
-              </span>
+      {/* Tabs — All members vs. self-registered students awaiting verification */}
+      <Tabs defaultValue="all" className="w-full gap-6">
+        <TabsList className="w-full sm:w-auto">
+          <TabsTrigger value="all">All Members</TabsTrigger>
+          <TabsTrigger value="verify" className="gap-2">
+            Self-Registered
+            {selfRegPendingCount > 0 && (
+              <Badge
+                variant="secondary"
+                className="bg-amber-100 text-amber-700 px-1.5"
+              >
+                {selfRegPendingCount}
+              </Badge>
             )}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToPrevPage}
-              disabled={!hasPrevPage || isBusy}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToNextPage}
-              disabled={!hasNextPage || isBusy}
-            >
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
-        </div>
-      )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all" className="flex flex-col gap-6">
+          {/* Filters — search wired to Enter-only commit */}
+          <MembersFilters
+            programs={programs}
+            searchTerm={searchInput}
+            onSearchChange={handleSearchInputChange}
+            onSearchCommit={handleSearchCommit}
+            onSearchClear={clearSearch}
+            onProgramFilter={handleProgramFilter}
+            onSortBy={handleSortBy}
+            programFilter={programFilter}
+            disabled={isBusy}
+            viewMode={viewMode}
+            onViewChange={handleViewModeChange}
+          />
+
+          {/* Member list */}
+          {isLoading ? (
+            <MembersSkeleton viewMode={viewMode} />
+          ) : viewMode === "card" ? (
+            <MembersList
+              members={members}
+              programs={programs}
+              faculties={faculties}
+              onEdit={handleEditMember}
+              onDelete={handleDeleteMember}
+            />
+          ) : (
+            <MembersTable
+              members={members}
+              programs={programs}
+              faculties={faculties}
+              onEdit={handleEditMember}
+              onDelete={handleDeleteMember}
+            />
+          )}
+
+          {/* Prev / Next pagination — no page jumping */}
+          {!isBusy && members.length > 0 && (
+            <div className="flex items-center justify-between px-1 mb-4">
+              <p className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+                {isSearchActive && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    · searching "{searchInput}"
+                  </span>
+                )}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToPrevPage}
+                  disabled={!hasPrevPage || isBusy}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToNextPage}
+                  disabled={!hasNextPage || isBusy}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="verify">
+          <SelfRegisteredTab
+            registrations={selfRegistrations}
+            processing={selfRegProcessing}
+            onAccept={acceptSelfRegistration}
+            onReject={rejectSelfRegistration}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Dialogs */}
       <MemberForm

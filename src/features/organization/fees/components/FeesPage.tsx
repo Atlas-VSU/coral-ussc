@@ -15,7 +15,7 @@ import { StatCardsCarousel } from "@/components/organization/general/StatCardsCa
 export function FeesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-    const { aggregatedFees } = useFeeList()
+    const { aggregatedFees, AY, sem } = useFeeList()
     const { totalMembers } = usePaginatedMembers()
    
     
@@ -29,7 +29,7 @@ export function FeesPage() {
       <PageHeader
         variant="admin"
         title="Fees Management"
-        context="2nd Semester · A.Y. 2025–2026"
+        context={`${sem} Semester · A.Y. ${AY}`} 
         description="Manage your organization's fees and track collection progress"
       />
       

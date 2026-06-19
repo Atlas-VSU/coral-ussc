@@ -6,6 +6,7 @@ import {
   where,
   orderBy,
   getDocs,
+  onSnapshot,
   CollectionReference,
   DocumentData,
   limit,
@@ -13,10 +14,19 @@ import {
   getCountFromServer,
   QueryConstraint,
   QueryDocumentSnapshot,
+  or,
+  writeBatch,
+  doc,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { getCurrentUserData } from "./users";
 import { Member, MemberData } from "@/features/organization/members/types";
+import { getOrgById } from "./organization";
+import { Organization } from "@/constants/types";
+import { SelfRegistration } from "@/features/organization/members/data/mockSelfRegistrations";
+import { getProgramById } from "./programs";
 
 const usersCollection: CollectionReference<DocumentData> = collection(
   db,
@@ -34,6 +44,7 @@ const handleFirestoreError = (error: any, context: string) => {
  */
 const buildBaseConstraints = (
   currentUserData: Member,
+  org: Organization,
   programId?: string
 ): QueryConstraint[] => {
   const constraints: QueryConstraint[] = [
@@ -42,10 +53,10 @@ const buildBaseConstraints = (
   ];
 
   // Scope to org level — prevents fetching all 9000+ students for scoped roles
-  if (currentUserData.accessLevel === 1) {
-    constraints.push(where("programId", "==", currentUserData.programId ?? ""));
-  } else if (currentUserData.accessLevel === 2) {
-    constraints.push(where("facultyId", "==", currentUserData.facultyId ?? ""));
+  if (currentUserData.accessLevel === 1 && org.programId) {
+    constraints.push(where("programId", "==", org.programId ?? ""));
+  } else if (currentUserData.accessLevel === 2 && org.facultyId) {
+    constraints.push(where("facultyId", "==", org.facultyId ?? ""));
   }
 
   // Additional program filter (only for accessLevel 3+, since 1 already pins programId)
@@ -114,7 +125,8 @@ export const getPaginatedUsers = async (options: {
     } = options;
 
     const currentUserData = (await getCurrentUserData()) as unknown as Member;
-    const baseConstraints = buildBaseConstraints(currentUserData, programId);
+    const org = await getOrgById(currentUserData.orgId!);
+    const baseConstraints = buildBaseConstraints(currentUserData, org!,programId);
     const { sortField, sortDirection } = resolveSortParams(sortBy);
 
     // Normalize search term
@@ -129,7 +141,7 @@ export const getPaginatedUsers = async (options: {
             .join(" ")
       : "";
 
-    const constraints: QueryConstraint[] = [...baseConstraints];
+    const constraints: QueryConstraint[] = [...baseConstraints, where("status", "==", "approved")];
 
     if (normalizedSearch) {
       // Server-side prefix search — only touches matching docs, not all 9000+
@@ -194,9 +206,11 @@ export const getMembersOfAnOrg = async (
   needCount: boolean = false
 ) => {
   try {
-    const baseConstraints = buildBaseConstraints(currentUserData);
+    const org = await getOrgById(currentUserData.orgId!);
+    const baseConstraints = buildBaseConstraints(currentUserData, org!);
     const constraints: QueryConstraint[] = [
       ...baseConstraints,
+      where("status", "==", "approved"),
       orderBy("firstName", "asc"),
     ];
 
@@ -237,10 +251,11 @@ export const getAllMembersOfAnOrg = async (
   currentUserData: Member,
 ) => {
   try {
-    const baseConstraints = buildBaseConstraints(currentUserData);
+    const org = await getOrgById(currentUserData.orgId!);
+    const baseConstraints = buildBaseConstraints(currentUserData, org!);
     const constraints: QueryConstraint[] = [
-      where("isDeleted", "==", false),
-      where("role", "==", "user"),
+     ...baseConstraints,
+     where("status", "==", "approved"),
       orderBy("firstName", "asc"),
     ];
 
@@ -271,6 +286,7 @@ export const getAllStudents = async () => {
       usersCollection,
       where("isDeleted", "==", false),
       where("role", "==", "user"),
+      where("status", "==", "approved"),
       orderBy("studentId", "asc")
     );
 
@@ -288,6 +304,155 @@ export const getAllStudents = async () => {
     return [];
   }
 };
+
+export const getPendingMembersOfAnOrg = async (
+  currentUserData: Member
+): Promise<SelfRegistration[]> => {
+  try {
+    const org = await getOrgById(currentUserData.orgId!);
+    const baseConstraints = buildBaseConstraints(currentUserData, org!);
+
+    const constraints: QueryConstraint[] = [
+      ...baseConstraints,
+      where("status", "==", "pending"),
+      orderBy("registrationAt", "desc"),
+    ];
+
+    const q = query(usersCollection, ...constraints);
+    const snapshot = await getDocs(q);
+
+    const members = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const program = await getProgramById(doc.data().programId);
+
+        return {
+          id: doc.id,
+          studentId: doc.data().studentId,
+          submittedAt: doc.data().registrationAt.toDate().toISOString(),
+          email: doc.data().email,
+          firstName: doc.data().firstName,
+          lastName: doc.data().lastName,
+          role: doc.data().role,
+          status: doc.data().status,
+          yearLevel: doc.data().yearLevel,
+          programName: program?.name ?? "",
+          corStatus: "coming-soon"
+        };
+      })
+    );
+
+    return members;
+  } catch (error) {
+    handleFirestoreError(error, "fetch pending members");
+    return [];
+  }
+};
+
+export const updateMemberStatus = async (memberId: string, status: string) => {
+  try {
+    const userRef = doc(usersCollection, memberId);
+    if(status == "approved") {
+      await updateDoc(userRef, {
+        status,
+      });
+    }
+    else {
+      await deleteDoc(userRef);
+    }
+  } catch (error) {
+    handleFirestoreError(error, "update status");
+  }
+}
+
+/**
+ * Subscribes to real-time updates of pending self-registrations for the current
+ * user's org. Fires `callback` immediately with the current list, then again
+ * whenever a document is added, updated, or removed.
+ *
+ * Returns an unsubscribe function — call it in a useEffect cleanup to avoid
+ * memory leaks.
+ *
+ * NOTE: Cache is intentionally bypassed here. Multi-device consistency requires
+ * all admins to see live Firestore data, not a local snapshot.
+ */
+export const subscribeToPendingMembers = async (
+  currentUserData: Member,
+  callback: (members: import("@/features/organization/members/data/mockSelfRegistrations").SelfRegistration[]) => void
+): Promise<() => void> => {
+  const org = await getOrgById(currentUserData.orgId!);
+  const baseConstraints = buildBaseConstraints(currentUserData, org!);
+
+  const constraints: QueryConstraint[] = [
+    ...baseConstraints,
+    where("status", "==", "pending"),
+    orderBy("registrationAt", "desc"),
+  ];
+
+  const q = query(usersCollection, ...constraints);
+
+  const unsubscribe = onSnapshot(
+    q,
+    async (snapshot) => {
+      try {
+        const members = await Promise.all(
+          snapshot.docs.map(async (docSnap) => {
+            const program = await getProgramById(docSnap.data().programId);
+            return {
+              id: docSnap.id,
+              studentId: docSnap.data().studentId,
+              submittedAt: docSnap.data().registrationAt?.toDate().toISOString() ?? new Date().toISOString(),
+              email: docSnap.data().email,
+              firstName: docSnap.data().firstName,
+              lastName: docSnap.data().lastName,
+              role: docSnap.data().role,
+              status: docSnap.data().status,
+              yearLevel: docSnap.data().yearLevel,
+              programName: program?.name ?? "",
+              corStatus: "coming-soon" as const,
+            };
+          })
+        );
+        callback(members);
+      } catch (err) {
+        console.error("[subscribeToPendingMembers] Error mapping snapshot:", err);
+      }
+    },
+    (error) => {
+      console.error("[subscribeToPendingMembers] Firestore listener error:", error);
+    }
+  );
+
+  return unsubscribe;
+};
+
+export const addApprovedStatusAllMembers = async() => {
+  try {
+    const q = query(
+      usersCollection,
+      where("isDeleted", "==", false),
+      where("role", "==", "user"),
+    );
+    const snapshot = await getDocs(q);
+    const docs = snapshot.docs;
+    const BATCH_LIMIT = 500;
+
+    for (let i = 0; i < docs.length; i += BATCH_LIMIT) {
+      const chunk = docs.slice(i, i + BATCH_LIMIT);
+      const batch = writeBatch(db);
+      
+      chunk.forEach((doc) => {
+        batch.update(doc.ref, {
+          status: "approved",
+        });
+      });
+
+      await batch.commit();
+    }
+    console.log("Added approved status to all members");
+  } catch (error) {
+    handleFirestoreError(error, "add approved status all members");
+  }
+}
 // /* eslint-disable @typescript-eslint/no-explicit-any */
 // import { getAuth } from "firebase/auth";
 // import {

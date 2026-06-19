@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { Term } from "@/constants/types";
 import { MemberData, Faculty, Program } from "../types";
 
 interface MembersPageData {
   members: MemberData[];
+  term: Term;
   totalMembers: number;
   timestamp: number;
 }
@@ -118,7 +120,7 @@ export const isStaticCacheValid = () => {
 
 export const updateStaticCache = (
   faculties: Faculty[],
-  programs: Program[]
+  programs: Program[],
 ) => {
   staticCache = {
     faculties,
@@ -266,11 +268,13 @@ export const getMembersCacheEntry = (key: string) => {
 export const updateMembersCache = (
   key: string,
   members: MemberData[],
-  totalMembers: number
+  totalMembers: number,
+  term: Term
 ) => {
   const cacheEntry: MembersPageData = {
     members,
     totalMembers,
+    term,
     timestamp: Date.now(),
   };
 

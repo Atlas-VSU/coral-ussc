@@ -29,6 +29,7 @@ import {
 } from "lucide-react"
 import type { Event } from "../types"
 import { formatDate } from "@/utils/useGeneralUtils"
+import { useTermPeriod } from "../../term/hooks/useTermPeriod"
 
 interface EventCardProps {
   event: Event
@@ -89,6 +90,8 @@ export function EventCard({ event, onEdit, onArchive, onUnarchive, onDelete, onI
   const [opLoading, setOpLoading] = useState(false)
   const [viewAttendeesLoading, setViewAttendeesLoading] = useState(false)
   const [logAttendanceLoading, setLogAttendanceLoading] = useState(false)
+
+  const { selected } = useTermPeriod()
 
   const { timeInStart, timeInEnd, timeOutStart, timeOutEnd } = event
   const hasTimeIn = timeInStart && timeInEnd
@@ -197,7 +200,7 @@ export function EventCard({ event, onEdit, onArchive, onUnarchive, onDelete, onI
               ) : (
                 <>
                   {!event.finesGenerated && event.status === "completed" && (
-                    <DropdownMenuItem onClick={() => onIssueFine(event)} disabled={opLoading}>
+                    <DropdownMenuItem onClick={() => onIssueFine(event)} disabled={opLoading || !selected?.isActive}>
                       Issue Fines
                     </DropdownMenuItem>
                     )}

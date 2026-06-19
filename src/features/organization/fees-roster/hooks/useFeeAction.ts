@@ -14,6 +14,9 @@ import { getUserById } from "@/firebase";
 import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval";
 import { se } from "date-fns/locale";
 import { getProofOfPaymentById } from "@/firebase/payment/read/proofOfPayment";
+import { getActiveTerm } from "@/firebase/term";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
+import { getOrgById } from "@/firebase/organization";
 
 export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,6 +26,7 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
     const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
 
     const { _approvePayment, _rejectPayment } = usePaymentApproval();
+    const { selected } = useTermPeriod();
 
     const { user } = useAuth();
     const userId = user?.uid;
@@ -38,12 +42,17 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
         }
 
         try {
-            const receipt = generateReceiptId();
-            await recordManualPaymentAndUpdateClearance(feeId, amount, method, userId || "", feeData.userId, user?.firstName + " " + user?.lastName || "",ref, receipt, senderNumber)
+            const org = await getOrgById(user?.orgId!)
+            if (!org) {
+                throw new Error("Organization not found");
+            }
+            const receipt = generateReceiptId(org.shortName);
+            await recordManualPaymentAndUpdateClearance(feeId, amount, method, userId || "", feeData.userId, user?.firstName + " " + user?.lastName || "",ref, receipt, senderNumber, selected);
             setSuccess(true);
             toast.success("Payment recorded successfully!");
             const fee = await fetchFee(feeId);
             if (fee) {
+                const term = await getActiveTerm();
                 const user = await getUserById(fee.userId || "");
                 const currentUser = await getUserById(userId || "");
                     setReceiptData({
@@ -59,6 +68,8 @@ export const useFeeAction = (onSuccess?: (feeId: string) => void) => {
                         date:  new Date().toLocaleString(),
                         verifiedByName: currentUser?.firstName + " " + currentUser?.lastName || "",
                         paymentMethod: method,
+                        AY: term!.AY,
+                        semester: term!.semester,
                     }); 
                 setReceiptOpen(true);
             }

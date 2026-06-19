@@ -13,6 +13,7 @@ export type UserData = {
   role?: string;
   facultyId?: string;
   accessLevel?: number;
+  orgId?: string;
 };
 
 export function useAuth() {
@@ -41,6 +42,7 @@ export function useAuth() {
               role: firestoreData.role || "user",
               facultyId: firestoreData.facultyId,
               accessLevel: firestoreData.accessLevel,
+              orgId: firestoreData.orgId
             });
           } else {
             // Use auth data if Firestore document doesn't exist

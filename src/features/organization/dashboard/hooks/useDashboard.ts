@@ -15,6 +15,8 @@ import {
 import { Event } from "../types";
 import { Member } from "../../members/types";
 import { DashboardPayment } from "../components/RecentPayments";
+import { set } from "zod";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 
 export interface DashboardStats {
@@ -36,6 +38,8 @@ export function useDashboard() {
   const [feesCollected, setFeesCollected] = useState(0);
   const [unpaidFinesAmount, setUnpaidFinesAmount] = useState(0);
   const [clearanceRate, setClearanceRate] = useState(0);
+
+  const { selected } = useTermPeriod()
 
   const [stats, setStats] = useState<DashboardStats>({
     totalStudents: 0,
@@ -66,14 +70,14 @@ export function useDashboard() {
         unpaidFinesAmountData,
         clearanceRateData,
       ] = await Promise.all([
-        getDashboardStats(),
+        getDashboardStats(selected),
         getDashboardUpcomingEvents(5),
         getDashboardOngoingEvents(5),
-        getDashboardEvents(5),
+        getDashboardEvents(5, selected),
         getDashboardRecentMembers(5),
-        getDashboardRecentPayments(5),
-        getDashboardFeesCollected(),
-        getDashboardUnpaidFinesAmount(),
+        getDashboardRecentPayments(5, selected),
+        getDashboardFeesCollected(selected),
+        getDashboardUnpaidFinesAmount(selected),
         getDashboardClearanceRate(),
       ]);
 
@@ -100,7 +104,7 @@ export function useDashboard() {
   // Fetch data on initial load
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [selected]);
 
   // Function to manually refresh dashboard data
   const refreshDashboard = () => {
@@ -109,6 +113,7 @@ export function useDashboard() {
 
   return {
     stats,
+    selected,
     upcomingEvents,
     ongoingEvents,
     allEvents,

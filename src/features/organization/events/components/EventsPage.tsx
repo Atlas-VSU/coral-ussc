@@ -18,6 +18,7 @@ import { EventStatus } from "@/features/organization/events/types";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useEventFineTypes } from "@/features/organization/events/hooks/useEventFineTypes";
 import type { ViewMode } from "@/features/organization/events/components/ViewToggle";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 export default function EventsPage() {
   const [currentTab, setCurrentTab] = useState<EventStatus>("completed");
@@ -26,6 +27,7 @@ export default function EventsPage() {
   const isMobile = useIsMobile();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { fineTypes, fetchFineTypes } = useEventFineTypes();
+  const { selected } = useTermPeriod();
 
   useEffect(() => {
     if (isMobile) {
@@ -54,6 +56,8 @@ export default function EventsPage() {
     loading,
     currentPage,
     totalPages,
+    AY,
+    sem,
     handlePageChange,
     handleSearch,
     handleSort,
@@ -74,11 +78,11 @@ export default function EventsPage() {
       <PageHeader
         variant="admin"
         title="Events Management"
-        context="2nd Semester · A.Y. 2025–2026"
+        context={`${sem} Semester · A.Y. ${AY}`}
         description="Manage your organization's events and track attendance"
         action={
           <div className="hidden xl:flex">
-            <Button size="sm" className="gap-1.5" onClick={handleAddEventClick}>
+            <Button size="sm" className="gap-1.5" onClick={handleAddEventClick} disabled={!selected?.isActive}>
               <Plus className="size-4" /> Add Event
             </Button>
           </div>
@@ -90,6 +94,7 @@ export default function EventsPage() {
         size="sm"
         className="xl:hidden w-full h-11"
         onClick={handleAddEventClick}
+        disabled={!selected?.isActive}
       >
         <Plus className="size-4" /> Add Event
       </Button>

@@ -37,6 +37,7 @@ import { LoadingOverlay } from "../../../../components/ui/loading-overlay";
 import { toast } from "sonner";
 import { FineType } from "../../fines/types";
 import { SelectTrigger, SelectValue, SelectContent, SelectItem, Select } from "@/components/ui/select";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 interface AddEventDialogProps {
   open: boolean;
@@ -51,6 +52,7 @@ export function AddEventDialog({
   onOpenChange,
   onEventAdded,
 }: AddEventDialogProps) {
+  const { selected } = useTermPeriod();
   const form = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
@@ -104,7 +106,7 @@ export function AddEventDialog({
         <DialogHeader>
           <DialogTitle>Add New Event</DialogTitle>
           <DialogDescription>
-            Create a new event for your organization. Fill in the details below.
+            Create a new event for your organization. This event will be saved under the current term ({selected?.AY} - {selected?.semester} Sem). Fill in the details below.
           </DialogDescription>
         </DialogHeader>
 

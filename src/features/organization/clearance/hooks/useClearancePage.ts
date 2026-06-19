@@ -10,7 +10,7 @@ import { useClearanceActions } from "./useClearanceAction"
 import { useManualPaymentSelection } from "./useManualPaymentSelection"
 import { fetchStats, getClearanceStats, getCurrentUserData } from "@/firebase"
 import { Member } from "../../members/types"
-import { PaymentType } from "@/constants/types"
+import { PaymentType, Term } from "@/constants/types"
 import type { ViewMode } from "@/components/organization/general/ViewToggle"
 import type { ClearanceStatus } from "../types"
 import type { ReceiptData } from "@/components/organization/receipt/PaymentReceiptDialog"
@@ -19,6 +19,10 @@ import { ProofOfPayment } from "../../fines/types"
 import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval"
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { ITEMS_PER_PAGE } from "../config";
+import { getActiveTerm } from "@/firebase/term"
+import { seedClearanceDocuments } from "@/firebase/clearance"
+import { useTermPeriod } from "../../term/hooks/useTermPeriod"
+import { getOrgById } from "@/firebase/organization"
 
 export function useClearancePage(orgId: string | undefined) {
   const { user: currentUser } = useAuth()
@@ -28,14 +32,35 @@ export function useClearancePage(orgId: string | undefined) {
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [viewMode, setViewMode] = useState<ViewMode>("table")
   const [currentPage, setCurrentPage] = useState(1)
+  const [needsSeed, setNeedsSeed] = useState(false)
+  const [isSeeding, setIsSeeding] = useState(false)
 
-  const { clearances, loading, totalCount, setClearances, hardRefresh: baseHardRefresh, hasNextPage, stats, fetchStatsData } = useClearances(
+  const { selected } = useTermPeriod()
+  const user = useAuth();
+
+  const { clearances, loading, totalCount, setClearances, hardRefresh: baseHardRefresh, hasNextPage, stats, fetchStatsData, AY, sem } = useClearances(
     orgId,
     ITEMS_PER_PAGE,
     search,
     filterStatus,
     currentPage
   )
+
+  // After loading completes: if nothing is found for this term, prompt seeding
+  useEffect(() => {
+    if (!loading && totalCount === 0 && !search && filterStatus === "all") {
+      setNeedsSeed(true)
+    } else {
+      setNeedsSeed(false)
+    }
+  }, [loading, totalCount, search, filterStatus])
+
+  // Reset page when term changes
+  useEffect(() => {
+    setCurrentPage(1)
+    setSearch("")
+    setFilterStatus("all")
+  }, [selected])
 
   // Payment Review state
   const [paymentReviewOpen, setPaymentReviewOpen] = useState(false)
@@ -188,10 +213,11 @@ export function useClearancePage(orgId: string | undefined) {
   }
 
   const handleLogPayment = async () => {
-    if (!logPaymentTarget || selection.selectedRefIds.size === 0) return
+    const org = await getOrgById(user.user?.orgId!)
+    if (!logPaymentTarget || selection.selectedRefIds.size === 0 || !org) return
 
     setIsProcessing(true)
-    const receipt = generateReceiptId();
+    const receipt = generateReceiptId(org.shortName);
     try {
       await logManualPayment(
         logPaymentTarget.id,
@@ -200,6 +226,7 @@ export function useClearancePage(orgId: string | undefined) {
         new Date().toISOString().slice(0, 10),
         receipt
       )
+      const term = await getActiveTerm();
 
       // Invalidate the individual doc cache since it was updated
       cacheService.invalidate(CACHE_KEYS.clearanceDoc(logPaymentTarget.id));
@@ -219,6 +246,8 @@ export function useClearancePage(orgId: string | undefined) {
         date: new Date().toLocaleString(),
         verifiedByName: currentUser.firstName + " " + currentUser.lastName,
         paymentMethod: "Cash",
+        AY: term!.AY,
+        semester: term!.semester,
       })
 
       setLogPaymentOpen(false)
@@ -255,10 +284,28 @@ export function useClearancePage(orgId: string | undefined) {
 
   const handleHardRefresh = async () => {
     if (!orgId) return;
-    cacheService.invalidate(`clearance:stats:${orgId}`)
+    // Invalidate all stat slices for this org (any term) — key format is
+    // "clearance:stats:{orgId}:{statusFilter}:{AY}-{semester}" so prefixing on
+    // orgId wipes everything without needing to know the current term here.
+    cacheService.invalidateByPrefix(`clearance:stats:${orgId}`)
     await baseHardRefresh()
   }
 
+  const handleSeedClearance = async () => {
+    if (!currentUser || isSeeding) return;
+    setIsSeeding(true);
+    try {
+      await seedClearanceDocuments(currentUser, selected as Term);
+      toast.success("Clearance records generated successfully!");
+      setNeedsSeed(false);
+      await baseHardRefresh();
+    } catch (err) {
+      console.error("Seeding clearance failed:", err);
+      toast.error("Failed to generate clearance records. Please try again.");
+    } finally {
+      setIsSeeding(false);
+    }
+  }
 
 
   return {
@@ -272,6 +319,10 @@ export function useClearancePage(orgId: string | undefined) {
     reviewData,
     stats,
     hasNextPage,
+    AY,
+    sem,
+    needsSeed,
+    isSeeding,
     
     // UI State
     search,
@@ -303,6 +354,7 @@ export function useClearancePage(orgId: string | undefined) {
     handleRejectPayment,
     openLogPayment,
     handleLogPayment,
-    hardRefresh: handleHardRefresh
+    hardRefresh: handleHardRefresh,
+    handleSeedClearance,
   }
 }

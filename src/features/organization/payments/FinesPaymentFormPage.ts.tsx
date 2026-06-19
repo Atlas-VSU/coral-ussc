@@ -160,7 +160,7 @@ export default function FinesPaymentFormPage({
         amount:       fee.amount,
         paymentType:  "fees",
         parentFineId: "",
-        academicYear: fee.academicYear || "2025-2026",
+        academicYear: fee.academicYear || "2026-2027",
         semester:     fee.semester || "2nd",
       })),
       ...(selectedFineItems.filter(f => !f.isPaid && !f.isPending) ?? []).map(fine => ({
@@ -169,8 +169,8 @@ export default function FinesPaymentFormPage({
         amount:       fine.amount,
         paymentType:  "fines",
         parentFineId: fine.parentFineId,
-        academicYear: "2025-2026",
-        semester:     "2nd",
+        academicYear: fine.academicYear || "2026-2027",
+        semester:     fine.semester || "1st",
       })),
     ];
 
