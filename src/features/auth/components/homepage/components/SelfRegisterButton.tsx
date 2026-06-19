@@ -73,9 +73,16 @@ export function SelfRegisterButton() {
         </button>
       </div>
 
-      {/* reCAPTCHA v2 verification gate — must be solved before navigating */}
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-md bg-white text-black border !border-[#2E7D32]/30">
+      {/* reCAPTCHA v2 verification gate — must be solved before navigating.
+          modal={false} disables Radix's scroll-lock/focus-trap so the reCAPTCHA
+          image challenge (which Google renders on <body>, outside this dialog)
+          stays clickable. onInteractOutside is suppressed so interacting with
+          that challenge doesn't close the gate. */}
+      <Dialog open={open} onOpenChange={handleOpenChange} modal={false}>
+        <DialogContent
+          className="sm:max-w-md bg-white text-black border !border-[#2E7D32]/30"
+          onInteractOutside={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-[#1B5E20]">
               <ShieldCheck className="h-5 w-5" />
