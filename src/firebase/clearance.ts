@@ -348,6 +348,9 @@ export const addStudentWithClearance = async (studentId: string,studentData: any
         const now = Timestamp.now();
         const defaultDueDate = Timestamp.fromDate(new Date('2026-05-30'));
 
+        // Get all payables for blocking clearance
+        
+
         // 2. Prepare Clearance Data
         const clearanceData: ClearanceStatus = {
             id: id,
