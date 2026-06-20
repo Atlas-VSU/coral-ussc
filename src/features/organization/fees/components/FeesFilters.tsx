@@ -122,15 +122,10 @@ export function FeesFilters({
             <SelectItem value="all" className={lightSelectItemClass}>
               All Types
             </SelectItem>
-            <SelectItem value="mandatory" className={lightSelectItemClass}>
-              Mandatory
-            </SelectItem>
-            <SelectItem value="voluntary" className={lightSelectItemClass}>
-              Voluntary
-            </SelectItem>
-            <SelectItem value="event" className={lightSelectItemClass}>
-              Event
-            </SelectItem>
+            <SelectItem value="semester-membership" className={lightSelectItemClass}>Membership</SelectItem>
+            <SelectItem value="event-fee" className={lightSelectItemClass}>Event</SelectItem>
+            <SelectItem value="charity-fee" className={lightSelectItemClass}>Charity</SelectItem>
+            <SelectItem value="organization-dues" className={lightSelectItemClass}>Organization Dues</SelectItem>
           </SelectContent>
         </Select>
 
@@ -209,15 +204,10 @@ export function FeesFilters({
               <SelectItem value="all" className={lightSelectItemClass}>
                 All Types
               </SelectItem>
-              <SelectItem value="mandatory" className={lightSelectItemClass}>
-                Mandatory
-              </SelectItem>
-              <SelectItem value="voluntary" className={lightSelectItemClass}>
-                Voluntary
-              </SelectItem>
-              <SelectItem value="event" className={lightSelectItemClass}>
-                Event
-              </SelectItem>
+              <SelectItem value="semester-membership" className={lightSelectItemClass}>Membership</SelectItem>
+              <SelectItem value="event-fee" className={lightSelectItemClass}>Event</SelectItem>
+              <SelectItem value="charity-fee" className={lightSelectItemClass}>Charity</SelectItem>
+              <SelectItem value="organization-dues" className={lightSelectItemClass}>Organization Dues</SelectItem>
             </SelectContent>
           </Select>
 
