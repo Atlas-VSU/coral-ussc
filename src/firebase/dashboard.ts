@@ -96,11 +96,13 @@ export const getDashboardAttendeeCount = async (selectedTerm?: { AY: string, sem
  * Optimized to fetch only what's needed for the dashboard
  */
 export const getDashboardUpcomingEvents = async (
-  count = 5
+  count = 5,
+  selectedTerm?: Term
 ): Promise<Event[]> => {
   try {
+    const term = selectedTerm || await getActiveTerm();
     // Use cache with a specific key for this dashboard section
-    const cacheKey = `dashboard:upcoming-events:${count}`;
+    const cacheKey = `dashboard:upcoming-events:${count}:${term?.AY}-${term?.semester}`;
 
     return await cacheService.getOrFetch<Event[]>(
       cacheKey,
@@ -118,6 +120,9 @@ export const getDashboardUpcomingEvents = async (
         let eventsQuery = query(
           collection(db, "events"),
           where("isDeleted", "==", false),
+          where("orgId", "==", currentUser.orgId),
+          where("academicYear", "==", term?.AY),
+          where("semester", "==", term?.semester),
           where("date", ">=", Timestamp.fromDate(today))
         );
 
@@ -152,11 +157,13 @@ export const getDashboardUpcomingEvents = async (
  * Optimized to fetch only what's needed for the dashboard
  */
 export const getDashboardOngoingEvents = async (
-  count = 5
+  count = 5,
+  selectedTerm?: Term
 ): Promise<Event[]> => {
   try {
+    const term = selectedTerm || await getActiveTerm();
     // Use cache with a specific key for this dashboard section
-    const cacheKey = `dashboard:ongoing-events:${count}`;
+    const cacheKey = `dashboard:ongoing-events:${count}:${term?.AY}-${term?.semester}`;
 
     return await cacheService.getOrFetch<Event[]>(
       cacheKey,
@@ -178,6 +185,9 @@ export const getDashboardOngoingEvents = async (
         let eventsQuery = query(
           collection(db, "events"),
           where("isDeleted", "==", false),
+          where("orgId", "==", currentUser.orgId),
+          where("academicYear", "==", term?.AY),
+          where("semester", "==", term?.semester),
           where("date", ">=", Timestamp.fromDate(startOfDay)),
           where("date", "<=", Timestamp.fromDate(endOfDay))
         );

@@ -71,8 +71,8 @@ export function useDashboard() {
         clearanceRateData,
       ] = await Promise.all([
         getDashboardStats(selected),
-        getDashboardUpcomingEvents(5),
-        getDashboardOngoingEvents(5),
+        getDashboardUpcomingEvents(5, selected!),
+        getDashboardOngoingEvents(5, selected!),
         getDashboardEvents(5, selected),
         getDashboardRecentMembers(5),
         getDashboardRecentPayments(5, selected),
