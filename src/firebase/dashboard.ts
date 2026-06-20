@@ -19,6 +19,7 @@ import { getStats } from "./stats/read/getStats";
 import { fetchStats } from "./clearance";
 import { getOrgById } from "./organization";
 import { getActiveTerm } from "./term";
+import { Term } from "@/constants/types";
 
 // Helper to transform event data from Firestore to our Event type
 const transformEventData = (doc: any): Event => {
@@ -555,10 +556,13 @@ export const getDashboardUnpaidFinesAmount = async (selectedTerm?: { AY: string,
 };
 
 // Clearance Rate
-export const getDashboardClearanceRate = async () => {
+export const getDashboardClearanceRate = async (selectedTerm?: Term) => {
   try {
+    const term = selectedTerm || await getActiveTerm();
+    if (!term) return 0;
     const currentUser = (await getCurrentUserData()) as unknown as Member;
-    const clearanceStat = await fetchStats(currentUser.orgId!)
+    if (!currentUser) return 0;
+    const clearanceStat = await fetchStats(currentUser.orgId!, term)
     const total = (clearanceStat?.cleared || 0) + (clearanceStat?.not_cleared || 0) + (clearanceStat?.pending || 0);
     return total > 0 ? ((clearanceStat?.cleared || 0) / total) * 100 : 0;
     

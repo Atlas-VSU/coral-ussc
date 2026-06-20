@@ -78,7 +78,7 @@ export function useDashboard() {
         getDashboardRecentPayments(5, selected),
         getDashboardFeesCollected(selected),
         getDashboardUnpaidFinesAmount(selected),
-        getDashboardClearanceRate(),
+        getDashboardClearanceRate(selected!),
       ]);
 
       // Update state with fetched data
