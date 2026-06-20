@@ -19,9 +19,6 @@ import { ImageUpload } from "./components/ImageUpload";
 import { SelectedPaymentItems } from "@/app/(public)/payment/page";
 import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
 import { PaymentProgressBar } from "./components/PaymentProgressBar";
-import { PaymentStats } from "./components/PaymentStats";
-import { PaymentStatus } from "@/constants/status";
-
 interface StudentData {
   studentId: string;
   program: string;
@@ -32,6 +29,10 @@ interface OrganizationData {
   id: string;
   name: string;
   acronym: string;
+  orgTreasurerName?: string;
+  orgTreasurerUrl?: string;
+  orgAuditorName?: string;
+  orgAuditorUrl?: string;
 }
 
 interface FinesPaymentFormPageProps {
@@ -82,7 +83,7 @@ export default function FinesPaymentFormPage({
       ...(selectedPaymentItems.fees.length > 0 ? (["fees"] as const) : []),
       ...(selectedFineItems.length > 0 ? (["fines"] as const) : []),
     ];
-  }, [selectedPaymentItems]);
+  }, [selectedPaymentItems, selectedFineItems.length]);
 
   const draftStorageKey = useMemo(() => {
     const studentKey = studentData?.studentId ?? "anonymous";
@@ -208,6 +209,10 @@ export default function FinesPaymentFormPage({
       throw new Error(msg);
     }
 
+    setSubmitResult({
+      paymentHistoryId: result.paymentHistoryId,
+      submissionIds: result.submissionIds || [],
+    });
     clearDraft();
   };
 
@@ -235,10 +240,12 @@ export default function FinesPaymentFormPage({
     : (Number.isFinite(watchedAmount) ? watchedAmount : 0);
   const feeCount = selectedPaymentItems?.fees.length ?? 0;
   const fineCount = selectedFineItems.length ?? 0;
-  const treasurerName = "Kleenie Elumene B. Yuzon";
-  const treasurerNumber = "09631000393";
-  const auditorName = "Reniel Emberso";
-  const auditorNumber = "09123127184";
+
+  // DYNAMIC VARIABLES MAPPED HERE
+  const treasurerName = organizationData?.orgTreasurerName || "Kleenie Elumene B. Yuzon";
+  const treasurerNumber = "09631000393"; 
+  const auditorName = organizationData?.orgAuditorName || "Reniel Emberso";
+  const auditorNumber = "09123127184"; 
 
   useEffect(() => {
     let cancelled = false;
@@ -489,15 +496,11 @@ export default function FinesPaymentFormPage({
                   </p>
                   
                   {/* QR Code Section */}
-                  <div className="relative w-48 h-48 bg-white rounded-lg p-2 border-2 border-blue-200 dark:border-blue-800">
-                    <Image
-                      src="/images/public-student-payment/USSC-Treasurer.png"
-                      alt="Treasurer GCash Payment QR Code"
-                      fill
-                      className="object-contain"
-                      priority
-                    />
-                  </div>
+                  <img
+                    src={organizationData?.orgTreasurerUrl || "/images/public-student-payment/404-QRNOTFOUND.png"}
+                    alt={`${treasurerName} GCash Payment QR Code`}
+                    className="w-full h-full object-contain"
+                  />
 
                   {/* GCash Account Details */}
                   <div className="w-full bg-white/80 dark:bg-gray-900/80 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
@@ -548,13 +551,13 @@ export default function FinesPaymentFormPage({
                           </DialogHeader>
 
                           <div className="space-y-4">
-                            <div className="relative mx-auto h-48 w-48 rounded-lg border-2 border-blue-200 bg-white p-2 dark:border-blue-800">
-                              <Image
-                                src="/images/public-student-payment/USSC-Auditor.png"
-                                alt="Auditor GCash Payment QR Code"
-                                fill
-                                className="object-contain"
+                            <div className="relative mx-auto h-48 w-48 rounded-lg border-2 border-blue-200 bg-white p-2 dark:border-blue-800 overflow-hidden">
+                              <img
+                                src={organizationData?.orgAuditorUrl || "/images/public-student-payment/404-QRNOTFOUND.png"}
+                                alt={`${auditorName} GCash Payment QR Code`}
+                                className="w-full h-full object-contain"
                               />
+                              
                             </div>
 
                             <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-3 dark:border-blue-800 dark:bg-blue-950/20">

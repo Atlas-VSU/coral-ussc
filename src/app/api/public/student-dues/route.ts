@@ -414,8 +414,9 @@ export async function GET(request: NextRequest) {
 
     // Fetch Unique Organizations
     const orgIds = Array.from(grouped.keys());
-    const orgDocs = await Promise.all(orgIds.map((orgId) => adminDb.collection("users").doc(orgId).get()));
-
+    const orgDocs = await Promise.all(
+      orgIds.map((orgId) => adminDb.collection("organizations").doc(orgId).get())
+    );
     const organizations = orgIds
       .map((orgId, index) => {
         const due = grouped.get(orgId);
@@ -428,7 +429,7 @@ export async function GET(request: NextRequest) {
 
         return {
           id: orgId,
-          name: display.name,
+          name: orgData?.name ? String(orgData.name) : display.name, 
           acronym: display.acronym,
           outstandingAmount: due.feeAmount + due.fineAmount,
           feeAmount: due.feeAmount,
@@ -437,6 +438,10 @@ export async function GET(request: NextRequest) {
           fees: due.fees,
           fines: due.fines,
           fineItems: due.fineItems,
+          orgTreasurerName: orgData?.orgTreasurerName || null,
+          orgTreasurerUrl: orgData?.orgTreasurerUrl || null,
+          orgAuditorName: orgData?.orgAuditorName || null,
+          orgAuditorUrl: orgData?.orgAuditorUrl || null,
         };
       })
       .filter(Boolean)

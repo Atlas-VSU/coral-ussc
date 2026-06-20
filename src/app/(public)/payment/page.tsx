@@ -31,6 +31,11 @@ export interface OrganizationData {
     rejected: number;
     unpaid: number;
   };
+
+  orgTreasurerName?: string;
+  orgTreasurerUrl?: string;
+  orgAuditorName?: string;
+  orgAuditorUrl?: string;
 }
 
 export interface FeeItem {
@@ -91,6 +96,7 @@ export interface SelectedPaymentItems {
   fineAmount: number;
   totalAmount: number;
 }
+
 
 export default function PaymentPage() {
   const [currentStep, setCurrentStep] = useState<PaymentStep>("verification");
@@ -159,6 +165,10 @@ export default function PaymentPage() {
           fees: Array.isArray(org.fees) ? org.fees : [],
           fines: Array.isArray(org.fines) ? org.fines : [],
           fineItems: Array.isArray(org.fineItems) ? org.fineItems : [],
+          orgTreasurerName: org.orgTreasurerName,
+          orgTreasurerUrl: org.orgTreasurerUrl,
+          orgAuditorName: org.orgAuditorName,
+          orgAuditorUrl: org.orgAuditorUrl,
         }))
       );
     } catch (error) {
