@@ -132,6 +132,12 @@ const organizationData = {
       icon: "clearance",
       href: "/org-clearance",
     },
+    {
+      label: "Logout",
+      icon: "logout",
+      href: "/",
+      action: "signout",
+    }
   ],
 };
 
@@ -177,6 +183,7 @@ export default function OrganizationLayout({
       router.push("/login");
     }
   }, [loading, isAuthenticated, router, isSigningOut]);
+
 
   // Show loading screen while authenticating or signing out
   if (loading || isSigningOut) {
