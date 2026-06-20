@@ -2,12 +2,14 @@
 
 import { useMemo, useState } from "react";
 import StudentVerificationPage from "@/features/organization/payments/StudentVerificationPage";
+import TermsSelectionPage from "@/features/organization/payments/TermsSelectionPage"; // <-- NEW IMPORT
 import OrganizationSelectionPage from "@/features/organization/payments/OrganizationSelectionPage";
 import FinesFeesSelectionPage from "@/features/organization/payments/FinesFeesSelectionPage";
 import { Timestamp } from "firebase/firestore";
 import FinesPaymentFormPage from "@/features/organization/payments/FinesPaymentFormPage.ts";
 
-type PaymentStep = "verification" | "organization" | "fees" | "payment";
+// 1. ADDED "term" TO THE STEPS
+type PaymentStep = "verification" | "term" | "organization" | "fees" | "payment";
 
 export interface StudentData {
   studentId: string;
@@ -93,6 +95,10 @@ export interface SelectedPaymentItems {
 export default function PaymentPage() {
   const [currentStep, setCurrentStep] = useState<PaymentStep>("verification");
   const [studentData, setStudentData] = useState<StudentData | null>(null);
+  
+  // 2. NEW STATE FOR SELECTED TERM
+  const [selectedTerm, setSelectedTerm] = useState<{ AY: string; semester: string } | null>(null);
+  
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [organizationDues, setOrganizationDues] = useState<OrganizationDueData[]>([]);
   const [isLoadingDues, setIsLoadingDues] = useState(false);
@@ -126,13 +132,14 @@ export default function PaymentPage() {
     return orderedStates.filter((state) => states.has(state));
   };
 
-  const loadStudentDues = async (studentId: string) => {
+  // 3. UPDATED TO ACCEPT AY AND SEMESTER
+  const loadStudentDues = async (studentId: string, AY: string, semester: string) => {
     setIsLoadingDues(true);
     setDuesError(null);
 
     try {
       const response = await fetch(
-        `/api/public/student-dues?studentId=${encodeURIComponent(studentId)}`
+        `/api/public/student-dues?studentId=${encodeURIComponent(studentId)}&AY=${encodeURIComponent(AY)}&semester=${encodeURIComponent(semester)}`
       );
       const result = await response.json();
 
@@ -166,18 +173,39 @@ export default function PaymentPage() {
     }
   };
 
+  // 4. NAVIGATION HANDLERS UPDATED
   const handleStudentVerified = async (data: StudentData) => {
     setStudentData(data);
+    setSelectedTerm(null);
     setSelectedOrgId(null);
     setSelectedPaymentItems(null);
-    await loadStudentDues(data.studentId);
+    // Move to term selection instead of organization
+    setCurrentStep("term");
+  };
+
+  const handleTermSelected = async (term: { AY: string; semester: string }) => {
+    setSelectedTerm(term);
+    setSelectedOrgId(null);
+    setSelectedPaymentItems(null);
+    
+    // Fetch the dues explicitly for the term selected
+    if (studentData) {
+      await loadStudentDues(studentData.studentId, term.AY, term.semester);
+    }
     setCurrentStep("organization");
   };
 
   const handleBackToVerification = () => {
+    setSelectedTerm(null);
     setSelectedOrgId(null);
     setSelectedPaymentItems(null);
     setCurrentStep("verification");
+  };
+
+  const handleBackToTerm = () => {
+    setSelectedOrgId(null);
+    setSelectedPaymentItems(null);
+    setCurrentStep("term");
   };
 
   const handleOrganizationSelected = (organizationId: string) => {
@@ -204,6 +232,17 @@ export default function PaymentPage() {
       {currentStep === "verification" && (
         <StudentVerificationPage onVerified={handleStudentVerified} currentStep={1} />
       )}
+      
+      {/* 5. NEW TERM SELECTION STEP */}
+      {currentStep === "term" && studentData && (
+        <TermsSelectionPage
+          currentStep={2}
+          studentData={studentData}
+          onBack={handleBackToVerification}
+          onNext={handleTermSelected}
+        />
+      )}
+
       {currentStep === "organization" && studentData && (
         <OrganizationSelectionPage
           studentData={studentData}
@@ -215,10 +254,10 @@ export default function PaymentPage() {
             statusStates: getOrganizationStatusStates(org),
             paymentSummary: org.paymentSummary,
           }))}
-          currentStep={2}
+          currentStep={3}
           isLoading={isLoadingDues}
           error={duesError}
-          onBack={handleBackToVerification}
+          onBack={handleBackToTerm}
           onNext={handleOrganizationSelected}
         />
       )}
@@ -226,10 +265,10 @@ export default function PaymentPage() {
         <FinesFeesSelectionPage
           studentData={studentData}
           organizationData={selectedOrganization}
-          currentStep={3}
+          currentStep={4}
           fees={selectedOrganization.fees}
           fines={selectedOrganization.fines}
-          fineItems = {selectedOrganization.fineItems}
+          fineItems={selectedOrganization.fineItems}
           onBack={handleBackToOrganization}
           onNext={handleFeesSelected}
         />
@@ -239,7 +278,7 @@ export default function PaymentPage() {
           studentData={studentData}
           organizationData={selectedOrganization}
           selectedPaymentItems={selectedPaymentItems}
-          currentStep={4}
+          currentStep={5}
           onBack={handleBackToFees}
           onRestart={handleBackToVerification}
         />

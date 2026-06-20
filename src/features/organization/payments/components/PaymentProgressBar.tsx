@@ -1,13 +1,14 @@
 interface PaymentProgressBarProps {
-  currentStep: 1 | 2 | 3 | 4;
+  currentStep: 1 | 2 | 3 | 4 | 5;
   subtitle?: string;
 }
 
 const steps = [
   { id: 1, label: "Verification" },
-  { id: 2, label: "Organization" },
-  { id: 3, label: "Selection" },
-  { id: 4, label: "Payment" },
+  { id: 2, label: "Term" },
+  { id: 3, label: "Organization" },
+  { id: 4, label: "Selection" },
+  { id: 5, label: "Payment" },
 ] as const;
 
 export function PaymentProgressBar({ currentStep, subtitle }: PaymentProgressBarProps) {

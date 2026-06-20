@@ -136,7 +136,7 @@ export default function OrganizationSelectionPage({
         >
           <ArrowLeft className="h-4 w-4" />
           <span className="min-[400px]:hidden">Back</span>
-          <span className="hidden min-[400px]:inline">Back to Student Verification</span>
+          <span className="hidden min-[400px]:inline">Back to Terms Selections</span>
         </Button>
 
         {/* Student Info Banner */}

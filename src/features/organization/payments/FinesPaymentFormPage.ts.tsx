@@ -38,7 +38,7 @@ interface FinesPaymentFormPageProps {
   studentData?: StudentData;
   organizationData?: OrganizationData;
   selectedPaymentItems?: SelectedPaymentItems;
-  currentStep: 1 | 2 | 3 | 4;
+  currentStep: 1 | 2 | 3 | 4 | 5;
   onBack?: () => void;
   onRestart?: () => void;
 }
