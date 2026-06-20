@@ -156,23 +156,16 @@ export function EventCard({ event, onEdit, onArchive, onUnarchive, onDelete, onI
             </div>
 
             {/* Title */}
-            {event.name.length > 32 ? (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <CardTitle className="text-base font-bold text-foreground leading-tight line-clamp-2 cursor-help">
-                      {event.name}
-                    </CardTitle>
-                  </TooltipTrigger>
-                  <TooltipContent><p className="max-w-xs">{event.name}</p></TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ) : (
-              <CardTitle className="text-base font-bold text-foreground leading-tight">
-                {event.name}
-              </CardTitle>
-            )}
-
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <CardTitle className="text-base font-bold text-foreground overflow-hidden truncate max-w-[310px] leading-tight truncate block cursor-default">
+                    {event.name}
+                  </CardTitle>
+                </TooltipTrigger>
+                <TooltipContent><p className="max-w-xs break-words">{event.name}</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             {/* Date */}
             <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">
               <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
