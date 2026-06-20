@@ -308,6 +308,8 @@ export const addUser = async (userData: MemberFormData) => {
     }
     const docRef = await addDoc(usersCollection, {
       ...userData,
+      status: "approved",
+      registrationAt: Timestamp.now(),
       createdAt: Timestamp.now(),
       isDeleted: false,
     });

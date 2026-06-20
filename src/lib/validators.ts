@@ -41,12 +41,18 @@ export const memberSchema = z.object({
       "Student ID must follow format XX-X-XXXXX (e.g., 21-1-12345)"
     ),
   email: z.string().min(5, "Email is required").email("Invalid email"),
-  firstName: z.string().min(2, "First name is required"),
-  lastName: z.string().min(2, "Last name is required"),
+  firstName: z
+    .string()
+    .min(2, "First name is required")
+    .max(50, "First name must be at most 50 characters"),
+  lastName: z
+    .string()
+    .min(2, "Last name is required")
+    .max(50, "Last name must be at most 50 characters"),
   programId: z.string().min(1, "Program is required"),
   facultyId: z.string().optional(),
   role: z.enum(["admin", "user", "super-admin"]),
-  yearLevel: z.number().min(1).max(5).optional().or(z.literal(0)),
+  yearLevel: z.number().min(1).max(6).optional().or(z.literal(0)),
 });
 
 export type MemberFormData = z.infer<typeof memberSchema>;
