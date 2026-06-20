@@ -214,7 +214,7 @@ export default function OrganizationLayout({
       <div className="flex-1 flex flex-col min-w-0">
         <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b px-5 sm:px-6 xl:px-8 py-3 flex items-center justify-end shadow-sm">
           <div className="flex items-center gap-3 w-full">
-            <div className="w-[250px] md:w-full">
+            <div className="w-full">
               <PeriodSelector />
             </div>
           </div>
