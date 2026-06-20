@@ -50,7 +50,7 @@ export function usePayments() {
 
   // ── Stats (Isolated and Cached) ───────────────────────────────────────────
   const fetchStats = useCallback(async (orgId: string) => {
-    const cacheKey = `payments:stats:${orgId}`;
+    const cacheKey = `payments:stats:${orgId}:${selected?.AY}-${selected?.semester}`;
     const cached = cacheService.get(cacheKey);
     
     if (cached !== null && cached !== undefined) {
@@ -64,9 +64,9 @@ export function usePayments() {
 
     try {
       const [pending, approved, declined] = await Promise.all([
-        getProofOfPaymentsCount(orgId, "pending"),
-        getProofOfPaymentsCount(orgId, "verified"),
-        getProofOfPaymentsCount(orgId, "rejected")
+        getProofOfPaymentsCount(orgId, "pending", selected),
+        getProofOfPaymentsCount(orgId, "verified", selected),
+        getProofOfPaymentsCount(orgId, "rejected", selected)
       ]);
       
       const newStats = { pending, approved, declined };
@@ -75,7 +75,7 @@ export function usePayments() {
     } catch (err) {
       console.error("Failed to load stats:", err);
     }
-  }, []);
+  }, [selected]);
 
   // ── Fetch proof of payments ───────────────────────────────────────────────
   const fetchPayments = useCallback(async () => {
