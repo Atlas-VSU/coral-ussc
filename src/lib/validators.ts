@@ -59,8 +59,8 @@ export type MemberFormData = z.infer<typeof memberSchema>;
 
 
 export const fineTypeSchema = z.object({
-  name: z.string().min(1, "Fine type name is required"),
-  description: z.string().min(1, "Fine type description is required"),
+  name: z.string().min(1, "Fine type name is required").max(50, "Fine type name must be at most 50 characters"),
+  description: z.string().min(1, "Fine type description is required").max(150, "Description must be at most 150 characters"),
   defaultAmount: z.number().min(1, "Amount must be greater than 0.").max(10000, "Amount must be less than 10,000."),
   requiresTimeIn: z.boolean(),
   requiresTimeOut: z.boolean().optional(),

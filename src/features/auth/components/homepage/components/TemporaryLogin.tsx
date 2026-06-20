@@ -10,6 +10,7 @@ import {
   Eye,
   EyeOff,
   CheckCircle2,
+  Key,
 } from "lucide-react";
 import {
   getIdToken,
@@ -20,6 +21,7 @@ import { auth } from "@/firebase/firebase.config";
 import { LoginLoadingOverlay } from "@/features/auth/components/login/LoginLoadingOverlay";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 export function TemporaryLogin() {
   const [isLoading, setIsLoading] = useState(false);
@@ -169,6 +171,7 @@ export function TemporaryLogin() {
       setIsLoading(false);
     }
   };
+  
 
   return (
     <div>
@@ -194,7 +197,7 @@ export function TemporaryLogin() {
             {/* Malakas Maganda BG */}
             <form
               onSubmit={handleSubmit}
-              className="relative z-10 w-full rounded-2xl px-8 py-10 flex flex-col items-center gap-6"
+              className="relative z-10 w-full rounded-2xl px-8 py-10 flex flex-col items-center gap-2"
               style={{
                 background: "rgba(255, 255, 255, 0.82)",
                 backdropFilter: "blur(8px) saturate(140%)",
@@ -258,6 +261,16 @@ export function TemporaryLogin() {
                     {emailError}
                   </p>
                 )}
+              </div>
+
+              {/* Forgot Password */}
+              <div className="w-full">
+                <a
+                  onClick={handlePasswordReset}
+                  className="block font-semibold text-sm text-[#1F7700] cursor-pointer text-right"
+                >
+                  Forgot Password
+                </a>
               </div>
 
               {/* Password Field */}
