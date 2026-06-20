@@ -30,6 +30,8 @@ export function buildRequirementGroups(blockingItems: Record<string, BlockingIte
       : item.pendingReview 
         ? "pending" 
         : "not_cleared"
+
+    if(!item.isRequiredForClearance) return;
         
     groups[groupName].push({
       label: item.title,

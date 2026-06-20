@@ -128,7 +128,8 @@ export function useFeesRosterUI({
   const handleArchiveConfirm = async () => {
     try {
       setIsArchiving(true);
-      await onArchiveFee(fee.id!);
+      await onArchiveFee(fee.feeItemId!);
+      window.dispatchEvent(new CustomEvent("fees_updated", { detail: { deletedFeeId: fee.feeItemId } }));
       router.back(); 
     } catch (error) {
       console.error('Failed to archive fee:', error);
