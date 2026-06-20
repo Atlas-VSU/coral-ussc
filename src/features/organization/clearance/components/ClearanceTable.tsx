@@ -49,7 +49,7 @@ export function ClearanceTable({ paginated, onReviewPayment, onLogPayment, isLoa
             <TableRow key={c.id} className="border-border">
               <TableCell>
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-foreground">{c.userName}</span>
+                  <span className="text-sm font-medium text-foreground max-w-[150px] truncate">{c.userName}</span>
                   <span className="text-xs text-muted-foreground">{c.studentId}</span>
                 </div>
               </TableCell>
