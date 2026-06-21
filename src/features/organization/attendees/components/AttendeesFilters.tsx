@@ -73,8 +73,8 @@ export function AttendeesFilters({
           <SelectContent>
             <SelectItem value="firstName-asc">Name (A-Z)</SelectItem>
             <SelectItem value="firstName-desc">Name (Z-A)</SelectItem>
-            <SelectItem value="timeIn-asc">Time (Earliest)</SelectItem>
-            <SelectItem value="timeOut-desc">Time (Latest)</SelectItem>
+            <SelectItem value="timeIn-asc">Time In (Earliest)</SelectItem>
+            <SelectItem value="timeIn-desc">Time In (Latest)</SelectItem>
             <SelectItem value="studentId-asc">ID (Asc)</SelectItem>
             <SelectItem value="studentId-desc">ID (Desc)</SelectItem>
           </SelectContent>

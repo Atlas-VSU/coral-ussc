@@ -402,9 +402,13 @@ export const getAttendanceRecord = async (
     const getFirestoreSortField = (field: string): string => {
       switch (field) {
         case "firstName":
-          return `student.firstName`;
+          return `student.lastName`;
         case "studentId":
           return `student.studentId`;
+        case "timeIn":
+          return `timeIn`;
+        case "timeOut":
+          return `timeOut`;
         default:
           return field; // For fields like 'timeIn', which are at the top level.
       }
