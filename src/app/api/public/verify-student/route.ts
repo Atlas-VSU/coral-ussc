@@ -68,6 +68,16 @@ export async function POST(request: NextRequest) {
     const userDoc = userSnapshot.docs[0];
     const userData = userDoc.data();
 
+    if (userData.status !== "approved") {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Your account is not yet approved. Please contact the administrator to proceed." 
+        }, 
+        { status: 403 } // 403 Forbidden is more appropriate than 404 here
+      );
+    }
+
     if (userData.role && userData.role !== "user") {
       return NextResponse.json(
         {
