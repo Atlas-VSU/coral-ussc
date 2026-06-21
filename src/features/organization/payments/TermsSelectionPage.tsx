@@ -14,6 +14,7 @@ interface Term {
   AY: string;
   semester: string;
   displayName: string;
+  isActive?: boolean;
 }
 
 interface TermsSelectionPageProps {
@@ -46,7 +47,7 @@ export default function TermsSelectionPage({
 
         setTerms(data.terms || []);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unable to load active terms.");
+        setError(err instanceof Error ? err.message : "Unable to load terms.");
       } finally {
         setIsLoading(false);
       }
@@ -125,7 +126,7 @@ export default function TermsSelectionPage({
               </div>
             ) : terms.length === 0 ? (
               <div className="py-10 text-center space-y-2">
-                <p className="text-sm text-muted-foreground">No active payment terms available at the moment.</p>
+                <p className="text-sm text-muted-foreground">No payment terms available at the moment.</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -144,10 +145,15 @@ export default function TermsSelectionPage({
                         <div className="p-2 rounded-lg bg-[#1B5E20]/10 shrink-0">
                           <CalendarDays className="h-5 w-5 text-[#1B5E20] dark:text-[#8BC34A]" />
                         </div>
-                        <div>
+                        <div className="flex flex-col min-[450px]:flex-row min-[450px]:items-center gap-1 sm:gap-2">
                           <p className="font-semibold text-base text-foreground">
                             {term.displayName}
                           </p>
+                          {term.isActive && (
+                            <span className="inline-flex w-fit items-center rounded bg-[#1B5E20]/10 px-2 py-0.5 text-[10px] font-medium text-[#1B5E20] dark:bg-[#8BC34A]/20 dark:text-[#8BC34A]">
+                              Current Term
+                            </span>
+                          )}
                         </div>
                       </div>
                       <ChevronRight

@@ -3,10 +3,9 @@ import { adminDb } from "@/firebase/firebase-admin.config";
 
 export async function GET(request: NextRequest) {
   try {
-    // Fetch all terms
+    // Fetch all terms (removed the .where filter)
     const snapshot = await adminDb
       .collection("terms")
-      .where("isActive", "==", true)
       .get();
 
     if (snapshot.empty) {
@@ -14,7 +13,7 @@ export async function GET(request: NextRequest) {
         {
           success: true,
           terms: [],
-          message: "No active terms found for payment.",
+          message: "No terms found.", // Updated message to reflect all terms
         },
         { status: 200 }
       );
@@ -27,6 +26,7 @@ export async function GET(request: NextRequest) {
         id: doc.id,
         AY: data.AY || "",
         semester: data.semester || "",
+        isActive: data.isActive || false, // Included so the frontend knows the status
         // Pre-formatting
         displayName: `${data.semester} · A.Y. ${data.AY}`,
       };
