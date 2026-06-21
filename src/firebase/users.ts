@@ -341,6 +341,25 @@ export const deleteUser = async (userId: string): Promise<void> => {
   try {
     const userDoc = doc(db, "users", userId);
     await updateDoc(userDoc, { isDeleted: true, updatedAt: Timestamp.now() });
+
+    //soft delete fees 
+    const feeQuery = query(collection(db, "fees"), where("userId", "==", userId), where("status","==","unpaid" ));
+    const feeSnapshot = await getDocs(feeQuery);
+    feeSnapshot.docs.forEach((doc) => {
+      updateDoc(doc.ref, { isArchived: true, updatedAt: Timestamp.now() });
+    });
+    //soft deleet fines
+    const fineQuery = query(collection(db, "fines"), where("userId", "==", userId), where("status","==", "unpaid"));
+    const fineSnapshot = await getDocs(fineQuery);
+    fineSnapshot.docs.forEach((doc) => {
+      updateDoc(doc.ref, { 'metadata.isArchived': true, 'metadata.updatedAt': Timestamp.now() });
+    });
+    //soft deelte clearance
+    const clearanceQuery = query(collection(db, "clearanceStatus"), where("userId", "==", userId));
+    const clearanceSnapshot = await getDocs(clearanceQuery);
+    clearanceSnapshot.docs.forEach((doc) => {
+      updateDoc(doc.ref, { isArchived: true, updatedAt: Timestamp.now() });
+    });
   } catch (error) {
     handleFirestoreError(error, `soft delete user with ID ${userId}`);
   }
