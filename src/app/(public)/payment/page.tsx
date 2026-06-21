@@ -19,6 +19,11 @@ export interface StudentData {
   programAcronym?: string;
 }
 
+export interface TermData {
+  AY: string;
+  semester: string;
+}
+
 export interface OrganizationData {
   id: string;
   name: string;
@@ -103,7 +108,7 @@ export default function PaymentPage() {
   const [studentData, setStudentData] = useState<StudentData | null>(null);
   
   // 2. NEW STATE FOR SELECTED TERM
-  const [selectedTerm, setSelectedTerm] = useState<{ AY: string; semester: string } | null>(null);
+  const [selectedTerm, setSelectedTerm] = useState<TermData | null>(null);
   
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [organizationDues, setOrganizationDues] = useState<OrganizationDueData[]>([]);
@@ -256,6 +261,7 @@ export default function PaymentPage() {
       {currentStep === "organization" && studentData && (
         <OrganizationSelectionPage
           studentData={studentData}
+          selectedTerm={selectedTerm}
           organizations={organizationDues.map((org) => ({
             id: org.id,
             name: org.name,
@@ -274,6 +280,7 @@ export default function PaymentPage() {
       {currentStep === "fees" && studentData && selectedOrganization && (
         <FinesFeesSelectionPage
           studentData={studentData}
+          selectedTerm={selectedTerm}
           organizationData={selectedOrganization}
           currentStep={4}
           fees={selectedOrganization.fees}
@@ -286,6 +293,7 @@ export default function PaymentPage() {
       {currentStep === "payment" && studentData && selectedOrganization && selectedPaymentItems && (
         <FinesPaymentFormPage
           studentData={studentData}
+          selectedTerm={selectedTerm}
           organizationData={selectedOrganization}
           selectedPaymentItems={selectedPaymentItems}
           currentStep={5}

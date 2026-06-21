@@ -4,10 +4,11 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, BookOpen, Building2, ChevronRight, Loader2, UserCircle } from "lucide-react";
+import { CalendarDays, ArrowLeft, BookOpen, Building2, ChevronRight, Loader2, UserCircle } from "lucide-react";
 import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
 import { PaymentProgressBar } from "./components/PaymentProgressBar";
 import { ResponsiveProgramText } from "./components/ResponsiveProgramText";
+import { Separator } from "@/components/ui/separator";
 
 interface StudentData {
   studentId: string;
@@ -15,6 +16,11 @@ interface StudentData {
   name: string;
   programShortName?: string;
   programAcronym?: string;
+}
+
+interface TermData {
+  AY: string;
+  semester: string;
 }
 
 interface Organization {
@@ -70,6 +76,7 @@ const getStatusBadge = (status: "unpaid" | "pending" | "rejected" | "verified" |
 interface OrganizationSelectionPageProps {
   studentData: StudentData;
   organizations: Organization[];
+  selectedTerm?: TermData | null;
   currentStep: 1 | 2 | 3 | 4;
   isLoading?: boolean;
   error?: string | null;
@@ -85,6 +92,7 @@ export default function OrganizationSelectionPage({
   error = null,
   onBack,
   onNext,
+  selectedTerm,
 }: OrganizationSelectionPageProps) {
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
 
@@ -139,9 +147,29 @@ export default function OrganizationSelectionPage({
           <span className="hidden min-[400px]:inline">Back to Terms Selections</span>
         </Button>
 
-        {/* Student Info Banner */}
+        {/* Term & Student Info Banner */}
         <Card className="border-[#1B5E20]/20 dark:border-[#1B5E20]/30 bg-[#1B5E20]/5 dark:bg-[#1B5E20]/10">
-          <CardContent className="px-3 py-3 sm:px-6 sm:py-4">
+          <CardContent className="px-3 py-3 sm:px-6 sm:py-4 space-y-3">
+            
+            {/* Term Row */}
+            {selectedTerm && (
+              <>
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1B5E20]/15 dark:bg-[#1B5E20]/25">
+                    <CalendarDays className="h-6 w-6 text-[#1B5E20] dark:text-[#8BC34A]" />
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <p className="font-semibold text-base leading-tight truncate">
+                      {selectedTerm.semester} Semester · A.Y. {selectedTerm.AY}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Payment Term</p>
+                  </div>
+                </div>
+                <Separator className="bg-[#1B5E20]/10" />
+              </>
+            )}
+
+            {/* Student Row */}
             <div className="flex items-center gap-3 sm:gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1B5E20]/15 dark:bg-[#1B5E20]/25">
                 <UserCircle className="h-6 w-6 text-[#1B5E20] dark:text-[#8BC34A]" />

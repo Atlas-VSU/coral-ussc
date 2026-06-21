@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { AlertCircle, ArrowLeft, BookOpen, Building2, CheckCircle, Copy, CreditCard, Info, Loader2, Phone, Receipt, ShieldAlert, User, UserCircle } from "lucide-react";
+import { CalendarDays, AlertCircle, ArrowLeft, BookOpen, Building2, CheckCircle, Copy, CreditCard, Info, Loader2, Phone, Receipt, ShieldAlert, User, UserCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,11 @@ interface StudentData {
   name: string;
 }
 
+interface TermData {
+  AY: string;
+  semester: string;
+}
+
 interface OrganizationData {
   id: string;
   name: string;
@@ -38,6 +43,7 @@ interface OrganizationData {
 interface FinesPaymentFormPageProps {
   studentData?: StudentData;
   organizationData?: OrganizationData;
+  selectedTerm?: TermData | null;
   selectedPaymentItems?: SelectedPaymentItems;
   currentStep: 1 | 2 | 3 | 4 | 5;
   onBack?: () => void;
@@ -60,6 +66,7 @@ interface PaymentDraft {
 
 export default function FinesPaymentFormPage({
   studentData,
+  selectedTerm,
   organizationData,
   selectedPaymentItems,
   currentStep,
@@ -413,53 +420,74 @@ export default function FinesPaymentFormPage({
         </div>
 
         {isContextualFlow && studentData && organizationData && selectedPaymentItems && (
-          <Card className="mb-5 border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-foreground flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-[#1B5E20] dark:text-[#8BC34A]" />
-                Payment Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <Card className="mb-5 border-border">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm text-foreground flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-[#1B5E20] dark:text-[#8BC34A]" />
+              Payment Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            
+            {/* Term Row */}
+            {selectedTerm && (
               <div className="rounded-lg border bg-muted/30 p-4">
                 <div className="flex items-center gap-4">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B5E20]/15 dark:bg-[#1B5E20]/25">
-                    <Building2 className="h-5 w-5 text-[#1B5E20] dark:text-[#8BC34A]" />
+                    <CalendarDays className="h-5 w-5 text-[#1B5E20] dark:text-[#8BC34A]" />
                   </div>
                   <div className="min-w-0 flex-1 space-y-0.5">
-                    <p className="text-sm font-semibold text-foreground leading-tight">{organizationData.acronym}</p>
-                    <p className="text-xs text-muted-foreground truncate">{organizationData.name}</p>
+                    <p className="text-sm font-semibold text-foreground leading-tight">
+                      {selectedTerm.semester} Semester · A.Y. {selectedTerm.AY}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">Payment Term</p>
                   </div>
                 </div>
               </div>
-              <div className="space-y-2 rounded-lg border bg-card p-4">
-                {selectedPaymentItems.feeAmount > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2">
-                      <Receipt className="h-4 w-4 text-blue-600" />
-                      Fees ({selectedPaymentItems.fees.length} item{selectedPaymentItems.fees.length > 1 ? "s" : ""})
-                    </span>
-                    <span className="font-semibold">₱{selectedPaymentItems.feeAmount.toFixed(2)}</span>
-                  </div>
-                )}
-                {selectedPaymentItems.fineAmount > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2">
-                      <ShieldAlert className="h-4 w-4 text-red-600" />
-                      Fines ({selectedFineItems.length} item{selectedFineItems.length > 1 ? "s" : ""})
-                    </span>
-                    <span className="font-semibold">₱{selectedPaymentItems.fineAmount.toFixed(2)}</span>
-                  </div>
-                )}
-                <Separator />
-                <div className="flex items-center justify-between font-semibold">
-                  <span>Total Due</span>
-                  <span className="text-[#1B5E20] dark:text-[#8BC34A]">₱{selectedPaymentItems.totalAmount.toFixed(2)}</span>
+            )}
+
+            {/* Organization Row */}
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <div className="flex items-center gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B5E20]/15 dark:bg-[#1B5E20]/25">
+                  <Building2 className="h-5 w-5 text-[#1B5E20] dark:text-[#8BC34A]" />
+                </div>
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <p className="text-sm font-semibold text-foreground leading-tight">{organizationData.acronym}</p>
+                  <p className="text-xs text-muted-foreground truncate">{organizationData.name}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+
+            {/* Payment Breakdown Row */}
+            <div className="space-y-2 rounded-lg border bg-card p-4">
+              {selectedPaymentItems.feeAmount > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-2">
+                    <Receipt className="h-4 w-4 text-blue-600" />
+                    Fees ({selectedPaymentItems.fees.length} item{selectedPaymentItems.fees.length > 1 ? "s" : ""})
+                  </span>
+                  <span className="font-semibold">₱{selectedPaymentItems.feeAmount.toFixed(2)}</span>
+                </div>
+              )}
+              {selectedPaymentItems.fineAmount > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-2">
+                    <ShieldAlert className="h-4 w-4 text-red-600" />
+                    Fines ({selectedFineItems.length} item{selectedFineItems.length > 1 ? "s" : ""})
+                  </span>
+                  <span className="font-semibold">₱{selectedPaymentItems.fineAmount.toFixed(2)}</span>
+                </div>
+              )}
+              <Separator />
+              <div className="flex items-center justify-between font-semibold">
+                <span>Total Due</span>
+                <span className="text-[#1B5E20] dark:text-[#8BC34A]">₱{selectedPaymentItems.totalAmount.toFixed(2)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
 
