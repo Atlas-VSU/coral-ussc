@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, BookOpen, Building2, Receipt, AlertCircle, CheckCircle2, UserCircle } from "lucide-react";
-import { FeeItem, Fine, FineItem, OrganizationData, StudentData } from "@/app/(public)/payment/page";
+import { CalendarDays, ArrowLeft, BookOpen, Building2, Receipt, AlertCircle, CheckCircle2, UserCircle } from "lucide-react";
+import { FeeItem, Fine, FineItem, OrganizationData, TermData, StudentData } from "@/app/(public)/payment/page";
 import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
 import { PaymentProgressBar } from "./components/PaymentProgressBar";
 import { ResponsiveProgramText } from "./components/ResponsiveProgramText";
@@ -15,8 +15,9 @@ import { ResponsiveProgramText } from "./components/ResponsiveProgramText";
 
 interface FinesFeesSelectionPageProps {
   studentData: StudentData;
+  selectedTerm: TermData | null;
   organizationData: OrganizationData;
-  currentStep: 1 | 2 | 3 | 4;
+  currentStep: 1 | 2 | 3 | 4 | 5;
   fees: FeeItem[];
   fines: Fine[];
   fineItems: FineItem[];
@@ -40,6 +41,7 @@ export default function FinesFeesSelectionPage({
   fineItems,
   onBack,
   onNext,
+  selectedTerm,
 }: FinesFeesSelectionPageProps) {
   const [payFees, setPayFees] = useState(false);
   const [payFines, setPayFines] = useState(false);
@@ -152,9 +154,28 @@ export default function FinesFeesSelectionPage({
           Back to Organization Selection
         </Button>
 
-        {/* Student & Organization Info Banner */}
+        {/* Term, Student & Organization Info Banner */}
         <Card className="border-[#1B5E20]/20 dark:border-[#1B5E20]/30 bg-[#1B5E20]/5 dark:bg-[#1B5E20]/10">
           <CardContent className="py-4 space-y-3">
+            
+            {/* Term Row */}
+            {selectedTerm && (
+              <>
+                <div className="flex items-center gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1B5E20]/15 dark:bg-[#1B5E20]/25">
+                    <CalendarDays className="h-6 w-6 text-[#1B5E20] dark:text-[#8BC34A]" />
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <p className="font-semibold text-base leading-tight truncate">
+                      {selectedTerm.semester} Semester · A.Y. {selectedTerm.AY}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Payment Term</p>
+                  </div>
+                </div>
+                <Separator className="bg-[#1B5E20]/10" />
+              </>
+            )}
+
             {/* Student row */}
             <div className="flex items-center gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1B5E20]/15 dark:bg-[#1B5E20]/25">
@@ -176,7 +197,9 @@ export default function FinesFeesSelectionPage({
                 </div>
               </div>
             </div>
+            
             <Separator className="bg-[#1B5E20]/10" />
+            
             {/* Organization row */}
             <div className="flex items-center gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1B5E20]/15 dark:bg-[#1B5E20]/25">
