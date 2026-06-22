@@ -221,7 +221,8 @@ export const getAllUsers = async () => {
     let usersQuery = query(
       usersCollection,
       where("isDeleted", "==", false),
-      where("role", "==", "user")
+      where("role", "==", "user"),
+      where("status", "==", "approved")
     );
 
 

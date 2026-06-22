@@ -434,7 +434,20 @@ export const getFineItemsByIds = async (fineId:string, fineItemIds: string[]) =>
   );
 }
 
-export const countFines = async () => {
+export const checkFineSeededForTerm = async (orgId: string, term: { AY: string; semester: string }) => {
+  const doneSeeding = await getDocs(query(collection(db, "fines",),
+  where("orgId", "==", orgId),
+  where("academicYear", "==", term!.AY),
+  where("semester", "==", term!.semester),
+  limit(1)));
+  
+  if(doneSeeding.empty){
+    return false;
+  }
+  return true;
+ }
+
+export const countFinesByTerm = async () => {
   const finesCollection = collection(db, "fines");
   const snapshot = await getCountFromServer(finesCollection);
   return snapshot.data().count;
