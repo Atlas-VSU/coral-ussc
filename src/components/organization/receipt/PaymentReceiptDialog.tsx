@@ -181,7 +181,7 @@ export default function PaymentReceiptDialog({ open, onOpenChange, data }: Props
           <div className="text-center mb-4">
             <div className="w-10 h-10 mx-auto mb-2 relative">
               <img
-                src={orgData?.orgLogoUrl || "/images/ussc-logo-1.webp"}
+                src={orgData?.orgLogoUrl}
                 alt="Org Logo"
                 className="object-contain"
               />

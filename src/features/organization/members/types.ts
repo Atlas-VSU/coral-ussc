@@ -77,6 +77,8 @@ export interface BulkImportResult {
 // Extends Member interface but includes rowNumber for tracking during processing
 export interface ValidatedMemberData extends Member {
   rowNumber: number;                   // Keep track of original CSV row for error reporting
+  status: string;
+  registrationAt: Timestamp;
 }
 
 /**

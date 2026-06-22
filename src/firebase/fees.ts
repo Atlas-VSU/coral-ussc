@@ -885,7 +885,7 @@ export const archiveFeeDocuments = async (feeItemId: string) => {
             }
         }
         
-        // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));
+        cacheService.invalidateByPrefix(`fees:org:${orgId}`);
         cacheService.invalidate(CACHE_KEYS.clearanceAll(orgId));
         cacheService.invalidateByPrefix(`fees:count:${orgId}`);
         cacheService.invalidateByPrefix(`clearance:stats:${orgId}`);

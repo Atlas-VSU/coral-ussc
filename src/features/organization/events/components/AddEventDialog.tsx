@@ -46,6 +46,9 @@ interface AddEventDialogProps {
   onEventAdded: () => void;
 }
 
+const NAME_MAX = 50;
+const NOTE_MAX = 100;
+
 export function AddEventDialog({
   open,
   fineTypes,
@@ -70,13 +73,85 @@ export function AddEventDialog({
   });
 
   const [loading, setLoading] = useState(false);
-  const selectedFineType = form.watch("fineTypeId"); 
-  //Get the fine type object based on the selected fineTypeId to check if timeIn and timeOut are required
-  const selectedFineTypeObj = fineTypes.find((type) => type.id === selectedFineType);
+
+  const watchedName = form.watch("name") ?? "";
+  const watchedNote = form.watch("note") ?? "";
+  const selectedFineTypeId = form.watch("fineTypeId");
+  const isMajorEvent = form.watch("majorEvent");
+
+  // Get the fine type object based on the selected fineTypeId
+  const selectedFineTypeObj = fineTypes.find((type) => type.id === selectedFineTypeId);
   const timeInRequired = selectedFineTypeObj?.requiresTimeIn || false;
   const timeOutRequired = selectedFineTypeObj?.requiresTimeOut || false;
 
+  // Disable past dates in the calendar
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   const onSubmit = async (data: EventFormData) => {
+    // Guard: if the selected fine type is majorEventsOnly but the event isn't marked as major
+    if (selectedFineTypeObj?.majorEventsOnly && !data.majorEvent) {
+      form.setError("fineTypeId", {
+        type: "manual",
+        message: `"${selectedFineTypeObj.name}" is only for major events. Please mark this as a major event or choose a different fine type.`,
+      });
+      return;
+    }
+
+    // Guard: timeInStart and timeInEnd required when fine type requiresTimeIn
+    if (timeInRequired) {
+      let hasError = false;
+      if (!data.timeInStart) {
+        form.setError("timeInStart", {
+          type: "manual",
+          message: "Time-in Start is required for this fine type",
+        });
+        hasError = true;
+      }
+      if (!data.timeInEnd) {
+        form.setError("timeInEnd", {
+          type: "manual",
+          message: "Time-in End is required for this fine type",
+        });
+        hasError = true;
+      }
+      if (data.timeInStart && data.timeInEnd && data.timeInEnd <= data.timeInStart) {
+        form.setError("timeInEnd", {
+          type: "manual",
+          message: "Time-in End must be after Time-in Start",
+        });
+        hasError = true;
+      }
+      if (hasError) return;
+    }
+
+    // Guard: timeOutStart and timeOutEnd required when fine type requiresTimeOut
+    if (timeOutRequired) {
+      let hasError = false;
+      if (!data.timeOutStart) {
+        form.setError("timeOutStart", {
+          type: "manual",
+          message: "Time-out Start is required for this fine type",
+        });
+        hasError = true;
+      }
+      if (!data.timeOutEnd) {
+        form.setError("timeOutEnd", {
+          type: "manual",
+          message: "Time-out End is required for this fine type",
+        });
+        hasError = true;
+      }
+      if (data.timeOutStart && data.timeOutEnd && data.timeOutEnd <= data.timeOutStart) {
+        form.setError("timeOutEnd", {
+          type: "manual",
+          message: "Time-out End must be after Time-out Start",
+        });
+        hasError = true;
+      }
+      if (hasError) return;
+    }
+
     try {
       setLoading(true);
       await addEvent(data);
@@ -86,7 +161,6 @@ export function AddEventDialog({
       form.reset();
     } catch (error) {
       console.error("Error adding event:", error);
-      // Extract error message from the error object
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
       toast.error(errorMessage);
     } finally {
@@ -118,17 +192,31 @@ export function AddEventDialog({
               onSubmit={form.handleSubmit(onSubmit)}
               className="grid gap-4 py-4"
             >
+              {/* Event Name */}
               <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Event Name</FormLabel>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Event Name</FormLabel>
+                      <span
+                        className={cn(
+                          "text-xs tabular-nums",
+                          watchedName.length > NAME_MAX
+                            ? "text-destructive"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        {watchedName.length}/{NAME_MAX}
+                      </span>
+                    </div>
                     <FormControl>
                       <Input
                         placeholder="Enter event name"
                         {...field}
                         disabled={loading}
+                        maxLength={NAME_MAX}
                       />
                     </FormControl>
                     <FormMessage />
@@ -136,6 +224,7 @@ export function AddEventDialog({
                 )}
               />
 
+              {/* Event Date — future only */}
               <FormField
                 control={form.control}
                 name="date"
@@ -168,7 +257,7 @@ export function AddEventDialog({
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          disabled={loading}
+                          disabled={(date) => date < today || loading}
                           autoFocus
                         />
                       </PopoverContent>
@@ -178,6 +267,7 @@ export function AddEventDialog({
                 )}
               />
 
+              {/* Fine Type */}
               <FormField
                 control={form.control}
                 name="fineTypeId"
@@ -194,97 +284,121 @@ export function AddEventDialog({
                         {fineTypes.map((type: FineType) => (
                           <SelectItem key={type.id} value={type.id!}>
                             {type.name}
+                            {type.majorEventsOnly && (
+                              <span className="ml-2 text-xs text-amber-600 font-medium">(Major Events Only)</span>
+                            )}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
+                    {/* Inline warning when majorEventsOnly fine type is selected but event isn't marked major */}
+                    {selectedFineTypeObj?.majorEventsOnly && !isMajorEvent && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        ⚠️ This fine type is only applicable to major events. Please mark this event as a major event below.
+                      </p>
+                    )}
                   </FormItem>
                 )}
               />
 
+              {/* Time-in fields — shown + required when fine type requiresTimeIn */}
               {timeInRequired && (
                 <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="timeInStart"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Time-in Start</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="time"
-                          {...field}
-                          value={field.value || ""}
-                          disabled={loading}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="timeInEnd"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Time-in End</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="time"
-                          {...field}
-                          value={field.value || ""}
-                          disabled={loading}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
-              
-              {timeOutRequired && (
-                <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="timeOutStart"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Time-out Start</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="time"
-                          {...field}
-                          value={field.value || ""}
-                          disabled={loading}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="timeOutEnd"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Time-out End</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="time"
-                          {...field}
-                          value={field.value || ""}
-                          disabled={loading}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                  <FormField
+                    control={form.control}
+                    name="timeInStart"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Time-in Start
+                          <span className="text-destructive ml-1">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="time"
+                            {...field}
+                            value={field.value || ""}
+                            disabled={loading}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="timeInEnd"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Time-in End
+                          <span className="text-destructive ml-1">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="time"
+                            {...field}
+                            value={field.value || ""}
+                            disabled={loading}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               )}
 
+              {/* Time-out fields — shown + required when fine type requiresTimeOut */}
+              {timeOutRequired && (
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="timeOutStart"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Time-out Start
+                          <span className="text-destructive ml-1">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="time"
+                            {...field}
+                            value={field.value || ""}
+                            disabled={loading}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="timeOutEnd"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Time-out End
+                          <span className="text-destructive ml-1">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="time"
+                            {...field}
+                            value={field.value || ""}
+                            disabled={loading}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+
+              {/* Location */}
               <FormField
                 control={form.control}
                 name="location"
@@ -303,18 +417,32 @@ export function AddEventDialog({
                 )}
               />
 
+              {/* Note */}
               <FormField
                 control={form.control}
                 name="note"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Note (Optional)</FormLabel>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Note (Optional)</FormLabel>
+                      <span
+                        className={cn(
+                          "text-xs tabular-nums",
+                          (watchedNote?.length ?? 0) > NOTE_MAX
+                            ? "text-destructive"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        {watchedNote?.length ?? 0}/{NOTE_MAX}
+                      </span>
+                    </div>
                     <FormControl>
                       <Textarea
                         placeholder="Add notes or instructions for this event"
                         className="resize-none"
                         {...field}
                         disabled={loading}
+                        maxLength={NOTE_MAX}
                       />
                     </FormControl>
                     <FormMessage />
@@ -322,6 +450,7 @@ export function AddEventDialog({
                 )}
               />
 
+              {/* Major Event */}
               <FormField
                 control={form.control}
                 name="majorEvent"
@@ -350,9 +479,9 @@ export function AddEventDialog({
                 >
                   Cancel
                 </LoadingButton>
-                <LoadingButton 
-                  type="submit" 
-                  variant="success" 
+                <LoadingButton
+                  type="submit"
+                  variant="success"
                   isLoading={loading}
                   loadingText="Creating..."
                 >

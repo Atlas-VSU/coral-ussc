@@ -19,6 +19,7 @@ import { getStats } from "./stats/read/getStats";
 import { fetchStats } from "./clearance";
 import { getOrgById } from "./organization";
 import { getActiveTerm } from "./term";
+import { Term } from "@/constants/types";
 
 // Helper to transform event data from Firestore to our Event type
 const transformEventData = (doc: any): Event => {
@@ -95,11 +96,13 @@ export const getDashboardAttendeeCount = async (selectedTerm?: { AY: string, sem
  * Optimized to fetch only what's needed for the dashboard
  */
 export const getDashboardUpcomingEvents = async (
-  count = 5
+  count = 5,
+  selectedTerm?: Term
 ): Promise<Event[]> => {
   try {
+    const term = selectedTerm || await getActiveTerm();
     // Use cache with a specific key for this dashboard section
-    const cacheKey = `dashboard:upcoming-events:${count}`;
+    const cacheKey = `dashboard:upcoming-events:${count}:${term?.AY}-${term?.semester}`;
 
     return await cacheService.getOrFetch<Event[]>(
       cacheKey,
@@ -117,6 +120,9 @@ export const getDashboardUpcomingEvents = async (
         let eventsQuery = query(
           collection(db, "events"),
           where("isDeleted", "==", false),
+          where("orgId", "==", currentUser.orgId),
+          where("academicYear", "==", term?.AY),
+          where("semester", "==", term?.semester),
           where("date", ">=", Timestamp.fromDate(today))
         );
 
@@ -151,11 +157,13 @@ export const getDashboardUpcomingEvents = async (
  * Optimized to fetch only what's needed for the dashboard
  */
 export const getDashboardOngoingEvents = async (
-  count = 5
+  count = 5,
+  selectedTerm?: Term
 ): Promise<Event[]> => {
   try {
+    const term = selectedTerm || await getActiveTerm();
     // Use cache with a specific key for this dashboard section
-    const cacheKey = `dashboard:ongoing-events:${count}`;
+    const cacheKey = `dashboard:ongoing-events:${count}:${term?.AY}-${term?.semester}`;
 
     return await cacheService.getOrFetch<Event[]>(
       cacheKey,
@@ -177,6 +185,9 @@ export const getDashboardOngoingEvents = async (
         let eventsQuery = query(
           collection(db, "events"),
           where("isDeleted", "==", false),
+          where("orgId", "==", currentUser.orgId),
+          where("academicYear", "==", term?.AY),
+          where("semester", "==", term?.semester),
           where("date", ">=", Timestamp.fromDate(startOfDay)),
           where("date", "<=", Timestamp.fromDate(endOfDay))
         );
@@ -555,10 +566,13 @@ export const getDashboardUnpaidFinesAmount = async (selectedTerm?: { AY: string,
 };
 
 // Clearance Rate
-export const getDashboardClearanceRate = async () => {
+export const getDashboardClearanceRate = async (selectedTerm?: Term) => {
   try {
+    const term = selectedTerm || await getActiveTerm();
+    if (!term) return 0;
     const currentUser = (await getCurrentUserData()) as unknown as Member;
-    const clearanceStat = await fetchStats(currentUser.orgId!)
+    if (!currentUser) return 0;
+    const clearanceStat = await fetchStats(currentUser.orgId!, term)
     const total = (clearanceStat?.cleared || 0) + (clearanceStat?.not_cleared || 0) + (clearanceStat?.pending || 0);
     return total > 0 ? ((clearanceStat?.cleared || 0) / total) * 100 : 0;
     

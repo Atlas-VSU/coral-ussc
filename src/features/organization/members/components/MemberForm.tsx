@@ -59,6 +59,11 @@ export function MemberForm({
 }: MemberFormProps) {
   const form = useMemberForm();
   const [agreed, setAgreed] = useState(false);
+
+  const NAME_MAX = 50;
+  const watchedFirstName = form.watch("firstName") ?? "";
+  const watchedLastName = form.watch("lastName") ?? "";
+
   const lightInputClass =
     "!bg-white !text-black placeholder:!text-gray-600 !border-[#2E7D32]/30 !focus:border-[#1B5E20] focus-visible:!ring-green-100";
   const lightSelectTriggerClass =
@@ -151,11 +156,26 @@ export function MemberForm({
                 name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[#1B5E20] font-semibold">
-                      First Name
-                    </FormLabel>
+                    <div className="flex items-center justify-between">
+                      <FormLabel className="text-[#1B5E20] font-semibold">
+                        First Name
+                      </FormLabel>
+                      <span
+                        className={`text-xs tabular-nums ${
+                          watchedFirstName.length > NAME_MAX
+                            ? "text-destructive"
+                            : "text-[#2E7D32]/60"
+                        }`}
+                      >
+                        {watchedFirstName.length}/{NAME_MAX}
+                      </span>
+                    </div>
                     <FormControl>
-                      <Input {...field} className={lightInputClass} />
+                      <Input
+                        {...field}
+                        className={lightInputClass}
+                        maxLength={NAME_MAX}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -166,11 +186,26 @@ export function MemberForm({
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[#1B5E20] font-semibold">
-                      Last Name
-                    </FormLabel>
+                    <div className="flex items-center justify-between">
+                      <FormLabel className="text-[#1B5E20] font-semibold">
+                        Last Name
+                      </FormLabel>
+                      <span
+                        className={`text-xs tabular-nums ${
+                          watchedLastName.length > NAME_MAX
+                            ? "text-destructive"
+                            : "text-[#2E7D32]/60"
+                        }`}
+                      >
+                        {watchedLastName.length}/{NAME_MAX}
+                      </span>
+                    </div>
                     <FormControl>
-                      <Input {...field} className={lightInputClass} />
+                      <Input
+                        {...field}
+                        className={lightInputClass}
+                        maxLength={NAME_MAX}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

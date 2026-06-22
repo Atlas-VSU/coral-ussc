@@ -34,6 +34,9 @@ interface FineTypeFormProps {
   fetchFineTypes: () => Promise<void>;
 }
 
+const MAX_TITLE = 50;
+const MAX_DESCRIPTION = 150;
+
 export function FineTypeForm({
   open,
   onOpenChange,
@@ -95,9 +98,20 @@ export function FineTypeForm({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
+                    <div className="flex justify-between">
                     <FormLabel className="text-[#1B5E20] font-semibold">Name of Fine</FormLabel>
+                    <span
+                        className={`text-xs tabular-nums ${
+                          field.value?.length > MAX_TITLE
+                            ? "text-destructive"
+                            : "text-[#2E7D32]/60"
+                        }`}
+                      >
+                        {field.value?.length}/{MAX_TITLE}
+                      </span>
+                    </div>
                     <FormControl>
-                      <Input {...field} className="!bg-white text-black placeholder:text-gray-600 border-[#2E7D32]/30" />
+                      <Input {...field} maxLength={MAX_TITLE} className="!bg-white text-black placeholder:text-gray-600 border-[#2E7D32]/30" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -108,9 +122,20 @@ export function FineTypeForm({
                 name="description"
                 render={({ field }) => (
                   <FormItem>
+                    <div className="flex justify-between">
                     <FormLabel className="text-[#1B5E20] font-semibold">Description</FormLabel>
+                    <span
+                        className={`text-xs tabular-nums ${
+                          field.value?.length > MAX_DESCRIPTION
+                            ? "text-destructive"
+                            : "text-[#2E7D32]/60"
+                        }`}
+                      >
+                        {field.value?.length}/{MAX_DESCRIPTION}
+                      </span>
+                      </div>
                     <FormControl>
-                      <Input {...field} className="!bg-white text-black placeholder:text-gray-600 border-[#2E7D32]/30" />
+                      <Input {...field} maxLength={MAX_DESCRIPTION} className="!bg-white text-black placeholder:text-gray-600 border-[#2E7D32]/30" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

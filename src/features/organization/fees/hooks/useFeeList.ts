@@ -47,6 +47,7 @@ export function useFeeList() {
         loadFees();
     }, [selected])
 
+
     const groupedFees = useMemo(() => {
         return rawFees.reduce((accumulator, currentFee) => {
             const groupKey = `${currentFee.title}-${currentFee.semester}-${currentFee.academicYear}`;
@@ -86,6 +87,21 @@ export function useFeeList() {
         };
         loadFees();
     }, [selected])
+
+    useEffect(() => {
+        const handleFeesUpdated = (e: Event) => {
+            const customEvent = e as CustomEvent<{ deletedFeeId?: string }>;
+            if (customEvent.detail?.deletedFeeId) {
+                // Optimistically remove the fee from local state to avoid refetch/loading blink
+                setRawFees(prev => prev.filter(f => f.id !== customEvent.detail?.deletedFeeId));
+                setTotalFees(prev => prev > 0 ? prev - 1 : 0);
+            } else {
+                refetchFees();
+            }
+        };
+        window.addEventListener("fees_updated", handleFeesUpdated);
+        return () => window.removeEventListener("fees_updated", handleFeesUpdated);
+    }, [refetchFees]);
 
 
     useEffect(() => {

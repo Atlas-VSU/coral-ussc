@@ -158,8 +158,8 @@ export function EventsFilters({
             )}
           </Button>
         </DrawerTrigger>
-        <DrawerContent className="max-h-[85vh]">
-          <DrawerHeader className="border-b pb-4">
+        <DrawerContent className="h-[90vh] flex flex-col p-0 gap-0">
+          <DrawerHeader className="border-b pb-4 shrink-0">
             <div className="flex items-center justify-between">
               <DrawerTitle>Filters</DrawerTitle>
               {hasActiveFilters && (
@@ -174,7 +174,9 @@ export function EventsFilters({
               )}
             </div>
           </DrawerHeader>
-          <div className="p-4 space-y-6">
+
+          {/* Scrollable body — prevents content (esp. the Apply button) from being clipped on short screens */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
             {/* Sort by */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Sort by</label>
@@ -196,7 +198,7 @@ export function EventsFilters({
             {/* Date filter */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Filter by date</label>
-              <div className="border rounded-lg overflow-hidden">
+              <div className="border rounded-lg overflow-hidden flex justify-center">
                 <Calendar
                   mode="single"
                   selected={date}
@@ -220,8 +222,10 @@ export function EventsFilters({
                 </div>
               )}
             </div>
+          </div>
 
-            {/* Apply button */}
+          {/* Pinned footer so Apply is always reachable, even on short screens */}
+          <div className="shrink-0 border-t p-4 bg-background">
             <Button
               className="w-full h-12 text-base font-semibold"
               onClick={() => setDrawerOpen(false)}

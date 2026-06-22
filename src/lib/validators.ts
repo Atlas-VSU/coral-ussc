@@ -3,8 +3,20 @@ import { z } from "zod";
 import { fa } from "zod/v4/locales";
 
 export const eventSchema = z.object({
-  name: z.string().min(1, "Event name is required"),
-  date: z.date({ error: "Event date is required" }),
+  name: z
+    .string()
+    .min(1, "Event name is required")
+    .max(50, "Event name must be at most 50 characters"),
+  date: z
+    .date({ error: "Event date is required" })
+    .refine(
+      (d) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return d >= today;
+      },
+      { message: "Event date must be today or in the future" }
+    ),
   majorEvent: z.boolean().optional(),
   fineTypeId: z.string().min(1, "Fine type is required"),
   timeInStart: z.string().optional(),
@@ -12,7 +24,10 @@ export const eventSchema = z.object({
   timeOutStart: z.string().optional(),
   timeOutEnd: z.string().optional(),
   location: z.string().min(1, "Location is required"),
-  note: z.string().optional(),
+  note: z
+    .string()
+    .max(100, "Note must be at most 100 characters")
+    .optional(),
 });
 
 export type EventFormData = z.infer<typeof eventSchema>;
@@ -26,20 +41,26 @@ export const memberSchema = z.object({
       "Student ID must follow format XX-X-XXXXX (e.g., 21-1-12345)"
     ),
   email: z.string().min(5, "Email is required").email("Invalid email"),
-  firstName: z.string().min(2, "First name is required"),
-  lastName: z.string().min(2, "Last name is required"),
+  firstName: z
+    .string()
+    .min(2, "First name is required")
+    .max(50, "First name must be at most 50 characters"),
+  lastName: z
+    .string()
+    .min(2, "Last name is required")
+    .max(50, "Last name must be at most 50 characters"),
   programId: z.string().min(1, "Program is required"),
   facultyId: z.string().optional(),
   role: z.enum(["admin", "user", "super-admin"]),
-  yearLevel: z.number().min(1).max(5).optional().or(z.literal(0)),
+  yearLevel: z.number().min(1).max(6).optional().or(z.literal(0)),
 });
 
 export type MemberFormData = z.infer<typeof memberSchema>;
 
 
 export const fineTypeSchema = z.object({
-  name: z.string().min(1, "Fine type name is required"),
-  description: z.string().min(1, "Fine type description is required"),
+  name: z.string().min(1, "Fine type name is required").max(50, "Fine type name must be at most 50 characters"),
+  description: z.string().min(1, "Fine type description is required").max(150, "Description must be at most 150 characters"),
   defaultAmount: z.number().min(1, "Amount must be greater than 0.").max(10000, "Amount must be less than 10,000."),
   requiresTimeIn: z.boolean(),
   requiresTimeOut: z.boolean().optional(),

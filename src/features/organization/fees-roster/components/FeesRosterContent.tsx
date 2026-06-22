@@ -192,7 +192,7 @@ export function FeesRosterContent({
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="flex-1">
               <h1 
-                className="text-2xl font-bold tracking-tight font-nunito mb-1"
+                className="text-2xl font-bold tracking-tight font-nunito mb-1 max-w-[700px] truncate"
                 style={{ color: "#27500A" }}
               >
                 {fee.title}
@@ -402,7 +402,7 @@ export function FeesRosterContent({
 
       {/* Archive Confirmation Dialog */}
       <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
-        <AlertDialogContent className="max-w-md">
+        <AlertDialogContent className="w-full">
           <AlertDialogHeader>
             <div className="flex items-center gap-3 text-destructive mb-2">
               <div className="p-2 rounded-full bg-destructive/10">

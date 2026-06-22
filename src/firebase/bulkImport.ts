@@ -390,6 +390,8 @@ export const bulkImportUsers = async (
             ? parseInt(data.yearLevel.trim())
             : Number(data.yearLevel)
           : 0, 
+        status: "approved",
+        registrationAt: Timestamp.now()
       };
 
       validatedMembers.push(validatedMember);
