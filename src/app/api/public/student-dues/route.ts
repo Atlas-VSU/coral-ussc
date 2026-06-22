@@ -194,6 +194,8 @@ const buildOrgDisplay = (orgId: string, data: Record<string, unknown> | undefine
 export async function GET(request: NextRequest) {
   try {
     const studentId = request.nextUrl.searchParams.get("studentId")?.trim();
+    const AY = request.nextUrl.searchParams.get("AY")?.trim();
+    const semester = request.nextUrl.searchParams.get("semester")?.trim();
 
     if (!studentId) {
       return NextResponse.json(
@@ -205,22 +207,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const [feesSnapshot, finesSnapshot] = await Promise.all([
-      adminDb.collection("fees").where("studentId", "==", studentId).get(),
-      adminDb.collection("fines").where("studentId", "==", studentId).get(),
-    ]);
+    // Base queries
+    let feesQuery: FirebaseFirestore.Query = adminDb.collection("fees").where("studentId", "==", studentId);
+    let finesQuery: FirebaseFirestore.Query = adminDb.collection("fines").where("studentId", "==", studentId);
 
-    let fineItems = null;
-      if (!finesSnapshot.empty) {
-        const docId = finesSnapshot.docs[0].id;
-        
-         fineItems = await adminDb
-          .collection("fines")
-          .doc(docId)
-          .collection("fineItems")
-          .get();
-        
-      } 
+    // Filter fees by term explicitly
+    if (AY && semester) {
+      feesQuery = feesQuery
+        .where("academicYear", "==", AY)
+        .where("semester", "==", semester);
+    }
+
+    const [feesSnapshot, finesSnapshot] = await Promise.all([
+      feesQuery.get(),
+      finesQuery.get(),
+    ]);
 
     const grouped = new Map<
       string,
@@ -261,11 +262,13 @@ export async function GET(request: NextRequest) {
           amount: number,
           parentFineId: string,
           isPaid: boolean,
-          date: Timestamp
+          isPending: boolean,
+          date: Timestamp,
         }>;
       }
     >();
 
+    // Process Fees
     for (const doc of feesSnapshot.docs) {
       const fee = { id: doc.id, ...doc.data() } as FeeRecord;
       if (!fee.orgId) continue;
@@ -292,12 +295,7 @@ export async function GET(request: NextRequest) {
         orgId: fee.orgId,
         feeAmount: 0,
         fineAmount: 0,
-        paymentSummary: {
-          pending: 0,
-          verified: 0,
-          rejected: 0,
-          unpaid: 0,
-        },
+        paymentSummary: { pending: 0, verified: 0, rejected: 0, unpaid: 0 },
         fees: [],
         fines: [],
         fineItems:[],
@@ -324,16 +322,30 @@ export async function GET(request: NextRequest) {
       grouped.set(fee.orgId, existing);
     }
 
+    // Process Fines
     for (const doc of finesSnapshot.docs) {
       const fine = { id: doc.id, ...doc.data() } as FineRecord;
       if (!fine.orgId) continue;
       if (fine.metadata?.isArchived) continue;
 
-      const finePaymentHistorySnapshot = await adminDb
+      let fineItemsQuery: FirebaseFirestore.Query = adminDb
         .collection("fines")
         .doc(fine.id)
-        .collection("paymentHistory")
-        .get();
+        .collection("fineItems");
+
+      // Filter fine items by term explicitly
+      if (AY && semester) {
+        fineItemsQuery = fineItemsQuery
+          .where("academicYear", "==", AY)
+          .where("semester", "==", semester);
+      }
+
+      // Concurrently fetch payment history and the correctly filtered items for THIS specific fine
+      const [finePaymentHistorySnapshot, fineItemsSnapshot] = await Promise.all([
+        adminDb.collection("fines").doc(fine.id).collection("paymentHistory").get(),
+        fineItemsQuery.get()
+      ]);
+
       const finePaymentLogs = finePaymentHistorySnapshot.docs.map(
         (paymentDoc) => paymentDoc.data() as PaymentLogRecord
       );
@@ -345,37 +357,32 @@ export async function GET(request: NextRequest) {
         : normalizePaymentState(fine.status);
       const isPayable = paymentState === "unpaid" || paymentState === "rejected";
 
-      const outstanding =
-        asNumber(fine.balance) > 0 ? asNumber(fine.balance) : asNumber(fine.accumulatedAmount);
-      const items = [] 
-      if (fine && fineItems) {
-        for (const doc of fineItems.docs) {
-          const fineItem = { id: doc.id, ...doc.data() } as FineItem;
-          if (!fineItem.isPaid)
-          {
-            items.push({
-              refId: fineItem.id,
-              title: fineItem.eventName,
-              amount: fineItem.amount,
-              parentFineId: fine.id,
-              isPaid: fineItem.isPaid,
-              isPending: fineItem.isPending,
-              date: fineItem.eventDate,
-            });
-          }
+      const outstanding = asNumber(fine.balance) > 0 ? asNumber(fine.balance) : asNumber(fine.accumulatedAmount);
+      
+      const items = []; 
+      for (const itemDoc of fineItemsSnapshot.docs) {
+        const fineItem = { id: itemDoc.id, ...itemDoc.data() } as FineItem;
+        if (!fineItem.isPaid) {
+          items.push({
+            refId: fineItem.id,
+            title: fineItem.eventName,
+            amount: fineItem.amount,
+            parentFineId: fine.id,
+            isPaid: fineItem.isPaid ?? false,
+            isPending: fineItem.isPending ?? false,
+            date: fineItem.eventDate,
+          });
         }
       }
+
+      // If a term was selected, and this fine has no unpaid items for that term, skip adding this fine entirely
+      if (AY && semester && items.length === 0) continue;
 
       const existing = grouped.get(fine.orgId) ?? {
         orgId: fine.orgId,
         feeAmount: 0,
         fineAmount: 0,
-        paymentSummary: {
-          pending: 0,
-          verified: 0,
-          rejected: 0,
-          unpaid: 0,
-        },
+        paymentSummary: { pending: 0, verified: 0, rejected: 0, unpaid: 0 },
         fees: [],
         fines: [],
         fineItems: [],
@@ -397,6 +404,7 @@ export async function GET(request: NextRequest) {
         isPayable,
         paymentState,
       });
+
       items.forEach((item) => {
         existing.fineItems.push(item)
       });
@@ -404,11 +412,11 @@ export async function GET(request: NextRequest) {
       grouped.set(fine.orgId, existing);
     }
 
-
-
+    // Fetch Unique Organizations
     const orgIds = Array.from(grouped.keys());
-    const orgDocs = await Promise.all(orgIds.map((orgId) => adminDb.collection("users").doc(orgId).get()));
-
+    const orgDocs = await Promise.all(
+      orgIds.map((orgId) => adminDb.collection("organizations").doc(orgId).get())
+    );
     const organizations = orgIds
       .map((orgId, index) => {
         const due = grouped.get(orgId);
@@ -421,7 +429,7 @@ export async function GET(request: NextRequest) {
 
         return {
           id: orgId,
-          name: display.name,
+          name: orgData?.name ? String(orgData.name) : display.name, 
           acronym: display.acronym,
           outstandingAmount: due.feeAmount + due.fineAmount,
           feeAmount: due.feeAmount,
@@ -430,6 +438,10 @@ export async function GET(request: NextRequest) {
           fees: due.fees,
           fines: due.fines,
           fineItems: due.fineItems,
+          orgTreasurerName: orgData?.orgTreasurerName || null,
+          orgTreasurerUrl: orgData?.orgTreasurerUrl || null,
+          orgAuditorName: orgData?.orgAuditorName || null,
+          orgAuditorUrl: orgData?.orgAuditorUrl || null,
         };
       })
       .filter(Boolean)

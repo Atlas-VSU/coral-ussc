@@ -211,6 +211,7 @@ export default function PaymentsPage() {
       {/* ── Review Dialog ── */}
       <PaymentReviewDialog
         open={reviewOpen}
+        description={selectedPayment?.status === "verified" ? "Reviewing Payment" : "Review the payment details and approve or reject the submission."  }
         onOpenChange={open => { setReviewOpen(open); if (!open) setSelectedPayment(null) }}
         data={selectedPayment ? {
           studentName: selectedPayment.userName,

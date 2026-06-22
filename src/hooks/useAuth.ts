@@ -73,5 +73,9 @@ export function useAuth() {
     return () => unsubscribe();
   }, []);
 
-  return { user, loading, error, isAuthenticated: !!user };
+  const signOut = async () => {
+    await auth.signOut();
+  }
+
+  return { user, loading, error, isAuthenticated: !!user, signOut };
 }

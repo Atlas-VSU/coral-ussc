@@ -290,10 +290,10 @@ export function FinesPage() {
                       >
                         <TableCell>
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium text-foreground">
+                            <span className="text-sm font-medium text-foreground truncate max-w-[200px]">
                               {fine.userName}
                             </span>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-muted-foreground truncate max-w-[200px]">
                               {fine.studentId}
                             </span>
                           </div>
@@ -342,7 +342,7 @@ export function FinesPage() {
                         <div className="w-full p-3 flex items-center gap-3 text-left active:bg-muted/50 transition-colors">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-semibold text-sm text-foreground truncate">
+                              <h3 className="font-semibold text-sm text-foreground w-[200px] truncate">
                                 {fine.userName}
                               </h3>
                             </div>
@@ -398,7 +398,7 @@ export function FinesPage() {
                                 {fine.status}
                               </Badge>
                             </div>
-                            <CardTitle className="text-base font-bold text-foreground leading-tight">
+                            <CardTitle className="text-base font-bold text-foreground leading-tight max-w-[200px] truncate">
                               {fine.userName}
                             </CardTitle>
                             <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">

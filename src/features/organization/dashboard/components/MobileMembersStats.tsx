@@ -230,12 +230,12 @@ export function MobileMembersStats({
     },
     {
       title: "Clearance Rate",
-      // value: `${(clearanceRate * 100).toFixed(1)}%`,
-      value: "Coming Soon",
+      value: `${(clearanceRate * 100).toFixed(1)}%`,
+      // value: "Coming Soon",
       // description: `${clearedStudents} cleared · ${unclearedStudents} uncleared`,
       description: `Percentage of students cleared`,
       icon: ShieldCheck,
-      isComingSoon: true,
+      isComingSoon: false,
     },
   ];
 
@@ -276,12 +276,12 @@ export function MobileMembersStats({
               <StatCard
                 key="clearance-rate"
                 title="Clearance Rate"
-                value="Coming Soon"
+                value={`${(clearanceRate * 100).toFixed(1)}%`}
                 description="Percentage of students cleared"
                 icon={ShieldCheck}
                 isLoading={isLoading}
                 variant="neutral"
-                className="opacity-60 cursor-not-allowed"
+                className={statCards[3].isComingSoon ? "opacity-60 cursor-not-allowed" : ""}
               />
             </StatCardsCarousel>
 

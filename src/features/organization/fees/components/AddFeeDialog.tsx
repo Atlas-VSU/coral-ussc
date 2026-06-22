@@ -43,6 +43,7 @@ import { Member } from "@/features/organization/members/types";
 import { FeeGenerationProgress } from "./FeeGenerationProgress";
 import { ConfirmationDialog } from "./ConfirmationDialog";
 import { useTermPeriod } from "../../term/hooks/useTermPeriod";
+import { TITLE_MAX, DESCRIPTION_MAX } from "../utils/feeGenerationSchema";
 
 interface FeeGenerationDialogProps {
   open: boolean;
@@ -79,6 +80,14 @@ export function FeeGenerationDialog({
     onSuccess: onClose,
   });
 
+  const watchedTitle = form.watch("title") ?? "";
+  const watchedDescription = form.watch("description") ?? "";
+
+  // Due date must be strictly in the future (tomorrow or later)
+  const tomorrow = new Date();
+  tomorrow.setHours(0, 0, 0, 0);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
   return (
     <>
       <Dialog open={open} onOpenChange={isGenerating ? undefined : onOpenChange}>
@@ -109,12 +118,25 @@ export function FeeGenerationDialog({
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Fee Title</FormLabel>
+                      <div className="flex items-center justify-between">
+                        <FormLabel>Fee Title</FormLabel>
+                        <span
+                          className={cn(
+                            "text-xs tabular-nums",
+                            watchedTitle.length > TITLE_MAX
+                              ? "text-destructive"
+                              : "text-muted-foreground"
+                          )}
+                        >
+                          {watchedTitle.length}/{TITLE_MAX}
+                        </span>
+                      </div>
                       <FormControl>
                         <Input
                           placeholder="e.g., Membership Fee 2024"
                           {...field}
                           disabled={isGenerating}
+                          maxLength={TITLE_MAX}
                         />
                       </FormControl>
                       <FormMessage />
@@ -207,7 +229,8 @@ export function FeeGenerationDialog({
                             mode="single"
                             selected={field.value}
                             onSelect={field.onChange}
-                            disabled={isGenerating}
+                            disabled={(date) => date < tomorrow || isGenerating}
+                            autoFocus
                           />
                         </PopoverContent>
                       </Popover>
@@ -221,12 +244,25 @@ export function FeeGenerationDialog({
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <div className="flex items-center justify-between">
+                        <FormLabel>Description</FormLabel>
+                        <span
+                          className={cn(
+                            "text-xs tabular-nums",
+                            (watchedDescription?.length ?? 0) > DESCRIPTION_MAX
+                              ? "text-destructive"
+                              : "text-muted-foreground"
+                          )}
+                        >
+                          {watchedDescription?.length ?? 0}/{DESCRIPTION_MAX}
+                        </span>
+                      </div>
                       <FormControl>
                         <Input
                           placeholder="Optional description"
                           {...field}
                           disabled={isGenerating}
+                          maxLength={DESCRIPTION_MAX}
                         />
                       </FormControl>
                       <FormMessage />

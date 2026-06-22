@@ -28,7 +28,7 @@ export function ClearanceCard({ clearance: c, onReviewPayment, onLogPayment }: C
           <div className="w-full p-3 flex items-center gap-3 text-left active:bg-muted/50 transition-colors">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-sm text-foreground truncate">
+                <h3 className="font-semibold text-sm text-foreground max-w-[150px] truncate line-clamp-2">
                   {c.userName}
                 </h3>
               </div>
@@ -109,7 +109,7 @@ export function ClearanceCard({ clearance: c, onReviewPayment, onLogPayment }: C
                   {c.status.replace("_", " ")}
                 </Badge>
               </div>
-              <CardTitle className="text-base font-bold text-foreground leading-tight">
+              <CardTitle className="text-base font-bold text-foreground leading-tight max-w-[200px] truncate">
                 {c.userName}
               </CardTitle>
               <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">

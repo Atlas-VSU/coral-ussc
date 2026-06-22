@@ -5,6 +5,9 @@ import Link from "next/link";
 import { LucideIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React from "react";
+import { cacheUtils } from "@/utils/cacheUtils";
+import { signOut } from "firebase/auth";
+import { auth } from "@/firebase/firebase.config";
 
 // Accept either LucideIcon or a function component that returns JSX
 type IconType = LucideIcon | React.FC<{ className?: string }>;
@@ -17,14 +20,18 @@ interface NavLink {
   label: string;
   icon: string;
   href: string;
+  /** Optional action identifier. When set, clicking this link calls `onAction(action)` instead of (or in addition to) navigating. */
+  action?: string;
 }
 
 interface MobileBottomNavProps {
   links: NavLink[];
   iconMap: IconMap;
+  /** Called when a link with an `action` is tapped. Use this to e.g. sign the user out. */
+  onAction?: (action: string) => void;
 }
 
-export function MobileBottomNav({ links, iconMap }: MobileBottomNavProps) {
+export function MobileBottomNav({ links, iconMap, onAction }: MobileBottomNavProps) {
   const isMobile = useIsMobile();
   const pathname = usePathname();
   const [showMore, setShowMore] = React.useState(false);
@@ -42,17 +49,64 @@ export function MobileBottomNav({ links, iconMap }: MobileBottomNavProps) {
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
-  const renderNavLink = ({ label, icon, href }: NavLink, compact = false) => {
+  const handleAction = async (action: string) => {
+    if(action==="signout"){
+       cacheUtils.setSigningOut(true);
+
+      // Use centralized cache clearing utility
+      cacheUtils.clearOnLogout();
+
+      // Run Firebase signout and session cookie clear in parallel
+      const [, sessionResponse] = await Promise.allSettled([
+        signOut(auth),
+        fetch("/api/auth/signout", {
+          method: "POST",
+          credentials: "include",
+        }),
+      ]);
+
+      if (sessionResponse.status === "fulfilled" && !sessionResponse.value.ok) {
+        console.warn(
+          "API signout encountered an issue, continuing logout process",
+        );
+      }
+
+      // Use a reload approach for a clean slate
+      window.location.href = "/?logout=true";
+    }
+  };
+
+  const renderNavLink = ({ label, icon, href, action }: NavLink, compact = false) => {
     const Icon = iconMap[icon];
     if (!Icon) return null;
     const isActive = isActiveRoute(href);
+
+    const className = `flex min-w-0 flex-col items-center transition-colors ${compact ? "px-1 py-1 text-[10px] leading-tight" : "p-1 text-xs"} ${isActive ? "rounded-md bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary"}`;
+
+    // Links with an `action` run custom logic (e.g. sign out) instead of plain navigation.
+    if (action) {
+      return (
+        <button
+          key={label}
+          type="button"
+          onClick={async () => {
+            setShowMore(false);
+            await handleAction(action!)
+          }}
+          className={className}
+        >
+          <Icon className={`mb-1 ${compact ? "h-4 w-4" : "h-5 w-5"}`} />
+          <span className="truncate">{label}</span>
+        </button>
+      );
+    }
 
     return (
       <Link
         key={label}
         href={href}
         onClick={() => setShowMore(false)}
-        className={`flex min-w-0 flex-col items-center transition-colors ${compact ? "px-1 py-1 text-[10px] leading-tight" : "p-1 text-xs"} ${isActive ? "rounded-md bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary"}`}
+        className={className}
       >
         <Icon className={`mb-1 ${compact ? "h-4 w-4" : "h-5 w-5"}`} />
         <span className="truncate">{label}</span>

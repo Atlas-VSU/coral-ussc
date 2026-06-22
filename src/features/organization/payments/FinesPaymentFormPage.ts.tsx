@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { AlertCircle, ArrowLeft, BookOpen, Building2, CheckCircle, Copy, CreditCard, Info, Loader2, Phone, Receipt, ShieldAlert, User, UserCircle } from "lucide-react";
+import { CalendarDays, AlertCircle, ArrowLeft, BookOpen, Building2, CheckCircle, Copy, CreditCard, Info, Loader2, Phone, Receipt, ShieldAlert, User, UserCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,26 +19,33 @@ import { ImageUpload } from "./components/ImageUpload";
 import { SelectedPaymentItems } from "@/app/(public)/payment/page";
 import { PaymentBrandHeader } from "./components/PaymentBrandHeader";
 import { PaymentProgressBar } from "./components/PaymentProgressBar";
-import { PaymentStats } from "./components/PaymentStats";
-import { PaymentStatus } from "@/constants/status";
-
 interface StudentData {
   studentId: string;
   program: string;
   name: string;
 }
 
+interface TermData {
+  AY: string;
+  semester: string;
+}
+
 interface OrganizationData {
   id: string;
   name: string;
   acronym: string;
+  orgTreasurerName?: string;
+  orgTreasurerUrl?: string;
+  orgAuditorName?: string;
+  orgAuditorUrl?: string;
 }
 
 interface FinesPaymentFormPageProps {
   studentData?: StudentData;
   organizationData?: OrganizationData;
+  selectedTerm?: TermData | null;
   selectedPaymentItems?: SelectedPaymentItems;
-  currentStep: 1 | 2 | 3 | 4;
+  currentStep: 1 | 2 | 3 | 4 | 5;
   onBack?: () => void;
   onRestart?: () => void;
 }
@@ -59,6 +66,7 @@ interface PaymentDraft {
 
 export default function FinesPaymentFormPage({
   studentData,
+  selectedTerm,
   organizationData,
   selectedPaymentItems,
   currentStep,
@@ -82,7 +90,7 @@ export default function FinesPaymentFormPage({
       ...(selectedPaymentItems.fees.length > 0 ? (["fees"] as const) : []),
       ...(selectedFineItems.length > 0 ? (["fines"] as const) : []),
     ];
-  }, [selectedPaymentItems]);
+  }, [selectedPaymentItems, selectedFineItems.length]);
 
   const draftStorageKey = useMemo(() => {
     const studentKey = studentData?.studentId ?? "anonymous";
@@ -208,6 +216,10 @@ export default function FinesPaymentFormPage({
       throw new Error(msg);
     }
 
+    setSubmitResult({
+      paymentHistoryId: result.paymentHistoryId,
+      submissionIds: result.submissionIds || [],
+    });
     clearDraft();
   };
 
@@ -235,10 +247,12 @@ export default function FinesPaymentFormPage({
     : (Number.isFinite(watchedAmount) ? watchedAmount : 0);
   const feeCount = selectedPaymentItems?.fees.length ?? 0;
   const fineCount = selectedFineItems.length ?? 0;
-  const treasurerName = "Kleenie Elumene B. Yuzon";
-  const treasurerNumber = "09631000393";
-  const auditorName = "Reniel Emberso";
-  const auditorNumber = "09123127184";
+
+  // DYNAMIC VARIABLES MAPPED HERE
+  const treasurerName = organizationData?.orgTreasurerName || "Kleenie Elumene B. Yuzon";
+  const treasurerNumber = "09631000393"; 
+  const auditorName = organizationData?.orgAuditorName || "Reniel Emberso";
+  const auditorNumber = "09123127184"; 
 
   useEffect(() => {
     let cancelled = false;
@@ -406,53 +420,74 @@ export default function FinesPaymentFormPage({
         </div>
 
         {isContextualFlow && studentData && organizationData && selectedPaymentItems && (
-          <Card className="mb-5 border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-foreground flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-[#1B5E20] dark:text-[#8BC34A]" />
-                Payment Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <Card className="mb-5 border-border">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm text-foreground flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-[#1B5E20] dark:text-[#8BC34A]" />
+              Payment Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            
+            {/* Term Row */}
+            {selectedTerm && (
               <div className="rounded-lg border bg-muted/30 p-4">
                 <div className="flex items-center gap-4">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B5E20]/15 dark:bg-[#1B5E20]/25">
-                    <Building2 className="h-5 w-5 text-[#1B5E20] dark:text-[#8BC34A]" />
+                    <CalendarDays className="h-5 w-5 text-[#1B5E20] dark:text-[#8BC34A]" />
                   </div>
                   <div className="min-w-0 flex-1 space-y-0.5">
-                    <p className="text-sm font-semibold text-foreground leading-tight">{organizationData.acronym}</p>
-                    <p className="text-xs text-muted-foreground truncate">{organizationData.name}</p>
+                    <p className="text-sm font-semibold text-foreground leading-tight">
+                      {selectedTerm.semester} Semester · A.Y. {selectedTerm.AY}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">Payment Term</p>
                   </div>
                 </div>
               </div>
-              <div className="space-y-2 rounded-lg border bg-card p-4">
-                {selectedPaymentItems.feeAmount > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2">
-                      <Receipt className="h-4 w-4 text-blue-600" />
-                      Fees ({selectedPaymentItems.fees.length} item{selectedPaymentItems.fees.length > 1 ? "s" : ""})
-                    </span>
-                    <span className="font-semibold">₱{selectedPaymentItems.feeAmount.toFixed(2)}</span>
-                  </div>
-                )}
-                {selectedPaymentItems.fineAmount > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2">
-                      <ShieldAlert className="h-4 w-4 text-red-600" />
-                      Fines ({selectedFineItems.length} item{selectedFineItems.length > 1 ? "s" : ""})
-                    </span>
-                    <span className="font-semibold">₱{selectedPaymentItems.fineAmount.toFixed(2)}</span>
-                  </div>
-                )}
-                <Separator />
-                <div className="flex items-center justify-between font-semibold">
-                  <span>Total Due</span>
-                  <span className="text-[#1B5E20] dark:text-[#8BC34A]">₱{selectedPaymentItems.totalAmount.toFixed(2)}</span>
+            )}
+
+            {/* Organization Row */}
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <div className="flex items-center gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B5E20]/15 dark:bg-[#1B5E20]/25">
+                  <Building2 className="h-5 w-5 text-[#1B5E20] dark:text-[#8BC34A]" />
+                </div>
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <p className="text-sm font-semibold text-foreground leading-tight">{organizationData.acronym}</p>
+                  <p className="text-xs text-muted-foreground truncate">{organizationData.name}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+
+            {/* Payment Breakdown Row */}
+            <div className="space-y-2 rounded-lg border bg-card p-4">
+              {selectedPaymentItems.feeAmount > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-2">
+                    <Receipt className="h-4 w-4 text-blue-600" />
+                    Fees ({selectedPaymentItems.fees.length} item{selectedPaymentItems.fees.length > 1 ? "s" : ""})
+                  </span>
+                  <span className="font-semibold">₱{selectedPaymentItems.feeAmount.toFixed(2)}</span>
+                </div>
+              )}
+              {selectedPaymentItems.fineAmount > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-2">
+                    <ShieldAlert className="h-4 w-4 text-red-600" />
+                    Fines ({selectedFineItems.length} item{selectedFineItems.length > 1 ? "s" : ""})
+                  </span>
+                  <span className="font-semibold">₱{selectedPaymentItems.fineAmount.toFixed(2)}</span>
+                </div>
+              )}
+              <Separator />
+              <div className="flex items-center justify-between font-semibold">
+                <span>Total Due</span>
+                <span className="text-[#1B5E20] dark:text-[#8BC34A]">₱{selectedPaymentItems.totalAmount.toFixed(2)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
 
@@ -489,15 +524,11 @@ export default function FinesPaymentFormPage({
                   </p>
                   
                   {/* QR Code Section */}
-                  <div className="relative w-48 h-48 bg-white rounded-lg p-2 border-2 border-blue-200 dark:border-blue-800">
-                    <Image
-                      src="/images/public-student-payment/USSC-Treasurer.png"
-                      alt="Treasurer GCash Payment QR Code"
-                      fill
-                      className="object-contain"
-                      priority
-                    />
-                  </div>
+                  <img
+                    src={organizationData?.orgTreasurerUrl || "/images/public-student-payment/404-QRNOTFOUND.png"}
+                    alt={`${treasurerName} GCash Payment QR Code`}
+                    className="w-full h-full object-contain"
+                  />
 
                   {/* GCash Account Details */}
                   <div className="w-full bg-white/80 dark:bg-gray-900/80 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
@@ -548,13 +579,13 @@ export default function FinesPaymentFormPage({
                           </DialogHeader>
 
                           <div className="space-y-4">
-                            <div className="relative mx-auto h-48 w-48 rounded-lg border-2 border-blue-200 bg-white p-2 dark:border-blue-800">
-                              <Image
-                                src="/images/public-student-payment/USSC-Auditor.png"
-                                alt="Auditor GCash Payment QR Code"
-                                fill
-                                className="object-contain"
+                            <div className="relative mx-auto h-48 w-48 rounded-lg border-2 border-blue-200 bg-white p-2 dark:border-blue-800 overflow-hidden">
+                              <img
+                                src={organizationData?.orgAuditorUrl || "/images/public-student-payment/404-QRNOTFOUND.png"}
+                                alt={`${auditorName} GCash Payment QR Code`}
+                                className="w-full h-full object-contain"
                               />
+                              
                             </div>
 
                             <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-3 dark:border-blue-800 dark:bg-blue-950/20">

@@ -167,7 +167,7 @@ export default function FeeListPage() {
                       <div className="w-full p-3 flex items-center gap-3 text-left active:bg-muted/50 transition-colors">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-sm text-foreground truncate">
+                            <h3 className="font-semibold text-sm text-foreground truncate max-w-[180px] overflow-hidden">
                               {fee.title}
                             </h3>
                           </div>
@@ -217,11 +217,11 @@ export default function FeeListPage() {
                               {feeTypeLabels[fee.type] || fee.type}
                             </Badge>
                           </div>
-                          <CardTitle className="text-base font-bold text-foreground leading-tight truncate">
+                          <CardTitle className="text-base font-bold text-foreground leading-tight truncate max-w-[300px] overflow-hidden">
                             {fee.title}
                           </CardTitle>
                           {fee.description && (
-                            <p className="text-xs text-muted-foreground mt-2 line-clamp-2 leading-relaxed">{fee.description}</p>
+                            <p className="text-xs text-muted-foreground mt-2 line-clamp-2 leading-relaxed overflow-hidden max-w-[300px]">{fee.description}</p>
                           )}
                         </div>
                         {navigatingId === fee.id
@@ -297,9 +297,9 @@ export default function FeeListPage() {
                       onClick={() => handleFeeClick(fee)}
                     >
                       <TableCell>
-                        <p className="text-sm font-medium text-foreground">{fee.title}</p>
+                        <p className="text-sm font-medium text-foreground truncate md:max-w-[300px] max-w-[150px]">{fee.title}</p>
                         {fee.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-1 leading-relaxed mt-0.5">{fee.description}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1 truncate mt-0.5 md:max-w-[300px] max-w-[150px]">{fee.description}</p>
                         )}
                       </TableCell>
                       <TableCell>

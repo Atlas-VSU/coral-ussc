@@ -71,10 +71,10 @@ export function AttendeesFilters({
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="firstName-asc">Name (A-Z)</SelectItem>
-            <SelectItem value="firstName-desc">Name (Z-A)</SelectItem>
-            <SelectItem value="timeIn-asc">Time (Earliest)</SelectItem>
-            <SelectItem value="timeOut-desc">Time (Latest)</SelectItem>
+            <SelectItem value="lastName-asc">Last Name (A-Z)</SelectItem>
+            <SelectItem value="lastName-desc">Last Name (Z-A)</SelectItem>
+            <SelectItem value="timeIn-asc">Time In (Earliest)</SelectItem>
+            <SelectItem value="timeIn-desc">Time In (Latest)</SelectItem>
             <SelectItem value="studentId-asc">ID (Asc)</SelectItem>
             <SelectItem value="studentId-desc">ID (Desc)</SelectItem>
           </SelectContent>

@@ -31,6 +31,8 @@ export function usePaginatedMembers() {
   // ─── Members ──────────────────────────────────────────────────────────────
   const [members, setMembers] = useState<MemberData[]>([]);
   const [totalMembers, setTotalMembers] = useState(0);
+  // Ref so fetchMembers (empty dep array) always reads the live count
+  const totalMembersRef = useRef(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dataSource, setDataSource] = useState<"cache" | "server">("server");
@@ -143,6 +145,7 @@ export function usePaginatedMembers() {
         if (cached) {
           setMembers(cached.members);
           setTotalMembers(cached.totalMembers);
+          if (cached.totalMembers > 0) totalMembersRef.current = cached.totalMembers;
           setTerm(cached.term);
           setDataSource("cache");
           setIsLoading(false);
@@ -188,10 +191,12 @@ export function usePaginatedMembers() {
         // If needCount was true, update total; otherwise keep existing total
         if (needCount) {
           setTotalMembers(result.total);
+          totalMembersRef.current = result.total;
         }
         setTerm(_term!);
         setMembers(transformedMembers);
-        updateMembersCache(cacheKey, transformedMembers, result.total, _term!);
+        // Always cache with the real count (ref holds it even when needCount=false)
+        updateMembersCache(cacheKey, transformedMembers, totalMembersRef.current, _term!);
       } catch (error) {
         console.error("Failed to fetch members", error);
         toast.error("Failed to load member data. Please try again.");
@@ -392,7 +397,7 @@ export function usePaginatedMembers() {
   // ─── Derived state ────────────────────────────────────────────────────────
   const hasNextPage = members.length === pageSize;
   const hasPrevPage = currentPage > 1;
-  const totalPages = Math.ceil(totalMembers / pageSize);
+  const totalPages = totalMembers > 0 ? Math.ceil(totalMembers / pageSize) : 0;
 
   return {
     // Data

@@ -8,7 +8,7 @@ export function useManualPaymentSelection(clearance: ClearanceStatus | null) {
   const items = useMemo(() => {
     if (!clearance) return []
     return Object.entries(clearance.blockingItems)
-      .filter(([_, item]) => item.status === "unpaid" && !item.pendingReview)
+      .filter(([_, item]) => item.status === "unpaid" && !item.pendingReview && item.isRequiredForClearance)
       .map(([refId, item]) => ({
         refId,
         label: item.title,
