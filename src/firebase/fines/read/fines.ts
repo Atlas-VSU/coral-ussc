@@ -447,7 +447,7 @@ export const checkFineSeededForTerm = async (orgId: string, term: { AY: string; 
   return true;
  }
 
-export const countFinesByTerm = async () => {
+export const countFines = async () => {
   const finesCollection = collection(db, "fines");
   const snapshot = await getCountFromServer(finesCollection);
   return snapshot.data().count;
