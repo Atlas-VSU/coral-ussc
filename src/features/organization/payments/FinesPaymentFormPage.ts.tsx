@@ -36,8 +36,10 @@ interface OrganizationData {
   acronym: string;
   orgTreasurerName?: string;
   orgTreasurerUrl?: string;
+  orgTreasurerNumber?: string;
   orgAuditorName?: string;
   orgAuditorUrl?: string;
+  orgAuditorNumber?: string;
 }
 
 interface FinesPaymentFormPageProps {
@@ -250,9 +252,9 @@ export default function FinesPaymentFormPage({
 
   // DYNAMIC VARIABLES MAPPED HERE
   const treasurerName = organizationData?.orgTreasurerName || "Kleenie Elumene B. Yuzon";
-  const treasurerNumber = "09631000393"; 
+  const treasurerNumber = organizationData?.orgTreasurerNumber || "failed to load"; 
   const auditorName = organizationData?.orgAuditorName || "Reniel Emberso";
-  const auditorNumber = "09123127184"; 
+  const auditorNumber = organizationData?.orgAuditorNumber || "failed to load"; 
 
   useEffect(() => {
     let cancelled = false;
