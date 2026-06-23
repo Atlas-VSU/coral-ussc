@@ -140,9 +140,9 @@ export async function POST(request: NextRequest) {
       });
 
       // Mark clearance item as pending review
-      batch.update(adminDb.collection("clearanceStatus").doc(userId), {
+      batch.set(adminDb.collection("clearanceStatus").doc(userId), {
         [`blockingItems.${due.refId}.pendingReview`]: true,
-      });
+      }, { merge: true });
 
       if (due.paymentType === "fines") { 
         batch.update(adminDb.collection("fines").doc(due.parentFineId).collection("fineItems").doc(due.refId), {
@@ -201,9 +201,9 @@ export async function POST(request: NextRequest) {
       itemKeys: itemKeys,
     });
 
-    batch.update(adminDb.collection("clearanceStatus").doc(userId), {
+    batch.set(adminDb.collection("clearanceStatus").doc(userId), {
       status: "pending",
-    });
+    }, { merge: true });
 
     await batch.commit();
 
