@@ -134,10 +134,10 @@ export async function POST(request: NextRequest) {
         createdAt:       now,
       });
       let updated = due.paymentType === "fines"? "metadata.updatedAt" : "updatedAt";
-      batch.update(adminDb.collection(due.paymentType).doc(parentId), {
+      batch.set(adminDb.collection(due.paymentType).doc(parentId), {
         status:    "pending",
         [updated]: now,
-      });
+      }, { merge: true });
 
       // Mark clearance item as pending review
       batch.set(adminDb.collection("clearanceStatus").doc(userId), {
@@ -145,9 +145,9 @@ export async function POST(request: NextRequest) {
       }, { merge: true });
 
       if (due.paymentType === "fines") { 
-        batch.update(adminDb.collection("fines").doc(due.parentFineId).collection("fineItems").doc(due.refId), {
+        batch.set(adminDb.collection("fines").doc(due.parentFineId).collection("fineItems").doc(due.refId), {
           isPending: true,
-        });
+        }, { merge: true });
       }
 
 
@@ -174,6 +174,8 @@ export async function POST(request: NextRequest) {
     // Single proof-of-payment doc covering all dues
     batch.set(proofRef, {
       orgId:           payload.orgId,
+      academicYear:    payload.dues[0]?.academicYear ?? "2025-2026",
+      semester:        payload.dues[0]?.semester ?? "2nd",
       userId,                          
       userName:        payload.userName,
       studentId:       payload.studentId,
