@@ -28,6 +28,7 @@ import {
   ChevronRight,
   FileText,
   Eye,
+  AlertCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ import { useFines } from "@/features/organization/fines/hooks/useFines";
 import { useFineTypes } from "@/features/organization/fines/hooks/useFineTypes";
 import { getVariantFineType } from "@/features/organization/fines/utils/getVariantFineType";
 import { PageHeader } from "@/components/organization/general/PageHeader";
+import { set } from "zod";
 
 export function FinesPage() {
   const ITEMS_PER_PAGE = 9;
@@ -57,6 +59,7 @@ export function FinesPage() {
 
   const {
     paginatedFines,
+    doneSeeding,
     filteredCount,
     isLoading,
     currentPage,
@@ -218,6 +221,26 @@ export function FinesPage() {
         onRefresh={hardRefresh}
         disabled={isLoading}
       />
+
+      {/* Seed Banner — shown once when no records exist for this term */}
+      {!doneSeeding && !isLoading && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-amber-700 dark:text-amber-400">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+          <div className="flex flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold">No fines container found for {sem} · A.Y. {AY}</p>
+              <p className="text-xs opacity-80">Generate generate fines container for all students in this term to get started.</p>
+            </div>
+            <Button
+              size="sm"
+              className="mt-2 shrink-0 sm:mt-0 bg-amber-600 hover:bg-amber-700 text-white"
+              onClick={() => setIsBulkGenerateOpen(true)}
+            >
+                <><Users className="mr-2 h-4 w-4" /> Setup Fines</>
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Main Card - Following Payments pattern */}
       <Card className="border-border bg-card">
