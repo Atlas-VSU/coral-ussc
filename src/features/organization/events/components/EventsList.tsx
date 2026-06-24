@@ -2,7 +2,7 @@ import { useState } from "react";
 import { EventCard } from "./EventCard";
 import { EventListItem } from "./EventListItem";
 import { EditEventDialog } from "./EditEventDialog";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { Event } from "../types";
 import { archiveEvent, completeEvent, deleteEvent } from "@/firebase";
 import { ViewMode } from "./ViewToggle";
@@ -37,6 +37,7 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
   const { fineTypes, fetchFineTypes } = useEventFineTypes();
   const [isBulkIssueFinesOpen, setBulkIssueFinesOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleEditClick = async (event: Event) => {
     setSelectedEvent(event);
@@ -79,28 +80,40 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
     if (!pendingAction) return;
     const { type, event } = pendingAction;
 
-    if (type === "archive") {
-      await archiveEvent(event.id.toString());
-      toast.success(`"${event.name}" has been archived.`);
-      onEventsUpdate();
-    } else if (type === "delete") {
-      await deleteEvent(event.id.toString());
-      toast.success(`"${event.name}" has been deleted.`);
-      onEventsUpdate();
-    } else if (type === "issue") {
-      setSelectedEvent(event);
-      setBulkIssueFinesOpen(true);
-    } else if (type === "markAsCompleted") {
-      await completeEvent(event.id.toString());
-      toast.success(`"${event.name}" has been completed.`);
-      onEventsUpdate();
-    }else if (type === "unarchive") {
-      // TODO: Implement unarchiveEvent in firebase.ts and call it here
-      toast.success(`"${event.name}" has been unarchived.`);
-      onEventsUpdate();
+    setIsSubmitting(true);
+
+    try {
+      if (type === "archive") {
+        await archiveEvent(event.id.toString());
+        toast.success(`"${event.name}" has been archived.`);
+        onEventsUpdate();
+      } else if (type === "delete") {
+        await deleteEvent(event.id.toString());
+        toast.success(`"${event.name}" has been deleted.`);
+        onEventsUpdate();
+      } else if (type === "issue") {
+        setSelectedEvent(event);
+        setBulkIssueFinesOpen(true);
+      } else if (type === "markAsCompleted") {
+        await completeEvent(event.id.toString());
+        toast.success(`"${event.name}" has been completed.`);
+        onEventsUpdate();
+      }else if (type === "unarchive") {
+        // TODO: Implement unarchiveEvent in firebase.ts and call it here
+        toast.success(`"${event.name}" has been unarchived.`);
+        onEventsUpdate();
+      }
+      setPendingAction(null);
+    }
+    catch (error) {
+      console.error(`Failed to ${type} event:`, error);
+      toast.error(`Failed to ${type} "${event.name}". Please try again.`);
+    }
+    finally {
+      setIsSubmitting(false);
     }
 
-    setPendingAction(null);
+
   };
 
   const handleCancelConfirm = () => {
@@ -201,7 +214,7 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
       )}
 
       {/* Confirmation Dialog */}
-      <AlertDialog open={!!pendingAction} onOpenChange={(open) => !open && handleCancelConfirm()}>
+      <AlertDialog open={!!pendingAction} onOpenChange={(open) => !open && !isSubmitting && handleCancelConfirm()}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -214,10 +227,21 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
           <AlertDialogFooter>
             <AlertDialogCancel onClick={handleCancelConfirm}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleConfirm}
-              className={pendingAction?.type === "delete" ? "bg-destructive hover:bg-destructive/90" : ""}
+              onClick={(e) => {
+                e.preventDefault(); //prevent dialog from closing immediately
+                handleConfirm();
+              }}
+              disabled={isSubmitting}
+              className={`gap-1.5 ${pendingAction?.type === "delete" ? "bg-destructive hover:bg-destructive/90" : ""}`}
             >
-              {pendingAction ? confirmContent[pendingAction.type].confirmLabel : "Confirm"}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <span>{pendingAction ? confirmContent[pendingAction.type].confirmLabel : "Confirm"}</span>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
