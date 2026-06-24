@@ -90,7 +90,7 @@ export function SelfRegisterForm() {
 
   // ── Form state ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background flex flex-col items-center justify-center p-4 py-10">
+    <div className="min-h-screen bg-[#1B5E20]/5 dark:bg-background flex flex-col items-center justify-center p-2 sm:p-4 py-6 sm:py-10">
       {/* Brand header */}
       <div className="mb-6 flex flex-col items-center gap-2 text-center">
         <Image
@@ -111,8 +111,8 @@ export function SelfRegisterForm() {
         </p>
       </div>
 
-      <Card className="w-full max-w-2xl shadow-sm bg-white text-black border !border-[#2E7D32]/20">
-        <CardContent className="py-6">
+      <Card className="w-full max-w-2xl shadow-sm bg-white text-black border !border-[#2E7D32]/20 p-0">
+        <CardContent className="px-4 sm:px-6 py-6">
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 export function CORUploadPlaceholder() {
   return (
     <div>
-      <div className="mb-2 flex items-center gap-2">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         <span className="text-sm font-semibold text-[#1B5E20]">
           Certificate of Registration (COR)
         </span>

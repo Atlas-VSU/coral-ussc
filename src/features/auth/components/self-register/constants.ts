@@ -32,6 +32,6 @@ export const FRESHMAN_YEAR_LEVEL = 1;
 export const lightInputClass =
   "!bg-white !text-black placeholder:!text-gray-500 !border-[#2E7D32]/30 focus-visible:!ring-green-100 ";
 export const lightSelectTriggerClass =
-  "!bg-white !text-black !border-[#2E7D32]/30 hover:bg-green-50 focus-visible:!ring-green-100 truncate max-w-[290px]";
+  "w-full !bg-white !text-black !border-[#2E7D32]/30 hover:bg-green-50 focus-visible:!ring-green-100 truncate";
 export const lightSelectContentClass = "bg-white text-black !border-[#2E7D32]/30";
 export const lightSelectItemClass = "text-black focus:bg-[#8BC34A]/10 focus:text-black ";
