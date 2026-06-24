@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { adminDb } from "@/firebase/firebase-admin.config";
 import { FieldValue } from "firebase-admin/firestore";
+import { FieldPath } from "firebase-admin/firestore";
 
 const unpaidDueSchema = z.object({
   refId:        z.string().min(1),
@@ -161,8 +162,16 @@ export async function POST(request: NextRequest) {
       clearanceId = `${userId}${payload.orgId}${termSuffix}`;
 
       batch.set(adminDb.collection("clearanceStatus").doc(clearanceId), {
-        [`blockingItems.${due.refId}.pendingReview`]: true,
-      }, { merge: true });
+        blockingItems: {
+          [due.refId]: {
+            pendingReview: true,
+          },
+        },
+      }, {
+        mergeFields: [
+          new FieldPath("blockingItems", due.refId, "pendingReview"),
+        ],
+      });
 
       if (due.paymentType === "fines") {
         batch.set(adminDb.collection("fines").doc(due.parentFineId).collection("fineItems").doc(due.refId), {
