@@ -31,7 +31,7 @@ export function PersonalInfoFields({ form }: PersonalInfoFieldsProps) {
             <FormControl>
               <Input
                 {...field}
-                placeholder="25-1-12345"
+                placeholder="xx-x-xxxxx"
                 className={lightInputClass}
               />
             </FormControl>
@@ -51,7 +51,7 @@ export function PersonalInfoFields({ form }: PersonalInfoFieldsProps) {
               <Input
                 {...field}
                 type="email"
-                placeholder="you@vsu.edu.ph"
+                placeholder="your_address@gmail.com"
                 className={lightInputClass}
               />
             </FormControl>
