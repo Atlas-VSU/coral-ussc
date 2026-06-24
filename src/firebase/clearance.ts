@@ -667,7 +667,7 @@ export const seedClearanceDocuments = async (user: UserData, term: Term) => {
 
     // IMPROVEMENT 1: Only fetch students to save read costs and skip manual filtering
     const usersRef = collection(db, 'users');
-    let studentQuery = query(usersRef, where('role', '==', 'user'), where('isDeleted', '==', false));
+    let studentQuery = query(usersRef, where('role', '==', 'user'), where('isDeleted', '==', false), where("status", "==", "approved"));
     if (accessLevel === 1 && org) {
       studentQuery = query(studentQuery, where("programId", "==", org.programId ?? ""));
     } else if (accessLevel === 2 && org) {

@@ -51,7 +51,7 @@ const buildBaseConstraints = (
     where("isDeleted", "==", false),
     where("role", "==", "user"),
   ];
-
+  
   // Scope to org level — prevents fetching all 9000+ students for scoped roles
   if (currentUserData.accessLevel === 1 && org.programId) {
     constraints.push(where("programId", "==", org.programId ?? ""));
