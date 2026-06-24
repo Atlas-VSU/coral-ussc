@@ -67,7 +67,7 @@ export function MemberForm({
   const lightInputClass =
     "!bg-white !text-black placeholder:!text-gray-600 !border-[#2E7D32]/30 !focus:border-[#1B5E20] focus-visible:!ring-green-100";
   const lightSelectTriggerClass =
-    "!bg-white !text-black placeholder:!text-gray-600 !border-[#2E7D32]/30 hover:bg-green-50 !focus:border-[#1B5E20] focus-visible:!ring-green-100";
+    "w-full !bg-white !text-black placeholder:!text-gray-600 !border-[#2E7D32]/30 hover:bg-green-50 !focus:border-[#1B5E20] focus-visible:!ring-green-100";
   const lightSelectContentClass = "bg-white text-black !border-[#2E7D32]/30";
   const lightSelectItemClass =
     "text-black focus:bg-[#8BC34A]/10 focus:text-black";
