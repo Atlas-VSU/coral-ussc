@@ -34,8 +34,7 @@ export type ProofOfPayment = {
     rejectionReason?: string;
     receiptCode?: string;
     notes?: string;
-    metadata: { items?: { amount: number, title: string, parentFineId: string, paymentType: string, refId: string, historyId?: string }[], semester?: string, academicYear?: string },
-                refundables?: { amount: number, title: string }[];
+    metadata: {items?: {amount: number, title:string, parentFineId: string, paymentType:string, refId:string,historyId?: string}[], semester?: string, academicYear?: string };
     isArchived: boolean;
     academicYear?: string;
     semester?: string;

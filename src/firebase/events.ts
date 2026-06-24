@@ -15,11 +15,6 @@ import {
   DocumentData,
   getCountFromServer,
   increment,
-  collectionGroup,
-  limit,
-  deleteField,
-  arrayRemove,
-  arrayUnion,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { EventFormData } from "@/lib/validators";
@@ -34,13 +29,6 @@ import { Member } from "@/features/organization/members/types";
 import { cacheService, CACHE_DURATIONS } from "@/services/cacheService";
 import { getOrgById } from "./organization";
 import { getActiveTerm } from "./term";
-import { recalculateFines } from "./fines/update/recalculate";
-import { FineItem, ProofOfPayment } from "@/features/organization/fines/types";
-import { Fine } from "@/app/(public)/payment/page";
-import { updateFineStats } from "./stats/update/updateStats";
-import { ClearanceStatus } from "@/features/organization/clearance/types";
-import { getProofOfPaymentByUserId } from "./payment/read/proofOfPayment";
-import { recalculateClearanceStatus } from "./clearance";
 
 const eventsCollection = collection(db, "events");
 
@@ -638,8 +626,6 @@ export const archiveEvent = async (eventId: string) => {
     const eventDoc = doc(db, "events", eventId);
     await updateDoc(eventDoc, { status: "archived" });
 
-
-
     // Invalidate specific event cache and all paginated events
     cacheService.invalidate(`event:${eventId}`);
     cacheService.invalidateByPrefix("events:");
@@ -660,171 +646,6 @@ export const deleteEvent = async (eventId: string) => {
 
     const eventDoc = doc(db, "events", eventId);
     await updateDoc(eventDoc, { isDeleted: true }); // Soft delete
-
-    // If fines were generated for this event, we need to handle them accordingly
-    if (currentEvent.finesGenerated) {
-      const subCollectionGroupRef = collectionGroup(db, "fineItems");
-      const q = query(subCollectionGroupRef, where("eventId", "==", eventId));
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        console.log("No fineItems documents found.");
-        return;
-      }
-
-      let batch = writeBatch(db);
-      let operationCount = 0;
-      const batchPromises = [];
-
-      //helper variables to hold for updating fines and clearances after each queries
-      const fineRef: { parent: string, fineItem: FineItem, isPaid: boolean, isWaived: boolean }[] = [];
-      const clearancesToUpdate: { clearance: ClearanceStatus, fineItem: FineItem, parentFineId: string }[] = [];
-      const payments: { proof: ProofOfPayment, refId:string }[] = [];
-
-      //Archive all fineItems related to the event
-      querySnapshot.forEach((doc) => {
-        batch.update(doc.ref, {
-          isArchived: true,
-          "metadata.isArchived": true,
-          "metadata.updatedAt": Timestamp.now(),
-        });
-        operationCount++;
-
-        fineRef.push({ parent: doc.ref.parent.parent?.id || "", fineItem: { id: doc.id, ...doc.data() } as FineItem, isPaid: doc.data().isPaid, isWaived: doc.data().isWaived });
-       
-        if (operationCount === 500) {
-          batchPromises.push(batch.commit());
-          batch = writeBatch(db);
-          operationCount = 0;
-        }
-      });
-
-      if (operationCount > 0) {
-        batchPromises.push(batch.commit());
-      }
-      await Promise.all(batchPromises);
-      console.log("Successfully updated all fineItem documents!");
-      console.log(fineRef.length);
-      
-      batchPromises.length = 0;
-      batch = writeBatch(db);
-      operationCount = 0;
-
-      // For each fineItem, if it's not paid or waived, we need to recalculate the fine and update stats.
-      //If it's paid but not waived, we only update stats. 
-      const batchPromises2 = [];
-      for (const ref of fineRef) {
-        let amount = ref.fineItem.amount;
-        if (!ref.isPaid && !ref.isWaived) {
-          batchPromises2.push(recalculateFines(ref.parent, 0, 0, true, amount));
-          batchPromises2.push(updateFineStats(`${currentEvent.academicYear!}-${currentEvent.semester!}-${currentEvent.orgId}`, 0, 0, amount))
-        }
-        if (ref.isPaid && !ref.isWaived) {
-          batchPromises2.push(updateDoc(doc(db, "stats", `${currentEvent.academicYear!}-${currentEvent.semester!}-${currentEvent.orgId}`), {
-            totalCollectedFines: increment(0 - (amount)),
-            totalFines: increment(0-(amount))
-          }))
-          amount = 0;
-        }
-          batch.update(doc(db, "fines", ref.parent), {
-          fineItemsCount: increment(-1),
-          accumulatedAmount: increment(0 - amount),
-          "metadata.updatedAt": Timestamp.now(),
-        });
-        operationCount++;
-        
-        if (operationCount === 500) {
-          batchPromises.push(batch.commit());
-          batch = writeBatch(db);
-          operationCount = 0;
-        }
-
-        const clearanceQuery = query(collection(db, "clearanceStatus"), where(`blockingItems.${ref.fineItem.id}`, "!=", null));
-        const snapshot = await getDocs(clearanceQuery);
-        clearancesToUpdate.push({ clearance: snapshot.docs[0].data() as ClearanceStatus, fineItem: ref.fineItem, parentFineId: ref.parent });
-      }
-      if (operationCount > 0) {
-        console.log("committing",operationCount)
-        batchPromises.push(batch.commit());
-        batch = writeBatch(db);
-        operationCount = 0;
-      }
-      await Promise.all(batchPromises2);
-
-      //Remove the fineItem from any clearance blockingItems 
-      for (const item of clearancesToUpdate) {
-        const docRef = doc(db, "clearanceStatus", item.clearance.id);
-        batch.update(docRef, {
-          [`blockingItems.${item.fineItem.id}`]: deleteField(),
-          updatedAt: Timestamp.now()
-        })
-        operationCount++;
-        if (operationCount === 500) {
-          batchPromises.push(batch.commit());
-          batch = writeBatch(db);
-          operationCount = 0;
-        } 
-        
-        const snapshot = await getDocs(query(collection(db, "proofOfPayments"),
-          where("orgId", "==", currentEvent.orgId), where("userId", "==", item.clearance.userId),
-          where("academicYear", "==", currentEvent.academicYear), where("semester", "==", currentEvent.semester),limit(1)));
-        if(snapshot.empty) continue;
-        const proofOfPayment = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProofOfPayment));
-        payments.push({ proof: proofOfPayment[0], refId: item.fineItem.id });
-
-      }
-      if (operationCount > 0) {
-        batchPromises.push(batch.commit());
-      }
-
-      await Promise.all(batchPromises);
-      console.log("Successfully updated all clearance documents!");
-
-      batchPromises.length = 0;
-      batch = writeBatch(db);
-      operationCount = 0;
-
-      //Separate to ensure clearances are updated before recalculation also because I did not use transaction method hehe
-      for(const item of clearancesToUpdate){
-        batchPromises.push(recalculateClearanceStatus(item.clearance.userId, { AY: currentEvent.academicYear, semester: currentEvent.semester }));
-      }
-
-      //Remove payments done from items but keep it as refundables under metadata in case of refund requests on ghost events due to deletion
-      for (const payment of payments) {
-        const paymentRef = doc(db, "proofOfPayments", payment.proof.id!);
-        const paymentToRemove = payment.proof.metadata.items?.find(i => i.refId === payment.refId);
-
-        if (paymentToRemove) {
-          if (payment.proof.metadata.items!.length === 1) {
-            batch.update(paymentRef, {
-              "metadata.items": arrayRemove(paymentToRemove),
-              "metadata.refundables": arrayUnion(paymentToRemove),
-              isArchived: true,
-            })
-            operationCount++;
-          }
-          else {
-            batch.update(paymentRef, {
-              "metadata.items": arrayRemove(paymentToRemove),
-              "metadata.refundables": arrayUnion(paymentToRemove)
-            })
-            operationCount++;
-          }
-          if (operationCount === 500) {
-            batchPromises.push(batch.commit());
-            batch = writeBatch(db);
-            operationCount = 0;
-          }
-        }
-      }
-      if (operationCount > 0) {
-        batchPromises.push(batch.commit());
-      }
-
-      await Promise.all(batchPromises);
-      console.log("Successfully updated all payments!");
-
-    }
 
     // Invalidate specific event cache and all paginated events
     cacheService.invalidate(`event:${eventId}`);

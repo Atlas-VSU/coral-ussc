@@ -385,8 +385,7 @@ export const getDashboardStats = async (selectedTerm?: { AY: string, semester: s
         let studentsBaseQuery = query(
           collection(db, "users"),
           where("isDeleted", "==", false),
-          where("role", "==", "user"),
-          where("status", "==", "approved")
+          where("role", "==", "user")
         );
 
         let eventsBaseQuery = query(

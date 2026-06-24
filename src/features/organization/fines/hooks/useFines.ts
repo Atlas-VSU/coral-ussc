@@ -1,13 +1,12 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { StudentFines } from "@/features/organization/fines/types";
-import { fetchFinesPaginated, getFinesCount, countStudentsWithFines, countUnsettleFinesOfStudents, checkFineSeededForTerm } from "@/firebase/fines/read/fines";
+import { fetchFinesPaginated, getFinesCount, countStudentsWithFines, countUnsettleFinesOfStudents } from "@/firebase/fines/read/fines";
 import { getCurrentUserData } from "@/firebase";
 import { Member } from "../../members/types";
 import { CACHE_KEYS, cacheService } from "@/services/cacheService";
 import { getStats } from "@/firebase/stats/read/getStats";
 import { getActiveTerm } from "@/firebase/term";
 import { useTermPeriod } from "../../term/hooks/useTermPeriod";
-import { set } from "zod";
 
 
 interface UseFinesProps {
@@ -25,7 +24,6 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
   const cursorsRef = useRef<Record<number, any>>({});
   const [refreshKey, setRefreshKey] = useState(false);
   const { selected } = useTermPeriod();
-  const [doneSeeding, setDoneSeeding] = useState(false);
 
   // Stats
   const [totalStudentsWithFines, setTotalStudentsWithFines] = useState(0);
@@ -50,18 +48,16 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
         const term = selected || await getActiveTerm();
 
         //  Fetch stats and term (these could be optimized with a single server-side call)
-        const [studentsCount, unsettledCount,stats, seed] = await Promise.all([
+        const [studentsCount, unsettledCount,stats,] = await Promise.all([
           countStudentsWithFines(selected),
           countUnsettleFinesOfStudents(selected),
           getStats(`${term!.AY}-${term!.semester}-${currUser.orgId}`),
-          checkFineSeededForTerm(currUser.orgId!, {AY: term!.AY, semester: term!.semester})
         ]);
         if (isMounted) {
           setTotalStudentsWithFines(studentsCount);
           setTotalUnsettled(unsettledCount);
           setTotalUnpaidFines(stats?.totalUnpaidFines || 0);
           setTotalCollectedFines(stats?.totalCollectedFines || 0);
-          setDoneSeeding(seed);
         }
 
         // Fetch paginated data
@@ -131,7 +127,6 @@ export function useFines({ initialStatusFilter = "all", itemsPerPage = 9 }: UseF
 
   return {
     paginatedFines,
-    doneSeeding,
     filteredCount: totalCount,
     isLoading,
     currentPage,

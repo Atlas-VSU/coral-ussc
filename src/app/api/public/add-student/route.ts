@@ -5,20 +5,19 @@ import { FieldValue } from "firebase-admin/firestore";
 
 const schema = z.object({
     studentId: z
-        .string()
-        .min(1, "Student ID is required")
-        .regex(
-            /^\d{2}-\d-\d{5}$/,
-            "Student ID must follow format XX-X-XXXXX (e.g., 25-1-12345)"
-        ),
+      .string()
+      .min(1, "Student ID is required")
+      .regex(
+        /^\d{2}-\d-\d{5}$/,
+        "Student ID must follow format XX-X-XXXXX (e.g., 25-1-12345)"
+      ),
     email: z.string().min(5, "Email is required").email("Invalid email"),
     firstName: z.string().min(2, "First name is required"),
     lastName: z.string().min(2, "Last name is required"),
     programId: z.string().min(1, "Program is required"),
     yearLevel: z.number().min(1, "Year level is required").max(6, "Year level is too high").default(1),
     role: z.enum(["user"]).default("user"),
-    recaptchaToken: z.string().optional(),
-});
+  });
 
 export async function POST(request: NextRequest) {
     try {
@@ -36,38 +35,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { studentId, email, firstName, lastName, programId, role, yearLevel, recaptchaToken } = parsed.data;
-
-        // reCAPTCHA v2 server-side verification 
-        const recaptchaSecret = process.env.RECAPTCHA_V2_SECRET_KEY;
-        if (recaptchaSecret) {
-            if (!recaptchaToken) {
-                return NextResponse.json(
-                    { success: false, error: "reCAPTCHA verification is required." },
-                    { status: 400 }
-                );
-            }
-
-            const verifyRes = await fetch(
-                "https://www.google.com/recaptcha/api/siteverify",
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    body: new URLSearchParams({
-                        secret: recaptchaSecret,
-                        response: recaptchaToken,
-                    }),
-                }
-            );
-            const verifyData = await verifyRes.json();
-
-            if (!verifyData.success) {
-                return NextResponse.json(
-                    { success: false, error: "reCAPTCHA verification failed. Please try again." },
-                    { status: 400 }
-                );
-            }
-        }
+        const { studentId, email, firstName, lastName, programId, role, yearLevel } = parsed.data;
 
         const [studentIdSnap, emailSnap] = await Promise.all([
             adminDb.collection("users").where("studentId", "==", studentId).limit(1).get(),
