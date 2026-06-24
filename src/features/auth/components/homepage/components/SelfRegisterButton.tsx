@@ -3,48 +3,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowRight,
-  GraduationCap,
-  Loader2,
-  ShieldCheck,
-} from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Recaptcha } from "@/components/ui/recaptcha";
+import { ArrowRight, GraduationCap, Loader2 } from "lucide-react";
 
 export function SelfRegisterButton() {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
 
-  // When reCAPTCHA isn't configured, don't block navigation on a token that can
-  // never arrive — the gate just becomes a confirmation step.
-  const recaptchaConfigured = Boolean(
-    process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY
-  );
-  const canContinue = recaptchaConfigured ? Boolean(token) : true;
-
-  const handleContinue = () => {
-    if (!canContinue || isNavigating) return;
+  const handleClick = () => {
+    if (isNavigating) return;
     setIsNavigating(true);
     router.push("/self-register");
-  };
-
-  const handleOpenChange = (next: boolean) => {
-    setOpen(next);
-    if (!next) {
-      setToken(null);
-      setIsNavigating(false);
-    }
   };
 
   return (
