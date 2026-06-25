@@ -36,8 +36,10 @@ interface OrganizationData {
   acronym: string;
   orgTreasurerName?: string;
   orgTreasurerUrl?: string;
+  orgTreasurerNumber?: string;
   orgAuditorName?: string;
   orgAuditorUrl?: string;
+  orgAuditorNumber?: string;
 }
 
 interface FinesPaymentFormPageProps {
@@ -168,8 +170,8 @@ export default function FinesPaymentFormPage({
         amount:       fee.amount,
         paymentType:  "fees",
         parentFineId: "",
-        academicYear: fee.academicYear || "2026-2027",
-        semester:     fee.semester || "2nd",
+        academicYear: fee.academicYear || selectedTerm?.AY || "2026-2027",
+        semester:     fee.semester || selectedTerm?.semester || "1st",
       })),
       ...(selectedFineItems.filter(f => !f.isPaid && !f.isPending) ?? []).map(fine => ({
         refId:        fine.refId,
@@ -177,8 +179,8 @@ export default function FinesPaymentFormPage({
         amount:       fine.amount,
         paymentType:  "fines",
         parentFineId: fine.parentFineId,
-        academicYear: fine.academicYear || "2026-2027",
-        semester:     fine.semester || "1st",
+        academicYear: fine.academicYear || selectedTerm?.AY || "2026-2027",
+        semester:     fine.semester || selectedTerm?.semester || "1st",
       })),
     ];
 
@@ -250,9 +252,9 @@ export default function FinesPaymentFormPage({
 
   // DYNAMIC VARIABLES MAPPED HERE
   const treasurerName = organizationData?.orgTreasurerName || "Kleenie Elumene B. Yuzon";
-  const treasurerNumber = "09631000393"; 
+  const treasurerNumber = organizationData?.orgTreasurerNumber || "failed to load"; 
   const auditorName = organizationData?.orgAuditorName || "Reniel Emberso";
-  const auditorNumber = "09123127184"; 
+  const auditorNumber = organizationData?.orgAuditorNumber || "failed to load"; 
 
   useEffect(() => {
     let cancelled = false;

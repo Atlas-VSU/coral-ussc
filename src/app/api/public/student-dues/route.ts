@@ -440,8 +440,10 @@ export async function GET(request: NextRequest) {
           fineItems: due.fineItems,
           orgTreasurerName: orgData?.orgTreasurerName || null,
           orgTreasurerUrl: orgData?.orgTreasurerUrl || null,
+          orgTreasurerNumber: orgData?.orgTreasurerNumber || null,
           orgAuditorName: orgData?.orgAuditorName || null,
           orgAuditorUrl: orgData?.orgAuditorUrl || null,
+          orgAuditorNumber: orgData?.orgAuditorNumber || null,
         };
       })
       .filter(Boolean)

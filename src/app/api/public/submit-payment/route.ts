@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { adminDb } from "@/firebase/firebase-admin.config";
 import { FieldValue } from "firebase-admin/firestore";
-
+import { FieldPath } from "firebase-admin/firestore";
 
 const unpaidDueSchema = z.object({
   refId:        z.string().min(1),
@@ -64,6 +64,14 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = parsed.data;
+
+    if (payload.dues.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "At least one due must be selected for payment." },
+        { status: 400 }
+      );
+    }
+
     const now = FieldValue.serverTimestamp();
 
     const userSnapshot = await adminDb
@@ -82,10 +90,8 @@ export async function POST(request: NextRequest) {
 
     const userId = userSnapshot.docs[0].id;
 
-    const feeIds  = payload.dues.filter(d => d.paymentType === "fees").map(d => d.refId);
-    const fineItemIds = payload.dues.filter(d => d.paymentType === "fines").map(d =>
-       d.refId
-    );
+    const feeIds = payload.dues.filter(d => d.paymentType === "fees").map(d => d.refId);
+    const fineItemIds = payload.dues.filter(d => d.paymentType === "fines").map(d => d.refId);
 
     const blockedIds = await checkForBlockedDues(feeIds, fineItemIds);
     if (blockedIds.fees.length > 0 || blockedIds.fines.length > 0) {
@@ -99,15 +105,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const feeDocsById = new Map<string, FirebaseFirestore.DocumentData>();
+    if (feeIds.length > 0) {
+      const feeDocs = await Promise.all(
+        feeIds.map(id => adminDb.collection("fees").doc(id).get())
+      );
+      for (const feeDoc of feeDocs) {
+        if (feeDoc.exists) {
+          feeDocsById.set(feeDoc.id, feeDoc.data()!);
+        }
+      }
+    }
+
     const batch = adminDb.batch();
     const proofRef = adminDb.collection("proofOfPayments").doc();
     const itemKeys: string[] = [];
     const items: object[] = [];
+    let clearanceId = "";
 
     for (const due of payload.dues) {
-      const parentId = due.paymentType === "fines"
-        ? due.parentFineId
-        : due.refId;
+      const parentId = due.paymentType === "fines" ? due.parentFineId : due.refId;
 
       const historyRef = adminDb
         .collection(due.paymentType).doc(parentId)
@@ -115,7 +132,7 @@ export async function POST(request: NextRequest) {
 
       // Per-due payment history entry
       batch.set(historyRef, {
-        paymentNumber:   now,
+        paymentNumber:   now, 
         amount:          due.amount,
         paymentMethod:   payload.paymentMethod,
         paymentProofId:  proofRef.id,
@@ -133,23 +150,34 @@ export async function POST(request: NextRequest) {
         metadata:        { source: "public_payment_portal", submittedBy: "student" },
         createdAt:       now,
       });
-      let updated = due.paymentType === "fines"? "metadata.updatedAt" : "updatedAt";
-      batch.update(adminDb.collection(due.paymentType).doc(parentId), {
-        status:    "pending",
-        [updated]: now,
-      });
+
+      const updatedAtField = due.paymentType === "fines" ? "metadata.updatedAt" : "updatedAt";
+      batch.set(adminDb.collection(due.paymentType).doc(parentId), {
+        status:           "pending",
+        [updatedAtField]: now,
+      }, { merge: true });
 
       // Mark clearance item as pending review
-      batch.update(adminDb.collection("clearanceStatus").doc(userId), {
-        [`blockingItems.${due.refId}.pendingReview`]: true,
+      const termSuffix = `:${due.academicYear}-${due.semester}`.replace(/\s/g, '_');
+      clearanceId = `${userId}${payload.orgId}${termSuffix}`;
+
+      batch.set(adminDb.collection("clearanceStatus").doc(clearanceId), {
+        blockingItems: {
+          [due.refId]: {
+            pendingReview: true,
+          },
+        },
+      }, {
+        mergeFields: [
+          new FieldPath("blockingItems", due.refId, "pendingReview"),
+        ],
       });
 
-      if (due.paymentType === "fines") { 
-        batch.update(adminDb.collection("fines").doc(due.parentFineId).collection("fineItems").doc(due.refId), {
+      if (due.paymentType === "fines") {
+        batch.set(adminDb.collection("fines").doc(due.parentFineId).collection("fineItems").doc(due.refId), {
           isPending: true,
-        });
+        }, { merge: true });
       }
-
 
       items.push({
         refId:        due.refId,
@@ -163,9 +191,10 @@ export async function POST(request: NextRequest) {
       });
 
       if (due.paymentType === "fees") {
-        const fee = await adminDb.collection("fees").doc(due.refId).get();
-        const feeData = fee.data();
-        itemKeys.push(feeData?.feeItemId);
+        const feeItemId = feeDocsById.get(due.refId)?.feeItemId;
+        if (feeItemId) {
+          itemKeys.push(feeItemId);
+        }
       } else if (due.paymentType === "fines") {
         itemKeys.push(due.parentFineId);
       }
@@ -174,7 +203,9 @@ export async function POST(request: NextRequest) {
     // Single proof-of-payment doc covering all dues
     batch.set(proofRef, {
       orgId:           payload.orgId,
-      userId,                          
+      academicYear:    payload.dues[0]?.academicYear ?? "2025-2026",
+      semester:        payload.dues[0]?.semester ?? "2nd",
+      userId,
       userName:        payload.userName,
       studentId:       payload.studentId,
       paymentType:     payload.type,
@@ -182,7 +213,7 @@ export async function POST(request: NextRequest) {
       referenceId:     payload.referenceId,
       referenceNumber: payload.referenceNumber ?? "",
       senderNumber:    payload.senderNumber    ?? "",
-      amount: payload.amount,
+      amount:          payload.amount,
       isArchived:      false,
       imageUrl:        payload.imageUrl        ?? "",
       status:          "pending",
@@ -191,19 +222,19 @@ export async function POST(request: NextRequest) {
       notes:           payload.notes ?? "Public payment portal submission.",
       verifiedBy:      null,
       verifiedByName:  null,
-      verifiedAt: null,
-      updatedAt: now,
+      verifiedAt:      null,
+      updatedAt:       now,
       metadata: {
         source:      "public_payment_portal",
         submittedBy: "student",
         items,
       },
-      itemKeys: itemKeys,
+      itemKeys,
     });
 
-    batch.update(adminDb.collection("clearanceStatus").doc(userId), {
+    batch.set(adminDb.collection("clearanceStatus").doc(clearanceId), {
       status: "pending",
-    });
+    }, { merge: true });
 
     await batch.commit();
 
@@ -221,7 +252,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
 
 async function checkForBlockedDues(feeIds: string[], fineIds: string[]) {
   const BLOCKING_STATUSES = ["pending", "verified"];
