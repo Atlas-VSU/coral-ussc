@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     // Generate token
     const token = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     // Store in Firestore
     await adminDb.collection("registration_tokens").add({
@@ -89,8 +89,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: mocked 
-          ? "Registration link generated successfully (logged to console for dev)." 
+        message: mocked
+          ? "Registration link generated successfully (logged to console for dev)."
           : "Registration link has been sent to your email.",
         mocked: !!mocked,
       },

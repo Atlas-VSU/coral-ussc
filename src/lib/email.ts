@@ -33,7 +33,7 @@ export async function sendRegistrationEmail(to: string, registrationUrl: string)
         </div>
         
         <p style="font-size: 13px; color: #666666; margin-top: 20px;">
-          This link is unique to you and will expire in <strong>24 hours</strong>. If you did not request this, please ignore this email.
+          This link is unique to you and will expire in <strong>an hour</strong>. If you did not request this, please ignore this email.
         </p>
         
         <p style="font-size: 12px; color: #999999; word-break: break-all; margin-top: 30px;">
