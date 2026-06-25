@@ -386,7 +386,7 @@ export const assignExistingFeesToStudent = async (
         await batch.commit();
     }
     await updateFeeStats(`${term!.AY}-${term!.semester}-${orgId}`,totalAmount, 0);
-    await recalculateClearanceStatus(userId);
+    await recalculateClearanceStatus(userId, term!);
 };
 
 export const fetchFeeItem = async(orgId: string, feeItemId: string): Promise<FeeItem | null> => {
