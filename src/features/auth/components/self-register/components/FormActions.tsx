@@ -13,17 +13,6 @@ export function FormActions({ isSubmitting, recaptchaVerified, agreed }: FormAct
   return (
     <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-between">
       <Button
-        asChild
-        variant="outline"
-        type="button"
-        disabled={isSubmitting}
-      >
-        <Link href="/">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Home
-        </Link>
-      </Button>
-      <Button
         type="submit"
         variant="success"
         disabled={isSubmitting || !recaptchaVerified || !agreed}

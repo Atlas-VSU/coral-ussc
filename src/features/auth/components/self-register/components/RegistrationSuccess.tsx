@@ -17,12 +17,11 @@ export function RegistrationSuccess() {
           </h2>
           <p className="text-sm text-muted-foreground">
             Thanks for registering! Your application has been received and is
-            now <span className="font-semibold">pending verification</span> by
-            your organization. You&apos;ll be notified once it&apos;s reviewed.
+            now <span className="font-semibold">pending verification</span>. Once your registration has been reviewed, a notification will be sent to your email.
           </p>
-          <Button asChild variant="success" className="mt-2 w-full">
-            <Link href="/">Back to Home</Link>
-          </Button>
+          <p className="text-xs text-muted-foreground bg-amber-50/50 dark:bg-amber-950/10 border border-amber-200/40 rounded-lg p-3 max-w-sm">
+            If you do not see it in your inbox, please check your spam folder.
+          </p>
         </CardContent>
       </Card>
     </div>
