@@ -21,11 +21,18 @@ import { YearLevelDisplay } from "./components/YearLevelDisplay";
 import { CORUploadPlaceholder } from "./components/CORUploadPlaceholder";
 import { RecaptchaSection } from "./components/RecaptchaSection";
 import { FormActions } from "./components/FormActions";
+import { ConsentSection } from "./components/ConsentSection";
 
-export function SelfRegisterForm() {
+interface SelfRegisterFormProps {
+  initialEmail?: string;
+  token?: string;
+}
+
+export function SelfRegisterForm({ initialEmail = "", token = "" }: SelfRegisterFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const [agreed, setAgreed] = useState(false);
 
   // When reCAPTCHA isn't configured, don't block submission on a token that can
   // never arrive — the captcha just becomes unavailable.
@@ -41,7 +48,7 @@ export function SelfRegisterForm() {
     resolver: zodResolver(selfRegisterSchema),
     defaultValues: {
       studentId: "",
-      email: "",
+      email: initialEmail,
       firstName: "",
       lastName: "",
       programId: "",
@@ -66,6 +73,7 @@ export function SelfRegisterForm() {
           yearLevel: FRESHMAN_YEAR_LEVEL,
           role: "user",
           recaptchaToken: recaptchaToken,
+          registrationToken: token,
         }),
       });
 
@@ -119,7 +127,7 @@ export function SelfRegisterForm() {
               className="space-y-4"
             >
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <PersonalInfoFields form={form} />
+                <PersonalInfoFields form={form} emailReadOnly={Boolean(initialEmail)} />
                 <ProgramSelectField
                   form={form}
                   programOptions={programOptions}
@@ -139,7 +147,13 @@ export function SelfRegisterForm() {
                 onExpire={() => setRecaptchaToken(null)}
               />
 
+              <ConsentSection
+                agreed={agreed}
+                setAgreed={setAgreed}
+              />
+
               <FormActions
+                agreed={agreed}
                 isSubmitting={isSubmitting}
                 recaptchaVerified={recaptchaVerified}
               />

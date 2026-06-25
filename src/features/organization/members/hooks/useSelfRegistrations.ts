@@ -19,6 +19,7 @@ import { db } from "@/firebase/firebase.config";
 import { ClearanceStatus } from "../../clearance/types";
 import { assignExistingFinesToStudent } from "@/firebase/fines/create/fines";
 import { getActiveTerm } from "@/firebase/term";
+import { useSendRegistrationStatus } from "@/features/auth/components/self-register/hooks/useSendRegistrationStatus";
 
 export type SelfRegDecision = "approved" | "reject";
 
@@ -36,6 +37,7 @@ export function useSelfRegistrations() {
     action: SelfRegDecision;
   } | null>(null);
   const [userData, setUserData] = useState<Member | null>(null);
+  const { sendRegistrationStatus } = useSendRegistrationStatus();
 
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
@@ -79,43 +81,48 @@ export function useSelfRegistrations() {
       if (!target) return;
 
       setProcessing({ id, action });
-      // Simulate the verification request so the button feedback is visible.
-      
-      if(action == "approved") {
+
+      // Send registration status email to the user first before updating status or deleting
+      const statusToSend = action === "approved" ? "approved" : "rejected";
+      if (target.email) {
+        await sendRegistrationStatus(target.email, statusToSend);
+      }
+
+      if (action == "approved") {
         await updateMemberStatus(id, action)
         const active = await getActiveTerm();
         const user = await getUserById(id);
         const orgs = await getAllOrgs();
         for (const org of orgs) {
-          if(org.subscribed && org.programId == user?.programId || org.facultyId == user?.facultyId || (org.facultyId == null && org.programId == null) ) {
+          if (org.subscribed && org.programId == user?.programId || org.facultyId == user?.facultyId || (org.facultyId == null && org.programId == null)) {
             const clearanceId = buildClearanceId(id!, org?.id!, org?.accessLevel!, active! as Term)
             const clearanceRef = doc(db, 'clearanceStatus', clearanceId);
-            const now = Timestamp.now(); 
+            const now = Timestamp.now();
             const defaultDueDate = Timestamp.fromDate(new Date('2026-12-30'));
 
             const clearanceData: ClearanceStatus = {
-                    id: clearanceId,
-                    orgId: org?.id!, 
-                    userId: id,
-                    userName: `${user?.firstName} ${user?.lastName}`,
-                    studentId: user?.studentId || "N/A", // Fallback just in case
-                    academicYear: active!.AY,
-                    semester: active!.semester,
-                    status: 'cleared', 
-                    visibility: 'public', 
-                    blockingItems: {}, 
-                    clearanceDate: null,
-                    lastCalculatedAt: now,
-                    startDate: now,
-                    dueDate: defaultDueDate,
-                    createdAt: now,
-                    updatedAt: now,
-                    isArchived: false
-                  };
-            
+              id: clearanceId,
+              orgId: org?.id!,
+              userId: id,
+              userName: `${user?.firstName} ${user?.lastName}`,
+              studentId: user?.studentId || "N/A", // Fallback just in case
+              academicYear: active!.AY,
+              semester: active!.semester,
+              status: 'cleared',
+              visibility: 'public',
+              blockingItems: {},
+              clearanceDate: null,
+              lastCalculatedAt: now,
+              startDate: now,
+              dueDate: defaultDueDate,
+              createdAt: now,
+              updatedAt: now,
+              isArchived: false
+            };
+
             await setDoc(clearanceRef, clearanceData);
-            await assignExistingFeesToStudent(id, {firstName: user?.firstName || "", lastName: user?.lastName || "", studentId: user?.studentId || ""}, {uid: org?.id!, accessLevel: org?.accessLevel!}, userData!)
-            await assignExistingFinesToStudent(id, {firstName: user?.firstName || "", lastName: user?.lastName || "", studentId: user?.studentId || ""}, {uid: org?.id!, accessLevel: org?.accessLevel!}, userData!)
+            await assignExistingFeesToStudent(id, { firstName: user?.firstName || "", lastName: user?.lastName || "", studentId: user?.studentId || "" }, { uid: org?.id!, accessLevel: org?.accessLevel! }, userData!)
+            await assignExistingFinesToStudent(id, { firstName: user?.firstName || "", lastName: user?.lastName || "", studentId: user?.studentId || "" }, { uid: org?.id!, accessLevel: org?.accessLevel! }, userData!)
           }
         }
       }
@@ -133,7 +140,7 @@ export function useSelfRegistrations() {
         toast.info(`${name}'s registration was rejected.`);
       }
     },
-    []
+    [sendRegistrationStatus]
   );
 
   const accept = useCallback((id: string) => decide(id, "approved"), [decide]);
