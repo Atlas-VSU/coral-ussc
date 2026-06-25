@@ -14,10 +14,11 @@ import {
 
 interface PersonalInfoFieldsProps {
   form: UseFormReturn<SelfRegisterFormData>;
+  emailReadOnly?: boolean;
 }
 
 /** Student ID, email, first name, and last name fields. */
-export function PersonalInfoFields({ form }: PersonalInfoFieldsProps) {
+export function PersonalInfoFields({ form, emailReadOnly }: PersonalInfoFieldsProps) {
   return (
     <>
       <FormField
@@ -52,7 +53,10 @@ export function PersonalInfoFields({ form }: PersonalInfoFieldsProps) {
                 {...field}
                 type="email"
                 placeholder="your_address@gmail.com"
-                className={lightInputClass}
+                readOnly={emailReadOnly}
+                className={`${lightInputClass} ${
+                  emailReadOnly ? "!bg-gray-100 dark:!bg-neutral-800 cursor-not-allowed opacity-80" : ""
+                }`}
               />
             </FormControl>
             <FormMessage />

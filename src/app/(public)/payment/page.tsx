@@ -39,8 +39,10 @@ export interface OrganizationData {
 
   orgTreasurerName?: string;
   orgTreasurerUrl?: string;
+  orgTreasurerNumber?: string;
   orgAuditorName?: string;
   orgAuditorUrl?: string;
+  orgAuditorNumber?: string;
 }
 
 export interface FeeItem {
@@ -172,8 +174,10 @@ export default function PaymentPage() {
           fineItems: Array.isArray(org.fineItems) ? org.fineItems : [],
           orgTreasurerName: org.orgTreasurerName,
           orgTreasurerUrl: org.orgTreasurerUrl,
+          orgTreasurerNumber: org.orgTreasurerNumber,
           orgAuditorName: org.orgAuditorName,
           orgAuditorUrl: org.orgAuditorUrl,
+          orgAuditorNumber: org.orgAuditorNumber,
         }))
       );
     } catch (error) {

@@ -18,6 +18,7 @@ const schema = z.object({
     yearLevel: z.number().min(1, "Year level is required").max(6, "Year level is too high").default(1),
     role: z.enum(["user"]).default("user"),
     recaptchaToken: z.string().optional(),
+    registrationToken: z.string().min(1, "Registration token is required"),
 });
 
 export async function POST(request: NextRequest) {
@@ -36,7 +37,46 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { studentId, email, firstName, lastName, programId, role, yearLevel, recaptchaToken } = parsed.data;
+        const { studentId, email, firstName, lastName, programId, role, yearLevel, recaptchaToken, registrationToken } = parsed.data;
+
+        // ── Verify registration token ────────────────────────────────────────
+        const tokenSnap = await adminDb
+            .collection("registration_tokens")
+            .where("token", "==", registrationToken)
+            .limit(1)
+            .get();
+
+        if (tokenSnap.empty) {
+            return NextResponse.json(
+                { success: false, error: "Invalid registration token." },
+                { status: 400 }
+            );
+        }
+
+        const tokenDoc = tokenSnap.docs[0];
+        const tokenData = tokenDoc.data();
+
+        if (tokenData.used) {
+            return NextResponse.json(
+                { success: false, error: "This registration link has already been used." },
+                { status: 400 }
+            );
+        }
+
+        const expiresAt = tokenData.expiresAt.toDate();
+        if (new Date() > expiresAt) {
+            return NextResponse.json(
+                { success: false, error: "This registration link has expired." },
+                { status: 400 }
+            );
+        }
+
+        if (tokenData.email.toLowerCase() !== email.toLowerCase()) {
+            return NextResponse.json(
+                { success: false, error: "Email address does not match the registration link." },
+                { status: 400 }
+            );
+        }
 
         // reCAPTCHA v2 server-side verification 
         const recaptchaSecret = process.env.RECAPTCHA_V2_SECRET_KEY;
@@ -114,6 +154,12 @@ export async function POST(request: NextRequest) {
             createdAt: FieldValue.serverTimestamp(),
         });
         const userId = userRef.id;
+
+        // Mark token as used
+        await adminDb.collection("registration_tokens").doc(tokenDoc.id).update({
+            used: true,
+            usedAt: FieldValue.serverTimestamp(),
+        });
 
         if (role !== "user") {
             return NextResponse.json(
