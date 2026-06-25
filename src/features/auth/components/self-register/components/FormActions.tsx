@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 interface FormActionsProps {
   isSubmitting: boolean;
   recaptchaVerified: boolean;
+  agreed: boolean;
 }
 
 /** Back-to-home + submit button row at the bottom of the form. */
-export function FormActions({ isSubmitting, recaptchaVerified }: FormActionsProps) {
+export function FormActions({ isSubmitting, recaptchaVerified, agreed }: FormActionsProps) {
   return (
     <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-between">
       <Button
@@ -25,7 +26,7 @@ export function FormActions({ isSubmitting, recaptchaVerified }: FormActionsProp
       <Button
         type="submit"
         variant="success"
-        disabled={isSubmitting || !recaptchaVerified}
+        disabled={isSubmitting || !recaptchaVerified || !agreed}
         className="sm:min-w-[160px]"
       >
         {isSubmitting ? (

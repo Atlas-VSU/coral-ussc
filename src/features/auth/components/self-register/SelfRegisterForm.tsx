@@ -21,6 +21,7 @@ import { YearLevelDisplay } from "./components/YearLevelDisplay";
 import { CORUploadPlaceholder } from "./components/CORUploadPlaceholder";
 import { RecaptchaSection } from "./components/RecaptchaSection";
 import { FormActions } from "./components/FormActions";
+import { ConsentSection } from "./components/ConsentSection";
 
 interface SelfRegisterFormProps {
   initialEmail?: string;
@@ -31,6 +32,7 @@ export function SelfRegisterForm({ initialEmail = "", token = "" }: SelfRegister
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const [agreed, setAgreed] = useState(false);
 
   // When reCAPTCHA isn't configured, don't block submission on a token that can
   // never arrive — the captcha just becomes unavailable.
@@ -145,7 +147,13 @@ export function SelfRegisterForm({ initialEmail = "", token = "" }: SelfRegister
                 onExpire={() => setRecaptchaToken(null)}
               />
 
+              <ConsentSection
+                agreed={agreed}
+                setAgreed={setAgreed}
+              />
+
               <FormActions
+                agreed={agreed}
                 isSubmitting={isSubmitting}
                 recaptchaVerified={recaptchaVerified}
               />
