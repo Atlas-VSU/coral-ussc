@@ -328,6 +328,18 @@ export const updateUser = async (userId: string, userData: MemberFormData) => {
     if (userData.yearLevel === undefined) {
       userData.yearLevel = 0;
     }
+
+    if (!userData.facultyId || userData.facultyId == undefined) {
+      if(userData.programId == "") {
+        throw new Error("No faculty ID or program ID provided for update.");
+      }
+      const program = await getProgramById(userData.programId);
+      if(!program) {
+        throw new Error("No program found for the provided program ID.");
+      }
+      userData.facultyId = program.facultyId;
+    }
+    
     const userDoc = doc(db, "users", userId);
     await updateDoc(userDoc, {
       ...userData,
