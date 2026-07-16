@@ -24,7 +24,7 @@ export function SelfRegisterButton() {
         `}
       >
         <GraduationCap className="w-5 h-5" />
-        <span className="text-base">Freshman Self-Register</span>
+        <span className="text-base">Self-Register</span>
         <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
       </button>
 

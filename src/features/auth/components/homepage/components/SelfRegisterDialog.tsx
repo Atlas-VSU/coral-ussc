@@ -53,7 +53,7 @@ export function SelfRegisterDialog({ isOpen, onOpenChange }: SelfRegisterDialogP
           </DialogTitle>
           <DialogDescription className="text-gray-500 text-sm max-w-sm">
             {!sendSuccess
-              ? "Incoming freshmen are required to verify their email before registration. We will send a secure self-registration link to your inbox."
+              ? "Self-registered students are required to verify their email before registration. We will send a secure self-registration link to your inbox."
               : `We've sent a link to ${email}. Click the link in the email to proceed with your registration.`}
           </DialogDescription>
         </DialogHeader>

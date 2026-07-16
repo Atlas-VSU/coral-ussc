@@ -19,7 +19,7 @@ export async function sendRegistrationEmail(to: string, registrationUrl: string)
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
       <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #2E7D32; padding-bottom: 20px;">
         <h2 style="color: #1B5E20; margin: 0; font-size: 24px;">USSC Connect</h2>
-        <p style="color: #666666; margin: 5px 0 0 0; font-size: 14px;">Freshman Self-Registration Verification</p>
+        <p style="color: #666666; margin: 5px 0 0 0; font-size: 14px;">Self-Registration Verification</p>
       </div>
       
       <div style="padding: 10px 0; color: #333333; line-height: 1.6;">
@@ -52,7 +52,7 @@ export async function sendRegistrationEmail(to: string, registrationUrl: string)
     from: `"USSC Connect" <${smtpEmail}>`,
     to,
     subject: "USSC Freshman Registration Link",
-    text: `Complete your Freshman Self-Registration by visiting: ${registrationUrl}`,
+    text: `Complete your Self-Registration by visiting: ${registrationUrl}`,
     html: htmlContent,
   });
 
@@ -67,7 +67,7 @@ export async function sendRegistrationResultEmail(to: string, registrationStatus
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
       <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #2E7D32; padding-bottom: 20px;">
         <h2 style="color: #1B5E20; margin: 0; font-size: 24px;">USSC Connect</h2>
-        <p style="color: #666666; margin: 5px 0 0 0; font-size: 14px;">Freshman Self-Registration Verification</p>
+        <p style="color: #666666; margin: 5px 0 0 0; font-size: 14px;">Self-Registration Verification</p>
       </div>
       
       <div style="padding: 10px 0; color: #333333; line-height: 1.6;">
@@ -84,7 +84,7 @@ export async function sendRegistrationResultEmail(to: string, registrationStatus
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
       <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #2E7D32; padding-bottom: 20px;">
         <h2 style="color: #1B5E20; margin: 0; font-size: 24px;">USSC Connect</h2>
-        <p style="color: #666666; margin: 5px 0 0 0; font-size: 14px;">Freshman Self-Registration Verification</p>
+        <p style="color: #666666; margin: 5px 0 0 0; font-size: 14px;">Self-Registration Verification</p>
       </div>
       
       <div style="padding: 10px 0; color: #333333; line-height: 1.6;">
@@ -106,7 +106,7 @@ export async function sendRegistrationResultEmail(to: string, registrationStatus
     from: `"USSC Connect" <${smtpEmail}>`,
     to,
     subject: "USSC Freshman Registration Status",
-    text: `Your Freshman Self-Registration status is ${registrationStatus}.`,
+    text: `Your Self-Registration status is ${registrationStatus}.`,
     html: htmlContent,
   });
 

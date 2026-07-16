@@ -10,15 +10,14 @@ import { toast } from "sonner";
 
 import {
   selfRegisterSchema,
-  FRESHMAN_YEAR_LEVEL,
   type SelfRegisterFormData,
 } from "./constants";
 import { useProgramOptions } from "./hooks/useProgramOptions";
 import { RegistrationSuccess } from "./components/RegistrationSuccess";
 import { PersonalInfoFields } from "./components/PersonalInfoFields";
 import { ProgramSelectField } from "./components/ProgramSelectField";
-import { YearLevelDisplay } from "./components/YearLevelDisplay";
-import { CORUploadPlaceholder } from "./components/CORUploadPlaceholder";
+import { YearLevelSelection } from "./components/YearLevelDisplay";
+import { CORUpload, type CORFile } from "./components/CORUploadPlaceholder";
 import { RecaptchaSection } from "./components/RecaptchaSection";
 import { FormActions } from "./components/FormActions";
 import { ConsentSection } from "./components/ConsentSection";
@@ -33,6 +32,7 @@ export function SelfRegisterForm({ initialEmail = "", token = "" }: SelfRegister
   const [submitted, setSubmitted] = useState(false);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
+  const [corFile, setCorFile] = useState<CORFile | null>(null);
 
   // When reCAPTCHA isn't configured, don't block submission on a token that can
   // never arrive — the captcha just becomes unavailable.
@@ -52,6 +52,7 @@ export function SelfRegisterForm({ initialEmail = "", token = "" }: SelfRegister
       firstName: "",
       lastName: "",
       programId: "",
+      yearLevel: undefined as unknown as number,
     },
   });
 
@@ -63,18 +64,22 @@ export function SelfRegisterForm({ initialEmail = "", token = "" }: SelfRegister
 
     try {
       setIsSubmitting(true);
+
+      const formData = new FormData();
+      formData.append("studentId", data.studentId);
+      formData.append("email", data.email);
+      formData.append("firstName", data.firstName);
+      formData.append("lastName", data.lastName);
+      formData.append("programId", data.programId);
+      formData.append("yearLevel", String(data.yearLevel));
+      formData.append("role", "user");
+      formData.append("recaptchaToken", recaptchaToken ?? "");
+      formData.append("registrationToken", token);
+      if (corFile) formData.append("corFile", corFile.file);
+
       const response = await fetch("/api/public/add-student", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...data,
-          yearLevel: FRESHMAN_YEAR_LEVEL,
-          role: "user",
-          recaptchaToken: recaptchaToken,
-          registrationToken: token,
-        }),
+        body: formData,
       });
 
       if (!response.ok) {
@@ -110,7 +115,7 @@ export function SelfRegisterForm({ initialEmail = "", token = "" }: SelfRegister
           priority
         />
         <h1 className="text-2xl font-bold bg-gradient-to-r from-[#8BC34A] via-[#2E7D32] to-[#1B5E20] bg-clip-text text-transparent">
-          Freshman Self-Registration
+          Self-Registration
         </h1>
         <p className="max-w-md text-sm text-muted-foreground">
           Fill out the form below to register. Your
@@ -134,12 +139,11 @@ export function SelfRegisterForm({ initialEmail = "", token = "" }: SelfRegister
                   isLoadingPrograms={isLoadingPrograms}
                   programLoadError={programLoadError}
                 />
-                {/* Year level is fixed — self-registration is for freshmen only */}
-                <YearLevelDisplay />
+                <YearLevelSelection form={form} />
               </div>
 
-              {/* Certificate of Registration upload — Coming Soon */}
-              <CORUploadPlaceholder />
+              {/* Certificate of Registration upload */}
+              <CORUpload value={corFile} onChange={setCorFile} />
 
               {/* reCAPTCHA v2 — must be solved before submitting */}
               <RecaptchaSection
