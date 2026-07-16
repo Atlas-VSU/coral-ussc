@@ -336,7 +336,8 @@ export const getPendingMembersOfAnOrg = async (
           status: doc.data().status,
           yearLevel: doc.data().yearLevel,
           programName: program?.name ?? "",
-          corStatus: "coming-soon"
+          corStatus: doc.data().corURL ? "uploaded" : "none",
+          corURL: doc.data().corURL ?? undefined,
         };
       })
     );
@@ -408,7 +409,8 @@ export const subscribeToPendingMembers = async (
               status: docSnap.data().status,
               yearLevel: docSnap.data().yearLevel,
               programName: program?.name ?? "",
-              corStatus: "coming-soon" as const,
+              corStatus: docSnap.data().corURL ? "uploaded" : "none",
+              corURL: docSnap.data().corURL ?? undefined,
             };
           })
         );

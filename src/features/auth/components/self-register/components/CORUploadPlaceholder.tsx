@@ -93,9 +93,6 @@ export function CORUpload({ value, onChange }: CORUploadProps) {
     <div className="space-y-2">
       <p className="text-sm font-semibold text-[#1B5E20]">
         Certificate of Registration (COR)
-        <span className="ml-1 text-xs font-normal text-muted-foreground">
-          (optional)
-        </span>
       </p>
 
       {/* Drop zone / uploaded state */}
