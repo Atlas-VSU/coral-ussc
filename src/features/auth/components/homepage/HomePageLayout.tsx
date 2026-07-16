@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { MakePaymentButton } from "./components/MakePaymentButton";
 import { SelfRegisterButton } from "./components/SelfRegisterButton";
+import { UpdateInformationButton } from "./components/UpdateInformationButton";
 
 export function HomePageLayout() {
   const [loading, setLoading] = useState(false);
@@ -44,6 +45,7 @@ export function HomePageLayout() {
                 </p>
                 <MakePaymentButton />
                 <SelfRegisterButton />
+                <UpdateInformationButton />
               </div>
             </div>
 
@@ -117,6 +119,7 @@ export function HomePageLayout() {
               </p>
               <MakePaymentButton />
               <SelfRegisterButton />
+              <UpdateInformationButton />
             </div>
           </div>
 
