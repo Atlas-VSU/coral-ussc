@@ -36,18 +36,22 @@ export const getPrograms = async () => {
         where("facultyId", "==", org.facultyId)
       );
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map((doc) => ({
+      const programs =  querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
-      }));
+      })) as Program[];
+      programs.sort((a, b) => a.name.localeCompare(b.name));
+      return programs;
     }
     else {
       const programsCollection = collection(db, "programs");
       const querySnapshot = await getDocs(query(programsCollection));
-      return querySnapshot.docs.map((doc) => ({
+      const programs = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data()
-      }))
+      })) as Program[];
+      programs.sort((a, b) => a.name.localeCompare(b.name));
+      return programs;
     }
   } catch (error) {
     handleFirestoreError(error, "fetch programs");
