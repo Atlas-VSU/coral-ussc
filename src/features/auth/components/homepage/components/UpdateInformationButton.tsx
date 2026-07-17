@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, GraduationCap } from "lucide-react";
-import { SelfRegisterDialog } from "./SelfRegisterDialog";
+import { ArrowRight, Pencil } from "lucide-react";
+import { UpdateInformationDialog } from "./UpdateInformationDialog";
 
-export function SelfRegisterButton() {
+export function UpdateInformationButton() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -23,12 +23,12 @@ export function SelfRegisterButton() {
             bg-white text-[#1F7700] hover:bg-[#2E7D32] hover:text-white hover:shadow-lg hover:shadow-green-800/30 hover:scale-[1.03] active:scale-[0.98]
         `}
       >
-        <GraduationCap className="w-5 h-5" />
-        <span className="text-base">Self-Register</span>
+        <Pencil className="w-5 h-5" />
+        <span className="text-base">Update-Information</span>
         <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
       </button>
 
-      <SelfRegisterDialog isOpen={isOpen} onOpenChange={setIsOpen} />
+      <UpdateInformationDialog isOpen={isOpen} onOpenChange={setIsOpen} />
     </div>
   );
 }

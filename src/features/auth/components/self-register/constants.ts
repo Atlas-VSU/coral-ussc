@@ -19,13 +19,12 @@ export const selfRegisterSchema = z.object({
   firstName: z.string().min(2, "First name is required"),
   lastName: z.string().min(2, "Last name is required"),
   programId: z.string().min(1, "Program is required"),
+  yearLevel: z.number().min(1).max(6, "Year level is out of range"),
 });
 
 export type SelfRegisterFormData = z.infer<typeof selfRegisterSchema>;
 
-// Self-registration is exclusively for incoming freshmen, so the year level is
-// fixed rather than chosen.
-export const FRESHMAN_YEAR_LEVEL = 1;
+export const YEAR_LEVELS = [1, 2, 3, 4, 5, 6];
 
 // Shared light/green field styling 
 // Keeps the self-register form consistent with the Add Member form.

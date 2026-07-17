@@ -13,6 +13,8 @@ export type SelfRegistration = {
   submittedAt: string;
   /** COR attachment status — upload feature is "coming soon". */
   corStatus: string;
+  /** Public URL of the uploaded Certificate of Registration, if provided. */
+  corURL?: string;
 };
 
 export const MOCK_SELF_REGISTRATIONS: SelfRegistration[] = [
