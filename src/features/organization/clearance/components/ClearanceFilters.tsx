@@ -1,6 +1,6 @@
 "use client"
 
-import { RefreshCcw, Search, X } from "lucide-react"
+import { Download, RefreshCcw, Search, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ViewToggle } from "@/components/organization/general/ViewToggle"
@@ -18,6 +18,8 @@ interface ClearanceFiltersProps {
   viewMode: ViewMode
   onViewChange: (v: ViewMode) => void
   onRefresh: () => void
+  onExport: () => void
+  isExporting?: boolean
   isLoading?: boolean
   disabled?: boolean
 }
@@ -32,6 +34,8 @@ export function ClearanceFilters({
   viewMode,
   onViewChange,
   onRefresh,
+  onExport,
+  isExporting = false,
   isLoading,
   disabled = false,
 }: ClearanceFiltersProps) {
@@ -131,6 +135,17 @@ export function ClearanceFilters({
           Refresh
         </Button>
 
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onExport}
+          disabled={disabled || isLoading || isExporting}
+          className="w-full h-10"
+        >
+          <Download className={`h-4 w-4 mr-2 ${isExporting ? 'animate-bounce' : ''}`} />
+          {isExporting ? "Exporting…" : "Export CSV"}
+        </Button>
+
         {hasActiveFilters && (
           <div className="pt-2 border-t border-gray-200">
             <Button
@@ -196,6 +211,17 @@ export function ClearanceFilters({
           >
             <RefreshCcw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onExport}
+            disabled={disabled || isLoading || isExporting}
+            className="h-9 px-3"
+          >
+            <Download className={`h-4 w-4 mr-2 ${isExporting ? 'animate-bounce' : ''}`} />
+            {isExporting ? "Exporting…" : "Export CSV"}
           </Button>
 
           {hasActiveFilters && (

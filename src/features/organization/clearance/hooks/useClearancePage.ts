@@ -20,7 +20,8 @@ import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval"
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { ITEMS_PER_PAGE } from "../config";
 import { getActiveTerm } from "@/firebase/term"
-import { seedClearanceDocuments } from "@/firebase/clearance"
+import { fetchAllClearanceForExport, seedClearanceDocuments } from "@/firebase/clearance"
+import { exportClearanceToCSV } from "@/utils/exportUtils"
 import { useTermPeriod } from "../../term/hooks/useTermPeriod"
 import { getOrgById } from "@/firebase/organization"
 
@@ -34,6 +35,7 @@ export function useClearancePage(orgId: string | undefined) {
   const [currentPage, setCurrentPage] = useState(1)
   const [needsSeed, setNeedsSeed] = useState(false)
   const [isSeeding, setIsSeeding] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   const { selected } = useTermPeriod()
   const user = useAuth();
@@ -307,6 +309,35 @@ export function useClearancePage(orgId: string | undefined) {
     }
   }
 
+  const handleExport = async () => {
+    if (!orgId || isExporting) return;
+    setIsExporting(true);
+    try {
+      // Derive the exclusion prefix from the AY:
+      // For AY "2025-2026" → exclude "26-" (newly enrolled batch not yet in org)
+      // For AY "2026-2027" → exclude "27-", and so on.
+      const secondYear = AY.split("-")[1];
+      const excludePrefix = secondYear ? `${secondYear.slice(-2)}-` : undefined;
+      const records = await fetchAllClearanceForExport(
+        orgId,
+        { AY, semester: sem },
+        excludePrefix
+      );
+      if (records.length === 0) {
+        toast.info(`No clearance records found for ${sem} Semester A.Y. ${AY}.`);
+        return;
+      }
+      const semSlug = sem.replace(/\s+/g, "-").toLowerCase();
+      const aySlug = AY.replace(/\s+/g, "");
+      exportClearanceToCSV(records, `clearance-${semSlug}-sem-${aySlug}.csv`);
+      toast.success(`Exported ${records.length} clearance records.`);
+    } catch (err) {
+      console.error("Export failed:", err);
+      toast.error("Failed to export clearance records. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   return {
     // Data
@@ -323,6 +354,7 @@ export function useClearancePage(orgId: string | undefined) {
     sem,
     needsSeed,
     isSeeding,
+    isExporting,
     
     // UI State
     search,
@@ -356,5 +388,6 @@ export function useClearancePage(orgId: string | undefined) {
     handleLogPayment,
     hardRefresh: handleHardRefresh,
     handleSeedClearance,
+    handleExport,
   }
 }
