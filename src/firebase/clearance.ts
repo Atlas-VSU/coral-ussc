@@ -3,7 +3,7 @@ import { db } from "./firebase.config";
 import { BlockingItem, ClearanceStatus } from "@/features/organization/clearance/types";
 import { approvePaymentTransaction, checkFeeStatusForClearance, fetchFee, recordBulkManualPaymentAndUpdateClearance, recordManualPaymentAndUpdateClearance, rejectPaymentTransaction } from "./fees";
 import { Fee, FeeWithPaymentHistory, PaymentMethod } from "@/features/organization/fees/types";
-import {  getFineByStudentId } from "./fines/read/fines";
+import { getFineByStudentId } from "./fines/read/fines";
 import { PaymentType, Term } from "@/constants/types";
 import { toast } from "sonner";
 import { getProofOfPaymentByUserId } from "./payment/read/proofOfPayment";
@@ -86,8 +86,8 @@ export const fetchClearanceDocumentsPaginated = async (
 
   // Normalize search term
   const isIdSearch = /\d/.test(searchTerm);
-  const normalizedSearch = isIdSearch 
-    ? searchTerm.trim() 
+  const normalizedSearch = isIdSearch
+    ? searchTerm.trim()
     : searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
 
   if (normalizedSearch) {
@@ -95,7 +95,7 @@ export const fetchClearanceDocumentsPaginated = async (
     constraints.push(where(searchField, ">=", normalizedSearch));
     constraints.push(where(searchField, "<=", normalizedSearch + "\uf8ff"));
     constraints.push(orderBy(searchField));
-  }else if(forManualPayment) {
+  } else if (forManualPayment) {
     constraints.push(orderBy("userName", "asc"));
   }
   else {
@@ -105,8 +105,8 @@ export const fetchClearanceDocumentsPaginated = async (
   let count = 0;
   if (needCount) {
     const countSnapshot = await getCountFromServer(query(clearanceRef, ...constraints));
-    count =  countSnapshot.data().count; //This is for total count of searched item
-}
+    count = countSnapshot.data().count; //This is for total count of searched item
+  }
 
   // Apply pagination
   constraints.push(limit(pageSize));
@@ -120,7 +120,7 @@ export const fetchClearanceDocumentsPaginated = async (
   const docs = snapshot.docs.map((doc) => {
     const data = { id: doc.id, ...doc.data() } as ClearanceStatus;
     const key = CACHE_KEYS.clearanceDoc(doc.id);
-    
+
     // Check if it already exists to determine if it's a "hit" or "miss" for visibility
     const cached = cacheService.get(key);
     if (cached) {
@@ -138,7 +138,7 @@ export const fetchClearanceDocumentsPaginated = async (
       // );
       cacheService.set(key, data, CACHE_DURATIONS.CLEARANCE);
     }
-    
+
     return data;
   });
 
@@ -177,8 +177,8 @@ export const getClearanceCount = async (
       }
 
       const isIdSearch = /\d/.test(searchTerm);
-      const normalizedSearch = isIdSearch 
-        ? searchTerm.trim() 
+      const normalizedSearch = isIdSearch
+        ? searchTerm.trim()
         : searchTerm.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
 
       if (normalizedSearch) {
@@ -197,10 +197,40 @@ export const getClearanceCount = async (
 
 // Deprecated in favor of fetchClearanceDocumentsPaginated
 export const fetchClearanceDocuments = async (orgId: string) => {
-    console.warn("fetchClearanceDocuments is deprecated. Use fetchClearanceDocumentsPaginated instead.");
-    const { docs } = await fetchClearanceDocumentsPaginated(orgId, 100); // Fetch first 100 as fallback
-    return docs;
+  console.warn("fetchClearanceDocuments is deprecated. Use fetchClearanceDocumentsPaginated instead.");
+  const { docs } = await fetchClearanceDocumentsPaginated(orgId, 100); // Fetch first 100 as fallback
+  return docs;
 }
+
+/**
+ * Fetches ALL clearance records for a given org and term — intended for export only.
+ * WARNING: This is an unbounded read. Do not use for UI lists.
+ *
+ * @param excludeIdPrefix - Optional student ID prefix to exclude (e.g. "26-" for AY 2025-2026
+ *   where 2026-batch students were not yet part of the org). Leave undefined for newer terms.
+ */
+export const fetchAllClearanceForExport = async (
+  orgId: string,
+  term: { AY: string; semester: string },
+  excludeIdPrefix?: string
+): Promise<ClearanceStatus[]> => {
+  const q = query(
+    collection(db, "clearanceStatus"),
+    where("orgId", "==", orgId),
+    where("isArchived", "==", false),
+    where("academicYear", "==", term.AY),
+    where("semester", "==", term.semester),
+    orderBy("userName", "asc")
+  );
+
+  const snapshot = await getDocs(q);
+  const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ClearanceStatus));
+
+  if (excludeIdPrefix) {
+    return records.filter(c => !c.studentId.startsWith(excludeIdPrefix));
+  }
+  return records;
+};
 
 export const getCountOfUnclearedDocuments = async (
   orgId: string,
@@ -220,21 +250,21 @@ export const getCountOfUnclearedDocuments = async (
 
 
 export const fetchClearanceStatus = async (userId: string, term?: { AY: string; semester: string } | null) => {
-    const currentUser = await getCurrentUserData() as unknown as Member;
-    const activeTerm = term || await getActiveTerm();
-    const id = buildClearanceId(userId, currentUser.orgId, currentUser.accessLevel!, activeTerm!);
-    return cacheService.getOrFetch(
-        CACHE_KEYS.clearanceDoc(id),
-        async () => {
-          const docRef = doc(db, 'clearanceStatus', id);
-          const snapshot = await getDoc(docRef);
-            if (snapshot.exists()) {
-                return { id: snapshot.id, ...snapshot.data() } as ClearanceStatus;
-            }
-            return null;
-        },
-        CACHE_DURATIONS.CLEARANCE
-    );
+  const currentUser = await getCurrentUserData() as unknown as Member;
+  const activeTerm = term || await getActiveTerm();
+  const id = buildClearanceId(userId, currentUser.orgId, currentUser.accessLevel!, activeTerm!);
+  return cacheService.getOrFetch(
+    CACHE_KEYS.clearanceDoc(id),
+    async () => {
+      const docRef = doc(db, 'clearanceStatus', id);
+      const snapshot = await getDoc(docRef);
+      if (snapshot.exists()) {
+        return { id: snapshot.id, ...snapshot.data() } as ClearanceStatus;
+      }
+      return null;
+    },
+    CACHE_DURATIONS.CLEARANCE
+  );
 }
 
 /**
@@ -244,47 +274,47 @@ export const recalculateClearanceStatus = async (userId: string, term?: any) => 
   const currentUser = await getCurrentUserData() as unknown as Member;
   const activeTerm = term || await getActiveTerm();
   const id = buildClearanceId(userId, currentUser.orgId, currentUser.accessLevel!, activeTerm!);
-    const clearanceRef = doc(db, 'clearanceStatus', id);
-    const snapshot = await getDoc(clearanceRef);
-    const clearance = snapshot.data() as ClearanceStatus;
+  const clearanceRef = doc(db, 'clearanceStatus', id);
+  const snapshot = await getDoc(clearanceRef);
+  const clearance = snapshot.data() as ClearanceStatus;
 
-    if (!clearance) return;
+  if (!clearance) return;
 
-    let status: 'cleared' | 'pending' | 'not_cleared' = 'cleared';
-    const items = Object.values(clearance.blockingItems || {});
+  let status: 'cleared' | 'pending' | 'not_cleared' = 'cleared';
+  const items = Object.values(clearance.blockingItems || {});
 
-    const hasUnpaidRequiredItems = items.some(item => 
-        (item.status === 'unpaid' || item.balance > 0) && item.isRequiredForClearance
+  const hasUnpaidRequiredItems = items.some(item =>
+    (item.status === 'unpaid' || item.balance > 0) && item.isRequiredForClearance
+  );
+
+  if (hasUnpaidRequiredItems) {
+    const hasPendingReview = items.some(item =>
+      (item.status === 'unpaid' || item.balance > 0) && item.isRequiredForClearance && item.pendingReview
     );
+    status = hasPendingReview ? 'pending' : 'not_cleared';
+  }
 
-    if (hasUnpaidRequiredItems) {
-        const hasPendingReview = items.some(item => 
-            (item.status === 'unpaid' || item.balance > 0) && item.isRequiredForClearance && item.pendingReview
-        );
-        status = hasPendingReview ? 'pending' : 'not_cleared';
-    }
+  const now = serverTimestamp();
+  await updateDoc(clearanceRef, {
+    status,
+    updatedAt: now,
+    clearanceDate: status === 'cleared' ? now : null
+  });
 
-    const now = serverTimestamp();
-    await updateDoc(clearanceRef, {
-        status,
-        updatedAt: now,
-        clearanceDate: status === 'cleared' ? now : null
-    });
-
-    cacheService.invalidate(CACHE_KEYS.clearanceDoc(id));
-    // Invalidate aggregate counts/stats so they reflect the new status
-    if (clearance.orgId) {
-        cacheService.invalidateByPrefix(`clearance:stats:${clearance.orgId}`);
-        cacheService.invalidateByPrefix(`clearance:count:${clearance.orgId}`);
-    }
+  cacheService.invalidate(CACHE_KEYS.clearanceDoc(id));
+  // Invalidate aggregate counts/stats so they reflect the new status
+  if (clearance.orgId) {
+    cacheService.invalidateByPrefix(`clearance:stats:${clearance.orgId}`);
+    cacheService.invalidateByPrefix(`clearance:count:${clearance.orgId}`);
+  }
 }
 
 // export const updateClearanceDocument = async (userId: string, orgId: string) => {
 //     let blockingItems: Record<string, BlockingItem> = {};
 //     const currentUser = await getCurrentUserData() as unknown as Member;
-    
+
 //     const fees = await checkFeeStatusForClearance(userId, orgId) as FeeWithPaymentHistory[];
-    
+
 //     fees.forEach((fee: FeeWithPaymentHistory) => {
 //         blockingItems[fee.id] = {
 //             type: fee.feeType as PaymentType,
@@ -336,166 +366,166 @@ export const recalculateClearanceStatus = async (userId: string, term?: any) => 
 // }
 
 
-export const addStudentWithClearance = async (studentId: string,studentData: any, orgId: string) => {
+export const addStudentWithClearance = async (studentId: string, studentData: any, orgId: string) => {
   try {
     const term = await getActiveTerm();
     const currentUser = await getCurrentUserData() as unknown as Member;
-        const batch = writeBatch(db);
-        const studentRef = doc(db, 'users', studentId); 
-        const id = buildClearanceId(studentRef.id, orgId, currentUser.accessLevel!, term!);
-        const clearanceRef = doc(db, 'clearanceStatus', id);
+    const batch = writeBatch(db);
+    const studentRef = doc(db, 'users', studentId);
+    const id = buildClearanceId(studentRef.id, orgId, currentUser.accessLevel!, term!);
+    const clearanceRef = doc(db, 'clearanceStatus', id);
 
-        const now = Timestamp.now();
-        const defaultDueDate = Timestamp.fromDate(new Date('2026-05-30'));
+    const now = Timestamp.now();
+    const defaultDueDate = Timestamp.fromDate(new Date('2026-05-30'));
 
-        // Get all payables for blocking clearance
-        
+    // Get all payables for blocking clearance
 
-        // 2. Prepare Clearance Data
-        const clearanceData: ClearanceStatus = {
-            id: id,
-            orgId: orgId,
-            userId: studentRef.id,
-            userName: `${studentData.firstName} ${studentData.lastName}`,
-            studentId: studentData.studentId,
-            academicYear: term!.AY,
-            semester: term!.semester,
-            status: 'not_cleared',
-            visibility: 'public',
-            blockingItems: {},
-            clearanceDate: null,
-            lastCalculatedAt: now,
-            startDate: now,
-            dueDate: defaultDueDate,
-            createdAt: now,
-            updatedAt: now,
-            isArchived: false
-        };
 
-        // 3. Set both documents in the batch
-        batch.set(clearanceRef, clearanceData); // Create their clearance profile
+    // 2. Prepare Clearance Data
+    const clearanceData: ClearanceStatus = {
+      id: id,
+      orgId: orgId,
+      userId: studentRef.id,
+      userName: `${studentData.firstName} ${studentData.lastName}`,
+      studentId: studentData.studentId,
+      academicYear: term!.AY,
+      semester: term!.semester,
+      status: 'not_cleared',
+      visibility: 'public',
+      blockingItems: {},
+      clearanceDate: null,
+      lastCalculatedAt: now,
+      startDate: now,
+      dueDate: defaultDueDate,
+      createdAt: now,
+      updatedAt: now,
+      isArchived: false
+    };
 
-        // 4. Commit to Firestore
-        await batch.commit();
-        // console.log(`✅ Successfully added student ${studentData.firstName} and initialized clearance.`);
-        
-        cacheService.invalidate(CACHE_KEYS.clearanceDoc(studentRef.id));
-        
-      await updateStudentStats(`${term!.AY}-${term!.semester}-${orgId}`, 1);
+    // 3. Set both documents in the batch
+    batch.set(clearanceRef, clearanceData); // Create their clearance profile
 
-        return studentRef.id;
-    } catch (error) {
-        console.error("❌ Error adding student and clearance:", error);
-        throw error;
-    }
+    // 4. Commit to Firestore
+    await batch.commit();
+    // console.log(`✅ Successfully added student ${studentData.firstName} and initialized clearance.`);
+
+    cacheService.invalidate(CACHE_KEYS.clearanceDoc(studentRef.id));
+
+    await updateStudentStats(`${term!.AY}-${term!.semester}-${orgId}`, 1);
+
+    return studentRef.id;
+  } catch (error) {
+    console.error("❌ Error adding student and clearance:", error);
+    throw error;
+  }
 };
 
 export const approvePaymentClearanceUpdate = async (
-  userId: string, 
+  userId: string,
   // itemsToUpdate: { refId: string, type: PaymentType | string }[], 
   // adminId: string,
   // adminName: string,
   studentData?: { firstName: string; lastName: string; studentId: string; orgId: string },
   // receiptCode?: string
 ) => {
-  const { _approvePayment} = usePaymentApproval();
+  const { _approvePayment } = usePaymentApproval();
 
   const proof = await getProofOfPaymentByUserId(userId, studentData?.orgId);
-  if(!proof) {
+  if (!proof) {
     toast.error("No pending payment found for this clearance. Please refresh and try again.");
     return;
   }
   const result = await _approvePayment(proof);
   toast.success("Payment clearance update approved successfully!");
   return result;
-//   console.log("Approving payment clearance update for items:------------", itemsToUpdate);
-//   toast.success("Approving payment clearance update. This may take a moment...")
-//   for (const item of itemsToUpdate) {
-//     if (item.type === PaymentType.FEES) {
-//       const logsRef = collection(db, "fees", item.refId, "paymentHistory");
-//       const q = query(logsRef, where("status", "==", "pending"));
-//       const snapshot = await getDocs(q);
-      
-//       if (snapshot.empty) continue; // Skip if no pending found
-      
-//       const logId = snapshot.docs[0].id;
-//       const logData = snapshot.docs[0].data();
+  //   console.log("Approving payment clearance update for items:------------", itemsToUpdate);
+  //   toast.success("Approving payment clearance update. This may take a moment...")
+  //   for (const item of itemsToUpdate) {
+  //     if (item.type === PaymentType.FEES) {
+  //       const logsRef = collection(db, "fees", item.refId, "paymentHistory");
+  //       const q = query(logsRef, where("status", "==", "pending"));
+  //       const snapshot = await getDocs(q);
 
-//       const proof: ProofOfPayment = {
-//         referenceId: item.refId,
-//         paymentType: "fees",
-//         amount: logData.amount,
-//         status: PaymentStatus.VERIFIED,
-//         verifiedBy: adminId,
-//         verifiedByName: adminName,
-//         paymentMethod: logData.paymentMethod,
-//         verifiedAt: Timestamp.now(),
-//         notes: "Verified via Clearance Management",
-//         orgId: studentData?.orgId || "",
-//         userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
-//         studentId: studentData?.studentId || "",
-//         senderNumber: logData.senderNumber || "",
-//         referenceNumber: logData.gcashReference || "",
-//         imageUrl: logData.imageUrl || "",
-//         submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
-//         metadata: {
-//          items:[]
-//         },
-//         receiptCode: receiptCode || "",
-//       };
-// // ---------------------------------to fix toms------------
-//       // await verifyPaymentHistory(logId, proof);
-//     } else {
-//       const logsRef = collection(db, "fines", item.refId, "paymentHistory");
-//       const q = query(logsRef, where("status", "==", "pending"));
-//       const snapshot = await getDocs(q);
-      
-//       if (snapshot.empty) continue; // Skip if no pending found
-      
-//       const logId = snapshot.docs[0].id;
-//       const logData = snapshot.docs[0].data();
-      
-//       const proof: ProofOfPayment = {
-//         referenceId: item.refId,
-//         paymentType: "fines",
-//         amount: logData.amount,
-//         status: PaymentStatus.VERIFIED,
-//         verifiedBy: adminId,
-//         verifiedByName: adminName,
-//         paymentMethod: logData.paymentMethod,
-//         verifiedAt: Timestamp.now(),
-//         notes: "Verified via Clearance Management",
-//         orgId: studentData?.orgId || "",
-//         userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
-//         studentId: studentData?.studentId || "",
-//         senderNumber: logData.senderNumber || "",
-//         referenceNumber: logData.gcashReference || "",
-//         imageUrl: logData.imageUrl || "",
-//         submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
-//         metadata: {
-//          items:[]
-//         },
-//         receiptCode: receiptCode || "",
-//       };
-//       // ---------------------------------to fix toms------------
-//       // await verifyPaymentHistory(logId, proof);
-//     }
-//   }
+  //       if (snapshot.empty) continue; // Skip if no pending found
+
+  //       const logId = snapshot.docs[0].id;
+  //       const logData = snapshot.docs[0].data();
+
+  //       const proof: ProofOfPayment = {
+  //         referenceId: item.refId,
+  //         paymentType: "fees",
+  //         amount: logData.amount,
+  //         status: PaymentStatus.VERIFIED,
+  //         verifiedBy: adminId,
+  //         verifiedByName: adminName,
+  //         paymentMethod: logData.paymentMethod,
+  //         verifiedAt: Timestamp.now(),
+  //         notes: "Verified via Clearance Management",
+  //         orgId: studentData?.orgId || "",
+  //         userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
+  //         studentId: studentData?.studentId || "",
+  //         senderNumber: logData.senderNumber || "",
+  //         referenceNumber: logData.gcashReference || "",
+  //         imageUrl: logData.imageUrl || "",
+  //         submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+  //         metadata: {
+  //          items:[]
+  //         },
+  //         receiptCode: receiptCode || "",
+  //       };
+  // // ---------------------------------to fix toms------------
+  //       // await verifyPaymentHistory(logId, proof);
+  //     } else {
+  //       const logsRef = collection(db, "fines", item.refId, "paymentHistory");
+  //       const q = query(logsRef, where("status", "==", "pending"));
+  //       const snapshot = await getDocs(q);
+
+  //       if (snapshot.empty) continue; // Skip if no pending found
+
+  //       const logId = snapshot.docs[0].id;
+  //       const logData = snapshot.docs[0].data();
+
+  //       const proof: ProofOfPayment = {
+  //         referenceId: item.refId,
+  //         paymentType: "fines",
+  //         amount: logData.amount,
+  //         status: PaymentStatus.VERIFIED,
+  //         verifiedBy: adminId,
+  //         verifiedByName: adminName,
+  //         paymentMethod: logData.paymentMethod,
+  //         verifiedAt: Timestamp.now(),
+  //         notes: "Verified via Clearance Management",
+  //         orgId: studentData?.orgId || "",
+  //         userName: `${studentData?.firstName} ${studentData?.lastName}` || "",
+  //         studentId: studentData?.studentId || "",
+  //         senderNumber: logData.senderNumber || "",
+  //         referenceNumber: logData.gcashReference || "",
+  //         imageUrl: logData.imageUrl || "",
+  //         submittedAt: logData.createdAt?.toDate().toISOString() || new Date().toISOString(),
+  //         metadata: {
+  //          items:[]
+  //         },
+  //         receiptCode: receiptCode || "",
+  //       };
+  //       // ---------------------------------to fix toms------------
+  //       // await verifyPaymentHistory(logId, proof);
+  //     }
+  //   }
 };
 
 export const rejectPaymentClearanceUpdate = async (
- userId: string, 
+  userId: string,
   //  itemsToUpdate: { refId: string, type: PaymentType | string }[], 
   //  adminId: string,
   //  adminName: string,
-   reason: string,
-   studentData?: { firstName: string; lastName: string; studentId: string; orgId: string }
+  reason: string,
+  studentData?: { firstName: string; lastName: string; studentId: string; orgId: string }
 ) => {
 
-  const { _rejectPayment} = usePaymentApproval();
+  const { _rejectPayment } = usePaymentApproval();
 
   const proof = await getProofOfPaymentByUserId(userId, studentData?.orgId);
-  if(!proof) {
+  if (!proof) {
     toast.error("No pending payment found for this clearance. Please refresh and try again.");
     return;
   }
@@ -508,9 +538,9 @@ export const rejectPaymentClearanceUpdate = async (
   //    const logsRef = collection(db, "fees", item.refId, "paymentHistory");
   //    const q = query(logsRef, where("status", "==", "pending"));
   //    const snapshot = await getDocs(q);
-     
+
   //    if (snapshot.empty) continue;
-     
+
   //    const logId = snapshot.docs[0].id;
   //    const logData = snapshot.docs[0].data();
 
@@ -543,12 +573,12 @@ export const rejectPaymentClearanceUpdate = async (
   //    const logsRef = collection(db, "fines", item.refId, "paymentHistory");
   //    const q = query(logsRef, where("status", "==", "pending"));
   //    const snapshot = await getDocs(q);
-     
+
   //    if (snapshot.empty) continue;
-     
+
   //    const logId = snapshot.docs[0].id;
   //    const logData = snapshot.docs[0].data();
-     
+
   //    const proof: ProofOfPayment = {
   //      referenceId: item.refId,
   //      paymentType: "fines",
@@ -575,9 +605,9 @@ export const rejectPaymentClearanceUpdate = async (
   //   //  await rejectPaymentHistory(logId, proof);
   //  }
   // }
- };
+};
 
- export const fetchStats = async (
+export const fetchStats = async (
   orgId: string,
   selectedTerm?: { AY: string; semester: string } | null
 ) => {
@@ -591,42 +621,42 @@ export const rejectPaymentClearanceUpdate = async (
         getClearanceStats(orgId, "not_cleared", term),
         getClearanceStats(orgId, "pending", term),
       ])
-      const stats = {cleared, not_cleared, pending}
+      const stats = { cleared, not_cleared, pending }
       return stats;
     }
     , CACHE_DURATIONS.COUNTS);
 }
 
- 
- export const logManualPaymentClearanceUpdate = async (
-   clearanceId: string,
-   studentId: string,
-   items: { refId: string; title: string; amount: number; paymentType: PaymentType, parentFineId?: string }[],
-   method: PaymentMethod,
-   adminId: string,
-   adminName: string,
-   overallPaymentType?: string | PaymentType,
+
+export const logManualPaymentClearanceUpdate = async (
+  clearanceId: string,
+  studentId: string,
+  items: { refId: string; title: string; amount: number; paymentType: PaymentType, parentFineId?: string }[],
+  method: PaymentMethod,
+  adminId: string,
+  adminName: string,
+  overallPaymentType?: string | PaymentType,
   receiptCode?: string,
   term?: Term
- ) => {
-  if(!overallPaymentType) {
+) => {
+  if (!overallPaymentType) {
     throw new Error("Overall payment type is required");
   }
   let totalAmount = 0;
   items.forEach((item) => totalAmount += item.amount);
-    return await recordBulkManualPaymentAndUpdateClearance(
-      studentId,
-      items,
-      totalAmount,
-      method as any,
-      adminId,
-      adminName,
-      overallPaymentType as PaymentType,
-      undefined,
-      receiptCode,
-      term
-    );
-  
+  return await recordBulkManualPaymentAndUpdateClearance(
+    studentId,
+    items,
+    totalAmount,
+    method as any,
+    adminId,
+    adminName,
+    overallPaymentType as PaymentType,
+    undefined,
+    receiptCode,
+    term
+  );
+
   // else if(overallPaymentType === PaymentType.FINES) {
   //   return await recordBulkManualPaymentAndUpdateClearance(
   //     studentId,
@@ -657,8 +687,8 @@ export const rejectPaymentClearanceUpdate = async (
   // }));
 
   // return results;
- };
- 
+};
+
 
 export const seedClearanceDocuments = async (user: UserData, term: Term) => {
   try {
@@ -686,16 +716,16 @@ export const seedClearanceDocuments = async (user: UserData, term: Term) => {
     let batch = writeBatch(db);
     let batchOperationCount = 0;
     let totalAddedCount = 0;
-    
+
     // IMPROVEMENT 3: Use Timestamp.now() instead of serverTimestamp() to strictly match your TypeScript interface
-    const now = Timestamp.now(); 
+    const now = Timestamp.now();
     const defaultDueDate = Timestamp.fromDate(new Date('2026-05-30'));
 
     for (const userDoc of usersSnapshot.docs) {
       const userId = userDoc.id;
       const clearanceId = buildClearanceId(userId, user.orgId, accessLevel, term);
       const clearanceRef = doc(db, 'clearanceStatus', clearanceId);
-      
+
       // Skip if this student already has a clearance document
       if (existingClearanceIds.has(clearanceId)) {
         continue;
@@ -705,15 +735,15 @@ export const seedClearanceDocuments = async (user: UserData, term: Term) => {
 
       const clearanceData: ClearanceStatus = {
         id: clearanceId,
-        orgId: user.orgId!, 
+        orgId: user.orgId!,
         userId: userId,
         userName: `${userData.firstName} ${userData.lastName}`,
         studentId: userData.studentId || "N/A", // Fallback just in case
         academicYear: term!.AY,
         semester: term!.semester,
-        status: 'cleared', 
-        visibility: 'public', 
-        blockingItems: {}, 
+        status: 'cleared',
+        visibility: 'public',
+        blockingItems: {},
         clearanceDate: null,
         lastCalculatedAt: now,
         startDate: now,
@@ -724,7 +754,7 @@ export const seedClearanceDocuments = async (user: UserData, term: Term) => {
       };
 
       // No need for { merge: true } because we already verified they don't exist
-      batch.set(clearanceRef, clearanceData); 
+      batch.set(clearanceRef, clearanceData);
       batchOperationCount++;
       totalAddedCount++;
 

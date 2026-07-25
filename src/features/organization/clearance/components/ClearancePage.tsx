@@ -68,6 +68,8 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
     needsSeed,
     isSeeding,
     handleSeedClearance,
+    handleExport,
+    isExporting,
   } = useClearancePage(orgId)
 
   useEffect(() => {
@@ -113,6 +115,8 @@ export default function ClearancePage({ orgId }: ClearancePageProps) {
         viewMode={viewMode}
         onViewChange={setViewMode}
         onRefresh={handleRefresh}
+        onExport={handleExport}
+        isExporting={isExporting}
         isLoading={loading}
         disabled={loading}
       />
