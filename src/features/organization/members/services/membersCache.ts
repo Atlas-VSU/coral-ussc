@@ -66,32 +66,34 @@ if (typeof window !== "undefined") {
   }
 }
 
-// Initialize members cache from localStorage
-try {
-  // Load existing cache entries from localStorage
-  Object.keys(localStorage).forEach((key) => {
-    if (key.startsWith("members-data-")) {
-      try {
-        const cacheKey = key.replace("members-data-", "");
-        const cacheData = JSON.parse(
-          localStorage.getItem(key)!
-        ) as MembersPageData;
+if (typeof window !== "undefined") {
+  // Initialize members cache from localStorage
+  try {
+    // Load existing cache entries from localStorage
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("members-data-")) {
+        try {
+          const cacheKey = key.replace("members-data-", "");
+          const cacheData = JSON.parse(
+            localStorage.getItem(key)!
+          ) as MembersPageData;
 
-        // Only add to memory if not expired
-        if (Date.now() - cacheData.timestamp < MEMBERS_CACHE_TTL) {
-          membersCache.set(cacheKey, cacheData);
-        } else {
-          // Clean up expired entries
+          // Only add to memory if not expired
+          if (Date.now() - cacheData.timestamp < MEMBERS_CACHE_TTL) {
+            membersCache.set(cacheKey, cacheData);
+          } else {
+            // Clean up expired entries
+            localStorage.removeItem(key);
+          }
+        } catch (e) {
+          // Ignore parsing errors for invalid cache entries
           localStorage.removeItem(key);
         }
-      } catch (e) {
-        // Ignore parsing errors for invalid cache entries
-        localStorage.removeItem(key);
       }
-    }
-  });
-} catch (error) {
-  console.error("Failed to initialize members cache from localStorage", error);
+    });
+  } catch (error) {
+    console.error("Failed to initialize members cache from localStorage", error);
+  }
 }
 
 // Generate cache key from query parameters
