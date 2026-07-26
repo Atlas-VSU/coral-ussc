@@ -3,7 +3,7 @@ import { collection, deleteField, doc, getCountFromServer, getDoc, getDocs, incr
 import { db } from "./firebase.config";
 import { FeeGenerationSchema } from "@/features/organization/fees/utils/feeGenerationSchema";
 import z from "zod";
-import { Fee, FeeWithPaymentHistory, PaymentLog } from "@/features/organization/fees/types";
+import { Fee, FeeItem, FeeWithPaymentHistory, PaymentLog } from "@/features/organization/fees/types";
 import { getAllMembersOfAnOrg} from "./members";
 import { getCurrentUserCount, getCurrentUserData } from "./users";
 import { PaymentStatus } from "@/constants/status";
@@ -11,7 +11,6 @@ import { PaymentType, Term } from "@/constants/types";
 import { buildClearanceId, recalculateClearanceStatus } from "./clearance";
 import { recalculateFines } from "./fines/update/recalculate";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
-import { FeeItem } from "@/app/(public)/payment/page";
 import { updateFeeStats, updateFineStats } from "./stats/update/updateStats";
 import { getActiveTerm } from "./term";
 

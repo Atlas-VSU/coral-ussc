@@ -6,8 +6,6 @@ import { auth } from "@/firebase/firebase.config";
 import { usePathname, useRouter } from "next/navigation";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { cacheUtils } from "@/utils/cacheUtils";
-import { useTheme } from "next-themes";
-import { useRef } from "react";
 import { AdminSidebar } from "@/components/organization/nav-bar/AdminSidebar";
 import { MobileBottomNav } from "@/components/organization/nav-bar/mobile-bottom-nav";
 
@@ -32,41 +30,9 @@ export default function PublicLayout({
   const [isSigningOut, setIsSigningOut] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const isPublicPaymentPage = pathname.startsWith("/payment");
   const isHomePage = pathname === "/";
   const isLoginPage = pathname === "/login";
   const isFullBleedPage = isHomePage || isLoginPage;
-  const { setTheme } = useTheme();
-  const previousThemeRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    if (isPublicPaymentPage) {
-      if (previousThemeRef.current === null) {
-        previousThemeRef.current = window.localStorage.getItem("theme");
-      }
-      setTheme("light");
-      return;
-    }
-
-    if (previousThemeRef.current !== null) {
-      const previous = previousThemeRef.current;
-
-      if (
-        previous === "light" ||
-        previous === "dark" ||
-        previous === "system"
-      ) {
-        setTheme(previous);
-      } else {
-        window.localStorage.removeItem("theme");
-        setTheme("system");
-      }
-
-      previousThemeRef.current = null;
-    }
-  }, [isPublicPaymentPage, setTheme]);
 
   // Check for logout URL parameter on mount
   useEffect(() => {
@@ -152,7 +118,7 @@ export default function PublicLayout({
   // Always show loading screen while loading
   if (loading) {
     return (
-      <LoadingScreen message="Loading your student payment portal... Welcome! We're getting everything ready for you." />
+      <LoadingScreen message="Loading USSC Connect... Welcome! We're getting everything ready for you." />
     );
   }
 
@@ -170,7 +136,7 @@ export default function PublicLayout({
           className={`flex-1 ${
             isFullBleedPage
               ? "p-0"
-              : `p-2 sm:p-4 ${isPublicPaymentPage ? "pb-4" : "pb-16 md:pb-4"}`
+              : "p-2 sm:p-4 pb-16 md:pb-4"
           }`}
         >
           {children}
