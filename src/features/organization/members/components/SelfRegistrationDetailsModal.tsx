@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { Badge } from "@/components/ui/badge";
-import { Check, FileText, Lock, X } from "lucide-react";
+import { Check, ExternalLink, FileText, ImageIcon, X } from "lucide-react";
 import { useState } from "react";
 import { SelfRegistration } from "../data/mockSelfRegistrations";
 
@@ -117,25 +117,49 @@ export function SelfRegistrationDetailsModal({
             value={formatSubmittedAt(registration.submittedAt)}
           />
 
-          {/* COR attachment — coming soon */}
+          {/* COR attachment */}
           <div className="mt-3 rounded-md border !border-[#2E7D32]/20 bg-[#8BC34A]/5 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <span className="flex items-center gap-2 text-sm font-semibold text-[#1B5E20]">
-                <FileText className="h-4 w-4" />
-                Certificate of Registration
-              </span>
-              <Badge
-                variant="secondary"
-                className="gap-1 bg-[#8BC34A]/15 text-[#1B5E20]"
-              >
-                <Lock className="h-3 w-3" />
-                Coming Soon
-              </Badge>
-            </div>
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              COR attachments aren&apos;t available yet. This section will show
-              the uploaded document once the feature ships.
-            </p>
+            <span className="flex items-center gap-2 text-sm font-semibold text-[#1B5E20] mb-2">
+              <FileText className="h-4 w-4" />
+              Certificate of Registration
+            </span>
+
+            {registration.corURL ? (
+              registration.corURL.toLowerCase().includes(".pdf") ? (
+                // PDF — open in new tab
+                <a
+                  href={registration.corURL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-[#8BC34A]/15 px-3 py-1.5 text-xs font-semibold text-[#1B5E20] hover:bg-[#8BC34A]/30 transition-colors"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  View PDF
+                </a>
+              ) : (
+                // Image — inline thumbnail + open link
+                <div className="space-y-2">
+                  <img
+                    src={registration.corURL}
+                    alt="Certificate of Registration"
+                    className="max-h-48 w-full rounded-md border border-[#2E7D32]/20 object-contain bg-white"
+                  />
+                  <a
+                    href={registration.corURL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-[#2E7D32] hover:underline"
+                  >
+                    <ImageIcon className="h-3.5 w-3.5" />
+                    Open full image
+                  </a>
+                </div>
+              )
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                No COR was uploaded with this registration.
+              </p>
+            )}
           </div>
         </div>
 
@@ -152,7 +176,7 @@ export function SelfRegistrationDetailsModal({
             <X className="h-4 w-4" />
             Reject
           </LoadingButton>
-          <Button
+          <Button 
             variant="outline"
             type="button"
             onClick={() => onOpenChange(false)}

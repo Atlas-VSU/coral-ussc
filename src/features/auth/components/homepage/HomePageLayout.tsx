@@ -6,8 +6,7 @@ import LoginCard from "./components/LoginCard";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useState } from "react";
-import { MakePaymentButton } from "./components/MakePaymentButton";
-import { SelfRegisterButton } from "./components/SelfRegisterButton";
+
 
 export function HomePageLayout() {
   const [loading, setLoading] = useState(false);
@@ -42,8 +41,6 @@ export function HomePageLayout() {
                   organizational fees and fines, settle payments online, and
                   monitor your clearance status in real-time.
                 </p>
-                <MakePaymentButton />
-                <SelfRegisterButton />
               </div>
             </div>
 
@@ -115,8 +112,6 @@ export function HomePageLayout() {
                 organizational fees and fines, settle payments online, and
                 monitor your clearance status in real-time.
               </p>
-              <MakePaymentButton />
-              <SelfRegisterButton />
             </div>
           </div>
 
