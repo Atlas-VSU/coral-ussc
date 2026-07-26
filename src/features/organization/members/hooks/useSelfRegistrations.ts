@@ -19,7 +19,7 @@ import { db } from "@/firebase/firebase.config";
 import { ClearanceStatus } from "../../clearance/types";
 import { assignExistingFinesToStudent } from "@/firebase/fines/create/fines";
 import { getActiveTerm } from "@/firebase/term";
-import { useSendRegistrationStatus } from "@/features/auth/components/self-register/hooks/useSendRegistrationStatus";
+import { useSendRegistrationStatus } from "@/features/organization/members/hooks/useSendRegistrationStatus";
 
 export type SelfRegDecision = "approved" | "reject";
 

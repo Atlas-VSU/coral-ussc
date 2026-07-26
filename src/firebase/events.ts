@@ -36,7 +36,6 @@ import { getOrgById } from "./organization";
 import { getActiveTerm } from "./term";
 import { recalculateFines } from "./fines/update/recalculate";
 import { FineItem, ProofOfPayment } from "@/features/organization/fines/types";
-import { Fine } from "@/app/(public)/payment/page";
 import { updateFineStats } from "./stats/update/updateStats";
 import { ClearanceStatus } from "@/features/organization/clearance/types";
 import { getProofOfPaymentByUserId } from "./payment/read/proofOfPayment";
