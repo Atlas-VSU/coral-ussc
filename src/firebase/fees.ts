@@ -96,7 +96,7 @@ export const getTotalCollectedAmount = async (
             
             const totalPaid = await feeSnapshot.docs.reduce(async (acc, feeDoc) => {
                 const feeData = feeDoc.data();
-                return (await acc) + (await getTotalPaidAmountCount(feeData.id) * feeData.amount);
+                return (await acc) + (await getTotalPaidAmountCount(feeData.id, orgId) * feeData.amount);
             }, Promise.resolve(0));
             
             return totalPaid;
@@ -429,7 +429,7 @@ export const fetchFeesForOrg = async(
     );
 }
 
-export const getTotalPaidAmountCount = async(feeItemId: string): Promise<number> => {
+export const getTotalPaidAmountCount = async(feeItemId: string, orgId: string): Promise<number> => {
     return cacheService.getOrFetch(
         CACHE_KEYS.totalPaidAmountCount(feeItemId),
         async () => {
@@ -437,6 +437,7 @@ export const getTotalPaidAmountCount = async(feeItemId: string): Promise<number>
         const q = query(
             feesRef,
             where("feeItemId", "==", feeItemId),
+            where("orgId", "==", orgId),
             where("status", "in", ["verified", "paid"]),
             
         );
