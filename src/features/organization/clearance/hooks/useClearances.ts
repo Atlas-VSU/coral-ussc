@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { fetchClearanceDocumentsPaginated, fetchStats, getClearanceCount } from "@/firebase/clearance"
 import { cacheService, CACHE_KEYS } from "@/services/cacheService"
 import type { ClearanceStatus } from "../types"
-import { getActiveTerm } from "@/firebase/term"
 import { useTermPeriod } from "../../term/hooks/useTermPeriod"
 
 export function useClearances(

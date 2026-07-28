@@ -12,11 +12,9 @@ import { createOfflineFinesProofOfPayment } from "./proofOfPayment";
 import { PaymentStatus } from "@/constants/status";
 import { PaymentType, Term } from "@/constants/types";
 import { buildClearanceId, recalculateClearanceStatus } from "@/firebase/clearance";
-import { getActiveTerm } from "@/firebase/term";
 import { recalculateFees } from "@/firebase/fees/update/recalculate";
 import { getFineItemsByFineId} from "@/firebase/fines/read/fines";
 import { BlockingItem } from "@/features/organization/clearance/types";
-
 
 export const addOfflineFinesPayment = async (fines: StudentFines, type:string, method: PaymentMethod, payRef?: string, senderNumber?:string, term?: Term) => {
     const currentUser = await getCurrentUserData() as unknown as Member;
@@ -40,7 +38,8 @@ export const addOfflineFinesPayment = async (fines: StudentFines, type:string, m
             notes: "",
         } as PaymentFormData;
 
-        const proofId = await createOfflineFinesProofOfPayment(proof, type,fines, fineItems);
+        const proofId = await createOfflineFinesProofOfPayment(proof, type,fines, fineItems, term);
+        console.log(proofId);
 
         const paymentHist = await addDoc(subColRef, {
             paymentNumber: sequenceNumber,

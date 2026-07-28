@@ -14,10 +14,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { PaymentType } from "@/constants/types";
 import { PaymentFormData } from "@/lib/validators";
 import { addOfflineFinesPayment } from "@/firebase/payment/create/paymentHistory";
-import PaymentReceiptDialog, { ReceiptData, ReceiptItem } from "@/components/organization/receipt/PaymentReceiptDialog";
+import PaymentReceiptDialog, { ReceiptData } from "@/components/organization/receipt/PaymentReceiptDialog";
 import { getProofOfPaymentById } from "@/firebase/payment/read/proofOfPayment";
 import { string } from "zod";
-import { getActiveTerm } from "@/firebase/term";
 import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 

@@ -1,15 +1,13 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { AggregatedFee, Fee } from "../types"
+import { AggregatedFee } from "../types"
 import { fetchFeesForOrg, getTotalCollectedAmount, getTotalPaidAmountCount } from "@/firebase/fees";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
 import { getCurrentUserData } from "@/firebase";
 import { cacheService } from "@/services/cacheService";
 import { FeeItem } from "../types";
 import { Member } from "../../members/types";
-import { getActiveTerm } from "@/firebase/term";
 import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 export function useFeeList() {

@@ -13,8 +13,8 @@ import {
   updateMembersCache,
   clearMembersCache,
 } from "../services/membersCache";
-import { getActiveTerm } from "@/firebase/term";
 import { Term } from "@/constants/types";
+import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 const ITEMS_PER_PAGE_CARD = 12;
 const ITEMS_PER_PAGE_TABLE = 10;
@@ -54,6 +54,8 @@ export function usePaginatedMembers() {
   const [searchInput, setSearchInput] = useState("");
   const [committedSearch, setCommittedSearch] = useState("");
   const [isSearchActive, setIsSearchActive] = useState(false);
+
+  const { selected: _term } = useTermPeriod();
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
   const pageSize = viewMode === "card" ? ITEMS_PER_PAGE_CARD : ITEMS_PER_PAGE_TABLE;
@@ -132,7 +134,6 @@ export function usePaginatedMembers() {
         needCount = false,
       } = params;
 
-      const _term = await getActiveTerm();
 
       // Cursor for this page: stack index = page - 1
       const lastDoc = cursorStack.current[page - 1] ?? null;
