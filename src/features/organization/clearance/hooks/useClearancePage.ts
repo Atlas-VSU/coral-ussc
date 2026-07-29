@@ -19,7 +19,6 @@ import { ProofOfPayment } from "../../fines/types"
 import { usePaymentApproval } from "../../payments/hooks/usePaymentApproval"
 import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { ITEMS_PER_PAGE } from "../config";
-import { getActiveTerm } from "@/firebase/term"
 import { fetchAllClearanceForExport, seedClearanceDocuments } from "@/firebase/clearance"
 import { exportClearanceToCSV } from "@/utils/exportUtils"
 import { useTermPeriod } from "../../term/hooks/useTermPeriod"
@@ -228,7 +227,6 @@ export function useClearancePage(orgId: string | undefined) {
         new Date().toISOString().slice(0, 10),
         receipt
       )
-      const term = await getActiveTerm();
 
       // Invalidate the individual doc cache since it was updated
       cacheService.invalidate(CACHE_KEYS.clearanceDoc(logPaymentTarget.id));
@@ -248,8 +246,8 @@ export function useClearancePage(orgId: string | undefined) {
         date: new Date().toLocaleString(),
         verifiedByName: currentUser.firstName + " " + currentUser.lastName,
         paymentMethod: "Cash",
-        AY: term!.AY,
-        semester: term!.semester,
+        AY: selected!.AY,
+        semester: selected!.semester,
       })
 
       setLogPaymentOpen(false)

@@ -1,16 +1,15 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { AggregatedFee, Fee } from "../types"
+import { AggregatedFee } from "../types"
 import { fetchFeesForOrg, getTotalCollectedAmount, getTotalPaidAmountCount } from "@/firebase/fees";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
 import { getCurrentUserData } from "@/firebase";
 import { cacheService } from "@/services/cacheService";
 import { FeeItem } from "../types";
 import { Member } from "../../members/types";
-import { getActiveTerm } from "@/firebase/term";
 import { useTermPeriod } from "../../term/hooks/useTermPeriod";
+import { useAuth } from "@/hooks/useAuth";
 
 export function useFeeList() {
     const [rawFees, setRawFees] = useState<FeeItem[]>([]);
@@ -21,6 +20,7 @@ export function useFeeList() {
     const [aggregatedFees, setAggregatedFees] = useState<AggregatedFee[]>([]);
     
     const { selected } = useTermPeriod();
+    const user = useAuth();
 
     useEffect(() => {
         const loadFees = async() => {
@@ -133,7 +133,7 @@ export function useFeeList() {
             // 2. Map to an array of Promises and wait for all to resolve
             let sumStudents = 0;
             const feePromises = Object.entries(groups).map(async ([groupKey, fee]) => {
-                const totalPaid = await getTotalPaidAmountCount(fee.id);
+                const totalPaid = await getTotalPaidAmountCount(fee.id, user.user?.orgId!);
                 sumStudents += fee.totalStudents;
                 
                 return {

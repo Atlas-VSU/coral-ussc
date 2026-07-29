@@ -13,7 +13,7 @@ import { LogPaymentDialog } from "./components/LogPaymentDialog"
 import { usePaymentsPage } from "./hooks/usePaymentsPage"
 import PaymentReceiptDialog, { ReceiptData } from "@/components/organization/receipt/PaymentReceiptDialog"
 import { Timestamp } from "firebase/firestore"
-import { getActiveTerm } from "@/firebase/term"
+import { useTermPeriod } from "../term/hooks/useTermPeriod"
 
 export default function PaymentsPage() {
   const {
@@ -44,6 +44,8 @@ export default function PaymentsPage() {
     receiptOpen, setReceiptOpen, receiptData, setReceiptData,
     stats, totalUnpaidCount, AY, sem,
   } = usePaymentsPage()
+
+  const { selected } = useTermPeriod();
 
   // Local search states for filters
   const [searchTerm, setSearchTerm] = useState(search)
@@ -94,7 +96,6 @@ export default function PaymentsPage() {
   }
 
   const handleViewReceipt = async () => {
-    const term = await getActiveTerm();
     setReceiptData({
       receiptId: selectedPayment?.receiptCode || "N/A",
       studentName: selectedPayment?.userName || "N/A",
@@ -104,8 +105,8 @@ export default function PaymentsPage() {
       date: selectedPayment?.verifiedAt!.toDate().toLocaleString() || "N/A",
       verifiedByName: selectedPayment?.verifiedByName || "N/A",
       paymentMethod: selectedPayment?.paymentMethod || "Cash",
-      AY: term!.AY,
-      semester:term!.semester,
+      AY: selected!.AY,
+      semester:selected!.semester,
     });
     setReceiptOpen(true)
   }

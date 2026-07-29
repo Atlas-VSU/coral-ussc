@@ -43,3 +43,8 @@ next-env.d.ts
 
 # backend testing
 /testing_backend
+
+# firebase migration script
+/service-account-key.json
+migrate-proof-of-payments.js
+rebuild-stats.js
