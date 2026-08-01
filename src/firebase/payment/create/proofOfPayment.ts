@@ -9,9 +9,8 @@ import { generateReceiptId } from "@/features/organization/payments/utils";
 import { getFeeByStudentId } from "@/firebase/fees";
 import { getCurrentUserData } from "@/firebase/users";
 import { Member } from "@/features/organization/members/types";
-import { createFinesPaymentHistory, createOnlinePaymentHistory } from "./paymentHistory";
+import { createFinesPaymentHistory } from "./paymentHistory";
 import { FineItem, StudentFines } from "@/features/organization/fines/types";
-import { cacheService, CACHE_KEYS } from "@/services/cacheService";
 import { BlockingItem } from "@/features/organization/clearance/types";
 import { updateFeeStats, updateFineStats } from "@/firebase/stats/update/updateStats";
 import { getActiveTerm } from "@/firebase/term";
@@ -169,12 +168,12 @@ export const createOnlineProofOfPayment = async (
 
 
 export const createOfflineFinesProofOfPayment = async (
-  payment: PaymentFormData, type: string, fine: StudentFines, fineItems?: FineItem[]) => {
+  payment: PaymentFormData, type: string, fine: StudentFines, fineItems?: FineItem[], selectedTerm?: Term) => {
   const items = [];
     const currentUser = await getCurrentUserData() as unknown as Member;
     try {
-      const transaction = await getFineByStudentId(payment.studentId);
-      const term = await getActiveTerm();
+      const term = selectedTerm || await getActiveTerm();
+      const transaction = await getFineByStudentId(payment.studentId, term!);
       
       for (const item of fineItems?.filter(f => !f.isPaid) ?? []) { 
         items.push({
@@ -218,6 +217,7 @@ export const createOfflineFinesProofOfPayment = async (
             }
 
             const docRef = await addDoc(collection(db, "proofOfPayments"), paymentData);
+            console.log("Proof of payment created successfully:", docRef);
             
             const orgId = transaction.orgId || '';
             // cacheService.invalidate(CACHE_KEYS.feesForOrg(orgId));

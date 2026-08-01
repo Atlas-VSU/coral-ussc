@@ -4,6 +4,7 @@ import { Fee, PaymentLog } from "../../fees/types";
 import { Member } from "../../members/types";
 import { cacheService } from "@/services/cacheService";
 import { getCurrentUserData } from "@/firebase";
+import { useAuth } from "@/hooks/useAuth";
 
 export type BaseFeeData = Partial<Fee>;
 
@@ -60,6 +61,8 @@ export function useFeesRoster(
       rejected: 0,
       unpaid: 0,
     });
+
+    const user = useAuth();
 
     const fetchData = useCallback(async () => {
         if (!feeItemId) return;
@@ -157,10 +160,10 @@ export function useFeesRoster(
             }
 
             if (feeData) {
-                const pending = await getTotalPendingAmountCount(feeData.id);
-                const verified = await getTotalPaidAmountCount(feeData.id);
-                const rejected = await getTotalRejectedAmountCount(feeData.id);
-                const unpaid = await getTotalUnpaidAmountCount(feeData.id);
+                const pending = await getTotalPendingAmountCount(feeData.id, user?.orgId);
+                const verified = await getTotalPaidAmountCount(feeData.id, user?.orgId);
+                const rejected = await getTotalRejectedAmountCount(feeData.id, user?.orgId);
+                const unpaid = await getTotalUnpaidAmountCount(feeData.id, user?.orgId);
 
                 setStats({
                     pending,

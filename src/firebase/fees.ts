@@ -96,7 +96,7 @@ export const getTotalCollectedAmount = async (
             
             const totalPaid = await feeSnapshot.docs.reduce(async (acc, feeDoc) => {
                 const feeData = feeDoc.data();
-                return (await acc) + (await getTotalPaidAmountCount(feeData.id) * feeData.amount);
+                return (await acc) + (await getTotalPaidAmountCount(feeData.id, orgId) * feeData.amount);
             }, Promise.resolve(0));
             
             return totalPaid;
@@ -429,7 +429,7 @@ export const fetchFeesForOrg = async(
     );
 }
 
-export const getTotalPaidAmountCount = async(feeItemId: string): Promise<number> => {
+export const getTotalPaidAmountCount = async(feeItemId: string, orgId: string): Promise<number> => {
     return cacheService.getOrFetch(
         CACHE_KEYS.totalPaidAmountCount(feeItemId),
         async () => {
@@ -437,6 +437,7 @@ export const getTotalPaidAmountCount = async(feeItemId: string): Promise<number>
         const q = query(
             feesRef,
             where("feeItemId", "==", feeItemId),
+            where("orgId", "==", orgId),
             where("status", "in", ["verified", "paid"]),
             
         );
@@ -447,7 +448,7 @@ export const getTotalPaidAmountCount = async(feeItemId: string): Promise<number>
     );
 }
 
-export const getTotalRejectedAmountCount = async(feeItemId: string): Promise<number> => {
+export const getTotalRejectedAmountCount = async(feeItemId: string, orgId: string): Promise<number> => {
     return cacheService.getOrFetch(
         CACHE_KEYS.totalRejectedAmountCount(feeItemId),
         async () => {
@@ -455,6 +456,7 @@ export const getTotalRejectedAmountCount = async(feeItemId: string): Promise<num
     const q = query(
         feesRef,
         where("feeItemId", "==", feeItemId),
+        where("orgId", "==", orgId),
         where("status", "==", "rejected")
     );
     const snapshot = await getCountFromServer(q);
@@ -464,7 +466,7 @@ export const getTotalRejectedAmountCount = async(feeItemId: string): Promise<num
     );
 }
 
-export const getTotalUnpaidAmountCount = async(feeItemId: string): Promise<number> => {
+export const getTotalUnpaidAmountCount = async(feeItemId: string, orgId: string): Promise<number> => {
     return cacheService.getOrFetch(
         CACHE_KEYS.totalUnpaidAmountCount(feeItemId),
         async () => {
@@ -472,6 +474,7 @@ export const getTotalUnpaidAmountCount = async(feeItemId: string): Promise<numbe
     const q = query(
         feesRef,
         where("feeItemId", "==", feeItemId),
+        where("orgId", "==", orgId),
         where("status", "in", ["unpaid", "partial"])
     );
     const snapshot = await getCountFromServer(q);
@@ -481,7 +484,7 @@ export const getTotalUnpaidAmountCount = async(feeItemId: string): Promise<numbe
     );
 }
 
-export const getTotalPendingAmountCount = async(feeItemId: string): Promise<number> => {
+export const getTotalPendingAmountCount = async(feeItemId: string, orgId: string): Promise<number> => {
     return cacheService.getOrFetch(
         CACHE_KEYS.totalPendingAmountCount(feeItemId),
         async () => {
@@ -489,6 +492,7 @@ export const getTotalPendingAmountCount = async(feeItemId: string): Promise<numb
     const q = query(
         feesRef,
         where("feeItemId", "==", feeItemId),
+        where("orgId", "==", orgId),
         where("status", "==", "pending")
     );
     const snapshot = await getCountFromServer(q);

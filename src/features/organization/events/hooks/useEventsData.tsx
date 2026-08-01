@@ -3,7 +3,6 @@ import { Event } from "../types";
 import { getPaginatedEvents, getEvents } from "@/firebase";
 import { EventStatus } from "../types";
 import { cacheService, CACHE_DURATIONS } from "@/services/cacheService";
-import { getActiveTerm } from "@/firebase/term";
 import { useTermPeriod } from "../../term/hooks/useTermPeriod";
 
 interface SortOptions {

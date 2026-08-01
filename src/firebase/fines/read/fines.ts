@@ -6,6 +6,7 @@ import { getCurrentUserData } from "@/firebase/users";
 import { collection, query, where, getDocs, CollectionReference, DocumentData, DocumentSnapshot, orderBy, limit, startAfter, getCountFromServer, getDoc, doc, onSnapshot, connectFirestoreEmulator, or, and } from "firebase/firestore";
 import { cacheService, CACHE_KEYS, CACHE_DURATIONS } from "@/services/cacheService";
 import { getActiveTerm } from "@/firebase/term";
+import { Term } from "@/constants/types";
 
 const finesCollection: CollectionReference<DocumentData> = collection(
     db,
@@ -82,8 +83,8 @@ export const getFinesByStudents = async (students: MemberData[]) => {
   );
 };
 
-export const getFineByStudentId = async (studentId: string) => {
-    const term = await getActiveTerm();
+export const getFineByStudentId = async (studentId: string, selectedTerm?: Term) => {
+    const term = selectedTerm || await getActiveTerm();
     return cacheService.getOrFetch(
         CACHE_KEYS.fineByStudent(studentId),
         async () => {
