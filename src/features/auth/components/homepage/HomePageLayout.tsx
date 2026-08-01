@@ -1,6 +1,7 @@
 import { DesktopHeader } from "./components/DesktopHeader";
 import { MobileHeader } from "./components/MobileHeader";
 import { TemporaryLogin } from "./components/TemporaryLogin";
+import { StudentPortalButton } from "./components/StudentPortalButton";
 
 import LoginCard from "./components/LoginCard";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ export function HomePageLayout() {
                   organizational fees and fines, settle payments online, and
                   monitor your clearance status in real-time.
                 </p>
+                <StudentPortalButton />
               </div>
             </div>
 
@@ -112,6 +114,7 @@ export function HomePageLayout() {
                 organizational fees and fines, settle payments online, and
                 monitor your clearance status in real-time.
               </p>
+              <StudentPortalButton />
             </div>
           </div>
 
