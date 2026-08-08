@@ -327,7 +327,7 @@ export function useClearancePage(orgId: string | undefined) {
       }
       const semSlug = sem.replace(/\s+/g, "-").toLowerCase();
       const aySlug = AY.replace(/\s+/g, "");
-      exportClearanceToCSV(records, `clearance-${semSlug}-sem-${aySlug}.csv`);
+      await exportClearanceToCSV(records, `clearance-${semSlug}-sem-${aySlug}.csv`);
       toast.success(`Exported ${records.length} clearance records.`);
     } catch (err) {
       console.error("Export failed:", err);
