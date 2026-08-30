@@ -63,6 +63,7 @@ export default function EventsPage() {
     handleSort,
     handleDateChange,
     searchQuery,
+    filterDate,
     refresh,
   } = useEventsData(currentTab);
 
@@ -152,6 +153,8 @@ export default function EventsPage() {
               events={events}
               onEventsUpdate={refresh}
               viewMode={viewMode}
+              isFiltered={Boolean(searchQuery) || Boolean(filterDate)}
+              statusLabel={currentTab === "all" ? undefined : currentTab}
             />
           )}
         </TabsContent>

@@ -235,6 +235,7 @@ export function useEventsData(currentTab: EventStatus) {
     handleSort,
     handleDateChange,
     searchQuery,
+    filterDate,
     refresh: fetchEvents,
   };
 }

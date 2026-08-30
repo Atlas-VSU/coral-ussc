@@ -2,8 +2,11 @@ import { useState } from "react";
 import { EventCard } from "./EventCard";
 import { EventListItem } from "./EventListItem";
 import { EditEventDialog } from "./EditEventDialog";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, SearchXIcon } from "lucide-react";
 import { Event } from "../types";
+import { Button } from "@/components/ui/button";
+import { useTermStore } from "../../term/store";
+import { Term } from "../../term/types";
 import { archiveEvent, completeEvent, deleteEvent } from "@/firebase";
 import { ViewMode } from "./ViewToggle";
 import { useEventFineTypes } from "../hooks/useEventFineTypes";
@@ -24,14 +27,40 @@ interface EventsListProps {
   events: Event[];
   onEventsUpdate: () => void;
   viewMode: ViewMode;
+  /** True when a search or date filter is narrowing the list. */
+  isFiltered?: boolean;
+  /** Current status tab, used to word the empty state. */
+  statusLabel?: string;
 }
+
+/** "2025-2026 - 2nd Semester", matching the wording of the term selector. */
+const formatTerm = (term: Term | null) =>
+  term ? `${term.AY} — ${term.semester} Semester` : "this term";
+
+/**
+ * Newest term other than the one selected, so the empty state can offer a
+ * one-click jump. `getAllTerms` returns terms unordered, so sort here.
+ */
+const newestOtherTerm = (all: Term[], selected: Term | null) =>
+  all
+    .filter((t) => t.id !== selected?.id && !t.isDeleted)
+    .sort((a, b) =>
+      a.AY === b.AY ? b.semester.localeCompare(a.semester) : b.AY.localeCompare(a.AY)
+    )[0] ?? null;
 
 type PendingAction = {
   type: "archive" | "delete" | "issue" | "unarchive"|"markAsCompleted";
   event: Event;
 };
 
-export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps) {
+export function EventsList({
+  events,
+  onEventsUpdate,
+  viewMode,
+  isFiltered = false,
+  statusLabel,
+}: EventsListProps) {
+  const { all, selected, setSelected } = useTermStore();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const { fineTypes, fetchFineTypes } = useEventFineTypes();
@@ -158,15 +187,53 @@ export function EventsList({ events, onEventsUpdate, viewMode }: EventsListProps
   };
 
   if (!events || events.length === 0) {
+    // A search or date filter that matches nothing is a different problem from
+    // a term that simply has no events - saying "adjust your filters" when no
+    // filter is active sends people looking for a filter that isn't there.
+    const suggestion = isFiltered ? null : newestOtherTerm(all, selected);
+
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-border rounded-xl bg-muted/30">
         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-          <CalendarIcon className="w-8 h-8 text-muted-foreground" />
+          {isFiltered ? (
+            <SearchXIcon className="w-8 h-8 text-muted-foreground" />
+          ) : (
+            <CalendarIcon className="w-8 h-8 text-muted-foreground" />
+          )}
         </div>
-        <h3 className="text-base font-semibold text-foreground mb-1">No events found</h3>
-        <p className="text-sm text-muted-foreground max-w-xs">
-          Try adjusting your filters or search to find what you&apos;re looking for.
-        </p>
+
+        {isFiltered ? (
+          <>
+            <h3 className="text-base font-semibold text-foreground mb-1">
+              No events found
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Nothing matches your current search or date filter in{" "}
+              {formatTerm(selected)}. Try clearing them.
+            </p>
+          </>
+        ) : (
+          <>
+            <h3 className="text-base font-semibold text-foreground mb-1">
+              No events this term
+            </h3>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              There are no{statusLabel ? ` ${statusLabel}` : ""} events for{" "}
+              {formatTerm(selected)}. Use the academic term selector to view an
+              earlier term.
+            </p>
+            {suggestion && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => setSelected(suggestion)}
+              >
+                View {formatTerm(suggestion)}
+              </Button>
+            )}
+          </>
+        )}
       </div>
     );
   }
