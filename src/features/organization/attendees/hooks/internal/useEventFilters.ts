@@ -9,7 +9,7 @@ type SortOption = {
 export const useEventFilters = () => {
   const [searchQuery, setSearchQuery] = useState<SearchParams | null>(null);
   const [sortOption, setSortOption] = useState<SortOption>({
-    field: "firstName",
+    field: "lastName",
     direction: "asc",
   });
   const [programFilter, setProgramFilter] = useState<string | null>(null);
