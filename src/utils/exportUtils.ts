@@ -95,22 +95,34 @@ export async function exportClearanceToCSV(
 
   // 3. Collect all blocking item referenceIds, split by type.
   //    The `fees` collection documents preserve the original `amount` even after payment.
-  //    The `fineItems` collection documents similarly store the original fine amount.
+  //    The `fines` collection documents (`StudentFines`) store `accumulatedAmount` for the semester.
   const feeRefIds = new Set<string>();
-  const fineRefIds = new Set<string>();
+  const parentFineIds = new Set<string>();
 
   records.forEach((c) => {
     Object.values(c.blockingItems ?? {}).forEach((item) => {
-      if (item.type === PaymentType.FEES) feeRefIds.add(item.referenceId);
-      else if (item.type === PaymentType.FINES) fineRefIds.add(item.referenceId);
+      if (item.type === PaymentType.FEES) {
+        if (item.referenceId) feeRefIds.add(item.referenceId);
+      } else if (item.type === PaymentType.FINES) {
+        if (item.parentFineId) parentFineIds.add(item.parentFineId);
+        if (item.referenceId) parentFineIds.add(item.referenceId);
+      }
     });
   });
 
-  // Batch-fetch source documents that have the authoritative `amount` field
-  const [feesDocMap, fineItemsDocMap] = await Promise.all([
+  // Batch-fetch source documents that have authoritative fee/fine totals
+  const [feesDocMap, finesDocMap] = await Promise.all([
     batchFetchByIds("fees", Array.from(feeRefIds)),
-    batchFetchByIds("fineItems", Array.from(fineRefIds)),
+    batchFetchByIds("fines", Array.from(parentFineIds)),
   ]);
+
+  // Create a fallback map of userId -> accumulatedAmount from fetched fines docs
+  const finesByUserIdMap = new Map<string, number>();
+  finesDocMap.forEach((docData) => {
+    if (docData.userId && typeof docData.accumulatedAmount === "number") {
+      finesByUserIdMap.set(docData.userId, docData.accumulatedAmount);
+    }
+  });
 
   // 4. Map records to rows
   const rows = records.map((c) => {
@@ -130,8 +142,6 @@ export async function exportClearanceToCSV(
     const facultyName =
       faculty?.acronym || faculty?.code || faculty?.name || "N/A";
 
-    // Sum the ORIGINAL amount from source documents (non-zero even for paid items).
-    // Falls back to blockingItem.balance for any doc not found in the fetched map.
     const items = Object.values(c.blockingItems ?? {});
 
     const memFeeTotal = items
@@ -141,23 +151,41 @@ export async function exportClearanceToCSV(
         return sum + (sourceDoc?.amount ?? item.balance ?? 0);
       }, 0);
 
-    const fineTotal = items
-      .filter((item) => item.type === PaymentType.FINES)
-      .reduce((sum, item) => {
-        const sourceDoc = fineItemsDocMap.get(item.referenceId);
-        return sum + (sourceDoc?.amount ?? item.balance ?? 0);
-      }, 0);
+    const fineItems = items.filter((item) => item.type === PaymentType.FINES);
+    let fineTotal = 0;
+
+    if (fineItems.length > 0) {
+      let fineDoc: DocumentData | undefined;
+      for (const item of fineItems) {
+        if (item.parentFineId && finesDocMap.has(item.parentFineId)) {
+          fineDoc = finesDocMap.get(item.parentFineId);
+          break;
+        }
+        if (item.referenceId && finesDocMap.has(item.referenceId)) {
+          fineDoc = finesDocMap.get(item.referenceId);
+          break;
+        }
+      }
+
+      if (fineDoc && typeof fineDoc.accumulatedAmount === "number") {
+        fineTotal = fineDoc.accumulatedAmount;
+      } else if (finesByUserIdMap.has(c.userId)) {
+        fineTotal = finesByUserIdMap.get(c.userId)!;
+      } else {
+        fineTotal = fineItems.reduce((sum, item) => sum + (item.balance ?? 0), 0);
+      }
+    } else if (finesByUserIdMap.has(c.userId)) {
+      fineTotal = finesByUserIdMap.get(c.userId)!;
+    }
 
     // Plain numeric values — no peso sign
     const formattedMemFee = memFeeTotal > 0 ? memFeeTotal.toLocaleString() : "0";
     const formattedFine = fineTotal > 0 ? fineTotal.toLocaleString() : "0";
 
     const statusDisplay =
-      c.status === "cleared"
+      c.status === "cleared" || c.status === "pending"
         ? "Cleared"
-        : c.status === "pending"
-        ? "Pending"
-        : "Not Cleared";
+        : "Uncleared";
 
     return [
       csvCell(studentId),
