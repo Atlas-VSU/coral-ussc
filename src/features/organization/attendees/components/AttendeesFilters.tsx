@@ -27,7 +27,7 @@ export function AttendeesFilters({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState<"name" | "id">("name");
   const [programs, setPrograms] = useState<Program[]>([]);
-  const [sortValue, setSortValue] = useState("firstName-asc");
+  const [sortValue, setSortValue] = useState("lastName-asc");
   const [programValue, setProgramValue] = useState("all");
 
   useEffect(() => {
@@ -51,10 +51,10 @@ export function AttendeesFilters({
   const handleResetFilters = () => {
     setSearchQuery("");
     setSearchType("name");
-    setSortValue("firstName-asc");
+    setSortValue("lastName-asc");
     setProgramValue("all");
     onSearch({ query: "", type: "name" });
-    onSortChange("firstName-asc");
+    onSortChange("lastName-asc");
     onProgramFilter("");
   };
 
