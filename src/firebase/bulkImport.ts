@@ -22,8 +22,9 @@ import {
 import { getFaculties } from "./faculties";
 import { getPrograms } from "./programs";
 import { parseCSVRow } from "@/features/organization/members/csv.utils";
-import { addStudentWithClearance } from "./clearance";
+import { getAllOrgs } from "./organization";
 import { getCurrentUserData } from "./users";
+import { onboardNewStudent } from "./onboarding";
 
 const usersCollection: CollectionReference<DocumentData> = collection(
   db,
@@ -440,17 +441,19 @@ export const bulkImportUsers = async (
 
     await batch.commit();
     const user = await getCurrentUserData() as unknown as Member;
+    const allOrgs = await getAllOrgs();
     for (const member of membersToImport) {
       try {
         const docRef = query(collection(db, "users"), where("studentId", "==", member.studentId));
         const snapshot = await getDocs(docRef);
-        await addStudentWithClearance(snapshot.docs[0].id, member, user?.orgId || "");
+        const userId = snapshot.docs[0].id;
+        await onboardNewStudent(userId, member as unknown as Member, allOrgs, user);
       }
       catch (error) {
         result.errors.push({
           row: member.rowNumber,
           studentId: member.studentId,
-          error: "Failed to add student with clearance",
+          error: "Failed to onboard student (clearance / fines / fees)",
         });
       }
     }
