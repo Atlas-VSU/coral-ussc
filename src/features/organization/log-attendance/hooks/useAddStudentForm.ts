@@ -56,7 +56,7 @@ export function useAddStudentForm({
     const fetchProgramData = async () => {
       try {
         const data = (await getProgramByFacultyId()) as Program[];
-        setProgramData(data);
+        setProgramData(data.sort((a, b) => a.name.localeCompare(b.name)));
       } catch (error) {
         console.error("Failed to fetch program data:", error);
       }
