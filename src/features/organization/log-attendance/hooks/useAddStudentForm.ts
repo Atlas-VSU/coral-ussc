@@ -8,7 +8,8 @@ import {
   getPrograms,
 } from "@/firebase";
 import { isValidStudentId } from "../utils";
-import { createFinePerStudent } from "@/firebase/fines/create/fines";
+import { getAllOrgs } from "@/firebase/organization";
+import { onboardNewStudent } from "@/firebase/onboarding";
 
 interface useAddStudentFormProps {
   suggestedId: string;
@@ -123,7 +124,7 @@ export function useAddStudentForm({
         setFormErrors({ studentId: "Student ID already exists" });
         return;
       }
-      const currentUser = getCurrentUserData() as unknown as Member;
+      const currentUser = await getCurrentUserData() as unknown as Member;
       const facultyId = currentUser.facultyId;
 
       const newStudentData = {
@@ -133,7 +134,8 @@ export function useAddStudentForm({
       };
 
       const userId = await addUser(newStudentData);
-      await createFinePerStudent(userId!, newStudentData as Member);
+      const allOrgs = await getAllOrgs();
+      await onboardNewStudent(userId!, newStudentData as Member, allOrgs, currentUser);
       onStudentAdded(newStudentData);
       onOpenChange(false);
     } catch (error) {
