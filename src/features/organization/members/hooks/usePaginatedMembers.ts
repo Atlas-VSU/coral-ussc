@@ -41,7 +41,9 @@ export function usePaginatedMembers() {
   const [programFilter, setProgramFilter] = useState("all");
   const [sortBy, setSortBy] = useState("name-asc");
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
-  const [term, setTerm] = useState<Term>({AY:"", semester:"", isActive: true});
+
+  const { selected: _term } = useTermPeriod();
+  const term = _term || { AY: "", semester: "", isActive: true };
 
   // ─── Pagination (cursor-based, forward/backward only) ─────────────────────
   // cursorStack[0] = null (page 1 has no cursor)
@@ -54,8 +56,6 @@ export function usePaginatedMembers() {
   const [searchInput, setSearchInput] = useState("");
   const [committedSearch, setCommittedSearch] = useState("");
   const [isSearchActive, setIsSearchActive] = useState(false);
-
-  const { selected: _term } = useTermPeriod();
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
   const pageSize = viewMode === "card" ? ITEMS_PER_PAGE_CARD : ITEMS_PER_PAGE_TABLE;
@@ -147,7 +147,6 @@ export function usePaginatedMembers() {
           setMembers(cached.members);
           setTotalMembers(cached.totalMembers);
           if (cached.totalMembers > 0) totalMembersRef.current = cached.totalMembers;
-          setTerm(cached.term);
           setDataSource("cache");
           setIsLoading(false);
           setIsRefreshing(false);
@@ -194,7 +193,6 @@ export function usePaginatedMembers() {
           setTotalMembers(result.total);
           totalMembersRef.current = result.total;
         }
-        setTerm(_term!);
         setMembers(transformedMembers);
         // Always cache with the real count (ref holds it even when needCount=false)
         updateMembersCache(cacheKey, transformedMembers, totalMembersRef.current, _term!);
@@ -206,7 +204,7 @@ export function usePaginatedMembers() {
         setIsRefreshing(false);
       }
     },
-    [] // No state deps — params are passed explicitly to avoid stale closures
+    [_term] // Add _term to prevent stale closure when caching
   );
 
   // ─── Navigation handlers ──────────────────────────────────────────────────
@@ -369,7 +367,17 @@ export function usePaginatedMembers() {
   }, [pageSize, programFilter, sortBy, committedSearch, fetchMembers, resetPagination]);
 
   // ─── Initial load ─────────────────────────────────────────────────────────
+  const hasInitializedTerm = useRef<string | null>(null);
+  
   useEffect(() => {
+    // Wait for the term to be loaded before fetching members
+    if (!_term) return;
+    
+    // Only run the initial load once per distinct term (e.g. if term changes, we should reload)
+    const termKey = `${_term.AY}-${_term.semester}`;
+    if (hasInitializedTerm.current === termKey) return;
+    hasInitializedTerm.current = termKey;
+
     const savedViewMode = localStorage.getItem("membersViewMode") as
       | "card"
       | "table"
@@ -392,8 +400,7 @@ export function usePaginatedMembers() {
         needCount: true, // get total on first load only
       });
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // intentionally empty — runs once on mount
+  }, [_term, loadStaticData, fetchMembers]); 
 
   // ─── Derived state ────────────────────────────────────────────────────────
   const hasNextPage = members.length === pageSize;
