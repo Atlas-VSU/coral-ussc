@@ -94,7 +94,7 @@ export function useSelfRegistrations() {
         const user = await getUserById(id);
         const orgs = await getAllOrgs();
         for (const org of orgs) {
-          if (org.subscribed && org.programId == user?.programId || org.facultyId == user?.facultyId || (org.facultyId == null && org.programId == null)) {
+          if (org.subscribed && (org.programId == user?.programId || org.facultyId == user?.facultyId || (org.facultyId == null && org.programId == null))) {
             const clearanceId = buildClearanceId(id!, org?.id!, org?.accessLevel!, active! as Term)
             const clearanceRef = doc(db, 'clearanceStatus', clearanceId);
             const now = Timestamp.now();
