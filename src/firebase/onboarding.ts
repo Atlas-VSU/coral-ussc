@@ -48,12 +48,12 @@ export const onboardNewStudent = async (
   const defaultDueDate = Timestamp.fromDate(new Date("2026-12-30"));
 
   for (const org of allOrgs) {
-    // Fixed operator precedence: org.subscribed guards ALL three OR branches.
-    const matches =
-      org.subscribed &&
-      (org.programId === studentData.programId ||
-        org.facultyId === studentData.facultyId ||
-        (org.facultyId == null && org.programId == null));
+    // Strict matching based on access level to prevent `undefined === undefined` matches
+    const matches = org.subscribed && (
+      (org.accessLevel === 1 && org.programId && org.programId === studentData.programId) ||
+      (org.accessLevel === 2 && org.facultyId && org.facultyId === studentData.facultyId) ||
+      (org.accessLevel === 3)
+    );
 
     if (!matches) continue;
 
