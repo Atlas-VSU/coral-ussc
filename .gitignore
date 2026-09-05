@@ -48,3 +48,5 @@ next-env.d.ts
 /service-account-key.json
 migrate-proof-of-payments.js
 rebuild-stats.js
+
+*mjs
