@@ -185,7 +185,6 @@ export function MembersPage() {
           toast.error("Email already exists. Please use a different one.");
           return;
         }
-
         const userId = await addUser(data);
         const currentUser = (await getCurrentUserData()) as unknown as Member;
 
