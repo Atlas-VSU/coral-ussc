@@ -3,6 +3,7 @@ import { Member, Program } from "../../members/types";
 import {
   addUser,
   checkStudentIdExist,
+  checkEmailExist,
   getCurrentUserData,
   getProgramByFacultyId,
   getPrograms,
@@ -122,6 +123,10 @@ export function useAddStudentForm({
     try {
       if (await checkStudentIdExist(formData.studentId)) {
         setFormErrors({ studentId: "Student ID already exists" });
+        return;
+      }
+      if (await checkEmailExist(formData.email)) {
+        setFormErrors({ email: "Email already exists" });
         return;
       }
       const currentUser = await getCurrentUserData() as unknown as Member;

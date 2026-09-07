@@ -291,10 +291,29 @@ export const checkStudentIdExist = async (studentId: string) => {
   }
 };
 
+export const checkEmailExist = async (email: string) => {
+  try {
+    const querySnapshot = await getDocs(
+      query(
+        usersCollection,
+        where("email", "==", email),
+        where("isDeleted", "==", false)
+      )
+    );
+    return !querySnapshot.empty;
+  } catch (error) {
+    handleFirestoreError(error, "check email existence");
+    return false;
+  }
+};
+
 export const addUser = async (userData: MemberFormData) => {
   try {
     if (await checkStudentIdExist(userData.studentId)) {
       throw new Error("Student ID already exists.");
+    }
+    if (await checkEmailExist(userData.email)) {
+      throw new Error("Email already exists.");
     }
     if (userData == null) {
       throw new Error("No user data provided for addition.");
