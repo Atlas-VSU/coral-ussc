@@ -30,6 +30,18 @@ import { BulkImportResultModal } from "@/features/organization/members/component
 import { usePaginatedMembers } from "@/features/organization/members/hooks/usePaginatedMembers";
 import { getAllOrgs } from "@/firebase/organization";
 import { onboardNewStudent } from "@/firebase/onboarding";
+import { resolveStudentIdentity, type StudentIdentityResolution } from "@/firebase/users";
+import { restoreStudentRecord } from "@/firebase/restore";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
@@ -102,6 +114,12 @@ export function MembersPage() {
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedMember, setSelectedMember] = useState<MemberData | null>(null);
+  // Set when a submitted Student ID belongs to a retired record — prompts a
+  // restore instead of creating a duplicate document for the same student.
+  const [archivedMatch, setArchivedMatch] = useState<{
+    resolution: Extract<StudentIdentityResolution, { status: "archived" }>;
+    data: Member;
+  } | null>(null);
   const [importProgress, setImportProgress] = useState(0);
   const [currentBatch, setCurrentBatch] = useState(0);
   const [totalBatches, setTotalBatches] = useState(0);
@@ -148,15 +166,26 @@ export function MembersPage() {
         await updateUser(selectedMember.id, data);
         toast.success("Member updated successfully");
       } else {
-        if (await checkStudentIdExist(data.studentId)) {
+        const identity = await resolveStudentIdentity(data.studentId);
+
+        if (identity.status === "active") {
           toast.error("Student ID already exists. Please use a different one.");
           return;
         }
+
+        // A retired record still holds this Student ID. Adding a second one
+        // would strand their fees, fines and clearance on the dead document
+        // and charge them twice — prompt to restore the original instead.
+        if (identity.status === "archived") {
+          setArchivedMatch({ resolution: identity, data });
+          return;
+        }
+
         if (await checkEmailExist(data.email)) {
           toast.error("Email already exists. Please use a different one.");
           return;
         }
- 
+
         const userId = await addUser(data);
         const currentUser = (await getCurrentUserData()) as unknown as Member;
 
@@ -176,6 +205,46 @@ export function MembersPage() {
       setIsFormSubmitting(false);
       setIsFormOpen(false);
       setSelectedMember(null);
+    }
+  };
+
+  /**
+   * Brings back the retired record this Student ID belongs to.
+   *
+   * Deliberately does NOT call `onboardNewStudent`: onboarding backfills a
+   * fresh set of fees and fines, which would stack on top of the ones being
+   * reinstated and double-charge the student.
+   */
+  const handleRestoreArchived = async () => {
+    if (!archivedMatch) return;
+    const { resolution, data } = archivedMatch;
+    setIsFormSubmitting(true);
+    try {
+      const result = await restoreStudentRecord(resolution.docId, data.studentId, {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        programId: data.programId,
+        facultyId: data.facultyId,
+        yearLevel: data.yearLevel,
+      });
+      toast.success(
+        `Record restored — ${result.feesRestored} fee(s), ${result.finesRestored} fine(s) and ` +
+        `${result.clearanceRestored} clearance record(s) brought back.`
+      );
+      if (result.skippedForeignArchives > 0) {
+        toast.warning(
+          `${result.skippedForeignArchives} record(s) stayed archived because they were archived ` +
+          `manually, not by a roster sync. Review them if they should be visible.`
+        );
+      }
+      refreshData();
+    } catch (error) {
+      toast.error("Failed to restore this record");
+      console.error(error);
+    } finally {
+      setIsFormSubmitting(false);
+      setArchivedMatch(null);
     }
   };
 
@@ -400,6 +469,41 @@ export function MembersPage() {
         programData={programs}
         isSubmitting={isFormSubmitting}
       />
+
+      <AlertDialog
+        open={!!archivedMatch}
+        onOpenChange={(open) => !open && setArchivedMatch(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>This student already has a retired record</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  <span className="font-medium">
+                    {archivedMatch?.resolution.member.firstName}{" "}
+                    {archivedMatch?.resolution.member.lastName}
+                  </span>{" "}
+                  ({archivedMatch?.resolution.member.studentId}) was removed when the roster was
+                  last synchronized.
+                </p>
+                <p>
+                  Restoring brings back their existing fees, fines and clearance for this term.
+                  Adding them as a new member instead would leave that history stranded on the old
+                  record and charge them twice.
+                </p>
+                <p>If this is a different person, cancel and correct the Student ID.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isFormSubmitting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRestoreArchived} disabled={isFormSubmitting}>
+              {isFormSubmitting ? "Restoring..." : "Restore Record"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <DeleteConfirmationDialog
         open={isDeleteDialogOpen}
