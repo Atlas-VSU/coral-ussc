@@ -248,15 +248,42 @@ const checkExistingStudentIds = async (
       );
 
       const querySnapshot = await getDocs(q);
-      querySnapshot.docs.forEach((doc) => {
-        const data = doc.data();
-        existingIds.push(data.studentId);
+      querySnapshot.forEach((doc) => {
+        existingIds.push(doc.data().studentId);
       });
     }
 
     return existingIds;
   } catch (error) {
     handleFirestoreError(error, "check existing student IDs");
+    return [];
+  }
+};
+
+const checkExistingEmails = async (
+  emails: string[]
+): Promise<string[]> => {
+  try {
+    const existingEmails: string[] = [];
+
+    const batchSize = 10;
+    for (let i = 0; i < emails.length; i += batchSize) {
+      const batch = emails.slice(i, i + batchSize);
+      const q = query(
+        usersCollection,
+        where("email", "in", batch), 
+        where("isDeleted", "==", false) 
+      );
+
+      const querySnapshot = await getDocs(q);
+      querySnapshot.forEach((doc) => {
+        existingEmails.push(doc.data().email);
+      });
+    }
+
+    return existingEmails;
+  } catch (error) {
+    handleFirestoreError(error, "check existing emails");
     return [];
   }
 };
@@ -407,12 +434,24 @@ export const bulkImportUsers = async (
     const studentIds = validatedMembers.map((member) => member.studentId);
     const existingStudentIds = await checkExistingStudentIds(studentIds);
 
+    const emails = validatedMembers.map((member) => member.email);
+    const existingEmails = await checkExistingEmails(emails);
+
     const membersToImport = validatedMembers.filter((member) => {
+      let isDuplicate = false;
       if (existingStudentIds.includes(member.studentId)) {
         result.duplicates.push(member.studentId);
-        return false; 
+        isDuplicate = true;
       }
-      return true; 
+      if (existingEmails.includes(member.email)) {
+        result.errors.push({
+          row: member.rowNumber,
+          studentId: member.studentId,
+          error: `Email ${member.email} already exists in the system`,
+        });
+        isDuplicate = true;
+      }
+      return !isDuplicate; 
     });
 
     if (membersToImport.length === 0) {
