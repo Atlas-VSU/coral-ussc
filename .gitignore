@@ -50,3 +50,6 @@ migrate-proof-of-payments.js
 rebuild-stats.js
 
 *mjs
+
+# unofficial docs
+.docs/

@@ -270,10 +270,18 @@ export const fetchClearanceStatus = async (userId: string, term?: { AY: string; 
 /**
  * Recalculates and updates the overall status of a clearance document based on its blocking items.
  */
-export const recalculateClearanceStatus = async (userId: string, term?: any) => {
+export const recalculateClearanceStatus = async (
+  userId: string, 
+  term?: any, 
+  orgContext?: { uid: string; accessLevel: number }
+) => {
   const currentUser = await getCurrentUserData() as unknown as Member;
   const activeTerm = term || await getActiveTerm();
-  const id = buildClearanceId(userId, currentUser.orgId, currentUser.accessLevel!, activeTerm!);
+  
+  const orgIdToUse = orgContext ? orgContext.uid : currentUser.orgId;
+  const accessLevelToUse = orgContext ? orgContext.accessLevel : currentUser.accessLevel!;
+  
+  const id = buildClearanceId(userId, orgIdToUse, accessLevelToUse, activeTerm!);
   const clearanceRef = doc(db, 'clearanceStatus', id);
   const snapshot = await getDoc(clearanceRef);
   const clearance = snapshot.data() as ClearanceStatus;
