@@ -1,7 +1,7 @@
 import { Organization, Term } from "@/constants/types";
 import { Member } from "@/features/organization/members/types";
 import { ClearanceStatus } from "@/features/organization/clearance/types";
-import { buildClearanceId } from "@/firebase/clearance";
+import { buildClearanceId, resolveClearanceDueDate } from "@/firebase/clearance";
 import { updateStudentStats } from "@/firebase/stats/update/updateStats";
 import { getActiveTerm } from "@/firebase/term";
 import { assignExistingFeesToStudent } from "@/firebase/fees";
@@ -44,8 +44,9 @@ export const onboardNewStudent = async (
   }
 
   const now = Timestamp.now();
-  // Default clearance due date — adjust per org policy if needed in the future.
-  const defaultDueDate = Timestamp.fromDate(new Date("2026-12-30"));
+  // Shared with the other clearance-creating paths, and guarded against being
+  // left in the past — see `resolveClearanceDueDate`.
+  const defaultDueDate = resolveClearanceDueDate();
 
   for (const org of allOrgs) {
     // Strict matching based on access level to prevent `undefined === undefined` matches
