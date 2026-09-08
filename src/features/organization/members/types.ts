@@ -71,6 +71,14 @@ export interface BulkImportResult {
     error: string;                     // Human-readable error description
   }>;
   duplicates: string[];                // List of student IDs that already exist in database
+  /**
+   * Student IDs held by a RETIRED record. These are skipped rather than
+   * imported: creating a second document would strand the student's existing
+   * fees, fines and clearance on the old one and charge them twice. They need
+   * restoring from the Members page instead, which is a per-student decision
+   * and cannot be made safely in bulk.
+   */
+  needsRestore: string[];
 }
 
 // Interface for validated member data that passed all validation checks

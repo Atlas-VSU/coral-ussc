@@ -266,6 +266,37 @@ export function BulkImportResultModal({
               )}
             </Card>
           )}
+
+          {/* Retired records — skipped deliberately, because restoring is a
+              per-student judgement that cannot be made safely in bulk. */}
+          {result.needsRestore.length > 0 && (
+            <Card className="border-amber-300 bg-amber-50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm text-amber-900">
+                  Needs restoring ({result.needsRestore.length})
+                </CardTitle>
+                <CardDescription className="text-amber-800/80 text-xs">
+                  A retired record already holds these Student IDs — they were most likely removed
+                  by a roster synchronization. They were <strong>not</strong> imported: creating a
+                  second record would strand their existing fees, fines and clearance and charge
+                  them twice. Restore each one from the Members page instead.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                  {result.needsRestore.map((studentId, index) => (
+                    <Badge
+                      key={index}
+                      className="bg-amber-100 text-amber-900 border-amber-300 text-xs max-w-[140px] truncate"
+                      title={studentId}
+                    >
+                      {studentId}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <DialogFooter>

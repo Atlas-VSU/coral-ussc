@@ -275,6 +275,85 @@ export const getRecentUsers = async () => {
   }
 };
 
+/**
+ * The three states a Student ID can be in, from the point of view of anyone
+ * trying to onboard that student.
+ */
+export type StudentIdentityResolution =
+  /** No record holds this Student ID — safe to create a new one. */
+  | { status: "available" }
+  /** A live record already holds it — a genuine duplicate; block. */
+  | { status: "active"; docId: string; member: Member }
+  /** Only a soft-deleted record holds it — offer to restore rather than
+   *  creating a second document for the same person. */
+  | { status: "archived"; docId: string; member: Member };
+
+/**
+ * Resolves what already exists behind a Student ID before anything is created.
+ *
+ * WHY THIS EXISTS: `checkStudentIdExist` deliberately ignores soft-deleted
+ * records, so re-adding a student the roster sync had retired passed the
+ * duplicate check and silently created a SECOND user document. Fees, fines and
+ * clearance key on the document id, so the student's entire history stayed
+ * stranded on the dead record while onboarding backfilled a fresh set of
+ * charges onto the new one — a double charge with the payment history
+ * invisible. The next roster sync then refused to run at all, because two
+ * records shared one Student ID.
+ *
+ * Callers must branch on all three states: "archived" is a restore, never a
+ * create. See `restoreStudentRecord`.
+ */
+export const resolveStudentIdentity = async (
+  studentId: string
+): Promise<StudentIdentityResolution> => {
+  // Deliberately unfiltered by isDeleted — the soft-deleted records are the
+  // whole point of this lookup.
+  const snapshot = await getDocs(
+    query(usersCollection, where("studentId", "==", studentId))
+  );
+
+  if (snapshot.empty) return { status: "available" };
+
+  const live = snapshot.docs.find((d) => d.data().isDeleted !== true);
+  if (live) {
+    return { status: "active", docId: live.id, member: live.data() as Member };
+  }
+
+  const archived = snapshot.docs[0];
+  return { status: "archived", docId: archived.id, member: archived.data() as Member };
+};
+
+/**
+ * Finds a soft-deleted record holding this Student ID, ignoring one document.
+ *
+ * Used where the student already has a live record of their own — a pending
+ * self-registration, say — and we need to know whether an older retired record
+ * exists for the same person. Approving without noticing leaves a permanent
+ * duplicate pair: history on the retired document, new charges on the live one.
+ */
+export const findArchivedRecordForStudentId = async (
+  studentId: string,
+  excludeDocId?: string
+): Promise<{ docId: string; member: Member } | null> => {
+  const snapshot = await getDocs(
+    query(usersCollection, where("studentId", "==", studentId))
+  );
+
+  const archived = snapshot.docs.find(
+    (d) => d.id !== excludeDocId && d.data().isDeleted === true
+  );
+
+  return archived ? { docId: archived.id, member: archived.data() as Member } : null;
+};
+
+/**
+ * True when a LIVE record already holds this Student ID.
+ *
+ * Retained for callers that only need the boolean, and kept deliberately blind
+ * to soft-deleted records so existing behaviour is unchanged. Anything that
+ * creates a student should use `resolveStudentIdentity` instead, so an archived
+ * record is restored rather than duplicated.
+ */
 export const checkStudentIdExist = async (studentId: string) => {
   try {
     const querySnapshot = await getDocs(
@@ -291,10 +370,29 @@ export const checkStudentIdExist = async (studentId: string) => {
   }
 };
 
+export const checkEmailExist = async (email: string) => {
+  try {
+    const querySnapshot = await getDocs(
+      query(
+        usersCollection,
+        where("email", "==", email),
+        where("isDeleted", "==", false)
+      )
+    );
+    return !querySnapshot.empty;
+  } catch (error) {
+    handleFirestoreError(error, "check email existence");
+    return false;
+  }
+};
+
 export const addUser = async (userData: MemberFormData) => {
   try {
     if (await checkStudentIdExist(userData.studentId)) {
       throw new Error("Student ID already exists.");
+    }
+    if (await checkEmailExist(userData.email)) {
+      throw new Error("Email already exists.");
     }
     if (userData == null) {
       throw new Error("No user data provided for addition.");

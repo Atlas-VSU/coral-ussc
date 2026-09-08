@@ -4,21 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { SelfRegistration } from "../data/mockSelfRegistrations";
 import {
-  assignExistingFeesToStudent,
-  buildClearanceId,
   getCurrentUserData,
   getUserById,
   updateMemberStatus,
 } from "@/firebase";
 import { subscribeToPendingMembers } from "@/firebase/members";
-import { Term } from "@/constants/types";
 import { Member } from "../types";
 import { getAllOrgs } from "@/firebase/organization";
-import { doc, setDoc, Timestamp } from "firebase/firestore";
-import { db } from "@/firebase/firebase.config";
-import { ClearanceStatus } from "../../clearance/types";
-import { assignExistingFinesToStudent } from "@/firebase/fines/create/fines";
-import { getActiveTerm } from "@/firebase/term";
+import { onboardNewStudent } from "@/firebase/onboarding";
+import { findArchivedRecordForStudentId } from "@/firebase/users";
 import { useSendRegistrationStatus } from "@/features/organization/members/hooks/useSendRegistrationStatus";
 
 export type SelfRegDecision = "approved" | "reject";
@@ -89,41 +83,33 @@ export function useSelfRegistrations() {
       }
 
       if (action == "approved") {
-        await updateMemberStatus(id, action)
-        const active = await getActiveTerm();
         const user = await getUserById(id);
+
+        // An older retired record may hold this same Student ID — typically one
+        // the roster sync removed. Approving would leave a permanent duplicate
+        // pair: the student's fees, fines and clearance stranded on the retired
+        // document while onboarding creates a fresh set here. Resolving that
+        // means choosing which record survives, so it is referred to an
+        // operator rather than decided automatically.
+        const archivedDuplicate = user?.studentId
+          ? await findArchivedRecordForStudentId(user.studentId, id)
+          : null;
+
+        if (archivedDuplicate) {
+          setProcessing(null);
+          toast.error(
+            `${target.firstName} ${target.lastName} already has a retired record ` +
+            `(${user!.studentId}). Restore it from the Members list instead of approving this ` +
+            `registration — approving would duplicate the student and their charges.`,
+            { duration: 10000 }
+          );
+          return;
+        }
+
+        await updateMemberStatus(id, action)
         const orgs = await getAllOrgs();
-        for (const org of orgs) {
-          if (org.subscribed && org.programId == user?.programId || org.facultyId == user?.facultyId || (org.facultyId == null && org.programId == null)) {
-            const clearanceId = buildClearanceId(id!, org?.id!, org?.accessLevel!, active! as Term)
-            const clearanceRef = doc(db, 'clearanceStatus', clearanceId);
-            const now = Timestamp.now();
-            const defaultDueDate = Timestamp.fromDate(new Date('2026-12-30'));
-
-            const clearanceData: ClearanceStatus = {
-              id: clearanceId,
-              orgId: org?.id!,
-              userId: id,
-              userName: `${user?.firstName} ${user?.lastName}`,
-              studentId: user?.studentId || "N/A", // Fallback just in case
-              academicYear: active!.AY,
-              semester: active!.semester,
-              status: 'cleared',
-              visibility: 'public',
-              blockingItems: {},
-              clearanceDate: null,
-              lastCalculatedAt: now,
-              startDate: now,
-              dueDate: defaultDueDate,
-              createdAt: now,
-              updatedAt: now,
-              isArchived: false
-            };
-
-            await setDoc(clearanceRef, clearanceData);
-            await assignExistingFeesToStudent(id, { firstName: user?.firstName || "", lastName: user?.lastName || "", studentId: user?.studentId || "" }, { uid: org?.id!, accessLevel: org?.accessLevel! }, userData!)
-            await assignExistingFinesToStudent(id, { firstName: user?.firstName || "", lastName: user?.lastName || "", studentId: user?.studentId || "" }, { uid: org?.id!, accessLevel: org?.accessLevel! }, userData!)
-          }
+        if (user) {
+          await onboardNewStudent(id, user as Member, orgs, userData as Member);
         }
       }
       else {

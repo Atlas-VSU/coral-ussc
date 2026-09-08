@@ -827,6 +827,6 @@ export const assignExistingFinesToStudent = async (
  
     if (totalFineAmount > 0) {
         await updateFineStats(`${term!.AY}-${term!.semester}-${orgId}`, totalFineAmount, 0);
-        await recalculateClearanceStatus(userId, term!);
+        await recalculateClearanceStatus(userId, term!, orgContext);
     }
 };
