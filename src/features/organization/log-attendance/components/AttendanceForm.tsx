@@ -640,10 +640,14 @@ export function AttendanceForm({
             open={isAddStudentOpen}
             onOpenChange={setIsAddStudentOpen}
             suggestedId={studentId}
-            onStudentAdded={(student) => {
+            onStudentAdded={(student, meta) => {
               setSearchResult({ status: "success", student });
               setIsAddStudentOpen(false);
-              toast.success("Student added successfully");
+              // A restore is not an add: it brought back an existing student
+              // along with their fees and fines, and `useStudentRestore` has
+              // already reported exactly what came back. Saying "added" here
+              // would both mislead and talk over that.
+              if (!meta?.restored) toast.success("Student added successfully");
             }}
           />
         </div>

@@ -30,8 +30,8 @@ import { BulkImportResultModal } from "@/features/organization/members/component
 import { usePaginatedMembers } from "@/features/organization/members/hooks/usePaginatedMembers";
 import { getAllOrgs } from "@/firebase/organization";
 import { onboardNewStudent } from "@/firebase/onboarding";
-import { resolveStudentIdentity, type StudentIdentityResolution } from "@/firebase/users";
-import { restoreStudentRecord } from "@/firebase/restore";
+import { resolveStudentIdentity } from "@/firebase/users";
+import { useStudentRestore } from "@/hooks/useStudentRestore";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -114,12 +114,16 @@ export function MembersPage() {
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedMember, setSelectedMember] = useState<MemberData | null>(null);
-  // Set when a submitted Student ID belongs to a retired record — prompts a
-  // restore instead of creating a duplicate document for the same student.
-  const [archivedMatch, setArchivedMatch] = useState<{
-    resolution: Extract<StudentIdentityResolution, { status: "archived" }>;
-    data: Member;
-  } | null>(null);
+  // Shared with Log Attendance: when a submitted Student ID turns out to belong
+  // to a retired record, this owns the prompt, the restore and its reporting.
+  const {
+    pending: archivedMatch,
+    isRestoring,
+    error: restoreError,
+    promptRestore,
+    dismissRestore,
+    confirmRestore,
+  } = useStudentRestore({ onRestored: () => refreshData() });
   const [importProgress, setImportProgress] = useState(0);
   const [currentBatch, setCurrentBatch] = useState(0);
   const [totalBatches, setTotalBatches] = useState(0);
@@ -177,7 +181,7 @@ export function MembersPage() {
         // would strand their fees, fines and clearance on the dead document
         // and charge them twice — prompt to restore the original instead.
         if (identity.status === "archived") {
-          setArchivedMatch({ resolution: identity, data });
+          promptRestore(identity, data);
           return;
         }
 
@@ -204,46 +208,6 @@ export function MembersPage() {
       setIsFormSubmitting(false);
       setIsFormOpen(false);
       setSelectedMember(null);
-    }
-  };
-
-  /**
-   * Brings back the retired record this Student ID belongs to.
-   *
-   * Deliberately does NOT call `onboardNewStudent`: onboarding backfills a
-   * fresh set of fees and fines, which would stack on top of the ones being
-   * reinstated and double-charge the student.
-   */
-  const handleRestoreArchived = async () => {
-    if (!archivedMatch) return;
-    const { resolution, data } = archivedMatch;
-    setIsFormSubmitting(true);
-    try {
-      const result = await restoreStudentRecord(resolution.docId, data.studentId, {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        programId: data.programId,
-        facultyId: data.facultyId,
-        yearLevel: data.yearLevel,
-      });
-      toast.success(
-        `Record restored — ${result.feesRestored} fee(s), ${result.finesRestored} fine(s) and ` +
-        `${result.clearanceRestored} clearance record(s) brought back.`
-      );
-      if (result.skippedForeignArchives > 0) {
-        toast.warning(
-          `${result.skippedForeignArchives} record(s) stayed archived because they were archived ` +
-          `manually, not by a roster sync. Review them if they should be visible.`
-        );
-      }
-      refreshData();
-    } catch (error) {
-      toast.error("Failed to restore this record");
-      console.error(error);
-    } finally {
-      setIsFormSubmitting(false);
-      setArchivedMatch(null);
     }
   };
 
@@ -471,7 +435,7 @@ export function MembersPage() {
 
       <AlertDialog
         open={!!archivedMatch}
-        onOpenChange={(open) => !open && setArchivedMatch(null)}
+        onOpenChange={(open) => !open && dismissRestore()}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -492,13 +456,32 @@ export function MembersPage() {
                   record and charge them twice.
                 </p>
                 <p>If this is a different person, cancel and correct the Student ID.</p>
+                {(archivedMatch?.resolution.archivedCount ?? 0) > 1 && (
+                  <p className="font-medium text-amber-600 dark:text-amber-500">
+                    {archivedMatch!.resolution.archivedCount} retired records share this
+                    Student ID. The most recently retired one is shown — check it is the
+                    right student before restoring.
+                  </p>
+                )}
+                {restoreError && (
+                  <p className="font-medium text-destructive">{restoreError}</p>
+                )}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isFormSubmitting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRestoreArchived} disabled={isFormSubmitting}>
-              {isFormSubmitting ? "Restoring..." : "Restore Record"}
+            <AlertDialogCancel disabled={isRestoring}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                // The restore may be refused (an email that now belongs to an
+                // active student). Keep the dialog open so the reason is
+                // readable, and let the operator cancel or retry.
+                event.preventDefault();
+                confirmRestore();
+              }}
+              disabled={isRestoring}
+            >
+              {isRestoring ? "Restoring..." : "Restore Record"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

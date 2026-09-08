@@ -7,18 +7,17 @@ import {
   getProgramByFacultyId,
   getPrograms,
 } from "@/firebase";
-import { resolveStudentIdentity, type StudentIdentityResolution } from "@/firebase/users";
-import { restoreStudentRecord } from "@/firebase/restore";
+import { resolveStudentIdentity } from "@/firebase/users";
+import { useStudentRestore } from "@/hooks/useStudentRestore";
 import { isValidStudentId } from "../utils";
 import { getAllOrgs } from "@/firebase/organization";
 import { onboardNewStudent } from "@/firebase/onboarding";
 
-/** The archived record a submitted Student ID already belongs to. */
-type ArchivedMatch = Extract<StudentIdentityResolution, { status: "archived" }>;
-
 interface useAddStudentFormProps {
   suggestedId: string;
-  onStudentAdded: (student: Member) => void;
+  /** `restored` distinguishes bringing a retired record back from creating a
+   *  new student — the two produce very different follow-up messaging. */
+  onStudentAdded: (student: Member, meta?: { restored: boolean }) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -56,9 +55,22 @@ export function useAddStudentForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [programData, setProgramData] = useState<Program[]>([]);
-  // Set when the Student ID belongs to a retired record — the dialog then
-  // offers a restore instead of reporting a duplicate.
-  const [archivedMatch, setArchivedMatch] = useState<ArchivedMatch | null>(null);
+  // Shared with the Members page: when the Student ID belongs to a retired
+  // record, this owns the prompt, the restore and its reporting, so both
+  // surfaces behave identically.
+  const {
+    pending,
+    isRestoring,
+    error: restoreError,
+    promptRestore,
+    dismissRestore,
+    confirmRestore,
+  } = useStudentRestore({
+    onRestored: (student) => {
+      onStudentAdded(student, { restored: true });
+      onOpenChange(false);
+    },
+  });
 
   useEffect(() => {
     const fetchProgramData = async () => {
@@ -80,9 +92,9 @@ export function useAddStudentForm({
       setConsentChecked(false);
       setShowConsentError(false);
       setFormErrors({});
-      setArchivedMatch(null);
+      dismissRestore();
     }
-  }, [open, suggestedId]);
+  }, [open, suggestedId, dismissRestore]);
 
   const validateForm = (): boolean => {
     const errors: FormErrors = {};
@@ -125,29 +137,11 @@ export function useAddStudentForm({
    * creating a duplicate. Deliberately does NOT call `onboardNewStudent` —
    * onboarding backfills a fresh set of fees and fines, which would stack on
    * top of the ones being reinstated and double-charge the student.
+   *
+   * The work itself, the reporting and the refusal messages all live in
+   * `useStudentRestore`, shared with the Members page.
    */
-  const handleRestore = async () => {
-    if (!archivedMatch) return;
-    setIsSubmitting(true);
-    try {
-      const currentUser = (await getCurrentUserData()) as unknown as Member;
-      await restoreStudentRecord(archivedMatch.docId, formData.studentId, {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        programId: formData.programId,
-        facultyId: currentUser.facultyId || "",
-      });
-      onStudentAdded({ ...formData, role: "user" as const });
-      setArchivedMatch(null);
-      onOpenChange(false);
-    } catch (error) {
-      console.error("Failed to restore student:", error);
-      setFormErrors({ studentId: "Failed to restore this record. Please try again." });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const handleRestore = () => confirmRestore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,7 +163,7 @@ export function useAddStudentForm({
       // would strand the student's fees, fines and clearance on the dead
       // document and charge them twice — offer to bring the original back.
       if (identity.status === "archived") {
-        setArchivedMatch(identity);
+        promptRestore(identity, { ...formData, role: "user" as const });
         return;
       }
 
@@ -204,14 +198,15 @@ export function useAddStudentForm({
     setConsentChecked,
     showConsentError,
     setShowConsentError,
-    isSubmitting,
+    isSubmitting: isSubmitting || isRestoring,
     formErrors,
     handleChange,
     handleSubmit,
     programData,
     handleSelectChange,
-    archivedMatch,
+    archivedMatch: pending?.resolution ?? null,
+    restoreError,
     handleRestore,
-    dismissArchivedMatch: () => setArchivedMatch(null),
+    dismissArchivedMatch: dismissRestore,
   };
 }
