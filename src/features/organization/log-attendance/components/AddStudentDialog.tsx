@@ -26,7 +26,7 @@ interface AddStudentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   suggestedId: string;
-  onStudentAdded: (student: Member) => void;
+  onStudentAdded: (student: Member, meta?: { restored: boolean }) => void;
 }
 
 export function AddStudentDialog({
@@ -48,6 +48,7 @@ export function AddStudentDialog({
     programData,
     handleSelectChange,
     archivedMatch,
+    restoreError,
     handleRestore,
     dismissArchivedMatch,
   } = useAddStudentForm({ suggestedId, onStudentAdded, open, onOpenChange });
@@ -325,6 +326,18 @@ export function AddStudentDialog({
               <p className="text-[11px] text-amber-700">
                 If this is a different person, correct the Student ID and try again.
               </p>
+              {archivedMatch.archivedCount > 1 && (
+                <p className="text-[11px] font-semibold text-amber-800">
+                  {archivedMatch.archivedCount} retired records share this Student ID. The
+                  most recently retired one is shown — check it is the right student before
+                  restoring.
+                </p>
+              )}
+              {restoreError && (
+                <p className="text-[11px] font-semibold text-destructive">
+                  {restoreError}
+                </p>
+              )}
               <div className="flex flex-col sm:flex-row gap-2 pt-1">
                 <Button
                   type="button"
