@@ -232,6 +232,46 @@ const checkInternalDuplicates = (memberData: RawMemberData[]): {
   return { duplicates, uniqueMembers };
 };
 
+/**
+ * Student IDs among `studentIds` that are held only by a soft-deleted record.
+ *
+ * These must not be imported. `checkExistingStudentIds` deliberately ignores
+ * deleted records, so without this check a retired student sails through as
+ * "new" and gets a SECOND user document — leaving their fees, fines and
+ * clearance stranded on the old one, double-charging them via onboarding, and
+ * blocking the next roster sync on a duplicate Student ID.
+ *
+ * Restoring is a per-student judgement ("is this the same person?"), so these
+ * are reported for an operator to action rather than resolved automatically.
+ */
+const checkArchivedStudentIds = async (studentIds: string[]): Promise<string[]> => {
+  try {
+    const archived = new Set<string>();
+    const live = new Set<string>();
+
+    const batchSize = 10;
+    for (let i = 0; i < studentIds.length; i += batchSize) {
+      const batch = studentIds.slice(i, i + batchSize);
+      const querySnapshot = await getDocs(
+        query(usersCollection, where("studentId", "in", batch))
+      );
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const id = String(data.studentId ?? "");
+        if (data.isDeleted === true) archived.add(id);
+        else live.add(id);
+      });
+    }
+
+    // A student with both a live and a retired record is already a duplicate;
+    // the live one wins and the normal duplicate path reports it.
+    return [...archived].filter((id) => !live.has(id));
+  } catch (error) {
+    handleFirestoreError(error, "check archived student IDs");
+    return [];
+  }
+};
+
 const checkExistingStudentIds = async (
   studentIds: string[]
 ): Promise<string[]> => {
@@ -361,6 +401,7 @@ export const bulkImportUsers = async (
     successfulImports: 0,
     errors: [],
     duplicates: [],
+    needsRestore: [],
   };
 
   try {
@@ -433,6 +474,7 @@ export const bulkImportUsers = async (
 
     const studentIds = validatedMembers.map((member) => member.studentId);
     const existingStudentIds = await checkExistingStudentIds(studentIds);
+    const archivedStudentIds = await checkArchivedStudentIds(studentIds);
 
     const emails = validatedMembers.map((member) => member.email);
     const existingEmails = await checkExistingEmails(emails);
@@ -441,6 +483,17 @@ export const bulkImportUsers = async (
       let isDuplicate = false;
       if (existingStudentIds.includes(member.studentId)) {
         result.duplicates.push(member.studentId);
+        isDuplicate = true;
+      }
+      if (archivedStudentIds.includes(member.studentId)) {
+        result.needsRestore.push(member.studentId);
+        result.errors.push({
+          row: member.rowNumber,
+          studentId: member.studentId,
+          error:
+            "A retired record already holds this Student ID. Restore it from the Members page " +
+            "instead of importing — importing would duplicate the student and their charges.",
+        });
         isDuplicate = true;
       }
       if (existingEmails.includes(member.email)) {
@@ -463,8 +516,15 @@ export const bulkImportUsers = async (
     const batch = writeBatch(db);
     const timestamp = Timestamp.now();
 
+    // The created document id is kept per member rather than looked up again
+    // afterwards. Re-querying by studentId returns whatever document sorts
+    // first, which can be a soft-deleted record for the same student — and
+    // onboarding would then attach the new fees and clearance to the dead one.
+    const createdIdByStudentId = new Map<string, string>();
+
     membersToImport.forEach((member) => {
       const docRef = doc(collection(db, "users"));
+      createdIdByStudentId.set(member.studentId, docRef.id);
 
       const memberDataForSave = {
         ...member,
@@ -475,7 +535,7 @@ export const bulkImportUsers = async (
       const { rowNumber, ...memberDataWithoutRow } = memberDataForSave;
 
       batch.set(docRef, memberDataWithoutRow);
-      
+
     });
 
     await batch.commit();
@@ -483,9 +543,7 @@ export const bulkImportUsers = async (
     const allOrgs = await getAllOrgs();
     for (const member of membersToImport) {
       try {
-        const docRef = query(collection(db, "users"), where("studentId", "==", member.studentId));
-        const snapshot = await getDocs(docRef);
-        const userId = snapshot.docs[0].id;
+        const userId = createdIdByStudentId.get(member.studentId)!;
         await onboardNewStudent(userId, member as unknown as Member, allOrgs, user);
       }
       catch (error) {
@@ -546,6 +604,7 @@ export const processFileForBulkImport = async (
       successfulImports: 0,
       errors: [],
       duplicates: [],
+      needsRestore: [],
     };
 
     for (let i = 0; i < memberData.length; i += BATCH_SIZE) {
@@ -595,6 +654,7 @@ export const processFileForBulkImport = async (
         },
       ],
       duplicates: [],
+      needsRestore: [],
     };
   }
 };
