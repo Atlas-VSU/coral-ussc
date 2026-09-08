@@ -35,6 +35,42 @@ export const buildClearanceId = (
   return `${userId}${termSuffix}`;
 };
 
+/**
+ * Fallback due date stamped on clearance documents created outside the fee
+ * flow — onboarding and backfills, where no per-fee due date exists yet.
+ *
+ * It cannot be derived from the term: `Term` is only `{ AY, semester, isActive }`
+ * and carries no dates. It used to be three separate literals that had already
+ * drifted apart — two of them sat at 2026-05-30, in the past, silently stamping
+ * every clearance they created as overdue on creation. Declared once here so the
+ * academic calendar is updated in one place.
+ *
+ * The guard matters more than the value. Any fixed literal eventually passes,
+ * and once it does a hard-coded date marks every newly onboarded student
+ * immediately overdue. Falling forward is a stopgap, not a policy: the real fix
+ * is a due date configured alongside the term, which is a product decision.
+ */
+const CLEARANCE_DEFAULT_DUE_DATE = new Date("2026-12-30");
+const CLEARANCE_FALLBACK_WINDOW_DAYS = 120;
+
+export const resolveClearanceDueDate = (): Timestamp => {
+  if (CLEARANCE_DEFAULT_DUE_DATE.getTime() > Date.now()) {
+    return Timestamp.fromDate(CLEARANCE_DEFAULT_DUE_DATE);
+  }
+
+  console.warn(
+    `[clearance] CLEARANCE_DEFAULT_DUE_DATE (${CLEARANCE_DEFAULT_DUE_DATE
+      .toISOString()
+      .slice(0, 10)}) has passed — defaulting to ${CLEARANCE_FALLBACK_WINDOW_DAYS} ` +
+    `days out so new clearances are not created overdue. Update it for the ` +
+    `current academic calendar.`
+  );
+
+  return Timestamp.fromDate(
+    new Date(Date.now() + CLEARANCE_FALLBACK_WINDOW_DAYS * 24 * 60 * 60 * 1000)
+  );
+};
+
 export const getClearanceStats = async (
   orgId: string,
   statusFilter: string = "all",
@@ -384,7 +420,7 @@ export const addStudentWithClearance = async (studentId: string, studentData: an
     const clearanceRef = doc(db, 'clearanceStatus', id);
 
     const now = Timestamp.now();
-    const defaultDueDate = Timestamp.fromDate(new Date('2026-05-30'));
+    const defaultDueDate = resolveClearanceDueDate();
 
     // Get all payables for blocking clearance
 
@@ -727,7 +763,7 @@ export const seedClearanceDocuments = async (user: UserData, term: Term) => {
 
     // IMPROVEMENT 3: Use Timestamp.now() instead of serverTimestamp() to strictly match your TypeScript interface
     const now = Timestamp.now();
-    const defaultDueDate = Timestamp.fromDate(new Date('2026-05-30'));
+    const defaultDueDate = resolveClearanceDueDate();
 
     for (const userDoc of usersSnapshot.docs) {
       const userId = userDoc.id;
