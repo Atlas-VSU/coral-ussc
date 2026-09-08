@@ -258,8 +258,15 @@ const checkArchivedStudentIds = async (studentIds: string[]): Promise<string[]> 
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
         const id = String(data.studentId ?? "");
-        if (data.isDeleted === true) archived.add(id);
-        else live.add(id);
+        if (data.isDeleted !== true) {
+          live.add(id);
+          return;
+        }
+        // Records the dedupe script merged away are never restorable — bringing
+        // one back recreates the double charge the merge resolved — so they must
+        // not be reported as "needs restoring" either.
+        if (data.mergedIntoUserId) return;
+        archived.add(id);
       });
     }
 

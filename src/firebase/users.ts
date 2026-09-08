@@ -16,6 +16,7 @@ import {
   documentId,
   writeBatch,
   getCountFromServer,
+  QueryDocumentSnapshot,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
 import { MemberFormData } from "@/lib/validators";
@@ -276,6 +277,27 @@ export const getRecentUsers = async () => {
 };
 
 /**
+ * Canonical form of a Student ID, used for comparison only — never written.
+ *
+ * Mirrors `normaliseStudentId` in the super-admin roster sync, which is the
+ * other half of this contract: cosmetic variance (a stray space, a different
+ * dash) is the documented cause of the duplicate pairs `dedupeStudentRecords`
+ * has to clean up, so both sides must compare on the same canonical shape.
+ *
+ * NOTE: this normalizes the *lookup value* only. A record whose STORED id is
+ * in a non-canonical shape still misses, because Firestore cannot match on a
+ * computed value. Closing that gap needs a stored `studentIdNormalized` field
+ * plus a backfill — deliberately out of scope here.
+ */
+export const normaliseStudentId = (raw: string): string => {
+  const digits = raw.trim().replace(/\D/g, "");
+  if (digits.length === 8) {
+    return `${digits.slice(0, 2)}-${digits[2]}-${digits.slice(3)}`;
+  }
+  return raw.trim();
+};
+
+/**
  * The three states a Student ID can be in, from the point of view of anyone
  * trying to onboard that student.
  */
@@ -286,7 +308,61 @@ export type StudentIdentityResolution =
   | { status: "active"; docId: string; member: Member }
   /** Only a soft-deleted record holds it — offer to restore rather than
    *  creating a second document for the same person. */
-  | { status: "archived"; docId: string; member: Member };
+  | {
+      status: "archived";
+      docId: string;
+      member: Member;
+      /** How many restorable archived records share this Student ID. Above 1
+       *  the choice of `docId` is a guess, so the caller must say so. */
+      archivedCount: number;
+    };
+
+/** Every record holding this Student ID, matched on the raw value and, when it
+ *  differs, on the canonical one. Two indexed lookups rather than a scan. */
+const fetchRecordsForStudentId = async (studentId: string) => {
+  const raw = studentId.trim();
+  const canonical = normaliseStudentId(studentId);
+
+  const snapshot = await getDocs(
+    query(usersCollection, where("studentId", "==", raw))
+  );
+  if (!snapshot.empty || canonical === raw) return snapshot.docs;
+
+  const fallback = await getDocs(
+    query(usersCollection, where("studentId", "==", canonical))
+  );
+  return fallback.docs;
+};
+
+/** Millis of the most recent timestamp on a user doc, for ordering archives. */
+const lastTouchedAt = (data: DocumentData): number => {
+  const candidate = data?.metadata?.updatedAt ?? data?.updatedAt ?? data?.createdAt;
+  return typeof candidate?.toMillis === "function" ? candidate.toMillis() : 0;
+};
+
+/**
+ * The archived record that should be offered for restore, newest first.
+ *
+ * Records carrying `mergedIntoUserId` are excluded outright: the dedupe script
+ * stamps that when it deliberately merges a duplicate away, so bringing one
+ * back recreates exactly the double charge the merge resolved.
+ *
+ * Ordering is explicit because an unfiltered equality query returns documents
+ * in `__name__` order — picking `docs[0]` would restore whichever record
+ * happens to sort first by id, not the one most recently retired.
+ */
+const pickRestorableArchived = (
+  docs: QueryDocumentSnapshot<DocumentData>[],
+  excludeDocId?: string
+) =>
+  docs
+    .filter(
+      (d) =>
+        d.id !== excludeDocId &&
+        d.data().isDeleted === true &&
+        !d.data().mergedIntoUserId
+    )
+    .sort((a, b) => lastTouchedAt(b.data()) - lastTouchedAt(a.data()));
 
 /**
  * Resolves what already exists behind a Student ID before anything is created.
@@ -308,19 +384,30 @@ export const resolveStudentIdentity = async (
 ): Promise<StudentIdentityResolution> => {
   // Deliberately unfiltered by isDeleted — the soft-deleted records are the
   // whole point of this lookup.
-  const snapshot = await getDocs(
-    query(usersCollection, where("studentId", "==", studentId))
-  );
+  const docs = await fetchRecordsForStudentId(studentId);
 
-  if (snapshot.empty) return { status: "available" };
+  if (docs.length === 0) return { status: "available" };
 
-  const live = snapshot.docs.find((d) => d.data().isDeleted !== true);
+  const live = docs.find((d) => d.data().isDeleted !== true);
   if (live) {
     return { status: "active", docId: live.id, member: live.data() as Member };
   }
 
-  const archived = snapshot.docs[0];
-  return { status: "archived", docId: archived.id, member: archived.data() as Member };
+  const restorable = pickRestorableArchived(docs);
+
+  // Records exist, but every one of them was merged away deliberately.
+  // Restoring any of those recreates a duplicate pair, so creating a fresh
+  // record is the correct outcome — and the roster sync tolerates it, since it
+  // only treats two *live* records as a collision.
+  if (restorable.length === 0) return { status: "available" };
+
+  const archived = restorable[0];
+  return {
+    status: "archived",
+    docId: archived.id,
+    member: archived.data() as Member,
+    archivedCount: restorable.length,
+  };
 };
 
 /**
@@ -335,13 +422,8 @@ export const findArchivedRecordForStudentId = async (
   studentId: string,
   excludeDocId?: string
 ): Promise<{ docId: string; member: Member } | null> => {
-  const snapshot = await getDocs(
-    query(usersCollection, where("studentId", "==", studentId))
-  );
-
-  const archived = snapshot.docs.find(
-    (d) => d.id !== excludeDocId && d.data().isDeleted === true
-  );
+  const docs = await fetchRecordsForStudentId(studentId);
+  const archived = pickRestorableArchived(docs, excludeDocId)[0];
 
   return archived ? { docId: archived.id, member: archived.data() as Member } : null;
 };
