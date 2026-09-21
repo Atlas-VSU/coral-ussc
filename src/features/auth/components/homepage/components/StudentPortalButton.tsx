@@ -4,16 +4,26 @@ import { useState } from "react";
 import { Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+const PORTAL_URL = process.env.NEXT_PUBLIC_STUDENT_PORTAL_URL;
+
 export function StudentPortalButton() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleRedirect = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+
+    if (!PORTAL_URL) {
+      console.error(
+        "NEXT_PUBLIC_STUDENT_PORTAL_URL is not set; cannot open the student portal."
+      );
+      return;
+    }
+
     setIsLoading(true);
 
     // Simulate loading/establishing connection before redirection
     setTimeout(() => {
-      window.location.href = "https://veris-student-portal.fc-ssc.online/";
+      window.location.href = PORTAL_URL;
     }, 1000);
   };
 
