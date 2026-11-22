@@ -1,6 +1,6 @@
 import { Organization, Term } from "@/constants/types";
 import { db } from "@/firebase/firebase.config";
-import { collection, addDoc, Timestamp, updateDoc, doc, getDocs, CollectionReference, DocumentData, query, where, getDoc } from "firebase/firestore";
+import { collection, addDoc, Timestamp, serverTimestamp, updateDoc, doc, getDocs, CollectionReference, DocumentData, query, where, getDoc } from "firebase/firestore";
 
 
 const orgCollection: CollectionReference<DocumentData> = collection(
@@ -60,6 +60,7 @@ export const getOrgByName = async (name: string) => {
                 facultyId: orgDoc.data().facultyId,
                 accessLevel: orgDoc.data().accessLevel,
                 orgLogoUrl: orgDoc.data().orgLogoUrl || null,
+                isAcceptingPayments: orgDoc.data().isAcceptingPayments !== false,
             } as Organization;
         }
             return null
@@ -84,6 +85,7 @@ export const getOrgById = async (id: string) => {
                 facultyId: orgDoc.data().facultyId,
                 accessLevel: orgDoc.data().accessLevel,
                 orgLogoUrl: orgDoc.data().orgLogoUrl || null,
+                isAcceptingPayments: orgDoc.data().isAcceptingPayments !== false,
             } as Organization;
         }
             return null
@@ -123,11 +125,29 @@ export const getAllOrgs = async () => {
                 facultyId: doc.data().facultyId,
                 accessLevel: doc.data().accessLevel,
                 orgLogoUrl: doc.data().orgLogoUrl || null,
+                isAcceptingPayments: doc.data().isAcceptingPayments !== false,
             })) as Organization[];
         }
             return [];
     } catch (error) {
         handleFirestoreError(error, `fetching organizations`);
         return [];
+    }
+}
+
+export const updateOrgPaymentAcceptance = async (
+    orgId: string,
+    isAcceptingPayments: boolean
+) => {
+    try {
+        const orgRef = doc(orgCollection, orgId);
+        await updateDoc(orgRef, {
+            isAcceptingPayments,
+            "metadata.updatedAt": serverTimestamp(),
+        });
+        return true;
+    } catch (error) {
+        handleFirestoreError(error, `updating organization payment acceptance`);
+        return false;
     }
 }
