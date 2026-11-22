@@ -1,5 +1,5 @@
 "use client";
-import { Montserrat } from "next/font/google";
+import localFont from "next/font/local";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/context/AuthContext";
@@ -7,10 +7,12 @@ import { Toaster } from "@/components/ui/sonner";
 import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 
-const montserrat = Montserrat({
+const montserrat = localFont({
+  src: "./fonts/Montserrat-Latin.woff2",
   variable: "--font-montserrat",
-  subsets: ["latin"],
-  weight: ["200", "300", "400", "500", "600", "700", "800", "900"],
+  weight: "200 900",
+  style: "normal",
+  display: "swap",
 });
 
 export default function RootLayout({
