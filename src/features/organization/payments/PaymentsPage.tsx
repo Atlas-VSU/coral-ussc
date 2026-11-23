@@ -3,6 +3,20 @@
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { AlertTriangle, Loader2 } from "lucide-react"
 import { PageHeader } from "@/components/organization/general/PageHeader"
 import { PaymentReviewDialog } from "@/components/organization/receipt/PaymentReviewDialog"
 import { PaymentStats } from "./components/PaymentStats"
@@ -43,6 +57,11 @@ export default function PaymentsPage() {
     // receipt
     receiptOpen, setReceiptOpen, receiptData, setReceiptData,
     stats, totalUnpaidCount, AY, sem,
+    // portal payment acceptance
+    isAcceptingPayments,
+    isLoadingPaymentAcceptance,
+    isUpdatingPaymentAcceptance,
+    handleTogglePaymentAcceptance,
   } = usePaymentsPage()
 
   const { selected } = useTermPeriod();
@@ -50,6 +69,8 @@ export default function PaymentsPage() {
   // Local search states for filters
   const [searchTerm, setSearchTerm] = useState(search)
   const [unpaidSearchTerm, setUnpaidSearchTerm] = useState(unpaidSearch)
+  const [confirmToggleOpen, setConfirmToggleOpen] = useState(false)
+  const [pendingToggleValue, setPendingToggleValue] = useState<boolean | null>(null)
 
   // Sync with hook state
   useEffect(() => {
@@ -129,7 +150,72 @@ export default function PaymentsPage() {
         title="Payment Submissions"
         context={`${sem} Semester · A.Y. ${AY}`}
         description="Review and manage student payment submissions"
+        action={
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-3.5 py-2.5 shadow-xs">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-foreground">
+                  Portal Payments
+                </span>
+                <Badge
+                  variant={isAcceptingPayments === true ? "default" : "secondary"}
+                  className={
+                    isLoadingPaymentAcceptance
+                      ? "h-5 px-2 text-[10px] font-bold uppercase"
+                      : isAcceptingPayments === true
+                        ? "h-5 px-2 text-[10px] font-bold uppercase"
+                        : isAcceptingPayments === false
+                          ? "h-5 border-amber-300 bg-amber-100 px-2 text-[10px] font-bold uppercase text-amber-800 dark:border-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
+                          : "h-5 border-destructive/30 bg-destructive/10 px-2 text-[10px] font-bold uppercase text-destructive"
+                  }
+                >
+                  {isLoadingPaymentAcceptance
+                    ? "Loading…"
+                    : isAcceptingPayments === true
+                      ? "Accepting"
+                      : isAcceptingPayments === false
+                        ? "Paused"
+                        : "Unavailable"}
+                </Badge>
+              </div>
+              <span className="text-[11px] text-muted-foreground">
+                {isLoadingPaymentAcceptance
+                  ? "Checking portal payment status…"
+                  : isAcceptingPayments === true
+                    ? "Students can submit online payments"
+                    : isAcceptingPayments === false
+                      ? "Online submissions are disabled"
+                      : "Could not load portal payment status"}
+              </span>
+            </div>
+            {isUpdatingPaymentAcceptance || isLoadingPaymentAcceptance ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : (
+              <Switch
+                checked={isAcceptingPayments === true}
+                disabled={isLoadingPaymentAcceptance || isUpdatingPaymentAcceptance || isAcceptingPayments === null}
+                onCheckedChange={(checked) => {
+                  setPendingToggleValue(checked)
+                  setConfirmToggleOpen(true)
+                }}
+                aria-label="Toggle student portal payments"
+              />
+            )}
+          </div>
+        }
       />
+
+      {!isLoadingPaymentAcceptance && isAcceptingPayments === false && (
+        <Alert className="border-amber-300 bg-amber-50/90 text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <AlertTitle className="font-bold text-amber-900 dark:text-amber-200">
+            Student Portal Payments Temporarily Disabled
+          </AlertTitle>
+          <AlertDescription className="text-amber-800 dark:text-amber-300/90">
+            Students can still view their outstanding balances on the student portal, but new online payment submissions are paused for your organization. You can still review existing submissions and log manual payments below.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <PaymentStats {...stats} />
 
@@ -262,6 +348,52 @@ export default function PaymentsPage() {
         onOpenChange={setReceiptOpen}
         data={receiptData}
       />
+
+      {/* ── Confirm Portal Payments Toggle Dialog ── */}
+      <AlertDialog
+        open={confirmToggleOpen}
+        onOpenChange={(open) => {
+          setConfirmToggleOpen(open)
+          if (!open) setPendingToggleValue(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingToggleValue
+                ? "Enable Student Portal Payments?"
+                : "Temporarily Disable Student Portal Payments?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingToggleValue
+                ? "Students will be able to select your organization on the student portal and submit online payment proofs again."
+                : "Students will still see their outstanding balance for your organization on the student portal, but they will not be able to select your organization or submit new online payments until you re-enable this setting."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUpdatingPaymentAcceptance}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isUpdatingPaymentAcceptance}
+              className={
+                pendingToggleValue === false
+                  ? "bg-destructive text-white hover:bg-destructive/90"
+                  : undefined
+              }
+              onClick={async () => {
+                if (pendingToggleValue !== null) {
+                  await handleTogglePaymentAcceptance(pendingToggleValue)
+                }
+                setConfirmToggleOpen(false)
+                setPendingToggleValue(null)
+              }}
+            >
+              {pendingToggleValue ? "Enable Payments" : "Disable Payments"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
