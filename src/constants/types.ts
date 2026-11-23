@@ -30,5 +30,6 @@ export type Organization = {
   facultyId?: string,
   programId?: string,
   accessLevel: number,
-  orgLogoUrl?: string
+  orgLogoUrl?: string,
+  isAcceptingPayments?: boolean,
 }
